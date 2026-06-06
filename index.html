@@ -1,0 +1,2082 @@
+<!DOCTYPE html>
+<script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Wayfinder App",
+  "schemaVersion": 1,
+  "description": "Wayfinder travel app — warm cream light theme, lighter fonts, full Places/Trips/Wishlist/Journal/Map. Google Doc import in Trips: upload .txt or paste, Claude extracts trip details, places, and journal entries automatically."
+}
+</script>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wayfinder</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" crossorigin=""></script>
+<style>
+:root {
+  color-scheme: light;
+  --bg:     #F4EFE6;
+  --bg2:    #EDE7DB;
+  --card:   #FFFFFF;
+  --card2:  #F9F5EF;
+  --card3:  #F0EAE0;
+  --green:  #4A7259;
+  --green2: #5A8A6C;
+  --green3: #3D5E49;
+  --gold:   #9B7420;
+  --gold2:  #B8892A;
+  --earth:  #7A5535;
+  --earth2: #96693F;
+  --sage:   #6B9575;
+  --text:   #2A2218;
+  --text2:  #5A4E42;
+  --muted:  #8A7D6E;
+  --muted2: #B0A394;
+  --bdr:    rgba(80,60,40,.11);
+  --bdr2:   rgba(80,60,40,.22);
+  --shadow: 0 1px 8px rgba(50,35,15,.08);
+  --shadowm:0 4px 24px rgba(50,35,15,.13);
+  --r: 10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:13px;overflow:hidden;font-weight:400}
+button{font-family:inherit;cursor:pointer;font-weight:500}
+input,textarea,select{font-family:inherit;font-weight:400}
+
+/* ── SHELL ── */
+#shell{display:flex;height:100vh;overflow:hidden}
+
+/* ── SIDEBAR ── */
+#sb{width:188px;flex-shrink:0;background:var(--card);border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden;box-shadow:1px 0 0 var(--bdr)}
+.sb-logo{padding:14px 13px 13px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:10px}
+.sb-logo svg{width:30px;height:30px;flex-shrink:0}
+.sb-name{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.4px;line-height:1}
+.sb-name em{font-style:normal;color:var(--gold2)}
+.sb-tag{font-size:9px;font-weight:500;color:var(--muted);letter-spacing:1.6px;text-transform:uppercase;margin-top:2px}
+.sb-nav{flex:1;overflow-y:auto;padding:8px 6px}
+.sb-sec{font-size:9px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:1.4px;padding:8px 7px 4px}
+.ni{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:7px;font-size:12.5px;font-weight:400;color:var(--text2);cursor:pointer;transition:all .15s;border:none;background:none;width:100%;text-align:left;margin-bottom:1px}
+.ni .ico{font-size:14px;width:18px;text-align:center;opacity:.75}
+.ni:hover{background:var(--card2);color:var(--text)}
+.ni.on{background:rgba(74,114,89,.1);color:var(--green3);font-weight:600;border:1px solid rgba(74,114,89,.18)}
+.ni.on .ico{opacity:1}
+.nb{margin-left:auto;background:var(--green);color:#fff;font-size:9px;font-weight:600;border-radius:100px;padding:1px 5px;min-width:16px;text-align:center}
+.sb-foot{padding:10px 12px;border-top:1px solid var(--bdr)}
+.sb-prof{display:flex;align-items:center;gap:8px;padding:6px;border-radius:7px;cursor:pointer;transition:background .15s}
+.sb-prof:hover{background:var(--card2)}
+.av{width:28px;height:28px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;flex-shrink:0}
+.pn{font-size:12px;font-weight:500;color:var(--text)}
+.pl{font-size:10px;color:var(--muted)}
+
+/* ── MAIN ── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#topbar{height:50px;flex-shrink:0;background:var(--card);border-bottom:1px solid var(--bdr);display:flex;align-items:center;padding:0 18px;gap:12px}
+.tb-title{font-size:15px;font-weight:600;color:var(--text);flex:1;letter-spacing:-.2px}
+.tb-search{display:flex;align-items:center;gap:7px;background:var(--card2);border:1px solid var(--bdr);border-radius:7px;padding:6px 10px;flex:0 0 200px}
+.tb-search input{background:none;border:none;outline:none;font-size:12px;color:var(--text);width:100%}
+.tb-search input::placeholder{color:var(--muted2)}
+.tb-btn{display:flex;align-items:center;gap:5px;background:var(--green);color:#fff;border:none;border-radius:7px;padding:7px 13px;font-size:12px;font-weight:500;transition:background .15s;white-space:nowrap}
+.tb-btn:hover{background:var(--green2)}
+.tb-btn.gold{background:var(--gold)}
+.tb-btn.gold:hover{background:var(--gold2)}
+#content{flex:1;overflow-y:auto;overflow-x:hidden}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--card3);border-radius:4px}
+
+/* ── PAGES ── */
+.page{display:none;padding:18px;animation:fi .22s ease}
+.page.on{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:16px;box-shadow:var(--shadow)}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.ct{font-size:13px;font-weight:600;color:var(--text)}
+.cs{font-size:11px;color:var(--muted);margin-top:1px;font-weight:400}
+
+/* ── GRIDS ── */
+.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.ga{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+
+/* ── STAT CARDS ── */
+.sc{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:14px 16px;position:relative;overflow:hidden;box-shadow:var(--shadow)}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent,var(--green))}
+.sn{font-size:28px;font-weight:600;color:var(--text);letter-spacing:-.5px;line-height:1;margin-bottom:3px}
+.sl{font-size:11px;color:var(--muted);font-weight:400}
+.si{position:absolute;top:11px;right:13px;font-size:17px;opacity:.18}
+
+/* ── TAGS ── */
+.tag{display:inline-flex;align-items:center;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:500;white-space:nowrap}
+.tg{background:rgba(74,114,89,.1);color:var(--green3);border:1px solid rgba(74,114,89,.2)}
+.to{background:rgba(155,116,32,.1);color:var(--gold);border:1px solid rgba(155,116,32,.2)}
+.te{background:rgba(122,85,53,.1);color:var(--earth);border:1px solid rgba(122,85,53,.2)}
+.tb2{background:rgba(60,100,160,.1);color:#4A7EBA;border:1px solid rgba(60,100,160,.2)}
+.tr{background:rgba(160,60,60,.1);color:#B05050;border:1px solid rgba(160,60,60,.2)}
+.sd{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0}
+.dv{background:var(--green2)}.dw{background:var(--gold2)}.dp{background:#4A7EBA}.ds{background:var(--muted2)}
+
+/* ── PLACE CARDS ── */
+.pc{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:13px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
+.pc:hover{border-color:var(--bdr2);box-shadow:var(--shadowm);transform:translateY(-1px)}
+.pch{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:7px}
+.pname{font-size:13px;font-weight:600;color:var(--text);line-height:1.2}
+.ploc{font-size:11px;color:var(--muted);margin-top:1px}
+.pst{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)}
+.ptags{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
+.pnote{font-size:11px;color:var(--text2);line-height:1.5;margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pact{display:flex;gap:5px;margin-top:9px;padding-top:8px;border-top:1px solid var(--bdr)}
+.pbtn{background:var(--card2);border:1px solid var(--bdr);border-radius:5px;padding:4px 8px;font-size:10px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s}
+.pbtn:hover{border-color:var(--green);color:var(--green3)}
+.pbtn.del:hover{border-color:#c05050;color:#c05050}
+
+/* ── TRIP CARDS ── */
+.tc{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
+.tc:hover{border-color:var(--bdr2);box-shadow:var(--shadowm)}
+.tc-bar{height:3px;background:linear-gradient(90deg,var(--green),var(--gold))}
+.tcb{padding:13px}
+.tname{font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px;letter-spacing:-.2px}
+.tdates{font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:400}
+.tfoot{display:flex;align-items:center;justify-content:space-between;padding-top:8px;border-top:1px solid var(--bdr)}
+.tstat{font-size:11px;color:var(--muted)}
+
+/* ── WISHLIST ── */
+.wi{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:12px;display:flex;align-items:center;gap:11px;margin-bottom:7px;transition:all .15s;box-shadow:var(--shadow)}
+.wi:hover{border-color:var(--bdr2);background:var(--card2)}
+.wrank{font-size:16px;font-weight:600;color:var(--muted2);width:20px;text-align:center;flex-shrink:0}
+.wbody{flex:1}
+.wname{font-size:13px;font-weight:500;color:var(--text)}
+.wdesc{font-size:11px;color:var(--muted);margin-top:2px}
+.wtags{display:flex;gap:4px;margin-top:5px}
+.wdel{background:var(--card2);border:1px solid var(--bdr);border-radius:5px;padding:4px 8px;font-size:10px;color:var(--muted);cursor:pointer;transition:all .15s;flex-shrink:0}
+.wdel:hover{border-color:#c05050;color:#c05050}
+
+/* ── JOURNAL ── */
+.je{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:var(--shadow)}
+.jdate{font-size:10px;color:var(--muted);margin-bottom:4px}
+.jtitle{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
+.jloc{font-size:11px;color:var(--gold2);margin-bottom:6px}
+.jbody{font-size:12px;color:var(--text2);line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+
+/* ── TRIP DETAIL ── */
+.td-view{display:none}.td-view.on{display:block;animation:fi .22s ease}
+.td-back{background:var(--card2);border:1px solid var(--bdr);border-radius:7px;padding:6px 12px;font-size:11px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+.td-back:hover{border-color:var(--green);color:var(--text)}
+.day-blk{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:8px;overflow:hidden;box-shadow:var(--shadow)}
+.day-hdr{padding:10px 13px;background:var(--card2);display:flex;align-items:center;justify-content:space-between}
+.day-lbl{font-size:12px;font-weight:600;color:var(--text)}
+.day-dt{font-size:11px;color:var(--muted)}
+.day-body{padding:10px 13px}
+.stop-row{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--bdr)}
+.stop-row:last-child{border-bottom:none;padding-bottom:0}
+.stopnum{width:18px;height:18px;border-radius:50%;background:var(--green);color:#fff;font-size:9px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.stopname{font-size:12px;font-weight:500;color:var(--text)}
+.stopnote{font-size:11px;color:var(--muted);margin-top:1px}
+.add-stop{display:flex;align-items:center;gap:6px;background:none;border:1px dashed var(--bdr2);border-radius:6px;padding:7px 10px;font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s;width:100%;margin-top:6px}
+.add-stop:hover{border-color:var(--green);color:var(--green3)}
+
+/* ── FILTER BAR ── */
+.fb{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:13px}
+.fc{background:var(--card);border:1px solid var(--bdr);border-radius:100px;padding:4px 11px;font-size:11px;font-weight:400;color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap;box-shadow:var(--shadow)}
+.fc:hover{border-color:var(--bdr2);color:var(--text)}
+.fc.on{background:rgba(74,114,89,.1);border-color:rgba(74,114,89,.3);color:var(--green3);font-weight:500}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:50px 20px;color:var(--muted)}
+.empty-icon{font-size:38px;margin-bottom:12px;opacity:.45}
+.empty h3{font-size:14px;font-weight:600;color:var(--text2);margin-bottom:6px}
+.empty p{font-size:12px;line-height:1.6;max-width:250px;margin:0 auto 16px}
+
+/* ── MODALS ── */
+.mo{display:none;position:fixed;inset:0;z-index:100;background:rgba(30,20,10,.4);backdrop-filter:blur(6px);align-items:center;justify-content:center}
+.mo.on{display:flex;animation:fi .2s ease}
+.modal{background:var(--card);border:1px solid var(--bdr);border-radius:14px;padding:22px;width:500px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:var(--shadowm);position:relative}
+.modal h2{font-size:16px;font-weight:600;color:var(--text);margin-bottom:16px}
+.mcl{position:absolute;top:13px;right:13px;background:var(--card2);border:1px solid var(--bdr);border-radius:5px;width:26px;height:26px;font-size:12px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.mcl:hover{color:var(--text)}
+
+/* ── FORMS ── */
+.fg{margin-bottom:13px}
+.fl{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px;display:block}
+.fi,.fs,.ft{width:100%;background:var(--card2);border:1px solid var(--bdr2);border-radius:7px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;transition:border-color .15s;font-weight:400}
+.fi:focus,.fs:focus,.ft:focus{border-color:var(--green)}
+.fi::placeholder,.ft::placeholder{color:var(--muted2)}
+.ft{resize:vertical;min-height:70px}
+.fs option{background:var(--card)}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fa{display:flex;gap:8px;margin-top:18px}
+.btn-p{flex:1;background:var(--green);color:#fff;border:none;border-radius:7px;padding:10px;font-size:13px;font-weight:500;cursor:pointer;transition:background .15s}
+.btn-p:hover{background:var(--green2)}
+.btn-s{background:var(--card2);color:var(--text2);border:1px solid var(--bdr2);border-radius:7px;padding:10px 14px;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s}
+.btn-s:hover{border-color:var(--green);color:var(--text)}
+
+/* ── COUNTDOWN ── */
+.cdwn{background:linear-gradient(135deg,#F7F2E8,#EDE5D5);border:1px solid var(--bdr2);border-radius:var(--r);padding:16px;position:relative;overflow:hidden}
+.cdwn::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),var(--gold))}
+.cdn{font-size:34px;font-weight:600;color:var(--gold2);letter-spacing:-1px;line-height:1}
+.cdl{font-size:11px;color:var(--muted);margin-top:2px}
+.cdt{font-size:14px;font-weight:600;color:var(--text);margin-top:10px}
+.cdd{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* ── ACTIVITY ITEMS ── */
+.ai{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bdr)}
+.ai:last-child{border-bottom:none}
+.ai-icon{width:28px;height:28px;border-radius:7px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;border:1px solid var(--bdr)}
+.ai-text{font-size:12px;color:var(--text2);line-height:1.4}
+.ai-text strong{color:var(--text);font-weight:500}
+.ai-time{font-size:10px;color:var(--muted);margin-top:1px}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:18px;right:18px;z-index:999;background:var(--card);border:1px solid rgba(74,114,89,.4);border-radius:9px;padding:10px 16px;font-size:12px;font-weight:500;color:var(--text);display:none;box-shadow:var(--shadowm);animation:si .25s ease}
+@keyframes si{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* ── IMPORT DOC ── */
+.import-zone{border:2px dashed var(--bdr2);border-radius:10px;padding:28px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--card2)}
+.import-zone:hover,.import-zone.drag{border-color:var(--green);background:rgba(74,114,89,.05)}
+.import-zone input{display:none}
+.import-icon{font-size:32px;margin-bottom:10px;opacity:.6}
+.import-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
+.import-sub{font-size:11px;color:var(--muted);line-height:1.6}
+.import-or{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--muted2);font-size:11px}
+.import-or::before,.import-or::after{content:'';flex:1;height:1px;background:var(--bdr)}
+.ai-preview{background:var(--card2);border:1px solid var(--bdr2);border-radius:8px;padding:14px;margin-top:14px;max-height:220px;overflow-y:auto}
+.ai-preview h4{font-size:12px;font-weight:600;color:var(--green3);margin-bottom:10px}
+.preview-row{display:flex;align-items:baseline;gap:8px;padding:4px 0;border-bottom:1px solid var(--bdr)}
+.preview-row:last-child{border-bottom:none}
+.preview-key{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;min-width:80px;flex-shrink:0}
+.preview-val{font-size:12px;color:var(--text2)}
+.loading-ai{text-align:center;padding:24px;color:var(--muted)}
+.loading-ai .spin{display:inline-block;width:28px;height:28px;border:3px solid var(--bdr2);border-top-color:var(--green);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── SETTINGS ── */
+.ss{margin-bottom:22px}
+.ss h3{font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;padding-bottom:7px;border-bottom:1px solid var(--bdr)}
+
+/* ── AUTH ── */
+#auth-overlay{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center}
+.auth-card{background:var(--card);border:1px solid var(--bdr);border-radius:16px;padding:36px 30px;width:320px;text-align:center;box-shadow:var(--shadowm)}
+.auth-h{font-size:22px;font-weight:700;color:var(--text);margin-bottom:8px;letter-spacing:-.5px}
+.auth-h em{font-style:normal;color:var(--gold2)}
+.auth-sub{font-size:12px;color:var(--muted);margin-bottom:24px;line-height:1.65}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:var(--card);border:1.5px solid var(--bdr2);border-radius:9px;padding:12px 20px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;transition:all .18s;font-family:inherit}
+.btn-google:hover{border-color:var(--green);background:var(--card2);transform:translateY(-1px)}
+.auth-note{font-size:10px;color:var(--muted2);margin-top:14px;line-height:1.5}
+
+/* ── MAP PAGE ── */
+.rg-group{margin-bottom:14px}
+.rg-title{font-size:12px;font-weight:500;color:var(--text2);margin-bottom:7px;display:flex;align-items:center;gap:6px}
+.rg-count{font-size:10px;color:var(--muted);font-weight:400}
+.rg-chips{display:flex;flex-wrap:wrap;gap:5px}
+.rg-chip{background:var(--card2);border:1px solid var(--bdr);border-radius:5px;padding:3px 9px;font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px}
+
+/* ── AI PLANNER ── */
+.pl-prog{height:3px;background:var(--card2);border-radius:100px;margin-bottom:18px;overflow:hidden}
+.pl-prog-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--gold2));border-radius:100px;transition:width .55s cubic-bezier(.4,0,.2,1)}
+.pl-welcome{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:34px 26px;text-align:center;box-shadow:var(--shadowm);position:relative;overflow:hidden;margin-bottom:12px}
+.pl-welcome::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),var(--gold2))}
+.pl-welcome h1{font-size:24px;font-weight:700;color:var(--text);margin-bottom:9px;letter-spacing:-.4px}
+.pl-welcome h1 em{font-style:normal;color:var(--green)}
+.pl-welcome p{font-size:12px;color:var(--muted);max-width:400px;margin:0 auto 22px;line-height:1.7}
+.pl-wf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:22px}
+.pl-wf-card{background:var(--card2);border:1px solid var(--bdr);border-radius:8px;padding:12px 10px}
+.pl-wf-icon{font-size:18px;margin-bottom:5px}
+.pl-wf-label{font-size:11px;font-weight:600;color:var(--text);margin-bottom:2px}
+.pl-wf-desc{font-size:10px;color:var(--muted);line-height:1.4}
+.pl-btn-go{display:inline-flex;align-items:center;gap:8px;background:var(--green);color:#fff;border:none;border-radius:9px;padding:10px 30px;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;box-shadow:0 2px 14px rgba(74,114,89,.28)}
+.pl-btn-go:hover{background:var(--green2);transform:translateY(-1px)}
+.pl-q-card{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:22px 20px 18px;box-shadow:var(--shadow)}
+.pl-eyebrow{font-size:10px;font-weight:600;color:var(--green2);letter-spacing:2px;text-transform:uppercase;margin-bottom:9px;display:flex;align-items:center;gap:7px}
+.pl-eyebrow::before{content:'';display:inline-block;width:14px;height:2px;background:var(--green2);border-radius:2px}
+.pl-q-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:4px;letter-spacing:-.2px;line-height:1.25}
+.pl-q-sub{font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6}
+.pl-multi-tag{display:inline-flex;align-items:center;gap:5px;background:rgba(74,114,89,.08);border:1px solid rgba(74,114,89,.18);border-radius:5px;padding:2px 8px;font-size:10px;font-weight:600;color:var(--green3);margin-bottom:12px}
+.pl-chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:7px;margin-bottom:16px}
+.pl-chip{background:var(--card2);border:1.5px solid var(--bdr);border-radius:9px;padding:10px 11px;cursor:pointer;transition:all .16s;display:flex;align-items:flex-start;gap:9px;position:relative}
+.pl-chip:hover{border-color:var(--green2);background:rgba(74,114,89,.06);transform:translateY(-1px)}
+.pl-chip.on{border-color:var(--green);background:rgba(74,114,89,.08)}
+.pl-chip.on::after{content:'✓';position:absolute;top:7px;right:9px;font-size:10px;font-weight:700;color:var(--green)}
+.pl-chip-ico{font-size:18px;line-height:1;flex-shrink:0;margin-top:1px}
+.pl-chip-lbl{font-size:12px;font-weight:600;color:var(--text)}
+.pl-chip-dsc{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.35}
+.pl-btn-row{display:flex;gap:8px;align-items:center}
+.pl-btn-next{flex:1;background:var(--green);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s}
+.pl-btn-next:hover{background:var(--green2)}
+.pl-btn-next:disabled{opacity:.35;cursor:not-allowed}
+.pl-btn-back{background:transparent;color:var(--muted);border:1px solid var(--bdr2);border-radius:8px;padding:10px 13px;font-size:12px;font-weight:500;cursor:pointer;transition:all .18s}
+.pl-btn-back:hover{color:var(--text);border-color:var(--green)}
+.pl-loading{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:46px 24px;text-align:center;box-shadow:var(--shadow)}
+.pl-spin{display:inline-block;width:42px;height:42px;margin:0 auto 18px;animation:spin 2s linear infinite}
+.pl-loading-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:5px}
+.pl-loading-sub{font-size:12px;color:var(--muted);margin-bottom:22px}
+.pl-step-list{display:inline-block;text-align:left}
+.pl-step-row{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:12px;color:var(--muted2);transition:color .4s}
+.pl-step-row.done{color:var(--green)}
+.pl-step-row.active{color:var(--text2);font-weight:500}
+.pl-step-dot{width:6px;height:6px;border-radius:50%;background:var(--card2);flex-shrink:0;transition:background .4s}
+.pl-step-row.done .pl-step-dot{background:var(--green)}
+.pl-step-row.active .pl-step-dot{background:var(--gold2);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.pl-results-hdr{text-align:center;padding:4px 0 18px}
+.pl-results-hdr h2{font-size:20px;font-weight:700;color:var(--text);margin-bottom:7px}
+.pl-results-hdr p{font-size:12px;color:var(--muted);max-width:480px;margin:0 auto;line-height:1.65}
+.pl-pills{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:18px;justify-content:center}
+.pl-pill{background:rgba(74,114,89,.08);border:1px solid rgba(74,114,89,.18);border-radius:100px;padding:3px 10px;font-size:11px;color:var(--green3);font-weight:500}
+.pl-dest{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:18px;margin-bottom:11px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.pl-dest::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),var(--gold2))}
+.pl-dest-num{position:absolute;top:11px;right:13px;font-size:32px;font-weight:700;line-height:1;color:rgba(74,114,89,.05);pointer-events:none}
+.pl-dest-top{display:flex;align-items:flex-start;gap:11px;margin-bottom:12px}
+.pl-dest-flag{font-size:30px;line-height:1;flex-shrink:0}
+.pl-dest-name{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.2px}
+.pl-dest-reg{font-size:11px;color:var(--muted);margin-top:2px}
+.pl-match-row{display:flex;align-items:center;gap:8px;margin-top:6px}
+.pl-match-lbl{font-size:10px;color:var(--muted2)}
+.pl-match-track{flex:1;height:4px;background:var(--card2);border-radius:100px;overflow:hidden}
+.pl-match-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--gold2));border-radius:100px;transition:width 1.1s cubic-bezier(.4,0,.2,1) .3s}
+.pl-match-pct{font-size:11px;font-weight:600;color:var(--green)}
+.pl-dest-why{font-size:12px;color:var(--text2);line-height:1.7;padding:11px 13px;background:var(--card2);border-radius:8px;border-left:2px solid var(--green);margin-bottom:13px}
+.pl-meta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;margin-bottom:12px}
+.pl-meta-box{background:var(--card2);border:1px solid var(--bdr);border-radius:7px;padding:8px 10px}
+.pl-meta-key{font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1.1px;margin-bottom:2px}
+.pl-meta-val{font-size:12px;font-weight:600;color:var(--text)}
+.pl-exp-head{font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1.1px;margin-bottom:6px}
+.pl-exp-tags{display:flex;flex-wrap:wrap;gap:5px}
+.pl-exp-tag{background:rgba(122,85,53,.07);border:1px solid rgba(122,85,53,.15);border-radius:5px;padding:4px 8px;font-size:11px;color:var(--earth)}
+.pl-dest-foot{display:flex;gap:7px;margin-top:13px;padding-top:13px;border-top:1px solid var(--bdr)}
+.pl-btn-save{display:flex;align-items:center;gap:5px;background:var(--card2);border:1px solid var(--bdr2);border-radius:7px;padding:7px 11px;font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .18s}
+.pl-btn-save:hover{border-color:var(--green);color:var(--green3)}
+.pl-btn-save.saved{background:rgba(74,114,89,.08);border-color:var(--green);color:var(--green3)}
+.pl-btn-plan{display:flex;align-items:center;gap:5px;background:rgba(155,116,32,.07);border:1px solid rgba(155,116,32,.2);border-radius:7px;padding:7px 11px;font-size:11px;font-weight:500;color:var(--gold);cursor:pointer;transition:all .18s}
+.pl-btn-plan:hover{background:rgba(155,116,32,.14)}
+.pl-results-foot{text-align:center;padding:26px 0}
+.pl-results-foot p{font-size:12px;color:var(--muted);margin-bottom:9px}
+.pl-btn-again{background:var(--card);border:1px solid var(--bdr2);color:var(--muted);border-radius:8px;padding:8px 20px;font-size:12px;font-weight:500;cursor:pointer;transition:all .18s}
+.pl-btn-again:hover{border-color:var(--green);color:var(--text)}
+</style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" crossorigin=""/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" crossorigin=""/>
+</head>
+<body>
+<div id="shell">
+
+<!-- ── SIDEBAR ── -->
+<div id="sb">
+  <div class="sb-logo">
+    <svg viewBox="0 0 30 30" fill="none">
+      <circle cx="15" cy="15" r="13.5" stroke="#4A7259" stroke-width=".6" opacity=".45"/>
+      <circle cx="15" cy="15" r="2.5" stroke="#4A7259" stroke-width="1" fill="none"/>
+      <g stroke="#4A7259" stroke-linecap="round" stroke-linejoin="round" stroke-width=".95">
+        <g transform="rotate(0 15 15)"><line x1="15" y1="12.5" x2="15" y2="5"/><line x1="15" y1="5" x2="13.3" y2="3.5"/><line x1="15" y1="5" x2="16.7" y2="3.5"/><line x1="13.5" y1="7.3" x2="16.5" y2="7.3"/></g>
+        <g transform="rotate(45 15 15)"><line x1="15" y1="12.5" x2="15" y2="5"/><line x1="15" y1="5" x2="16.7" y2="3.5"/><line x1="15" y1="8" x2="13.3" y2="8"/></g>
+        <g transform="rotate(90 15 15)"><line x1="15" y1="12.5" x2="15" y2="5"/><line x1="13.3" y1="5" x2="16.7" y2="5"/><line x1="15" y1="5" x2="15" y2="3.5"/></g>
+        <g transform="rotate(135 15 15)"><line x1="15" y1="12.5" x2="15" y2="5"/><line x1="15" y1="5" x2="13.3" y2="3.5"/><line x1="15" y1="8" x2="16.7" y2="8"/></g>
+        <g transform="rotate(180 15 15)"><line x1="15" y1="12.5" x2="15" y2="5"/><line x1="15" y1="5" x2="13.3" y2="3.5"/><line x1="15" y1="5" x2="16.7" y2="3.5"/></g>
+        <g transform="rotate(225 15 15)"><line x1="15" y1="12.5" x2="15" y2="5"/><line x1="15" y1="5" x2="16.7" y2="3.5"/><line x1="13.5" y1="7.5" x2="16.5" y2="7.5"/></g>
+        <g transform="rotate(270 15 15)"><line x1="15" y1="12.5" x2="15" y2="5"/><line x1="13.3" y1="5" x2="16.7" y2="5"/><line x1="15" y1="5" x2="13.3" y2="3.5"/></g>
+        <g transform="rotate(315 15 15)"><line x1="15" y1="12.5" x2="15" y2="5"/><line x1="15" y1="5" x2="13.3" y2="3.5"/><line x1="15" y1="5" x2="16.7" y2="3.5"/><line x1="13.5" y1="8" x2="16.5" y2="8"/></g>
+      </g>
+      <circle cx="15" cy="15" r="1.2" fill="#9B7420"/>
+    </svg>
+    <div>
+      <div class="sb-name">Way<em>finder</em></div>
+      <div class="sb-tag">Your Path</div>
+    </div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-sec">Main</div>
+    <button class="ni on" data-p="home"><span class="ico">🏠</span>Dashboard</button>
+    <button class="ni" data-p="map"><span class="ico">🗺️</span>World Map</button>
+    <div class="sb-sec">Explore</div>
+    <button class="ni" data-p="places"><span class="ico">📍</span>Places<span class="nb" id="b-places">0</span></button>
+    <button class="ni" data-p="wishlist"><span class="ico">♡</span>Wishlist<span class="nb" id="b-wish">0</span></button>
+    <button class="ni" data-p="planner"><span class="ico">✦</span>AI Planner</button>
+    <div class="sb-sec">Trips</div>
+    <button class="ni" data-p="trips"><span class="ico">✈️</span>Trips<span class="nb" id="b-trips">0</span></button>
+    <button class="ni" data-p="journal"><span class="ico">📓</span>Journal</button>
+    <div class="sb-sec">Life</div>
+    <button class="ni" data-p="abroad"><span class="ico">🌍</span>Living Abroad</button>
+    <div class="sb-sec">Account</div>
+    <button class="ni" data-p="settings"><span class="ico">⚙️</span>Settings</button>
+  </nav>
+  <div class="sb-foot">
+    <div class="sb-prof" onclick="go('settings')">
+      <div class="av" id="av">C</div>
+      <div><div class="pn" id="pn">Chris</div><div class="pl">& Partner</div></div>
+    </div>
+    <div id="sync-bar" style="display:none;align-items:center;justify-content:space-between;padding:5px 6px;border-top:1px solid var(--bdr);margin-top:6px">
+      <span id="sync-status" style="font-size:10px;color:var(--muted)">☁️ Synced</span>
+      <button onclick="signOut()" style="background:none;border:none;font-size:10px;color:var(--muted);cursor:pointer;padding:2px 6px;border-radius:4px;font-family:inherit;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN ── -->
+<div id="main">
+  <div id="topbar">
+    <div class="tb-title" id="tbt">Dashboard</div>
+    <div class="tb-search"><span style="font-size:12px;color:var(--muted2)">🔍</span><input id="srch" placeholder="Search places, trips…" oninput="onSearch(this.value)"/></div>
+    <button class="tb-btn" id="tba" onclick="topAct()">+ Add Place</button>
+  </div>
+  <div id="content">
+
+    <div class="page on" id="page-home"><div id="home-in"></div></div>
+    <div class="page" id="page-map"><div id="map-in"></div></div>
+
+    <div class="page" id="page-places">
+      <div class="fb" id="pfb">
+        <button class="fc on" onclick="fPlace(this,'all')">All</button>
+        <button class="fc" onclick="fPlace(this,'visited')">✅ Visited</button>
+        <button class="fc" onclick="fPlace(this,'want')">⭐ Want to Go</button>
+        <button class="fc" onclick="fPlace(this,'planned')">📅 Planned</button>
+        <button class="fc" onclick="fPlace(this,'saved')">🔖 Saved</button>
+        <button class="fc" onclick="fPlace(this,'hiking')">🥾 Hiking</button>
+        <button class="fc" onclick="fPlace(this,'camp')">⛺ Camp</button>
+        <button class="fc" onclick="fPlace(this,'food')">🍽️ Food</button>
+        <button class="fc" onclick="fPlace(this,'road-trip')">🚗 Road Trip</button>
+        <button class="fc" onclick="fPlace(this,'international')">🌍 International</button>
+      </div>
+      <div id="places-grid" class="ga"></div>
+    </div>
+
+    <div class="page" id="page-wishlist">
+      <div class="fb">
+        <button class="fc on" onclick="fWish(this,'all')">All</button>
+        <button class="fc" onclick="fWish(this,'must')">🔥 Must Do</button>
+        <button class="fc" onclick="fWish(this,'soon')">📅 Soon</button>
+        <button class="fc" onclick="fWish(this,'someday')">💭 Someday</button>
+        <button class="fc" onclick="fWish(this,'road-trip')">🚗 Road Trip</button>
+        <button class="fc" onclick="fWish(this,'international')">🌍 International</button>
+      </div>
+      <div id="wish-list"></div>
+    </div>
+
+    <div class="page" id="page-planner"><div id="planner-in"></div></div>
+
+    <div class="page" id="page-trips">
+      <div id="trips-lv">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px">
+          <div class="fb" style="margin-bottom:0">
+            <button class="fc on" onclick="fTrip(this,'all')">All</button>
+            <button class="fc" onclick="fTrip(this,'upcoming')">📅 Upcoming</button>
+            <button class="fc" onclick="fTrip(this,'past')">✅ Past</button>
+            <button class="fc" onclick="fTrip(this,'planning')">✏️ Planning</button>
+          </div>
+          <button class="tb-btn" style="background:var(--gold);font-size:11px;padding:6px 12px;gap:5px" onclick="openImport()">📄 Import from Doc</button>
+        </div>
+        <div id="trips-grid" class="ga"></div>
+      </div>
+      <div class="td-view" id="trip-dv"></div>
+    </div>
+
+    <div class="page" id="page-journal"><div id="jlist"></div></div>
+    <div class="page" id="page-abroad"><div id="abroad-in"></div></div>
+
+    <div class="page" id="page-settings">
+      <div style="max-width:480px">
+        <div class="ss"><h3>Your Profile</h3>
+          <div class="card">
+            <div class="fg"><label class="fl">Your Name</label><input class="fi" id="s-name" placeholder="Chris" oninput="setSetting('name',this.value)"/></div>
+            <div class="fg"><label class="fl">Partner's Name</label><input class="fi" id="s-partner" placeholder="Partner" oninput="setSetting('partner',this.value)"/></div>
+            <div class="fg"><label class="fl">Home City</label><input class="fi" id="s-city" placeholder="e.g. Los Angeles, CA" oninput="setSetting('homeCity',this.value)"/></div>
+            <div class="fg"><label class="fl">Traveling Together Since</label><input class="fi" id="s-since" type="number" placeholder="2020" oninput="setSetting('since',this.value)"/></div>
+            <div class="fg" style="margin-bottom:0">
+              <label class="fl">Claude API Key <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(for AI features on the web)</span></label>
+              <input class="fi" id="s-apikey" type="password" placeholder="sk-ant-api03-…" oninput="setSetting('apiKey',this.value)" autocomplete="off"/>
+              <div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.6">Get a free key at <a href="https://console.anthropic.com" target="_blank" style="color:var(--green)">console.anthropic.com</a>. Only needed when using Wayfinder outside of Cowork. Stored locally in your browser only.</div>
+            </div>
+          </div>
+        </div>
+        <div class="ss"><h3>Data</h3>
+          <div class="card">
+            <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">All data is saved locally in this browser.</p>
+            <div style="display:flex;gap:8px">
+              <button class="btn-s" onclick="exportData()" style="flex:1">📥 Export JSON</button>
+              <button class="btn-s" onclick="document.getElementById('imp').click()" style="flex:1">📤 Import JSON</button>
+              <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(event)"/>
+            </div>
+            <button class="btn-s" onclick="clearAll()" style="width:100%;margin-top:8px;border-color:rgba(160,60,60,.3);color:#b05050">⚠️ Clear All Data</button>
+          </div>
+        </div>
+        <div class="ss"><h3>About</h3>
+          <div class="card"><p style="font-size:12px;color:var(--muted);line-height:1.8"><strong style="color:var(--text)">Wayfinder</strong> — Your Personal Travel Universe<br>Phase 1 · Built with Claude<br><em style="color:var(--muted2)">The Vegvísir guides those lost in storms. May you always find your way.</em></p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ── MODALS ── -->
+
+<!-- PLACE -->
+<div class="mo" id="m-place">
+  <div class="modal">
+    <button class="mcl" onclick="closeM('m-place')">✕</button>
+    <h2 id="pm-title">Add Place</h2>
+    <div class="fg"><label class="fl">Name *</label><input class="fi" id="p-name" placeholder="e.g. Zion National Park"/></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Country</label><input class="fi" id="p-country" placeholder="United States"/></div>
+      <div class="fg"><label class="fl">State / Province</label><input class="fi" id="p-state" placeholder="Utah"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">City / Area <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(optional)</span></label><input class="fi" id="p-region" placeholder="e.g. Zion Canyon"/></div>
+      <div class="fg"><label class="fl">Category</label>
+        <select class="fs" id="p-cat">
+          <option value="nat-park">🏞️ National Park</option><option value="hiking">🥾 Hiking</option>
+          <option value="camp">⛺ Camping</option><option value="viewpoint">🌄 Viewpoint</option>
+          <option value="swim">💧 Swimming Hole</option><option value="food">🍽️ Food</option>
+          <option value="accommodation">🏨 Stay</option><option value="city">🏙️ City</option>
+          <option value="road-trip">🚗 Road Trip</option><option value="international">🌍 International</option>
+          <option value="hidden-gem">💎 Hidden Gem</option><option value="other">📍 Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Status</label>
+        <select class="fs" id="p-status">
+          <option value="saved">🔖 Saved</option><option value="want">⭐ Want to Go</option>
+          <option value="planned">📅 Planned</option><option value="visited">✅ Visited</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Found via</label>
+        <select class="fs" id="p-src">
+          <option value="">—</option><option value="youtube">▶️ YouTube</option>
+          <option value="instagram">📸 Instagram</option><option value="google">🔍 Google</option>
+          <option value="blog">📝 Blog</option><option value="friend">🗣️ Friend</option>
+          <option value="maps">🗺️ Maps</option><option value="alltrails">🥾 AllTrails</option>
+          <option value="own">✨ We found it</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="p-notes" placeholder="Why this place? Any tips or memories…"></textarea></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Tags (comma separated)</label><input class="fi" id="p-tags" placeholder="sierra, backpacking…"/></div>
+      <div class="fg"><label class="fl">Rating</label>
+        <select class="fs" id="p-rating">
+          <option value="">—</option><option value="5">⭐⭐⭐⭐⭐ Life-changing</option>
+          <option value="4">⭐⭐⭐⭐ Excellent</option><option value="3">⭐⭐⭐ Good</option>
+          <option value="2">⭐⭐ OK</option><option value="1">⭐ Skip it</option>
+        </select>
+      </div>
+    </div>
+    <div class="fa"><button class="btn-s" onclick="closeM('m-place')">Cancel</button><button class="btn-p" onclick="savePlace()">Save Place</button></div>
+  </div>
+</div>
+
+<!-- TRIP -->
+<div class="mo" id="m-trip">
+  <div class="modal">
+    <button class="mcl" onclick="closeM('m-trip')">✕</button>
+    <h2>New Trip</h2>
+    <div class="fg"><label class="fl">Trip Name *</label><input class="fi" id="t-name" placeholder="e.g. Sierra High Route 2026"/></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Start Date</label><input class="fi" id="t-start" type="date"/></div>
+      <div class="fg"><label class="fl">End Date</label><input class="fi" id="t-end" type="date"/></div>
+    </div>
+    <div class="fg"><label class="fl">Destinations (comma separated)</label><input class="fi" id="t-dests" placeholder="Yosemite, Mammoth, Bishop"/></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Type</label>
+        <select class="fs" id="t-type">
+          <option value="road-trip">🚗 Road Trip</option><option value="backpacking">🎒 Backpacking</option>
+          <option value="international">🌍 International</option><option value="city">🏙️ City Break</option>
+          <option value="beach">🌊 Beach</option><option value="ski">⛷️ Ski</option><option value="other">✈️ Other</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Status</label>
+        <select class="fs" id="t-status">
+          <option value="planning">✏️ Planning</option><option value="upcoming">📅 Booked</option>
+          <option value="active">🚀 Active</option><option value="past">✅ Past</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Budget ($)</label><input class="fi" id="t-budget" type="number" placeholder="2500"/></div>
+      <div class="fg"></div>
+    </div>
+    <div class="fg" style="margin-bottom:0"><label class="fl">Notes</label><textarea class="ft" id="t-notes" placeholder="Inspiration, goals, ideas…"></textarea></div>
+    <div class="fa"><button class="btn-s" onclick="closeM('m-trip')">Cancel</button><button class="btn-p" onclick="saveTrip()">Create Trip</button></div>
+  </div>
+</div>
+
+<!-- WISH -->
+<div class="mo" id="m-wish">
+  <div class="modal">
+    <button class="mcl" onclick="closeM('m-wish')">✕</button>
+    <h2>Add to Wishlist</h2>
+    <div class="fg"><label class="fl">Destination / Experience *</label><input class="fi" id="w-name" placeholder="e.g. Japan Cherry Blossom"/></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Type</label>
+        <select class="fs" id="w-type">
+          <option value="international">🌍 International</option><option value="road-trip">🚗 Road Trip</option>
+          <option value="hiking">🥾 Hiking</option><option value="city">🏙️ City</option>
+          <option value="beach">🌊 Beach</option><option value="experience">✨ Experience</option><option value="other">📍 Other</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Priority</label>
+        <select class="fs" id="w-pri">
+          <option value="must">🔥 Must Do</option><option value="soon">📅 Soon</option><option value="someday">💭 Someday</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Best Season</label>
+        <select class="fs" id="w-season">
+          <option value="">Any time</option><option value="spring">🌸 Spring</option>
+          <option value="summer">☀️ Summer</option><option value="fall">🍂 Fall</option><option value="winter">❄️ Winter</option>
+        </select>
+      </div>
+      <div class="fg"></div>
+    </div>
+    <div class="fg" style="margin-bottom:0"><label class="fl">Notes</label><textarea class="ft" id="w-notes" placeholder="Why does this call to you?"></textarea></div>
+    <div class="fa"><button class="btn-s" onclick="closeM('m-wish')">Cancel</button><button class="btn-p" onclick="saveWish()">Add</button></div>
+  </div>
+</div>
+
+<!-- JOURNAL -->
+<div class="mo" id="m-journal">
+  <div class="modal">
+    <button class="mcl" onclick="closeM('m-journal')">✕</button>
+    <h2>New Journal Entry</h2>
+    <div class="fr">
+      <div class="fg"><label class="fl">Date</label><input class="fi" id="j-date" type="date"/></div>
+      <div class="fg"><label class="fl">Trip</label><select class="fs" id="j-trip"><option value="">— Not linked —</option></select></div>
+    </div>
+    <div class="fg"><label class="fl">Link to Place <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(optional)</span></label><select class="fs" id="j-place"><option value="">— No specific place —</option></select></div>
+    <div class="fg"><label class="fl">Title</label><input class="fi" id="j-title" placeholder="e.g. Day 3 — The Narrows"/></div>
+    <div class="fg"><label class="fl">Location</label><input class="fi" id="j-loc" placeholder="e.g. Zion National Park, Utah"/></div>
+    <div class="fg" style="margin-bottom:0"><label class="fl">Entry</label><textarea class="ft" id="j-body" style="min-height:110px" placeholder="What happened? What did you feel? What will you never forget?"></textarea></div>
+    <div class="fa"><button class="btn-s" onclick="closeM('m-journal')">Cancel</button><button class="btn-p" onclick="saveJournal()">Save Entry</button></div>
+  </div>
+</div>
+
+<!-- STOP -->
+<div class="mo" id="m-stop">
+  <div class="modal">
+    <button class="mcl" onclick="closeM('m-stop')">✕</button>
+    <h2>Add Stop</h2>
+    <div class="fg"><label class="fl">Link to Saved Place <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(optional)</span></label><select class="fs" id="st-place"><option value="">— New stop, no place link —</option></select></div>
+    <div class="fg"><label class="fl">Stop / Activity *</label><input class="fi" id="st-name" placeholder="e.g. Angels Landing hike"/></div>
+    <div class="fg" style="margin-bottom:0"><label class="fl">Notes</label><input class="fi" id="st-note" placeholder="Timing, reservations, tips…"/></div>
+    <div class="fa"><button class="btn-s" onclick="closeM('m-stop')">Cancel</button><button class="btn-p" onclick="saveStop()">Add Stop</button></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     GOOGLE DOC IMPORT MODAL
+════════════════════════════════════════ -->
+<div class="mo" id="m-import">
+  <div class="modal" style="width:560px">
+    <button class="mcl" onclick="closeImport()">✕</button>
+    <h2>📄 Import Past Trip from Doc</h2>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.7">Upload a Google Doc (exported as <strong>.txt</strong>) or paste the text below. Wayfinder will read it and automatically create the trip, visited places, and journal entries.</p>
+
+    <div style="background:rgba(155,116,32,.07);border:1px solid rgba(155,116,32,.2);border-radius:8px;padding:10px 13px;margin-bottom:16px;font-size:11px;color:var(--gold);line-height:1.6">
+      <strong>Supported formats:</strong> PDF, or Google Doc exported as File → Download → Plain Text (.txt)
+    </div>
+
+    <div id="import-step1">
+      <!-- File upload — label wrapping the input is the most reliable approach in iframes -->
+      <label for="doc-file" style="display:flex;align-items:center;gap:10px;background:var(--card2);border:1px solid var(--bdr2);border-radius:8px;padding:12px 14px;cursor:pointer;transition:border-color .15s;margin-bottom:4px" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor=''">
+        <span style="font-size:20px">📂</span>
+        <div>
+          <div style="font-size:13px;font-weight:500;color:var(--text)">Choose a file</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:1px">PDF, .txt, or .md</div>
+        </div>
+        <input type="file" id="doc-file" accept=".txt,.md,.text,.pdf" onchange="handleFile(event)" style="display:none"/>
+      </label>
+      <div id="file-status" style="font-size:11px;color:var(--muted);padding:3px 4px;min-height:18px"></div>
+
+      <div class="import-or" style="margin:12px 0">or paste text directly</div>
+
+      <textarea class="ft" id="doc-paste" style="min-height:110px;font-size:12px" placeholder="Paste your trip notes, Google Doc text, or journal here…" oninput="updateCharCount()"></textarea>
+      <div id="char-count" style="font-size:11px;color:var(--muted2);text-align:right;margin-top:3px"></div>
+
+      <!-- Visible error box -->
+      <div id="import-error" style="display:none;background:rgba(160,60,60,.08);border:1px solid rgba(160,60,60,.25);border-radius:7px;padding:10px 12px;font-size:12px;color:#a04040;margin-top:10px;line-height:1.5"></div>
+
+      <div class="fa" style="margin-top:14px">
+        <button class="btn-s" onclick="closeImport()">Cancel</button>
+        <button class="btn-p" onclick="analyzeDoc()">✦ Analyze with AI</button>
+      </div>
+    </div>
+
+    <div id="import-step2" style="display:none">
+      <div id="import-loading" class="loading-ai">
+        <div class="spin"></div>
+        <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:4px">Reading your trip…</div>
+        <div style="font-size:11px;color:var(--muted)">Claude is extracting places, dates, and memories</div>
+      </div>
+      <div id="import-preview" style="display:none">
+        <div class="ai-preview" id="preview-content"></div>
+        <div class="fa" style="margin-top:14px">
+          <button class="btn-s" onclick="resetImport()">← Start Over</button>
+          <button class="btn-p" onclick="confirmImport()">✦ Import into Wayfinder</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── AUTH OVERLAY ── -->
+<div id="auth-overlay">
+  <div class="auth-card">
+    <svg width="44" height="44" viewBox="0 0 30 30" fill="none" style="margin:0 auto 14px;display:block">
+      <circle cx="15" cy="15" r="13.5" stroke="#4A7259" stroke-width=".6" opacity=".45"/>
+      <circle cx="15" cy="15" r="2.5" stroke="#4A7259" stroke-width="1" fill="none"/>
+      <g stroke="#4A7259" stroke-linecap="round" stroke-linejoin="round" stroke-width=".95">
+        <g transform="rotate(0 15 15)"><line x1="15" y1="12.5" x2="15" y2="5"/><line x1="15" y1="5" x2="13.3" y2="3.5"/><line x1="15" y1="5" x2="16.7" y2="3.5"/><line x1="13.5" y1="7.3" x2="16.5" y2="7.3"/></g>
+        <g transform="rotate(90 15 15)"><line x1="15" y1="12.5" x2="15" y2="5"/><line x1="13.3" y1="5" x2="16.7" y2="5"/><line x1="15" y1="5" x2="15" y2="3.5"/></g>
+        <g transform="rotate(180 15 15)"><line x1="15" y1="12.5" x2="15" y2="5"/><line x1="15" y1="5" x2="13.3" y2="3.5"/><line x1="15" y1="5" x2="16.7" y2="3.5"/></g>
+        <g transform="rotate(270 15 15)"><line x1="15" y1="12.5" x2="15" y2="5"/><line x1="13.3" y1="5" x2="16.7" y2="5"/><line x1="15" y1="5" x2="13.3" y2="3.5"/></g>
+      </g>
+      <circle cx="15" cy="15" r="1.2" fill="#9B7420"/>
+    </svg>
+    <div class="auth-h">Way<em>finder</em></div>
+    <p class="auth-sub">Your personal travel universe.<br>Sign in to sync your places, trips, and memories across all devices.</p>
+    <button class="btn-google" onclick="signInGoogle()">
+      <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+        <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/>
+        <path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+        <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+      </svg>
+      Continue with Google
+    </button>
+    <div class="auth-note">Private &amp; secure. Only you can see your data.</div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════
+const K={places:'wf_places',trips:'wf_trips',wish:'wf_wishlist',journal:'wf_journal',settings:'wf_settings'};
+function load(){return{places:JSON.parse(localStorage.getItem(K.places)||'[]'),trips:JSON.parse(localStorage.getItem(K.trips)||'[]'),wish:JSON.parse(localStorage.getItem(K.wish)||'[]'),journal:JSON.parse(localStorage.getItem(K.journal)||'[]'),settings:JSON.parse(localStorage.getItem(K.settings)||'{"name":"Chris","partner":"Partner","homeCity":"","since":"2020"}')}}
+function save(k,d){localStorage.setItem(K[k],JSON.stringify(d));scheduledSync(k,d);}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
+let D=load();
+
+// ══════════════════════════════════════════════
+// SUPABASE — Auth + Cloud Sync
+// ══════════════════════════════════════════════
+const SUPA=supabase.createClient(
+  'https://fkfwjbdnezvwtjzenxgo.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZrZndqYmRuZXp2d3RqemVueGdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2ODA0MjAsImV4cCI6MjA5NjI1NjQyMH0.mS66UY7MaaxKRBLkqrJicgnxlXwLgbawEmb5B-eF_bQ'
+);
+let currentUser=null, syncTimer=null;
+
+function signInGoogle(){
+  SUPA.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.href.split('#')[0]}});
+}
+async function signOut(){
+  await SUPA.auth.signOut();
+  currentUser=null;
+  document.getElementById('auth-overlay').style.display='flex';
+  document.getElementById('sync-bar').style.display='none';
+}
+function setSyncStatus(msg){const el=document.getElementById('sync-status');if(el)el.textContent=msg}
+function showSyncBar(){document.getElementById('sync-bar').style.display='flex'}
+function stripRow({user_id,created_at,updated_at,...rest}){return rest}
+
+async function loadFromCloud(){
+  if(!currentUser)return;
+  const uid=currentUser.id;
+  setSyncStatus('⏳ Loading…');
+  try{
+    const[p,t,w,j,s]=await Promise.all([
+      SUPA.from('wf_places').select('*').eq('user_id',uid),
+      SUPA.from('wf_trips').select('*').eq('user_id',uid),
+      SUPA.from('wf_wish').select('*').eq('user_id',uid),
+      SUPA.from('wf_journal').select('*').eq('user_id',uid),
+      SUPA.from('wf_settings').select('*').eq('user_id',uid).maybeSingle(),
+    ]);
+    const hasCloud=p.data?.length||t.data?.length||w.data?.length||j.data?.length;
+    const hasLocal=D.places.length||D.trips.length||D.wish.length;
+    if(!hasCloud&&hasLocal){
+      setSyncStatus('⬆️ Uploading…');
+      await Promise.all([
+        cloudPush('places',D.places),cloudPush('trips',D.trips),
+        cloudPush('wish',D.wish),cloudPush('journal',D.journal),
+        cloudPushSettings(D.settings),
+      ]);
+      toast('☁️ Data synced to your account!');
+    } else {
+      if(p.data?.length)localStorage.setItem(K.places,JSON.stringify(p.data.map(stripRow)));
+      if(t.data?.length)localStorage.setItem(K.trips,JSON.stringify(t.data.map(stripRow)));
+      if(w.data?.length)localStorage.setItem(K.wish,JSON.stringify(w.data.map(stripRow)));
+      if(j.data?.length)localStorage.setItem(K.journal,JSON.stringify(j.data.map(stripRow)));
+      if(s.data)localStorage.setItem(K.settings,JSON.stringify(stripRow(s.data)));
+      D=load();
+    }
+    setSyncStatus('☁️ Synced');
+    loadSettings();rHome();badges();
+  }catch(e){
+    console.warn('Cloud load error:',e);
+    setSyncStatus('⚠️ Offline');
+    loadSettings();rHome();badges();
+  }
+}
+
+async function cloudPush(collection,items){
+  if(!currentUser||!items)return;
+  const rows=items.map(item=>({...item,user_id:currentUser.id}));
+  await SUPA.from('wf_'+collection).delete().eq('user_id',currentUser.id);
+  if(rows.length)await SUPA.from('wf_'+collection).insert(rows);
+}
+async function cloudPushSettings(cfg){
+  if(!currentUser)return;
+  await SUPA.from('wf_settings').upsert({user_id:currentUser.id,...cfg,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+}
+
+function scheduledSync(k,items){
+  if(!currentUser)return;
+  clearTimeout(syncTimer);
+  setSyncStatus('✏️ Unsaved');
+  syncTimer=setTimeout(async()=>{
+    setSyncStatus('⬆️ Saving…');
+    try{
+      if(k==='settings')await cloudPushSettings(items);
+      else await cloudPush(k,items);
+      setSyncStatus('☁️ Synced');
+    }catch(e){console.warn('Sync failed:',e);setSyncStatus('⚠️ Sync failed');}
+  },2000);
+}
+
+SUPA.auth.onAuthStateChange(async(event,session)=>{
+  if(session?.user){
+    currentUser=session.user;
+    document.getElementById('auth-overlay').style.display='none';
+    showSyncBar();
+    // Update avatar with Google name
+    const gname=session.user.user_metadata?.full_name||session.user.email||'';
+    const first=gname.split(' ')[0]||'You';
+    if(!D.settings.name||D.settings.name==='Chris'){
+      document.getElementById('pn').textContent=first;
+      document.getElementById('av').textContent=first[0].toUpperCase();
+    }
+    if(event==='SIGNED_IN'||event==='INITIAL_SESSION')await loadFromCloud();
+  }else{
+    currentUser=null;
+    document.getElementById('auth-overlay').style.display='flex';
+    document.getElementById('sync-bar').style.display='none';
+  }
+});
+
+// ── Schema migration: add new link fields to existing records ──
+function migrate(){
+  let cp=false,ct=false,cj=false,cw=false;
+  D.places.forEach(p=>{
+    if(!p.tripIds){p.tripIds=[];cp=true}
+    if(!p.journalIds){p.journalIds=[];cp=true}
+    if(!p.photos){p.photos=[];cp=true}
+    if(!('country' in p)){p.country='';cp=true}
+    if(!('usState' in p)){p.usState='';cp=true}
+  });
+  if(cp)save('places',D.places);
+  D.trips.forEach(t=>{
+    (t.itinerary||[]).forEach(day=>(day.stops||[]).forEach(s=>{
+      if(!('placeId' in s)){s.placeId='';ct=true}
+    }));
+  });
+  if(ct)save('trips',D.trips);
+  D.journal.forEach(j=>{if(!('placeId' in j)){j.placeId='';cj=true}});
+  if(cj)save('journal',D.journal);
+  D.wish.forEach(w=>{
+    if(!('tripId' in w)){w.tripId='';cw=true}
+    if(!('graduated' in w)){w.graduated=false;cw=true}
+  });
+  if(cw)save('wish',D.wish);
+}
+try { migrate(); } catch(e) { console.error('migrate() failed:', e); }
+
+// ══════════════════════════════════════════════
+// ROUTING
+// ══════════════════════════════════════════════
+const TITLES={home:'Dashboard',map:'World Map',places:'Places',wishlist:'Wishlist',planner:'AI Planner',trips:'Trips',journal:'Journal',abroad:'Living Abroad',settings:'Settings'};
+const ACTS={home:{l:'+ Add Place',f:'openPlace'},places:{l:'+ Add Place',f:'openPlace'},wishlist:{l:'+ Add to Wishlist',f:'openWish'},planner:{l:'',f:''},trips:{l:'+ New Trip',f:'openTrip'},journal:{l:'+ New Entry',f:'openJournal'},map:{l:'+ Add Place',f:'openPlace'},abroad:{l:'',f:''},settings:{l:'',f:''}};
+let cur='home';
+function go(p){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.ni').forEach(x=>x.classList.remove('on'));
+  document.getElementById('page-'+p).classList.add('on');
+  document.querySelector('[data-p="'+p+'"]')?.classList.add('on');
+  document.getElementById('tbt').textContent=TITLES[p]||p;
+  const a=ACTS[p],btn=document.getElementById('tba');
+  btn.textContent=a?.l||'';btn.style.display=a?.l?'flex':'none';
+  cur=p;
+  if(p==='home')rHome();if(p==='places')rPlaces();if(p==='wishlist')rWish();
+  if(p==='planner')rPlanner();
+  if(p==='trips')rTrips();if(p==='journal')rJournal();if(p==='map')rMap();
+  if(p==='abroad')rAbroad();badges();
+}
+document.querySelectorAll('.ni').forEach(b=>b.addEventListener('click',()=>go(b.dataset.p)));
+function topAct(){const a=ACTS[cur];if(a?.f)window[a.f]?.()}
+
+// ══════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════
+let tt;function toast(m){const e=document.getElementById('toast');e.textContent=m;e.style.display='block';clearTimeout(tt);tt=setTimeout(()=>e.style.display='none',2600)}
+
+// ══════════════════════════════════════════════
+// MODALS
+// ══════════════════════════════════════════════
+function openM(id){document.getElementById(id).classList.add('on')}
+function closeM(id){document.getElementById(id).classList.remove('on')}
+document.querySelectorAll('.mo').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('on')}));
+
+// ══════════════════════════════════════════════
+// BADGES
+// ══════════════════════════════════════════════
+function badges(){D=load();document.getElementById('b-places').textContent=D.places.length;document.getElementById('b-trips').textContent=D.trips.length;document.getElementById('b-wish').textContent=D.wish.length}
+
+// ══════════════════════════════════════════════
+// HOME
+// ══════════════════════════════════════════════
+function rHome(){
+  D=load();
+  const vis=D.places.filter(p=>p.status==='visited').length;
+  const up=D.trips.filter(t=>t.status==='upcoming'||t.status==='planning').sort((a,b)=>new Date(a.startDate)-new Date(b.startDate));
+  const next=up[0];
+  const days=next?Math.ceil((new Date(next.startDate)-new Date())/86400000):null;
+  const recent=[...D.places].sort((a,b)=>b.addedAt-a.addedAt).slice(0,5);
+  const cdHTML=next?`<div class="cdwn"><div class="cdn">${days>0?days:'🚀'}</div><div class="cdl">${days>0?'days until next trip':'happening now!'}</div><div class="cdt">${next.name}</div><div class="cdd">${fd(next.startDate)} — ${fd(next.endDate)}</div></div>`
+    :`<div class="cdwn" style="text-align:center;cursor:pointer" onclick="openTrip()"><div style="font-size:26px;margin-bottom:8px">✈️</div><div style="font-size:13px;font-weight:500;color:var(--text2)">No trips planned yet</div><div style="font-size:11px;color:var(--muted);margin-top:3px">Tap to create your first →</div></div>`;
+  const recHTML=recent.length?recent.map(p=>`<div class="ai"><div class="ai-icon">${ci(p.category)}</div><div style="flex:1"><div class="ai-text"><strong>${p.name}</strong> — ${p.region||'—'}</div><div class="ai-time">${sl(p.status)}</div></div><span class="tag ${stc(p.status)}">${sl(p.status)}</span></div>`).join('')
+    :`<div style="text-align:center;padding:20px;color:var(--muted2);font-size:12px">No places yet — add some above ↑</div>`;
+  document.getElementById('home-in').innerHTML=`
+  <div style="margin-bottom:16px"><div style="font-size:18px;font-weight:600;color:var(--text);letter-spacing:-.3px">Welcome back, ${D.settings.name} 👋</div><div style="font-size:11px;color:var(--muted);margin-top:3px">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}</div></div>
+  <div class="g4" style="margin-bottom:13px">
+    <div class="sc" style="--accent:var(--green2)"><div class="si">📍</div><div class="sn">${D.places.length}</div><div class="sl">Places Saved</div></div>
+    <div class="sc" style="--accent:var(--sage)"><div class="si">✅</div><div class="sn">${vis}</div><div class="sl">Visited</div></div>
+    <div class="sc" style="--accent:var(--gold)"><div class="si">✈️</div><div class="sn">${D.trips.length}</div><div class="sl">Trips</div></div>
+    <div class="sc" style="--accent:var(--earth2)"><div class="si">♡</div><div class="sn">${D.wish.length}</div><div class="sl">Wishlist</div></div>
+  </div>
+  <div class="g2" style="margin-bottom:13px">
+    ${cdHTML}
+    <div class="card"><div class="ch"><div class="ct">Quick Add</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px"><button class="tb-btn" onclick="openPlace()" style="justify-content:center;font-size:11px">📍 Place</button><button class="tb-btn gold" onclick="openTrip()" style="justify-content:center;font-size:11px">✈️ Trip</button><button class="tb-btn" style="background:var(--card2);border:1px solid var(--bdr2);color:var(--text2);justify-content:center;font-size:11px" onclick="openWish()">♡ Wishlist</button><button class="tb-btn" style="background:var(--card2);border:1px solid var(--bdr2);color:var(--text2);justify-content:center;font-size:11px" onclick="openJournal()">📓 Journal</button></div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ch"><div><div class="ct">Recently Saved</div><div class="cs">Latest places</div></div><button class="pbtn" onclick="go('places')">All →</button></div>${recHTML}</div>
+    <div class="card"><div class="ch"><div><div class="ct">Top Wishlist</div><div class="cs">Where you want to go</div></div><button class="pbtn" onclick="go('wishlist')">All →</button></div>${D.wish.slice(0,4).map(w=>`<div class="ai"><div class="ai-icon">${pi(w.priority)}</div><div style="flex:1"><div class="ai-text"><strong>${w.name}</strong></div><div class="ai-time">${w.type}${w.season?' · '+w.season:''}</div></div></div>`).join('')||'<div style="text-align:center;padding:20px;color:var(--muted2);font-size:12px">Wishlist is empty</div>'}</div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════
+// MAP
+// ══════════════════════════════════════════════
+const US_STATES=['Alabama','Alaska','Arizona','Arkansas','California','Colorado','Connecticut','Delaware','Florida','Georgia','Hawaii','Idaho','Illinois','Indiana','Iowa','Kansas','Kentucky','Louisiana','Maine','Maryland','Massachusetts','Michigan','Minnesota','Mississippi','Missouri','Montana','Nebraska','Nevada','New Hampshire','New Jersey','New Mexico','New York','North Carolina','North Dakota','Ohio','Oklahoma','Oregon','Pennsylvania','Rhode Island','South Carolina','South Dakota','Tennessee','Texas','Utah','Vermont','Virginia','Washington','West Virginia','Wisconsin','Wyoming'];
+const CONTINENTS={'North America':['United States','Canada','Mexico','Cuba','Costa Rica','Panama','Guatemala','Honduras','Jamaica','Dominican Republic','Belize','El Salvador','Nicaragua'],'South America':['Brazil','Argentina','Peru','Colombia','Chile','Ecuador','Bolivia','Uruguay','Venezuela','Paraguay'],'Europe':['France','Italy','Spain','Germany','United Kingdom','Portugal','Greece','Switzerland','Austria','Netherlands','Belgium','Sweden','Norway','Denmark','Finland','Iceland','Ireland','Poland','Czech Republic','Hungary','Croatia','Slovenia','Romania','Bulgaria','Serbia','Montenegro','Albania','Estonia','Latvia','Lithuania','Malta','Cyprus','Luxembourg'],'Asia':['Japan','Thailand','Vietnam','Indonesia','Philippines','Singapore','Malaysia','Cambodia','Myanmar','Laos','South Korea','China','Taiwan','Hong Kong','India','Nepal','Sri Lanka','Maldives','Bangladesh','Bhutan'],'Middle East':['Turkey','Israel','Jordan','United Arab Emirates','Oman','Qatar','Bahrain','Kuwait','Saudi Arabia','Lebanon','Egypt','Morocco','Tunisia','Algeria'],'Africa':['South Africa','Kenya','Tanzania','Ethiopia','Ghana','Rwanda','Uganda','Namibia','Botswana','Zimbabwe','Senegal','Madagascar','Morocco'],'Oceania':['Australia','New Zealand','Fiji','French Polynesia']};
+
+let mCharts=null;
+
+// ── Interactive Map ──────────────────────────────
+let leafletMap=null,mapLayer_c=null,mapLayer_s=null,mapLayer_p=null;
+let mapFilter='all',mapViewMode='world',geoWorld=null,geoUSStates=null;
+const MAP_COLORS={visited:'#4A7259',want:'#9B7420',planned:'#4A7EBA',saved:'#8A7D6E',wishlist:'#B05080'};
+
+function rMap(){
+  D=load();
+  document.getElementById('map-in').innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+      <div class="fb" id="map-fb" style="margin-bottom:0;flex-wrap:wrap">
+        <button class="fc on" onclick="mapSetFilter(this,'all')">All Places</button>
+        <button class="fc" onclick="mapSetFilter(this,'visited')">✅ Visited</button>
+        <button class="fc" onclick="mapSetFilter(this,'want')">⭐ Want to Go</button>
+        <button class="fc" onclick="mapSetFilter(this,'planned')">📅 Planned</button>
+        <button class="fc" onclick="mapSetFilter(this,'saved')">🔖 Saved</button>
+        <button class="fc" onclick="mapSetFilter(this,'wishlist')">♡ Wishlist</button>
+      </div>
+      <div class="fb" id="map-vb" style="margin-bottom:0">
+        <button class="fc on" onclick="mapSetView(this,'world')">🌍 World</button>
+        <button class="fc" onclick="mapSetView(this,'us')">🇺🇸 United States</button>
+      </div>
+    </div>
+    <div id="the-map" style="height:calc(100vh - 270px);min-height:420px;border-radius:var(--r);overflow:hidden;border:1px solid var(--bdr);box-shadow:var(--shadow)"></div>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;padding:9px 2px;align-items:center">
+      ${Object.entries(MAP_COLORS).map(([k,c])=>`<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:10px;height:10px;border-radius:50%;background:${c};border:1.5px solid #fff;box-shadow:0 0 0 1px ${c}40"></div>${k==='wishlist'?'Wishlist':sl(k)}</div>`).join('')}
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:14px;height:9px;background:rgba(74,114,89,.3);border:1.5px solid #4A7259;border-radius:2px"></div>Visited</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:14px;height:9px;background:rgba(155,116,32,.2);border:1.5px solid #9B7420;border-radius:2px"></div>Want to Go</div>
+    </div>
+    <div class="g4" id="map-stats-row" style="margin-top:6px"></div>
+  `;
+  if(leafletMap){leafletMap.remove();leafletMap=null;mapLayer_c=null;mapLayer_s=null;mapLayer_p=null;}
+  leafletMap=L.map('the-map',{center:[20,0],zoom:2});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© <a href="https://openstreetmap.org" target="_blank">OpenStreetMap</a>',maxZoom:19}).addTo(leafletMap);
+  mapRenderStats();
+  mapInit();
+}
+
+async function mapInit(){
+  await Promise.all([mapLoadWorld(),mapLoadStates()]);
+  mapRenderCountries();mapRenderStates();mapRenderPins();
+}
+async function mapLoadWorld(){
+  if(geoWorld)return;
+  try{const r=await fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson');geoWorld=await r.json();}catch(e){console.warn('World geo failed',e);}
+}
+async function mapLoadStates(){
+  if(geoUSStates)return;
+  try{const r=await fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json');geoUSStates=await r.json();}catch(e){console.warn('States geo failed',e);}
+}
+function mapGeoToName(raw){
+  const m={'United States of America':'United States','Russian Federation':'Russia','Republic of Korea':'South Korea',"Democratic People's Republic of Korea":'North Korea','Czechia':'Czech Republic','Viet Nam':'Vietnam','Islamic Republic of Iran':'Iran','Syrian Arab Republic':'Syria','Bolivia (Plurinational State of)':'Bolivia','Venezuela (Bolivarian Republic of)':'Venezuela','United Republic of Tanzania':'Tanzania',"Côte d'Ivoire":'Ivory Coast','Taiwan, Province of China':'Taiwan'};
+  return m[raw]||raw;
+}
+function mapRenderCountries(){
+  if(mapLayer_c){mapLayer_c.remove();mapLayer_c=null;}
+  if(!geoWorld||!leafletMap)return;
+  const vis=new Set(D.places.filter(p=>p.status==='visited').map(p=>normCountry(p.country)).filter(Boolean));
+  const want=new Set(D.places.filter(p=>p.status==='want'||p.status==='planned').map(p=>normCountry(p.country)).filter(Boolean));
+  mapLayer_c=L.geoJSON(geoWorld,{
+    style:f=>{const raw=f.properties.ADMIN||'';const n=mapGeoToName(raw);const v=vis.has(n)||vis.has(raw);const w=!v&&(want.has(n)||want.has(raw));return{fillColor:v?'#4A7259':w?'#9B7420':'#888',fillOpacity:v?0.35:w?0.15:0,color:v?'#3D5E49':w?'#7A5520':'#bbb',weight:v?1.5:0.4,opacity:v?0.8:0.3};},
+    onEachFeature:(f,layer)=>{
+      const raw=f.properties.ADMIN||'';const n=mapGeoToName(raw);
+      const ps=D.places.filter(p=>{const c=normCountry(p.country);return c===n||c===raw;});
+      const tip=`<strong>${raw}</strong>${ps.length?`<br>${ps.filter(p=>p.status==='visited').length} visited · ${ps.length} total`:''}`;
+      layer.bindTooltip(tip,{sticky:true});
+      layer.on('click',()=>{try{leafletMap.fitBounds(layer.getBounds(),{padding:[30,30],maxZoom:7});}catch(e){}});
+    }
+  }).addTo(leafletMap);
+}
+function mapRenderStates(){
+  if(mapLayer_s){mapLayer_s.remove();mapLayer_s=null;}
+  if(!geoUSStates||!leafletMap)return;
+  const vis=new Set(D.places.filter(p=>normCountry(p.country)==='United States'&&p.status==='visited').map(p=>p.usState).filter(Boolean));
+  const want=new Set(D.places.filter(p=>normCountry(p.country)==='United States'&&p.status!=='visited').map(p=>p.usState).filter(Boolean));
+  mapLayer_s=L.geoJSON(geoUSStates,{
+    style:f=>{const n=f.properties.name||'';const v=vis.has(n);const w=!v&&want.has(n);return{fillColor:v?'#4A7259':w?'#9B7420':'transparent',fillOpacity:v?0.4:w?0.2:0,color:v?'#3D5E49':w?'#7A5520':'#aaa',weight:v?1.5:0.5,opacity:mapViewMode==='us'?0.8:0.4};},
+    onEachFeature:(f,layer)=>{
+      const n=f.properties.name||'';
+      const ps=D.places.filter(p=>p.usState===n&&normCountry(p.country)==='United States');
+      layer.bindTooltip(`<strong>${n}</strong>${ps.length?`<br>${ps.filter(p=>p.status==='visited').length} visited · ${ps.length} total`:''}`,{sticky:true});
+      layer.on('click',()=>{try{leafletMap.fitBounds(layer.getBounds(),{padding:[20,20]});}catch(e){}});
+    }
+  }).addTo(leafletMap);
+}
+function mapSetFilter(btn,f){document.querySelectorAll('#map-fb .fc').forEach(x=>x.classList.remove('on'));btn.classList.add('on');mapFilter=f;mapRenderPins();}
+function mapSetView(btn,v){document.querySelectorAll('#map-vb .fc').forEach(x=>x.classList.remove('on'));btn.classList.add('on');mapViewMode=v;if(v==='world')leafletMap.setView([20,0],2);else leafletMap.setView([39.5,-98.35],4);mapRenderStates();}
+async function mapRenderPins(){
+  if(mapLayer_p){mapLayer_p.remove();mapLayer_p=null;}
+  if(!leafletMap)return;
+  mapLayer_p=L.markerClusterGroup({maxClusterRadius:50,showCoverageOnHover:false,spiderfyOnMaxZoom:true});
+  const items=mapFilter==='wishlist'?D.wish.map(w=>({_wish:true,name:w.name,notes:w.notes||'',status:'wishlist',type:w.type,usState:'',country:'',region:'',rating:''})):(mapFilter==='all'?D.places:D.places.filter(p=>p.status===mapFilter));
+  const cache=JSON.parse(localStorage.getItem('wf_geocache')||'{}');
+  const toGeo=[];
+  items.forEach(item=>{const k=mapCacheKey(item);if(cache[k])mapAddPin(item,cache[k]);else toGeo.push(item);});
+  mapLayer_p.addTo(leafletMap);
+  for(let i=0;i<toGeo.length;i++){
+    const coords=await mapGeocode(toGeo[i]);
+    if(coords&&mapLayer_p)mapAddPin(toGeo[i],coords);
+    if(i<toGeo.length-1)await new Promise(r=>setTimeout(r,1100));
+  }
+}
+function mapCacheKey(item){return item._wish?'wish:'+item.name:[item.name,item.usState,normCountry(item.country)||item.region].filter(Boolean).join('|');}
+async function mapGeocode(item){
+  const k=mapCacheKey(item);
+  const cache=JSON.parse(localStorage.getItem('wf_geocache')||'{}');
+  if(cache[k])return cache[k];
+  const q=item._wish?item.name:[item.name,item.usState,normCountry(item.country)||item.region].filter(Boolean).join(', ');
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`,{headers:{'User-Agent':'Wayfinder/1.0','Accept-Language':'en'}});
+    const d=await r.json();
+    if(d[0]){const c={lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon)};cache[k]=c;localStorage.setItem('wf_geocache',JSON.stringify(cache));return c;}
+  }catch(e){}
+  return null;
+}
+function mapAddPin(item,coords){
+  if(!mapLayer_p||!coords)return;
+  const color=MAP_COLORS[item.status]||MAP_COLORS.saved;
+  const m=L.circleMarker([coords.lat,coords.lng],{radius:item._wish?6:8,fillColor:color,color:'#fff',weight:2,opacity:1,fillOpacity:0.9});
+  const loc=[item.usState,normCountry(item.country)||item.region].filter(Boolean).join(', ');
+  const stars=item.rating?'⭐'.repeat(parseInt(item.rating)):'';
+  m.bindPopup(`<div style="min-width:155px;font-family:-apple-system,sans-serif"><div style="font-weight:600;font-size:13px;margin-bottom:4px">${item.name}</div>${loc?`<div style="font-size:11px;color:#777;margin-bottom:5px">${loc}</div>`:''}<span style="background:${color};color:#fff;font-size:10px;padding:2px 8px;border-radius:3px">${item._wish?'♡ Wishlist':sl(item.status)}</span>${stars?`<div style="margin-top:5px;font-size:11px">${stars}</div>`:''}${item.notes?`<div style="font-size:11px;color:#666;border-top:1px solid #eee;padding-top:5px;margin-top:5px">${item.notes.slice(0,120)}${item.notes.length>120?'…':''}</div>`:''}</div>`);
+  mapLayer_p.addLayer(m);
+}
+function mapRenderStats(){
+  const vis=D.places.filter(p=>p.status==='visited');
+  const intl=[...new Set(vis.map(p=>normCountry(p.country)).filter(c=>c&&c!=='United States'))];
+  const states=[...new Set(vis.filter(p=>normCountry(p.country)==='United States').map(p=>p.usState).filter(Boolean))];
+  const el=document.getElementById('map-stats-row');if(!el)return;
+  el.innerHTML=`<div class="sc" style="--accent:var(--green2)"><div class="si">📍</div><div class="sn">${vis.length}</div><div class="sl">Places Visited</div></div><div class="sc" style="--accent:var(--gold)"><div class="si">🌍</div><div class="sn">${intl.length}</div><div class="sl">Countries</div></div><div class="sc" style="--accent:var(--sage)"><div class="si">🇺🇸</div><div class="sn">${states.length}</div><div class="sl">US States</div></div><div class="sc" style="--accent:var(--earth2)"><div class="si">✈️</div><div class="sn">${D.trips.filter(t=>t.status==='past').length}</div><div class="sl">Trips Done</div></div>`;
+}
+
+
+// ══════════════════════════════════════════════
+// PLACES
+// ══════════════════════════════════════════════
+let pf='all',eid=null;
+function openPlace(id){
+  eid=id||null;const p=id?D.places.find(x=>x.id===id):null;
+  document.getElementById('pm-title').textContent=p?'Edit Place':'Add Place';
+  document.getElementById('p-name').value=p?.name||'';
+  document.getElementById('p-country').value=p?.country||'';
+  document.getElementById('p-state').value=p?.usState||'';
+  document.getElementById('p-region').value=p?.region||'';
+  document.getElementById('p-cat').value=p?.category||'other';
+  document.getElementById('p-status').value=p?.status||'saved';
+  document.getElementById('p-src').value=p?.source||'';
+  document.getElementById('p-notes').value=p?.notes||'';
+  document.getElementById('p-tags').value=(p?.tags||[]).join(', ');
+  document.getElementById('p-rating').value=p?.rating||'';
+  openM('m-place');
+}
+function savePlace(){
+  const n=document.getElementById('p-name').value.trim();
+  if(!n){toast('⚠️ Name required');return}
+  const country=normCountry(document.getElementById('p-country').value.trim());
+  const usState=document.getElementById('p-state').value.trim();
+  const regionRaw=document.getElementById('p-region').value.trim();
+  const region=regionRaw||(usState&&country?usState+', '+country:usState||country||'');
+  const existing=eid?D.places.find(x=>x.id===eid):null;
+  const pl={
+    id:eid||uid(),name:n,country,usState,region,
+    category:document.getElementById('p-cat').value,
+    status:document.getElementById('p-status').value,
+    source:document.getElementById('p-src').value,
+    notes:document.getElementById('p-notes').value.trim(),
+    tags:document.getElementById('p-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+    rating:document.getElementById('p-rating').value,
+    tripIds:existing?.tripIds||[],journalIds:existing?.journalIds||[],photos:existing?.photos||[],
+    addedAt:existing?.addedAt||Date.now()
+  };
+  if(eid){const i=D.places.findIndex(x=>x.id===eid);D.places[i]=pl}else D.places.push(pl);
+  save('places',D.places);closeM('m-place');toast(eid?'✅ Updated':'📍 Place saved!');rPlaces();badges();eid=null;
+}
+function normCountry(c){
+  if(!c)return'';
+  const l=c.toLowerCase().trim();
+  if(l==='us'||l==='usa'||l==='united states'||l==='united states of america'||l==='america')return'United States';
+  return c.trim();
+}
+function delPlace(id){if(!confirm('Remove this place?'))return;D.places=D.places.filter(p=>p.id!==id);save('places',D.places);toast('🗑️ Removed');rPlaces();badges()}
+function cycleStatus(id){const o=['saved','want','planned','visited'],p=D.places.find(x=>x.id===id);p.status=o[(o.indexOf(p.status)+1)%4];save('places',D.places);toast(sl(p.status));rPlaces()}
+function fPlace(b,f){document.querySelectorAll('#pfb .fc').forEach(x=>x.classList.remove('on'));b.classList.add('on');pf=f;rPlaces()}
+function rPlaces(){
+  D=load();const q=document.getElementById('srch').value.toLowerCase();
+  let list=D.places.filter(p=>{const mf=pf==='all'||p.status===pf||p.category===pf||(p.tags||[]).includes(pf);const ms=!q||p.name.toLowerCase().includes(q)||(p.region||'').toLowerCase().includes(q)||(p.country||'').toLowerCase().includes(q)||(p.usState||'').toLowerCase().includes(q);return mf&&ms}).sort((a,b)=>b.addedAt-a.addedAt);
+  const g=document.getElementById('places-grid');
+  if(!list.length){g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📍</div><h3>No places found</h3><p>Add places you've been or want to go.</p><button class="tb-btn" onclick="openPlace()">+ Add First Place</button></div>`;return}
+  g.innerHTML=list.map(p=>`<div class="pc" onclick="openPlace('${p.id}')"><div class="pch"><div><div class="pname">${p.name}</div><div class="ploc">${p.usState&&p.country?p.usState+', '+p.country:p.country||p.region||'—'}</div></div><div class="pst"><span class="sd ${p.status==='visited'?'dv':p.status==='want'?'dw':p.status==='planned'?'dp':'ds'}"></span>${sl(p.status)}</div></div>${p.rating?`<div style="font-size:10px;margin-bottom:4px">${'⭐'.repeat(parseInt(p.rating))}</div>`:''} ${p.notes?`<div class="pnote">${p.notes}</div>`:''}
+<div class="ptags"><span class="tag tg">${ci(p.category)} ${cl(p.category)}</span>${p.source?`<span class="tag te">${si(p.source)} ${p.source}</span>`:''} ${(p.tripIds||[]).length?`<span class="tag tb2">✈️ ${p.tripIds.length} trip${p.tripIds.length>1?'s':''}</span>`:''} ${(p.journalIds||[]).length?`<span class="tag to">📓 ${p.journalIds.length}</span>`:''}</div>
+<div class="pact" onclick="event.stopPropagation()"><button class="pbtn" onclick="openPlace('${p.id}')">✏️ Edit</button><button class="pbtn" onclick="cycleStatus('${p.id}')">🔄</button><button class="pbtn del" onclick="delPlace('${p.id}')">🗑️</button></div></div>`).join('');
+}
+
+// ══════════════════════════════════════════════
+// TRIPS
+// ══════════════════════════════════════════════
+let tf='all',atid=null,pendStop=null;
+function openTrip(){['t-name','t-dests','t-notes'].forEach(id=>document.getElementById(id).value='');['t-start','t-end','t-budget'].forEach(id=>document.getElementById(id).value='');document.getElementById('t-type').value='road-trip';document.getElementById('t-status').value='planning';openM('m-trip')}
+function saveTrip(){const n=document.getElementById('t-name').value.trim();if(!n){toast('⚠️ Name required');return}const t={id:uid(),name:n,startDate:document.getElementById('t-start').value,endDate:document.getElementById('t-end').value,destinations:document.getElementById('t-dests').value.split(',').map(d=>d.trim()).filter(Boolean),type:document.getElementById('t-type').value,status:document.getElementById('t-status').value,budget:parseFloat(document.getElementById('t-budget').value)||null,notes:document.getElementById('t-notes').value.trim(),itinerary:[],addedAt:Date.now()};if(t.startDate&&t.endDate){const s=new Date(t.startDate),e=new Date(t.endDate);for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1))t.itinerary.push({date:d.toISOString().split('T')[0],stops:[]})}D.trips.push(t);save('trips',D.trips);
+  if(pendGraduateWishId){
+    const w=D.wish.find(x=>x.id===pendGraduateWishId);
+    if(w){w.tripId=t.id;w.graduated=true;save('wish',D.wish);}
+    pendGraduateWishId=null;
+  }
+  closeM('m-trip');toast('✈️ Trip created!');rTrips();badges()}
+function delTrip(id){if(!confirm('Delete this trip?'))return;D.trips=D.trips.filter(t=>t.id!==id);save('trips',D.trips);toast('🗑️ Deleted');rTrips();badges()}
+function fTrip(b,f){document.querySelectorAll('#trips-lv .fc').forEach(x=>x.classList.remove('on'));b.classList.add('on');tf=f;rTrips()}
+function rTrips(){
+  D=load();document.getElementById('trips-lv').style.display='block';document.getElementById('trip-dv').classList.remove('on');atid=null;
+  let list=D.trips.filter(t=>{if(tf==='all')return true;if(tf==='upcoming')return t.status==='upcoming'||t.status==='active';if(tf==='past')return t.status==='past';if(tf==='planning')return t.status==='planning';return true}).sort((a,b)=>{if(a.startDate&&b.startDate)return new Date(b.startDate)-new Date(a.startDate);return b.addedAt-a.addedAt});
+  const g=document.getElementById('trips-grid');
+  if(!list.length){g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">✈️</div><h3>No trips yet</h3><p>Create a trip or import from a doc.</p><button class="tb-btn" onclick="openTrip()" style="margin-bottom:8px">+ New Trip</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;return}
+  g.innerHTML=list.map(t=>`<div class="tc" onclick="openTripD('${t.id}')"><div class="tc-bar"></div><div class="tcb"><div class="tname">${t.name}</div><div class="tdates">${t.startDate?fd(t.startDate)+' — '+fd(t.endDate):'Dates TBD'}</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:9px">${t.destinations.slice(0,3).map(d=>`<span class="tag tg">📍 ${d}</span>`).join('')}${t.destinations.length>3?`<span class="tag te">+${t.destinations.length-3}</span>`:''}</div><div class="tfoot"><div class="tstat">${t.itinerary.reduce((s,d)=>s+d.stops.length,0)} stops · ${t.itinerary.length} days</div><span class="tag ${tsc(t.status)}">${tsl(t.status)}</span></div></div></div>`).join('');
+}
+function openTripD(id){
+  D=load();const t=D.trips.find(x=>x.id===id);if(!t)return;atid=id;
+  document.getElementById('trips-lv').style.display='none';
+  const dv=document.getElementById('trip-dv');dv.classList.add('on');
+  const linkedPlaces=D.places.filter(p=>(p.tripIds||[]).includes(t.id));
+  const tripJournal=D.journal.filter(j=>j.tripId===t.id);
+  dv.innerHTML=`<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px"><button class="td-back" onclick="rTrips()">← All Trips</button><button class="pbtn del" onclick="delTrip('${t.id}')">🗑️ Delete</button></div>
+  <div style="margin-bottom:16px"><div style="font-size:20px;font-weight:600;color:var(--text);letter-spacing:-.3px;margin-bottom:5px">${t.name}</div><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">${t.startDate?`<span class="tag tb2">📅 ${fd(t.startDate)} — ${fd(t.endDate)}</span>`:''}<span class="tag ${tsc(t.status)}">${tsl(t.status)}</span>${t.budget?`<span class="tag to">💰 $${t.budget.toLocaleString()}</span>`:''}</div>${t.destinations.length?`<div style="margin-top:7px;display:flex;gap:5px;flex-wrap:wrap">${t.destinations.map(d=>`<span class="tag tg">📍 ${d}</span>`).join('')}</div>`:''} ${t.notes?`<div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.6;padding:10px;background:var(--card2);border-radius:7px;border-left:2px solid var(--green)">${t.notes}</div>`:''}</div>
+  ${linkedPlaces.length?`<div class="card" style="margin-bottom:13px"><div class="ch"><div class="ct">📍 Places on this Trip</div><div class="cs">${linkedPlaces.length} linked</div></div><div style="display:flex;flex-wrap:wrap;gap:6px">${linkedPlaces.map(p=>`<div class="rg-chip">${ci(p.category)} ${p.name}${p.region?` <span style="color:var(--muted);font-size:10px">— ${p.region}</span>`:''}</div>`).join('')}</div></div>`:''}
+  ${tripJournal.length?`<div class="card" style="margin-bottom:13px"><div class="ch"><div class="ct">📓 Journal Entries</div><div class="cs">${tripJournal.length} entries</div></div>${tripJournal.map(j=>`<div style="padding:8px 0;border-bottom:1px solid var(--bdr)"><div style="font-size:10px;color:var(--muted)">${fd(j.date)}</div><div style="font-size:13px;font-weight:500;color:var(--text)">${j.title}</div>${j.loc?`<div style="font-size:11px;color:var(--gold2)">📍 ${j.loc}</div>`:''}<div style="font-size:12px;color:var(--text2);margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${j.body}</div></div>`).join('')}</div>`:''}
+  <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:11px">📅 Itinerary</div>
+  ${t.itinerary.length?t.itinerary.map((day,di)=>`<div class="day-blk"><div class="day-hdr"><div class="day-lbl">Day ${di+1}</div><div class="day-dt">${fd(day.date)}</div></div><div class="day-body">${day.stops.length?day.stops.map((s,si)=>{const lp=s.placeId?D.places.find(x=>x.id===s.placeId):null;return`<div class="stop-row"><div class="stopnum">${si+1}</div><div style="flex:1"><div class="stopname">${s.name}${lp?` <span class="tag tg" style="font-size:9px;padding:1px 5px;margin-left:4px">📍 linked</span>`:''}</div>${s.note?`<div class="stopnote">${s.note}</div>`:''}</div></div>`}).join(''):'<div style="font-size:11px;color:var(--muted2);padding:3px 0">No stops yet</div>'}<button class="add-stop" onclick="openStop('${t.id}',${di})">+ Add Stop</button></div></div>`).join(''):'<div style="background:var(--card2);border:1px dashed var(--bdr2);border-radius:var(--r);padding:16px;text-align:center;font-size:12px;color:var(--muted)">Add dates to build a day-by-day itinerary</div>'}`;
+}
+function openStop(tid,di){
+  pendStop={tid,di};
+  document.getElementById('st-name').value='';
+  document.getElementById('st-note').value='';
+  const sel=document.getElementById('st-place');
+  sel.innerHTML='<option value="">— New stop, no place link —</option>'+
+    [...D.places].sort((a,b)=>a.name.localeCompare(b.name))
+      .map(p=>`<option value="${p.id}">${ci(p.category)} ${p.name}${p.region?' — '+p.region:''}</option>`).join('');
+  sel.value='';
+  sel.onchange=()=>{
+    const p=D.places.find(x=>x.id===sel.value);
+    if(p&&!document.getElementById('st-name').value) document.getElementById('st-name').value=p.name;
+  };
+  openM('m-stop');
+}
+function saveStop(){
+  const n=document.getElementById('st-name').value.trim();
+  if(!n||!pendStop)return;
+  const t=D.trips.find(x=>x.id===pendStop.tid);
+  if(!t)return;
+  const placeId=document.getElementById('st-place').value;
+  t.itinerary[pendStop.di].stops.push({name:n,note:document.getElementById('st-note').value.trim(),placeId});
+  if(placeId){
+    const pl=D.places.find(x=>x.id===placeId);
+    if(pl&&!pl.tripIds.includes(pendStop.tid)){pl.tripIds.push(pendStop.tid);save('places',D.places);}
+  }
+  save('trips',D.trips);closeM('m-stop');toast('✅ Stop added');openTripD(pendStop.tid);
+}
+
+// ══════════════════════════════════════════════
+// WISHLIST
+// ══════════════════════════════════════════════
+let wf='all';
+function openWish(){['w-name','w-notes'].forEach(id=>document.getElementById(id).value='');document.getElementById('w-type').value='international';document.getElementById('w-pri').value='must';document.getElementById('w-season').value='';openM('m-wish')}
+function saveWish(){const n=document.getElementById('w-name').value.trim();if(!n){toast('⚠️ Name required');return}D.wish.push({id:uid(),name:n,type:document.getElementById('w-type').value,priority:document.getElementById('w-pri').value,season:document.getElementById('w-season').value,notes:document.getElementById('w-notes').value.trim(),addedAt:Date.now()});save('wish',D.wish);closeM('m-wish');toast('♡ Added!');rWish();badges()}
+function delWish(id){D.wish=D.wish.filter(w=>w.id!==id);save('wish',D.wish);toast('🗑️ Removed');rWish();badges()}
+let pendGraduateWishId=null;
+function graduateWish(id){
+  const w=D.wish.find(x=>x.id===id);if(!w)return;
+  pendGraduateWishId=id;
+  document.getElementById('t-name').value=w.name;
+  document.getElementById('t-dests').value=w.name;
+  document.getElementById('t-type').value=({international:'international','road-trip':'road-trip',hiking:'backpacking',city:'city',beach:'beach'}[w.type]||'other');
+  document.getElementById('t-status').value='planning';
+  document.getElementById('t-notes').value=w.notes||'';
+  ['t-start','t-end','t-budget'].forEach(id=>document.getElementById(id).value='');
+  openM('m-trip');
+}
+function fWish(b,f){document.querySelectorAll('#page-wishlist .fc').forEach(x=>x.classList.remove('on'));b.classList.add('on');wf=f;rWish()}
+function rWish(){
+  D=load();let list=D.wish.filter(w=>wf==='all'||w.priority===wf||w.type===wf).sort((a,b)=>({must:0,soon:1,someday:2}[a.priority]||3)-({must:0,soon:1,someday:2}[b.priority]||3));
+  const el=document.getElementById('wish-list');
+  if(!list.length){el.innerHTML=`<div class="empty"><div class="empty-icon">♡</div><h3>Wishlist empty</h3><p>Add dream destinations and bucket list items.</p><button class="tb-btn" onclick="openWish()">+ Add First Dream</button></div>`;return}
+  el.innerHTML=list.map((w,i)=>{
+    const gt=w.graduated&&w.tripId?D.trips.find(x=>x.id===w.tripId):null;
+    return`<div class="wi"><div class="wrank">${w.graduated?'✈️':i+1}</div><div class="wbody"><div class="wname">${w.name}${w.graduated?` <span class="tag tg" style="font-size:9px">planned</span>`:''}</div><div class="wdesc">${w.type}${w.season?' · '+w.season:''}${gt?' · '+gt.name:''}</div><div class="wtags"><span class="tag ${w.priority==='must'?'tr':w.priority==='soon'?'to':'tg'}">${pi(w.priority)} ${w.priority}</span><span class="tag te">${w.type}</span></div></div><div style="display:flex;gap:5px;flex-shrink:0">${!w.graduated?`<button class="pbtn" onclick="graduateWish('${w.id}')" title="Convert to Trip">→ Plan</button>`:''}<button class="wdel" onclick="delWish('${w.id}')">🗑️</button></div></div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+// JOURNAL
+// ══════════════════════════════════════════════
+function openJournal(){
+  document.getElementById('j-date').value=new Date().toISOString().split('T')[0];
+  ['j-title','j-loc','j-body'].forEach(id=>document.getElementById(id).value='');
+  const tsel=document.getElementById('j-trip');
+  tsel.innerHTML='<option value="">— Not linked —</option>'+D.trips.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  const psel=document.getElementById('j-place');
+  psel.innerHTML='<option value="">— No specific place —</option>'+
+    [...D.places].sort((a,b)=>a.name.localeCompare(b.name))
+      .map(p=>`<option value="${p.id}">${ci(p.category)} ${p.name}${p.region?' — '+p.region:''}</option>`).join('');
+  psel.value='';
+  openM('m-journal');
+}
+function saveJournal(){
+  const b=document.getElementById('j-body').value.trim();
+  if(!b){toast('⚠️ Write something first');return}
+  const placeId=document.getElementById('j-place').value;
+  const entry={id:uid(),date:document.getElementById('j-date').value,tripId:document.getElementById('j-trip').value,placeId,title:document.getElementById('j-title').value.trim()||'Untitled',loc:document.getElementById('j-loc').value.trim(),body:b,addedAt:Date.now()};
+  D.journal.push(entry);
+  save('journal',D.journal);
+  if(placeId){
+    const pl=D.places.find(x=>x.id===placeId);
+    if(pl&&!pl.journalIds.includes(entry.id)){pl.journalIds.push(entry.id);save('places',D.places);}
+  }
+  closeM('m-journal');toast('📓 Saved!');rJournal();
+}
+function rJournal(){
+  D=load();const el=document.getElementById('jlist');const entries=[...D.journal].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(!entries.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📓</div><h3>No journal entries</h3><p>Record your travel memories and stories.</p><button class="tb-btn" onclick="openJournal()">+ Write First Entry</button></div>`;return}
+  el.innerHTML=entries.map(e=>{
+    const lp=e.placeId?D.places.find(x=>x.id===e.placeId):null;
+    const lt=e.tripId?D.trips.find(x=>x.id===e.tripId):null;
+    return`<div class="je"><div class="jdate">${fd(e.date)}${lt?` · <span style="color:var(--green3);font-weight:500">✈️ ${lt.name}</span>`:''}</div><div class="jtitle">${e.title}</div>${lp?`<div class="jloc" style="color:var(--green2)">📍 ${lp.name}${lp.region?' — '+lp.region:''}</div>`:e.loc?`<div class="jloc">📍 ${e.loc}</div>`:''}<div class="jbody">${e.body}</div></div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+// ABROAD
+// ══════════════════════════════════════════════
+function rAbroad(){
+  document.getElementById('abroad-in').innerHTML=`<div style="max-width:660px"><div style="margin-bottom:16px"><div style="font-size:17px;font-weight:600;color:var(--text);margin-bottom:4px">Living Abroad 🌍</div><div style="font-size:12px;color:var(--muted);line-height:1.6">Research for buying property, moving, and working internationally.</div></div>
+  <div class="g2" style="margin-bottom:13px">${['🏠 Property Research|Track real estate & foreign ownership rules','🛂 Visas & Residency|Digital nomad visas & paths to residency','💼 Working Abroad|Remote work, freelancing & tax strategy','🏥 Country Profiles|Cost of living, healthcare & safety'].map(s=>{const[t,d]=s.split('|');return`<div class="card"><div style="font-size:22px;margin-bottom:7px">${t.split(' ')[0]}</div><div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:4px">${t.slice(2)}</div><div style="font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:9px">${d} — Phase 2</div><span class="tag te">Coming Soon</span></div>`}).join('')}</div>
+  <div class="card"><div class="ch"><div class="ct">Top Countries for US Expats</div></div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="border-bottom:1px solid var(--bdr)">${['Country','Visa','Cost vs US','Own Property','Best For'].map(h=>`<th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;font-size:9px">${h}</th>`).join('')}</tr></thead><tbody>${[['🇲🇽 Mexico','Temp Resident','40–60% less','Yes (fideicomiso)','Proximity, cost, food'],['🇵🇹 Portugal','D7 + DNV','55–70% less','Full freehold','EU base, safety, culture'],['🇪🇸 Spain','Digital Nomad','50–65% less','Full freehold','City life, EU, cuisine'],['🇨🇷 Costa Rica','Rentista/DNV','50–60% less','Mostly freehold','Nature, stability'],['🇵🇦 Panama','Friendly Nations','45–60% less','Full freehold','No foreign tax, USD'],['🇨🇴 Colombia','Digital Nomad','60–75% less','Full freehold','Medellín, low cost'],['🇬🇷 Greece','Digital Nomad','55–70% less','Full freehold','Islands, 7% tax regime'],['🇹🇭 Thailand','LTR Visa','60–75% less','No land ownership','Infrastructure, food'],['🇮🇹 Italy','Elective Resid.','50–65% less','Full freehold','Culture, flat-tax option'],['🇬🇪 Georgia','1yr visa-free','70–80% less','Full freehold','Zero foreign income tax']].map((r,i)=>`<tr style="border-bottom:1px solid var(--bdr);background:${i%2?'transparent':'rgba(74,114,89,.03)'}">${r.map((c,j)=>`<td style="padding:6px 8px;color:${j===0?'var(--text)':'var(--text2)'};font-weight:${j===0?'500':'400'};white-space:${j<2?'nowrap':'normal'}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div></div>`;
+}
+
+// ══════════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════════
+function setSetting(k,v){D.settings[k]=v;save('settings',D.settings);if(k==='name'){document.getElementById('pn').textContent=v||'You';document.getElementById('av').textContent=(v||'Y')[0].toUpperCase()}}
+function loadSettings(){const s=D.settings;document.getElementById('s-name').value=s.name||'';document.getElementById('s-partner').value=s.partner||'';document.getElementById('s-city').value=s.homeCity||'';document.getElementById('s-since').value=s.since||'';document.getElementById('s-apikey').value=s.apiKey||'';document.getElementById('pn').textContent=s.name||'You';document.getElementById('av').textContent=(s.name||'Y')[0].toUpperCase()}
+function exportData(){const b=new Blob([JSON.stringify(load(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='wayfinder-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('📥 Exported!')}
+function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);Object.keys(K).forEach(k=>{if(d[k])localStorage.setItem(K[k],JSON.stringify(d[k]))});D=load();loadSettings();rHome();badges();toast('📤 Imported!')}catch{toast('⚠️ Invalid file')}};r.readAsText(f)}
+function clearAll(){if(!confirm('Clear ALL data? Cannot be undone.'))return;Object.values(K).forEach(k=>localStorage.removeItem(k));D=load();loadSettings();rHome();badges();toast('🗑️ Cleared')}
+function onSearch(q){if(cur==='places')rPlaces()}
+
+// ══════════════════════════════════════════════
+// GOOGLE DOC IMPORT
+// ══════════════════════════════════════════════
+let importedData=null;
+
+function openImport(){
+  resetImport();
+  openM('m-import');
+}
+function closeImport(){closeM('m-import');resetImport()}
+function resetImport(){
+  document.getElementById('import-step1').style.display='block';
+  document.getElementById('import-step2').style.display='none';
+  document.getElementById('import-loading').style.display='none';
+  document.getElementById('import-preview').style.display='none';
+  document.getElementById('doc-paste').value='';
+  document.getElementById('doc-file').value='';
+  document.getElementById('char-count').textContent='';
+  document.getElementById('file-status').textContent='';
+  showImportError('');
+  importedData=null;
+}
+function showImportError(msg){
+  const el=document.getElementById('import-error');
+  if(!el) return;
+  if(msg){el.textContent=msg;el.style.display='block'}
+  else{el.textContent='';el.style.display='none'}
+}
+function updateCharCount(){
+  const len=document.getElementById('doc-paste').value.length;
+  const el=document.getElementById('char-count');
+  if(!el)return;
+  el.textContent=len?`${len.toLocaleString()} characters loaded`:'';
+}
+function extractPdfText(buffer){
+  // Decode the raw PDF bytes as Latin-1 so we preserve all byte values
+  const bytes=new Uint8Array(buffer);
+  let raw='';
+  for(let i=0;i<bytes.length;i++) raw+=String.fromCharCode(bytes[i]);
+
+  const parts=[];
+
+  // 1. Pull strings out of BT…ET text blocks (Tj / TJ operators)
+  const btEt=/BT([\s\S]*?)ET/g;
+  let m;
+  while((m=btEt.exec(raw))!==null){
+    const block=m[1];
+    // Parenthetical strings: (hello world) Tj
+    const paren=/\(([^)\\]*(?:\\.[^)\\]*)*)\)\s*(?:Tj|'|")/g;
+    let pm;
+    while((pm=paren.exec(block))!==null){
+      const s=pm[1]
+        .replace(/\\n/g,' ').replace(/\\r/g,'').replace(/\\t/g,' ')
+        .replace(/\\\(/g,'(').replace(/\\\)/g,')').replace(/\\\\/g,'\\')
+        .trim();
+      if(s.length>1) parts.push(s);
+    }
+    // Array form: [(str1) num (str2)] TJ
+    const arr=/\[([\s\S]*?)\]\s*TJ/g;
+    let am;
+    while((am=arr.exec(block))!==null){
+      const inner=am[1];
+      const sp=/\(([^)\\]*(?:\\.[^)\\]*)*)\)/g;
+      let spm;
+      while((spm=sp.exec(inner))!==null){
+        const s=spm[1].replace(/\\n/g,' ').replace(/\\\(/g,'(').replace(/\\\)/g,')').trim();
+        if(s.length>1) parts.push(s);
+      }
+    }
+  }
+
+  // 2. Fallback: grab any readable parenthetical strings outside BT/ET
+  //    (catches some PDF structures that don't use BT/ET)
+  if(parts.length<10){
+    const fallback=/\(([^\x00-\x08\x0b\x0e-\x1f\x7f-\xff]{3,})\)/g;
+    let fm;
+    while((fm=fallback.exec(raw))!==null){
+      const s=fm[1].replace(/\\[nrt]/g,' ').trim();
+      if(/[a-zA-Z]{2,}/.test(s)) parts.push(s);
+    }
+  }
+
+  const text=parts.join(' ').replace(/\s{2,}/g,' ').trim();
+  return text||'[Could not extract text from this PDF — try copying and pasting the text directly instead]';
+}
+
+function loadFileIntoTextarea(file){
+  if(!file)return;
+  showImportError('');
+  const statusEl=document.getElementById('file-status');
+  if(statusEl) statusEl.textContent='Loading '+file.name+'…';
+
+  if(file.type==='application/pdf'||file.name.toLowerCase().endsWith('.pdf')){
+    const r=new FileReader();
+    r.onerror=()=>{ if(statusEl)statusEl.textContent=''; showImportError('Could not read this PDF. Try exporting as .txt instead.'); };
+    r.onload=ev=>{
+      const extracted=extractPdfText(ev.target.result);
+      document.getElementById('doc-paste').value=extracted;
+      updateCharCount();
+      if(extracted.startsWith('[')){
+        if(statusEl)statusEl.textContent='';
+        showImportError('This PDF\'s text couldn\'t be extracted (it may be a scanned image). Try: Google Doc → File → Download → Plain Text (.txt), then upload that file instead.');
+      } else {
+        if(statusEl)statusEl.textContent='✓ '+file.name+' — '+Math.round(extracted.length/1000)+'k characters ready';
+      }
+    };
+    r.readAsArrayBuffer(file);
+  } else {
+    const r=new FileReader();
+    r.onerror=()=>{ if(statusEl)statusEl.textContent=''; showImportError('Could not read this file.'); };
+    r.onload=ev=>{
+      document.getElementById('doc-paste').value=ev.target.result;
+      updateCharCount();
+      if(statusEl)statusEl.textContent='✓ '+file.name+' loaded';
+    };
+    r.readAsText(file);
+  }
+}
+
+function handleFile(e){ loadFileIntoTextarea(e.target.files[0]); }
+function handleDrop(e){
+  e.preventDefault();
+  loadFileIntoTextarea(e.dataTransfer.files[0]);
+}
+
+async function analyzeDoc(){
+  showImportError('');
+  const text=document.getElementById('doc-paste').value.trim();
+  if(!text){
+    showImportError('Please upload a file or paste your document text first, then click Analyze.');
+    return;
+  }
+
+  document.getElementById('import-step1').style.display='none';
+  document.getElementById('import-step2').style.display='block';
+  document.getElementById('import-loading').style.display='block';
+  document.getElementById('import-preview').style.display='none';
+
+  const prompt=`You are analyzing a travel document (Google Doc, notes, or journal) to extract structured trip information for a travel app called Wayfinder.
+
+Read this travel document carefully and extract all information into the following JSON structure. Be thorough — extract every place, activity, restaurant, accommodation, and memorable moment mentioned.
+
+DOCUMENT:
+"""
+${text.slice(0,8000)}
+"""
+
+Respond ONLY with valid raw JSON (no markdown fences):
+{
+  "trip": {
+    "name": "Trip name (infer from content if not explicit)",
+    "startDate": "YYYY-MM-DD or empty string",
+    "endDate": "YYYY-MM-DD or empty string",
+    "destinations": ["list","of","main","destinations"],
+    "type": "road-trip|backpacking|international|city|beach|ski|other",
+    "notes": "2-3 sentence summary of the trip's highlights and character"
+  },
+  "places": [
+    {
+      "name": "Place name",
+      "country": "Full country name, e.g. United States, Italy, Japan",
+      "usState": "US state name if country is United States, else empty string",
+      "region": "City or local area name only, e.g. Zion Canyon or Amalfi Coast",
+      "category": "nat-park|hiking|camp|viewpoint|swim|food|accommodation|city|road-trip|international|hidden-gem|other",
+      "notes": "What happened here or why it was notable",
+      "rating": "5|4|3|2|1 or empty string"
+    }
+  ],
+  "journal": [
+    {
+      "title": "Entry title",
+      "date": "YYYY-MM-DD or empty string",
+      "location": "Where this entry is about",
+      "body": "The key story, memory, or experience from this moment. Be detailed and preserve the voice of the original text."
+    }
+  ],
+  "summary": "One sentence describing what you found and extracted"
+}
+
+Extract as many places and journal moments as are genuinely present. Places should be VISITED (status: visited). Journal entries should capture real memories and stories from the text.`;
+
+  try {
+    const raw = await callAI(prompt);
+    const clean = raw.replace(/^```json\n?/,'').replace(/^```\n?/,'').replace(/\n?```$/,'').trim();
+    importedData = JSON.parse(clean);
+    showPreview(importedData);
+  } catch(e) {
+    console.warn('AI error:', e.message);
+    // Reset to step 1 and show the error inline
+    document.getElementById('import-loading').style.display='none';
+    document.getElementById('import-step2').style.display='none';
+    document.getElementById('import-step1').style.display='block';
+    if(e.message && e.message.toLowerCase().includes('api key')){
+      showImportError('AI not detected in this environment. If you\'re using this on the web (Netlify), go to Settings → paste your Claude API key from console.anthropic.com. If you\'re using this inside Cowork, try refreshing the artifact.');
+    } else if(e.message && e.message.includes('401')){
+      showImportError('Invalid API key — check it in Settings. It should start with "sk-ant-api03-".');
+    } else if(e.message && e.message.includes('429')){
+      showImportError('Rate limit — wait a moment and try again.');
+    } else if(e.message && (e.message.includes('fetch') || e.message.includes('network') || e.message.includes('Failed'))){
+      showImportError('Network blocked. Direct API calls are not allowed inside Cowork artifacts. Make sure you\'re using the app via the Wayfinder artifact panel, not an embedded iframe.');
+    } else {
+      showImportError('Error: ' + (e.message || 'unknown') + '. If this keeps happening, try pasting the document text directly into the box instead of uploading the file.');
+    }
+  }
+}
+
+// ── Universal AI helper — works in Cowork AND standalone web ──
+async function callAI(prompt) {
+  if (window.cowork && typeof window.cowork.askClaude === 'function') {
+    try { return await window.cowork.askClaude(prompt, []); } catch(e) {
+      console.warn('Cowork askClaude failed, trying direct API:', e.message);
+    }
+  }
+  const key = D.settings?.apiKey || '';
+  if (!key) throw new Error('API key required — go to Settings and paste your Claude API key (get one free at console.anthropic.com).');
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 2048,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `API error ${res.status}`);
+  }
+  const data = await res.json();
+  return data.content[0].text;
+}
+
+function showPreview(data){
+  document.getElementById('import-loading').style.display='none';
+  document.getElementById('import-preview').style.display='block';
+
+  const rows=[];
+  rows.push({k:'Trip Name', v:data.trip.name||'—'});
+  if(data.trip.startDate) rows.push({k:'Dates', v:data.trip.startDate+(data.trip.endDate?' → '+data.trip.endDate:'')});
+  if(data.trip.destinations?.length) rows.push({k:'Destinations', v:data.trip.destinations.join(', ')});
+  if(data.trip.notes) rows.push({k:'Summary', v:data.trip.notes});
+  rows.push({k:'Places Found', v:data.places?.length+' places to import'});
+  rows.push({k:'Journal', v:data.journal?.length+' entries to create'});
+  if(data.summary) rows.push({k:'AI Note', v:data.summary});
+
+  document.getElementById('preview-content').innerHTML=`
+  <h4>✦ Here's what was found</h4>
+  ${rows.map(r=>`<div class="preview-row"><div class="preview-key">${r.k}</div><div class="preview-val">${r.v}</div></div>`).join('')}
+  ${data.places?.length?`<div style="margin-top:10px;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Places</div>${data.places.slice(0,6).map(p=>`<div class="preview-row"><div class="preview-key">${ci(p.category)}</div><div class="preview-val">${p.name}${p.region?' — '+p.region:''}</div></div>`).join('')}${data.places.length>6?`<div style="font-size:11px;color:var(--muted);padding:4px 0">+ ${data.places.length-6} more places…</div>`:''}`:''}`
+}
+
+function confirmImport(){
+  if(!importedData){return}
+  D=load();
+  // Create trip
+  const t={
+    id:uid(),
+    name:importedData.trip.name||'Imported Trip',
+    startDate:importedData.trip.startDate||'',
+    endDate:importedData.trip.endDate||'',
+    destinations:importedData.trip.destinations||[],
+    type:importedData.trip.type||'other',
+    status:'past',
+    notes:importedData.trip.notes||'',
+    itinerary:[],
+    addedAt:Date.now()
+  };
+  // Build itinerary days if dates exist
+  if(t.startDate&&t.endDate){
+    const s=new Date(t.startDate),e=new Date(t.endDate);
+    for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1))
+      t.itinerary.push({date:d.toISOString().split('T')[0],stops:[]});
+  }
+  D.trips.push(t);save('trips',D.trips);
+
+  // Create places
+  let pCount=0;
+  (importedData.places||[]).forEach(p=>{
+    if(!p.name)return;
+    const country=normCountry(p.country||'');
+    const usState=p.usState||'';
+    const region=p.region||(usState&&country?usState+', '+country:country||'');
+    D.places.push({id:uid(),name:p.name,country,usState,region,category:p.category||'other',status:'visited',source:'import',notes:p.notes||'',tags:['imported'],rating:p.rating||'',tripIds:[],journalIds:[],photos:[],addedAt:Date.now()});
+    pCount++;
+  });
+  save('places',D.places);
+
+  // Create journal entries
+  let jCount=0;
+  (importedData.journal||[]).forEach(j=>{
+    if(!j.body)return;
+    D.journal.push({id:uid(),date:j.date||t.startDate||'',tripId:t.id,title:j.title||'Memory',loc:j.location||'',body:j.body,addedAt:Date.now()});
+    jCount++;
+  });
+  save('journal',D.journal);
+
+  closeImport();
+  toast(`✅ Imported! Trip + ${pCount} places + ${jCount} journal entries`);
+  badges();rTrips();
+  // Open the new trip
+  setTimeout(()=>openTripD(t.id),400);
+}
+
+// ══════════════════════════════════════════════
+// AI PLANNER
+// ══════════════════════════════════════════════
+const PL_QS = [
+  { id:'vibe', multi:true,
+    title:"What feeling are you chasing?",
+    sub:"Pick everything that resonates — moods can mix.",
+    opts:[
+      {i:'🧘',l:'Recharge & decompress',    d:'Slow down, breathe, be present'},
+      {i:'⛰️',l:'Challenge & earn the view', d:'Push limits, big days, real effort'},
+      {i:'🎭',l:'Deep cultural immersion',   d:'History, food, language, people'},
+      {i:'🗺️',l:'Off-map exploration',       d:'Unknown places, no crowds, discovery'},
+      {i:'🥂',l:'Celebrate & indulge',       d:'Great food, wine, unforgettable nights'},
+      {i:'🌿',l:'Raw nature & silence',      d:'Wilderness, wildlife, untouched land'},
+    ]},
+  { id:'activity', multi:false,
+    title:"How active do you want to be?",
+    sub:"Be honest — it's your vacation.",
+    opts:[
+      {i:'☕',l:'Slow & easy',           d:'Café mornings, unhurried strolls'},
+      {i:'🚶',l:'Lightly active',         d:'Easy hikes, bikes, some sightseeing'},
+      {i:'🥾',l:'Good miles every day',   d:'Full-day hikes, lots of ground covered'},
+      {i:'🏕️',l:'Multi-day wilderness',   d:'Backpacking, hut-to-hut, real remote'},
+      {i:'🏔️',l:'Push the limit',         d:'Big vertical, alpine starts, expedition'},
+    ]},
+  { id:'terrain', multi:true,
+    title:"What landscape calls to you?",
+    sub:"Pick everything that sounds right.",
+    opts:[
+      {i:'🏔️',l:'Mountains & peaks',      d:'Sierra Nevada, Alps, Andes, Rockies'},
+      {i:'🌵',l:'Desert & canyons',        d:'Utah, Patagonia, Sahara, Atacama'},
+      {i:'🌊',l:'Coast & ocean',           d:'Cliffs, beaches, sea air, islands'},
+      {i:'🌲',l:'Forest & jungle',         d:'Canopy, rivers, waterfalls, wildlife'},
+      {i:'🏙️',l:'City & urban energy',     d:'Architecture, food scenes, nightlife'},
+      {i:'🌾',l:'Countryside & villages',  d:'Rolling hills, farmhouses, local life'},
+    ]},
+  { id:'sleep', multi:true,
+    title:"Where do you want to sleep?",
+    sub:"What sounds most appealing?",
+    opts:[
+      {i:'⛺',l:'Camping in nature',       d:'Tent, ground, stars above'},
+      {i:'🏠',l:'Airbnb or VRBO',          d:'Private home, local neighborhood feel'},
+      {i:'🏔️',l:'Mountain huts',           d:'Rifugios, alpine hut-to-hut routes'},
+      {i:'🛏️',l:'Hostel or guesthouse',    d:'Budget-smart, social, well-located'},
+      {i:'🏨',l:'Boutique hotel',           d:'Character, service, real comfort'},
+      {i:'✨',l:'One splurge-worthy stay',  d:'Unique, memorable, worth every penny'},
+    ]},
+  { id:'distance', multi:false,
+    title:"How far are you willing to go?",
+    sub:"Think about flight time and jet lag.",
+    opts:[
+      {i:'🚗',l:'Road trip from home',       d:'Drive only — leave Friday night'},
+      {i:'✈️',l:'Domestic US flight',        d:'Under 6hrs, same or close time zone'},
+      {i:'🌍',l:'Short international',       d:'Mexico, Caribbean, Europe'},
+      {i:'🌏',l:'Long-haul adventure',       d:'Asia, South America, Africa, Pacific'},
+      {i:'🌐',l:'Anywhere — surprise us',    d:'Let the best destination win'},
+    ]},
+  { id:'budget', multi:false,
+    title:"What's your budget style?",
+    sub:"Per person, approximate daily spend once there.",
+    opts:[
+      {i:'🪨',l:'Shoestring',           d:'Under $80/day — hostels, street food, free trails'},
+      {i:'💵',l:'Budget-conscious',     d:'$80–160/day — smart choices, the odd splurge'},
+      {i:'💳',l:'Mid-range comfort',    d:'$160–300/day — good hotels, nice dinners'},
+      {i:'🥃',l:'Treat ourselves',      d:'$300+/day — this trip is the point'},
+    ]},
+  { id:'timing', multi:true,
+    title:"When are you thinking of going?",
+    sub:"Timing shapes weather, crowds, and price.",
+    opts:[
+      {i:'🌸',l:'Spring (Mar–May)', d:'Bloom, mild temps, building energy'},
+      {i:'☀️',l:'Summer (Jun–Aug)', d:'Long days, warmth, peak season'},
+      {i:'🍂',l:'Fall (Sep–Nov)',   d:'Shoulder season, color, crowds thin'},
+      {i:'❄️',l:'Winter (Dec–Feb)', d:'Snow, festivals, or escape the cold'},
+      {i:'🎲',l:'Flexible — open',  d:'Best weather or deal wins'},
+    ]},
+  { id:'crowds', multi:false,
+    title:"How do you feel about crowds?",
+    sub:"Accessibility vs. solitude.",
+    opts:[
+      {i:'🔦',l:'Hidden & unknown',         d:'Barely visited, off Instagram entirely'},
+      {i:'🗺️',l:'Mostly off the path',      d:'Known to travelers, not package tourists'},
+      {i:'⚖️',l:'Mix — best of both',       d:'A few highlights plus local discovery'},
+      {i:'📸',l:'Popular spots are fine',   d:"Famous for a reason — we don't mind"},
+    ]},
+  { id:'food', multi:false,
+    title:"How big a deal is food on this trip?",
+    sub:"Eating to live, or living to eat?",
+    opts:[
+      {i:'🔋',l:'Fuel only',            d:"Calories count — we're here for the trail"},
+      {i:'🌮',l:'Street food & local',  d:'Eat where locals eat, nothing fancy'},
+      {i:'🍷',l:'Food is a highlight',  d:'Good restaurants, regional cuisine, wine'},
+      {i:'⭐',l:'Culinary destination', d:'We plan trips around where to eat'},
+    ]},
+  { id:'extras', multi:true,
+    title:"Any must-haves or strong pulls?",
+    sub:"Pick anything that strongly draws you.",
+    opts:[
+      {i:'💧',l:'Swimming & water',     d:'Ocean, lakes, rivers, hot springs'},
+      {i:'📷',l:'Insane photography',   d:'Landscapes worth waking up early for'},
+      {i:'🦁',l:'Wildlife',             d:'Safari, birds, marine life, big mammals'},
+      {i:'🏛️',l:'History & ruins',      d:'Ancient sites, deep stories, old cities'},
+      {i:'🌡️',l:'Warm weather only',    d:'No coats. Sun required.'},
+      {i:'🚐',l:'Road trip element',    d:'Driving scenic routes is part of the joy'},
+      {i:'🎒',l:'Zero tourist traps',   d:'Hard no on over-visited Instagram spots'},
+      {i:'🌄',l:'Epic sunrise/sunsets', d:'Worth setting the 4am alarm'},
+    ]},
+];
+
+let PLS = { screen:'welcome', q:0, answers:{}, results:null, saved:new Set() };
+
+function rPlanner() {
+  renderPlanner();
+}
+
+function renderPlanner() {
+  const el = document.getElementById('planner-in');
+  if (!el) return;
+  let html = '';
+  switch (PLS.screen) {
+    case 'welcome': html = plWelcome(); break;
+    case 'quiz':    html = plQuiz();    break;
+    case 'loading': html = plLoading(); break;
+    case 'results': html = plResults(); break;
+  }
+  el.innerHTML = `<div style="max-width:700px;margin:0 auto">${html}</div>`;
+  plannerBind();
+}
+
+function plWelcome() {
+  return `
+  <div class="pl-welcome">
+    <h1>Find Your Next <em>Adventure</em></h1>
+    <p>Answer 10 questions about what you're feeling, and Wayfinder matches you with destinations that actually fit — with real detail on timing, budget, and what to do when you get there.</p>
+    <div class="pl-wf-grid">
+      <div class="pl-wf-card"><div class="pl-wf-icon">🎯</div><div class="pl-wf-label">Truly Personal</div><div class="pl-wf-desc">Built from your answers, not generic lists</div></div>
+      <div class="pl-wf-card"><div class="pl-wf-icon">🔍</div><div class="pl-wf-label">AI-Researched</div><div class="pl-wf-desc">Claude finds the best matches for you</div></div>
+      <div class="pl-wf-card"><div class="pl-wf-icon">💾</div><div class="pl-wf-label">Save Results</div><div class="pl-wf-desc">One tap to add to your wishlist</div></div>
+    </div>
+    <button class="pl-btn-go" id="pl-go-btn">Begin &nbsp;→</button>
+  </div>`;
+}
+
+function plQuiz() {
+  const q   = PL_QS[PLS.q];
+  const sel = PLS.answers[q.id] || [];
+  const pct = Math.round((PLS.q / PL_QS.length) * 100);
+  return `
+  <div class="pl-prog"><div class="pl-prog-fill" style="width:${pct}%"></div></div>
+  <div class="pl-q-card">
+    <div class="pl-eyebrow">Question ${PLS.q + 1} of ${PL_QS.length}</div>
+    <div class="pl-q-title">${q.title}</div>
+    <div class="pl-q-sub">${q.sub}</div>
+    ${q.multi ? '<div class="pl-multi-tag">◈ &nbsp;Select all that apply</div>' : ''}
+    <div class="pl-chips">
+      ${q.opts.map(o => `
+        <div class="pl-chip ${sel.includes(o.l)?'on':''}" data-val="${o.l}">
+          <div class="pl-chip-ico">${o.i}</div>
+          <div><div class="pl-chip-lbl">${o.l}</div><div class="pl-chip-dsc">${o.d}</div></div>
+        </div>`).join('')}
+    </div>
+    <div class="pl-btn-row">
+      ${PLS.q > 0 ? '<button class="pl-btn-back" id="pl-back-btn">← Back</button>' : ''}
+      <button class="pl-btn-next" id="pl-next-btn" ${sel.length===0?'disabled':''}>
+        ${PLS.q === PL_QS.length-1 ? 'Find My Destinations ✦' : 'Next →'}
+      </button>
+    </div>
+  </div>`;
+}
+
+function plLoading() {
+  return `
+  <div class="pl-loading">
+    <svg class="pl-spin" viewBox="0 0 42 42" fill="none">
+      <circle cx="21" cy="21" r="19.5" stroke="#4A7259" stroke-width="0.65" opacity="0.38"/>
+      <circle cx="21" cy="21" r="3.2" stroke="#4A7259" stroke-width="1.25" fill="none"/>
+      <g stroke="#4A7259" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2">
+        <g transform="rotate(0 21 21)"><line x1="21" y1="17.8" x2="21" y2="7"/><line x1="21" y1="7" x2="18.5" y2="4.5"/><line x1="21" y1="7" x2="23.5" y2="4.5"/></g>
+        <g transform="rotate(45 21 21)"><line x1="21" y1="17.8" x2="21" y2="7"/><line x1="21" y1="7" x2="23.5" y2="4.5"/></g>
+        <g transform="rotate(90 21 21)"><line x1="21" y1="17.8" x2="21" y2="7"/><line x1="18.5" y1="7" x2="23.5" y2="7"/></g>
+        <g transform="rotate(135 21 21)"><line x1="21" y1="17.8" x2="21" y2="7"/><line x1="21" y1="7" x2="18.5" y2="4.5"/></g>
+        <g transform="rotate(180 21 21)"><line x1="21" y1="17.8" x2="21" y2="7"/><line x1="21" y1="7" x2="18.5" y2="4.5"/><line x1="21" y1="7" x2="23.5" y2="4.5"/></g>
+        <g transform="rotate(225 21 21)"><line x1="21" y1="17.8" x2="21" y2="7"/><line x1="21" y1="7" x2="23.5" y2="4.5"/></g>
+        <g transform="rotate(270 21 21)"><line x1="21" y1="17.8" x2="21" y2="7"/><line x1="18.5" y1="7" x2="23.5" y2="7"/></g>
+        <g transform="rotate(315 21 21)"><line x1="21" y1="17.8" x2="21" y2="7"/><line x1="21" y1="7" x2="18.5" y2="4.5"/><line x1="21" y1="7" x2="23.5" y2="4.5"/></g>
+      </g>
+      <circle cx="21" cy="21" r="1.5" fill="#9B7420"/>
+    </svg>
+    <div class="pl-loading-title">Finding your path…</div>
+    <div class="pl-loading-sub">Claude is researching destinations for you</div>
+    <div class="pl-step-list">
+      <div class="pl-step-row done"   id="pls1"><div class="pl-step-dot"></div>Analyzing your preferences</div>
+      <div class="pl-step-row active" id="pls2"><div class="pl-step-dot"></div>Searching matching destinations</div>
+      <div class="pl-step-row"        id="pls3"><div class="pl-step-dot"></div>Evaluating timing, budget &amp; access</div>
+      <div class="pl-step-row"        id="pls4"><div class="pl-step-dot"></div>Writing your recommendations</div>
+    </div>
+  </div>`;
+}
+
+function plResults() {
+  if (!PLS.results) return '<div class="pl-loading"><p style="text-align:center;color:var(--muted);padding:40px">Loading…</p></div>';
+  const pills = Object.values(PLS.answers).flat().map(a=>`<div class="pl-pill">${a}</div>`).join('');
+  const cards = PLS.results.destinations.map((d,i) => `
+    <div class="pl-dest">
+      <div class="pl-dest-num">#${i+1}</div>
+      <div class="pl-dest-top">
+        <div class="pl-dest-flag">${d.flag}</div>
+        <div>
+          <div class="pl-dest-name">${d.name}</div>
+          <div class="pl-dest-reg">${d.region}</div>
+          <div class="pl-match-row">
+            <div class="pl-match-lbl">Match</div>
+            <div class="pl-match-track"><div class="pl-match-fill" style="width:${d.match}%"></div></div>
+            <div class="pl-match-pct">${d.match}%</div>
+          </div>
+        </div>
+      </div>
+      <div class="pl-dest-why">${d.why}</div>
+      <div class="pl-meta-grid">
+        <div class="pl-meta-box"><div class="pl-meta-key">Best Time</div><div class="pl-meta-val">${d.bestTime}</div></div>
+        <div class="pl-meta-box"><div class="pl-meta-key">Daily Budget</div><div class="pl-meta-val">${d.budget}</div></div>
+        <div class="pl-meta-box"><div class="pl-meta-key">Getting There</div><div class="pl-meta-val">${d.getting}</div></div>
+        <div class="pl-meta-box"><div class="pl-meta-key">Crowds</div><div class="pl-meta-val">${d.crowds}</div></div>
+      </div>
+      <div class="pl-exp-head">Top Experiences</div>
+      <div class="pl-exp-tags">${d.experiences.map(e=>`<div class="pl-exp-tag">${e}</div>`).join('')}</div>
+      <div class="pl-dest-foot">
+        <button class="pl-btn-save ${PLS.saved.has(d.name)?'saved':''}" data-name="${d.name}" data-idx="${i}">
+          ${PLS.saved.has(d.name) ? '✓ Saved to Wishlist' : '♡ Save to Wishlist'}
+        </button>
+        <button class="pl-btn-plan" data-name="${d.name}" data-region="${d.region}" data-idx="${i}">→ Plan This Trip</button>
+      </div>
+    </div>`).join('');
+  return `
+  <div class="pl-results-hdr">
+    <h2>Your Destinations ✦</h2>
+    <p>${PLS.results.intro}</p>
+  </div>
+  <div class="pl-pills">${pills}</div>
+  ${cards}
+  <div class="pl-results-foot">
+    <p>Want to explore a different direction?</p>
+    <button class="pl-btn-again" id="pl-restart-btn">↺ &nbsp;Start Over</button>
+  </div>`;
+}
+
+function plannerBind() {
+  document.getElementById('pl-go-btn')?.addEventListener('click', () => {
+    PLS.q = 0; PLS.answers = {}; PLS.screen = 'quiz'; renderPlanner();
+  });
+  document.getElementById('pl-back-btn')?.addEventListener('click', () => { PLS.q--; renderPlanner(); });
+  document.getElementById('pl-restart-btn')?.addEventListener('click', () => {
+    PLS.screen = 'welcome'; PLS.results = null; renderPlanner();
+  });
+  document.querySelectorAll('#planner-in .pl-chip').forEach(el => {
+    el.addEventListener('click', () => {
+      const q = PL_QS[PLS.q], val = el.dataset.val;
+      if (!PLS.answers[q.id]) PLS.answers[q.id] = [];
+      if (q.multi) {
+        const idx = PLS.answers[q.id].indexOf(val);
+        idx > -1 ? PLS.answers[q.id].splice(idx,1) : PLS.answers[q.id].push(val);
+      } else {
+        PLS.answers[q.id] = [val];
+      }
+      renderPlanner();
+    });
+  });
+  document.getElementById('pl-next-btn')?.addEventListener('click', () => {
+    if (PLS.q < PL_QS.length - 1) { PLS.q++; renderPlanner(); }
+    else plannerGo();
+  });
+  document.querySelectorAll('#planner-in .pl-btn-save').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const n = btn.dataset.name, idx = parseInt(btn.dataset.idx);
+      D = load();
+      if (PLS.saved.has(n)) {
+        PLS.saved.delete(n);
+        D.wish = D.wish.filter(w => w.name !== n);
+        save('wish', D.wish);
+        badges();
+        toast('Removed from Wishlist');
+      } else {
+        PLS.saved.add(n);
+        const dest = PLS.results.destinations[idx];
+        D.wish.push({ id:uid(), name:n, type:'international', priority:'must', season:'', notes:(dest?.why||'').slice(0,200), addedAt:Date.now() });
+        save('wish', D.wish);
+        badges();
+        toast('♡ Saved to Wishlist!');
+      }
+      btn.textContent = PLS.saved.has(n) ? '✓ Saved to Wishlist' : '♡ Save to Wishlist';
+      btn.classList.toggle('saved', PLS.saved.has(n));
+    });
+  });
+  document.querySelectorAll('#planner-in .pl-btn-plan').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const name = btn.dataset.name, region = btn.dataset.region;
+      const why = PLS.results.destinations[parseInt(btn.dataset.idx)]?.why || '';
+      document.getElementById('t-name').value = name;
+      document.getElementById('t-dests').value = region;
+      document.getElementById('t-type').value = 'other';
+      document.getElementById('t-status').value = 'planning';
+      document.getElementById('t-notes').value = why;
+      ['t-start','t-end','t-budget'].forEach(id => document.getElementById(id).value = '');
+      go('trips');
+      setTimeout(() => openM('m-trip'), 80);
+    });
+  });
+}
+
+async function plannerGo() {
+  PLS.screen = 'loading'; renderPlanner();
+  const seq = [{id:'pls2',ms:900},{id:'pls3',ms:2200},{id:'pls4',ms:3800}];
+  seq.forEach(({id,ms}) => setTimeout(() => {
+    document.querySelector('#planner-in .pl-step-row.active')?.classList.replace('active','done');
+    document.getElementById(id)?.classList.add('active');
+  }, ms));
+  const answersText = PL_QS.map(q => {
+    const a = PLS.answers[q.id];
+    return a?.length ? `${q.title}\nAnswer: ${a.join(', ')}` : null;
+  }).filter(Boolean).join('\n\n');
+  const prompt = `You are an expert travel consultant. A couple answered a travel preferences quiz. Based on their answers, recommend exactly 4 destinations. Include a mix of US and international based on their distance preference.
+
+Their answers:
+${answersText}
+
+Respond ONLY with raw valid JSON (no markdown fences, no commentary):
+{
+  "intro": "1-2 warm sentences acknowledging their travel style",
+  "destinations": [
+    {
+      "name": "Destination name",
+      "region": "Country or US state/region",
+      "flag": "One emoji",
+      "match": 94,
+      "why": "3-4 sentences — be specific to THEIR answers, not generic travel copy. Reference what they told you.",
+      "bestTime": "Month range",
+      "budget": "$X–Y/day",
+      "getting": "How to get there from western US",
+      "crowds": "Crowd level + context",
+      "experiences": ["specific experience 1","2","3","4","5"]
+    }
+  ]
+}
+
+Match scores should vary realistically (85–97). The why field must reference their actual answers directly.`;
+  try {
+    const raw = await callAI(prompt);
+    const clean = raw.replace(/^```json\n?/,'').replace(/\n?```$/,'').trim();
+    PLS.results = JSON.parse(clean);
+  } catch(e) {
+    console.warn('Planner AI error, using demo:', e.message);
+    PLS.results = plannerDemo();
+  }
+  PLS.screen = 'results';
+  renderPlanner();
+}
+
+function plannerDemo() {
+  return {
+    intro: "You're after something that earns the view and actually feels like somewhere — here are four destinations that deliver.",
+    destinations: [
+      { name:"Eastern Sierra Nevada", region:"California, USA", flag:"🏔️", match:97,
+        why:"Highway 395, the John Muir Trail, Bishop bouldering, and Alabama Hills give you dramatic mountains, real wilderness, and a road trip backbone all in one corridor. Shoulder season keeps the crowds thin and the light golden.",
+        bestTime:"Late July – October", budget:"$60–120/day", getting:"Road trip up Hwy 395 from SoCal — 4hrs", crowds:"Low off-trail, moderate near Whitney Portal",
+        experiences:["JMT section via Kearsarge Pass","Sunrise at Bishop Creek Lakes","Alabama Hills golden hour","Hot Creek geological site","Ancient Bristlecone Pine Forest"]},
+      { name:"Dolomites", region:"South Tyrol, Italy", flag:"🇮🇹", match:94,
+        why:"For a hut-to-hut experience, this is the gold standard. The Alta Via routes chain rifugios across limestone towers that look like another planet. September means turning larches, blue skies, and 80% fewer people than August.",
+        bestTime:"Mid-July – early October", budget:"$160–240/day", getting:"Fly Venice or Innsbruck, 2hr drive to Cortina", crowds:"Low–moderate outside August",
+        experiences:["Alta Via 1 hut-to-hut (5–7 days)","Tre Cime di Lavaredo sunrise loop","Via ferrata on Catinaccio","Rifugio dinner with local wine","Seceda ridge walk at golden hour"]},
+      { name:"Utah Canyon Country", region:"Utah, USA", flag:"🌵", match:91,
+        why:"The Mighty 5 road trip done right — camping in Goblin Valley, dawn at Bryce, backpacking the Narrows, then disappearing into Grand Staircase-Escalante where most people never go.",
+        bestTime:"April–May or Sep–Oct", budget:"$80–150/day", getting:"Road trip from SoCal or fly to Las Vegas", crowds:"Moderate on main trails — solitude 2 miles off-path",
+        experiences:["Zion Narrows overnight backpack","Bryce Canyon amphitheater at sunrise","Coyote Gulch loop","Goblin Valley stargazing","Arches night photography"]},
+      { name:"Kyushu", region:"Southern Japan", flag:"🇯🇵", match:88,
+        why:"Japan's least-visited main island is everything your off-map instinct wants. Active volcanoes you can hike into, an incredible food city in Fukuoka, hot spring towns with zero Western tourists.",
+        bestTime:"Oct–Nov or March–April", budget:"$130–190/day", getting:"Fly to Fukuoka via Tokyo — ~12–14hrs total", crowds:"Very low — most travelers stop at Tokyo",
+        experiences:["Aso caldera rim hike","Kurokawa Onsen ryokan stay","Nagasaki history district","Yufuin sake distillery walk","Beppu Hell Springs circuit"]},
+    ]
+  };
+}
+
+// ══════════════════════════════════════════════
+// TRAVEL PROFILE — AI context builder
+// ══════════════════════════════════════════════
+function buildTravelProfile(){
+  D=load();
+  const visited=D.places.filter(p=>p.status==='visited');
+  const want=D.places.filter(p=>p.status==='want'||p.status==='planned');
+  const cats={};visited.forEach(p=>{cats[p.category]=(cats[p.category]||0)+1});
+  const topCats=Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([c,n])=>`${cl(c)} (${n})`);
+  const pastTrips=D.trips.filter(t=>t.status==='past');
+  const upcoming=D.trips.filter(t=>t.status==='upcoming'||t.status==='planning'||t.status==='active');
+  const mustWish=D.wish.filter(w=>w.priority==='must'&&!w.graduated).map(w=>w.name);
+  const soonWish=D.wish.filter(w=>w.priority==='soon'&&!w.graduated).map(w=>w.name);
+  const somedayWish=D.wish.filter(w=>w.priority==='someday'&&!w.graduated).map(w=>w.name);
+  const highRated=visited.filter(p=>parseInt(p.rating)>=4).map(p=>p.name).slice(0,8);
+  const recentTrips=[...pastTrips].sort((a,b)=>new Date(b.startDate||0)-new Date(a.startDate||0)).slice(0,5).map(t=>t.name);
+  const visitedCountries=[...new Set(visited.map(p=>normCountry(p.country)).filter(Boolean))];
+  const intlCountries=visitedCountries.filter(c=>c!=='United States');
+  const visitedStates=[...new Set(visited.filter(p=>normCountry(p.country)==='United States').map(p=>p.usState).filter(Boolean))];
+  const usPlaces=visited.filter(p=>normCountry(p.country)==='United States');
+  const intlPlaces=visited.filter(p=>normCountry(p.country)&&normCountry(p.country)!=='United States');
+
+  return `TRAVELER PROFILE — ${D.settings.name} & ${D.settings.partner}
+Home base: ${D.settings.homeCity||'Western US'} | Traveling together since: ${D.settings.since||'—'}
+
+TRAVEL HISTORY
+- ${visited.length} total places visited
+- ${intlPlaces.length} international places across ${intlCountries.length} countr${intlCountries.length!==1?'ies':'y'}: ${intlCountries.slice(0,10).join(', ')||'none yet'}
+- ${usPlaces.length} US places across ${visitedStates.length} state${visitedStates.length!==1?'s':''}: ${visitedStates.slice(0,10).join(', ')||'none yet'}
+- ${pastTrips.length} completed trips | Recent: ${recentTrips.join(', ')||'none recorded'}
+- Top categories: ${topCats.join(', ')||'none yet'}
+- Highly rated (4-5★): ${highRated.join(', ')||'none yet'}
+
+SAVED BUT NOT YET VISITED
+- ${want.length} places saved (want-to-go or planned): ${want.slice(0,6).map(p=>p.name).join(', ')||'none'}
+
+WISHLIST
+- Must-do: ${mustWish.slice(0,8).join(', ')||'none'}
+- Soon: ${soonWish.slice(0,6).join(', ')||'none'}
+- Someday: ${somedayWish.slice(0,6).join(', ')||'none'}
+
+UPCOMING & PLANNING
+- ${upcoming.length?upcoming.map(t=>`${t.name} (${tsl(t.status)})`).join(', '):'Nothing planned yet'}`;
+}
+
+// ══════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════
+function fd(d){if(!d)return'—';try{return new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}catch{return d}}
+const sl=s=>({saved:'Saved',want:'Want to Go',planned:'Planned',visited:'Visited'}[s]||s);
+const stc=s=>({saved:'te',want:'to',planned:'tb2',visited:'tg'}[s]||'te');
+const tsl=s=>({planning:'Planning',upcoming:'Upcoming',active:'Active!',past:'Completed'}[s]||s);
+const tsc=s=>({planning:'te',upcoming:'tb2',active:'tg',past:'tg'}[s]||'te');
+const pi=p=>({must:'🔥',soon:'📅',someday:'💭'}[p]||'⭐');
+const ci=c=>({'nat-park':'🏞️',hiking:'🥾',camp:'⛺',viewpoint:'🌄',swim:'💧',food:'🍽️',accommodation:'🏨',city:'🏙️','road-trip':'🚗',international:'🌍','hidden-gem':'💎',other:'📍'}[c]||'📍');
+const cl=c=>({'nat-park':'Nat Park',hiking:'Hiking',camp:'Camping',viewpoint:'Viewpoint',swim:'Swimming',food:'Food',accommodation:'Stay',city:'City','road-trip':'Road Trip',international:'International','hidden-gem':'Hidden Gem',other:'Place'}[c]||c);
+const si=s=>({youtube:'▶️',instagram:'📸',google:'🔍',blog:'📝',friend:'🗣️',maps:'🗺️',alltrails:'🥾',own:'✨',import:'📄'}[s]||'🔖');
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+loadSettings();rHome();badges();
+document.getElementById('tba').style.display='flex';
+// Hide auth overlay immediately if session already exists (avoids flash)
+SUPA.auth.getSession().then(({data:{session}})=>{
+  if(session){
+    document.getElementById('auth-overlay').style.display='none';
+    showSyncBar();
+  }
+});
+</script>
+</body>
+</html>
