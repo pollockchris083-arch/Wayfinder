@@ -243,7 +243,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .import-sub{font-size:11px;color:var(--muted);line-height:1.6}
 .import-or{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--muted2);font-size:11px}
 .import-or::before,.import-or::after{content:'';flex:1;height:1px;background:var(--bdr)}
-.ai-preview{background:var(--card2);border:1px solid var(--bdr2);border-radius:8px;padding:14px;margin-top:14px;max-height:220px;overflow-y:auto}
+.ai-preview{background:var(--card2);border:1px solid var(--bdr2);border-radius:8px;padding:14px;margin-top:14px;max-height:340px;overflow-y:auto}
 .ai-preview h4{font-size:12px;font-weight:600;color:var(--green3);margin-bottom:10px}
 .preview-row{display:flex;align-items:baseline;gap:8px;padding:4px 0;border-bottom:1px solid var(--bdr)}
 .preview-row:last-child{border-bottom:none}
@@ -1456,52 +1456,60 @@ async function analyzeDoc(){
   document.getElementById('import-loading').style.display='block';
   document.getElementById('import-preview').style.display='none';
 
-  const prompt=`You are analyzing a travel document (Google Doc, notes, or journal) to extract structured trip information for a travel app called Wayfinder.
-
-Read this travel document carefully and extract all information into the following JSON structure. Be thorough — extract every place, activity, restaurant, accommodation, and memorable moment mentioned.
+  const prompt=`You are extracting structured data from a travel document for a travel app called Wayfinder. This is a PAST trip that has already been completed.
 
 DOCUMENT:
 """
-${text.slice(0,8000)}
+${text.slice(0,15000)}
 """
 
-Respond ONLY with valid raw JSON (no markdown fences):
+DATE EXTRACTION — be thorough and precise:
+- Convert ALL date formats to YYYY-MM-DD (e.g. "June 14, 2023" → "2023-06-14"; "July 4th" → infer the year from surrounding context)
+- Look for dates in: titles, headings, diary entries, captions, timestamps, booking references, flight details
+- If only month + year appear (e.g. "August 2022"), use YYYY-08-01
+- If only a year appears, use YYYY-01-01
+- The endDate should be the last day of the trip (including travel home)
+- If dates aren't explicit, infer from context clues (seasons, events, day references)
+
+Respond ONLY with valid raw JSON — no markdown fences, no explanation, nothing before or after the JSON:
 {
   "trip": {
-    "name": "Trip name (infer from content if not explicit)",
+    "name": "Descriptive trip name inferred from content (e.g. 'Amalfi Coast Road Trip' or 'Japan Spring 2023', not just 'Trip')",
     "startDate": "YYYY-MM-DD or empty string",
     "endDate": "YYYY-MM-DD or empty string",
-    "destinations": ["list","of","main","destinations"],
+    "destinations": ["Main cities or regions visited, in order"],
     "type": "road-trip|backpacking|international|city|beach|ski|other",
-    "notes": "2-3 sentence summary of the trip's highlights and character"
+    "notes": "2-3 sentences capturing the trip's character, standout moments, and what made it special — written in past tense"
   },
   "places": [
     {
-      "name": "Place name",
+      "name": "Specific place name — a restaurant, trail, beach, landmark, viewpoint, town (not just a country or continent)",
       "country": "Full country name, e.g. United States, Italy, Japan",
       "usState": "US state name if country is United States, else empty string",
-      "region": "City or local area name only, e.g. Zion Canyon or Amalfi Coast",
+      "region": "City or local area, e.g. Cinque Terre, Zion Canyon, Amalfi Coast",
       "category": "nat-park|hiking|camp|viewpoint|swim|food|accommodation|city|road-trip|international|hidden-gem|other",
-      "notes": "What happened here or why it was notable",
-      "rating": "5|4|3|2|1 or empty string"
+      "notes": "What happened here — quote or paraphrase specific details from the document",
+      "rating": "5|4|3|2|1 or empty string",
+      "visitDate": "YYYY-MM-DD if a specific date for this visit is mentioned, else empty string"
     }
   ],
   "journal": [
     {
-      "title": "Entry title",
+      "title": "Vivid, specific entry title (not just a date — e.g. 'Sunrise on the Rim' or 'Lost in the Medina', not 'Day 3')",
       "date": "YYYY-MM-DD or empty string",
-      "location": "Where this entry is about",
-      "body": "The key story, memory, or experience from this moment. Be detailed and preserve the voice of the original text."
+      "location": "Where this memory is from",
+      "body": "The key story or experience — detailed, preserving the original voice, specific sensory details, and emotions from the document. At least 2-3 sentences."
     }
   ],
-  "summary": "One sentence describing what you found and extracted"
+  "summary": "One sentence: what was found (X places, Y journal entries) and the trip's overall theme"
 }
 
-Extract as many places and journal moments as are genuinely present. Places should be VISITED (status: visited). Journal entries should capture real memories and stories from the text.`;
+Extract ALL specifically visited places — restaurants, trails, hotels, viewpoints, towns, beaches, museums. For journal entries, aim for 3–8 of the most vivid and specific moments that tell the complete story. Preserve the original voice and specific details from the source text.`;
 
   try {
     const raw = await callAI(prompt);
-    const clean = raw.replace(/^```json\n?/,'').replace(/^```\n?/,'').replace(/\n?```$/,'').trim();
+    // Strip markdown fences and any leading/trailing non-JSON text
+    let clean = raw.replace(/^[\s\S]*?(\{)/,'$1').replace(/(\})[^}]*$/,'$1').trim();
     importedData = JSON.parse(clean);
     showPreview(importedData);
   } catch(e) {
@@ -1543,7 +1551,7 @@ async function callAI(prompt) {
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 2048,
+      max_tokens: 4096,
       messages: [{ role: 'user', content: prompt }],
     }),
   });
@@ -1559,19 +1567,38 @@ function showPreview(data){
   document.getElementById('import-loading').style.display='none';
   document.getElementById('import-preview').style.display='block';
 
+  const fmtDate=d=>{if(!d)return'';try{const[y,m,dy]=d.split('-');return`${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1]} ${+dy}, ${y}`}catch{return d}};
+
   const rows=[];
   rows.push({k:'Trip Name', v:data.trip.name||'—'});
-  if(data.trip.startDate) rows.push({k:'Dates', v:data.trip.startDate+(data.trip.endDate?' → '+data.trip.endDate:'')});
+  rows.push({k:'Status', v:'✅ Past Trip'});
+  if(data.trip.startDate){
+    const dateStr=data.trip.endDate
+      ? fmtDate(data.trip.startDate)+' → '+fmtDate(data.trip.endDate)
+      : fmtDate(data.trip.startDate);
+    rows.push({k:'Dates', v:dateStr});
+  }
   if(data.trip.destinations?.length) rows.push({k:'Destinations', v:data.trip.destinations.join(', ')});
   if(data.trip.notes) rows.push({k:'Summary', v:data.trip.notes});
-  rows.push({k:'Places Found', v:data.places?.length+' places to import'});
-  rows.push({k:'Journal', v:data.journal?.length+' entries to create'});
-  if(data.summary) rows.push({k:'AI Note', v:data.summary});
+  rows.push({k:'Places', v:(data.places?.length||0)+' places found'});
+  rows.push({k:'Journal', v:(data.journal?.length||0)+' entries found'});
+
+  const placesHtml=data.places?.length
+    ? `<div style="margin-top:12px;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Places</div>`
+      +data.places.slice(0,8).map(p=>`<div class="preview-row"><div class="preview-key">${ci(p.category)}</div><div class="preview-val">${p.name}${p.region?' — '+p.region:''}${p.visitDate?` <span style="color:var(--muted);font-size:10px">(${fmtDate(p.visitDate)})</span>`:''}</div></div>`).join('')
+      +(data.places.length>8?`<div style="font-size:11px;color:var(--muted);padding:4px 0">+ ${data.places.length-8} more places…</div>`:'')
+    : '';
+
+  const journalHtml=data.journal?.length
+    ? `<div style="margin-top:12px;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Journal Entries</div>`
+      +data.journal.slice(0,5).map(j=>`<div class="preview-row"><div class="preview-key">📝</div><div class="preview-val">${j.title||'Untitled'}${j.date?` <span style="color:var(--muted);font-size:10px">(${fmtDate(j.date)})</span>`:''}</div></div>`).join('')
+      +(data.journal.length>5?`<div style="font-size:11px;color:var(--muted);padding:4px 0">+ ${data.journal.length-5} more entries…</div>`:'')
+    : '';
 
   document.getElementById('preview-content').innerHTML=`
   <h4>✦ Here's what was found</h4>
   ${rows.map(r=>`<div class="preview-row"><div class="preview-key">${r.k}</div><div class="preview-val">${r.v}</div></div>`).join('')}
-  ${data.places?.length?`<div style="margin-top:10px;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Places</div>${data.places.slice(0,6).map(p=>`<div class="preview-row"><div class="preview-key">${ci(p.category)}</div><div class="preview-val">${p.name}${p.region?' — '+p.region:''}</div></div>`).join('')}${data.places.length>6?`<div style="font-size:11px;color:var(--muted);padding:4px 0">+ ${data.places.length-6} more places…</div>`:''}`:''}`
+  ${placesHtml}${journalHtml}`
 }
 
 function confirmImport(){
@@ -1605,7 +1632,7 @@ function confirmImport(){
     const country=normCountry(p.country||'');
     const usState=p.usState||'';
     const region=p.region||(usState&&country?usState+', '+country:country||'');
-    D.places.push({id:uid(),name:p.name,country,usState,region,category:p.category||'other',status:'visited',source:'import',notes:p.notes||'',tags:['imported'],rating:p.rating||'',tripIds:[],journalIds:[],photos:[],addedAt:Date.now()});
+    D.places.push({id:uid(),name:p.name,country,usState,region,category:p.category||'other',status:'visited',source:'import',notes:p.notes||'',tags:['imported'],rating:p.rating||'',visitDate:p.visitDate||'',tripIds:[t.id],journalIds:[],photos:[],addedAt:Date.now()});
     pCount++;
   });
   save('places',D.places);
