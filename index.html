@@ -1598,12 +1598,49 @@ function tripInsights(t,linkedPlaces,tripJournal,isDomestic,tripCountries,tripUS
   if(stops>3)facts.push(`Itinerary covered ${stops} stops across ${t.itinerary.length} days.`);
 
   if(!facts.length)return'';
+  const cacheKey='wf_ai_'+t.id;
+  const cached=localStorage.getItem(cacheKey);
+  const aiSlot=`<div id="ai-insights-${t.id}" style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--bdr)">
+    ${cached?renderAIInsights(JSON.parse(cached)):`<div style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:10px;height:10px;border:2px solid var(--muted2);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite"></span>Generating AI insights…</div>`}
+  </div>`;
+  if(!cached)setTimeout(()=>loadAIInsights(t,linkedPlaces,tripJournal,isDomestic,tripCountries,tripUSStates),0);
   return`<div class="card" style="margin-bottom:13px;background:linear-gradient(135deg,rgba(74,114,89,.05),rgba(155,116,32,.04));border-color:rgba(74,114,89,.2)">
     <div class="ch">
       <div><div class="ct">✨ Trip Summary</div><div class="cs">Facts from your data</div></div>
     </div>
     <div>${facts.map(f=>`<div style="font-size:12px;color:var(--text2);padding:4px 0;border-bottom:1px solid var(--bdr);line-height:1.5">${f}</div>`).join('')}</div>
+    ${aiSlot}
   </div>`;
+}
+function renderAIInsights(insights){
+  if(!Array.isArray(insights)||!insights.length)return'';
+  return`<div style="font-size:10px;font-weight:600;color:var(--green3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px">✦ AI Reflections</div>`
+    +insights.map(s=>`<div style="font-size:12px;color:var(--text2);padding:3px 0;line-height:1.5">${s}</div>`).join('');
+}
+async function loadAIInsights(t,linkedPlaces,tripJournal,isDomestic,tripCountries,tripUSStates){
+  const el=document.getElementById('ai-insights-'+t.id);
+  if(!el)return;
+  const cacheKey='wf_ai_'+t.id;
+  const scope=isDomestic?(tripUSStates.join(', ')||'US'):(tripCountries.join(', ')||'');
+  const placeNames=linkedPlaces.slice(0,12).map(p=>p.name+(p.rating?' ('+p.rating+'★)':'')).join(', ');
+  const jTitles=tripJournal.slice(0,5).map(j=>j.title).join('; ');
+  const prompt=`You are analyzing a personal travel trip. Return ONLY a JSON array of 3-4 short insight strings (each under 80 chars). State facts ONLY from the data below. Second person ("You visited…"). No invention.
+Trip: "${t.name}" | ${t.startDate||''}–${t.endDate||''} | ${scope}
+Places: ${placeNames||'none'}
+Journal entries: ${jTitles||'none'}
+Budget: ${t.budget?'$'+t.budget.toLocaleString():'not set'}`;
+  try{
+    const text=await callAI(prompt,400);
+    const match=text.match(/\[[\s\S]*\]/);
+    if(!match)throw new Error('no array');
+    const insights=JSON.parse(match[0]);
+    localStorage.setItem(cacheKey,JSON.stringify(insights));
+    const el2=document.getElementById('ai-insights-'+t.id);
+    if(el2)el2.innerHTML=renderAIInsights(insights);
+  }catch(e){
+    const el2=document.getElementById('ai-insights-'+t.id);
+    if(el2)el2.innerHTML='';
+  }
 }
 function delStop(tid,di,si){
   const t=D.trips.find(x=>x.id===tid);if(!t)return;
