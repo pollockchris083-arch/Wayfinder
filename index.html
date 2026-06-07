@@ -522,7 +522,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
   <div class="sb-foot">
     <div class="sb-prof" onclick="go('settings')">
       <div class="av" id="av">C</div>
-      <div><div class="pn" id="pn">Chris</div><div class="pl" id="pl-partner">& Partner</div></div>
+      <div><div class="pn" id="pn">Chris</div><div class="pl" id="pl-partner"></div></div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 6px;margin-top:5px">
       <button id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode" style="background:none;border:none;cursor:pointer;font-size:16px;padding:4px 6px;border-radius:6px;transition:background .15s;line-height:1" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background='none'">🌙</button>
@@ -1167,8 +1167,12 @@ document.querySelectorAll('.mo').forEach(m=>m.addEventListener('click',e=>{if(e.
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     const open=document.querySelector('.mo.on');
-    if(open)open.classList.remove('on');
-    else sbClose();
+    if(open){open.classList.remove('on');return;}
+    const pdv=document.getElementById('place-dv');
+    if(pdv&&pdv.classList.contains('on')){rPlaces();return;}
+    const tdv=document.getElementById('trip-dv');
+    if(tdv&&tdv.classList.contains('on')){rTrips();return;}
+    sbClose();
   }
 });
 
