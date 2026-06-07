@@ -2105,7 +2105,7 @@ function openTripD(id){
     </div>
   </div>
   <div style="background:linear-gradient(135deg,var(--card2),var(--card));border:1px solid var(--bdr);border-radius:var(--r);padding:16px 18px;margin-bottom:13px;position:relative;overflow:hidden">
-    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--green),var(--gold))"></div>
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${t.status==='active'?'linear-gradient(90deg,#3a9e5c,#5fc47a)':t.status==='upcoming'?'linear-gradient(90deg,#B8892A,var(--gold))':t.status==='planning'?'linear-gradient(90deg,#4A7EBA,#6BA3D6)':'linear-gradient(90deg,var(--green),var(--gold))'}"></div>
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px">
       <div style="font-size:21px;font-weight:700;color:var(--text);letter-spacing:-.4px">${t.name}</div>
       ${daysChip}
