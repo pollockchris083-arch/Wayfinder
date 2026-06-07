@@ -1985,6 +1985,18 @@ function openTripD(id){
     </div>
   </div>`
 
+  // Days-away / days-ago chip
+  const _today=new Date();_today.setHours(0,0,0,0);
+  let daysChip='';
+  if(t.startDate&&t.endDate){
+    const _s=new Date(t.startDate);const _e=new Date(t.endDate);_s.setHours(0,0,0,0);_e.setHours(0,0,0,0);
+    const _dUntil=Math.round((_s-_today)/86400000);const _dSince=Math.round((_today-_e)/86400000);
+    const _dur=Math.round((_e-_s)/86400000)+1;
+    if((t.status==='upcoming'||t.status==='planning'||t.status==='active')&&_dUntil>0)daysChip=`<span style="background:rgba(74,114,89,.12);color:var(--green3);font-size:10px;font-weight:600;padding:3px 9px;border-radius:100px">${_dUntil} day${_dUntil>1?'s':''} away</span>`;
+    else if(_dUntil===0&&_today>=_s&&_today<=_e)daysChip=`<span style="background:rgba(155,116,32,.12);color:var(--gold2);font-size:10px;font-weight:600;padding:3px 9px;border-radius:100px">Day ${Math.round((_today-_s)/86400000)+1} of ${_dur} 🚀</span>`;
+    else if(t.status==='past'&&_dSince>0&&_dSince<730)daysChip=`<span style="font-size:10px;color:var(--muted);padding:3px 9px;border:1px solid var(--bdr2);border-radius:100px">${_dSince<1?'Yesterday':_dSince+' days ago'}</span>`;
+  }
+
   dv.innerHTML=`
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
     <button class="td-back" onclick="rTrips()">← All Trips</button>
@@ -1995,7 +2007,10 @@ function openTripD(id){
   </div>
   <div style="background:linear-gradient(135deg,var(--card2),var(--card));border:1px solid var(--bdr);border-radius:var(--r);padding:16px 18px;margin-bottom:13px;position:relative;overflow:hidden">
     <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--green),var(--gold))"></div>
-    <div style="font-size:21px;font-weight:700;color:var(--text);letter-spacing:-.4px;margin-bottom:6px">${t.name}</div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px">
+      <div style="font-size:21px;font-weight:700;color:var(--text);letter-spacing:-.4px">${t.name}</div>
+      ${daysChip}
+    </div>
     <div style="display:flex;flex-wrap:wrap;gap:14px">
       ${t.startDate?`<div style="font-size:12px;color:var(--muted)">📅 ${fd(t.startDate)} — ${fd(t.endDate)}</div>`:''}
       <div style="font-size:12px;color:var(--muted);text-transform:capitalize">${tsl(t.status)}</div>
@@ -2005,8 +2020,8 @@ function openTripD(id){
     ${t.notes?`<div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.6;padding:10px;background:rgba(0,0,0,.03);border-radius:6px;border-left:2px solid var(--green)">${t.notes}</div>`:''}
   </div>
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:13px">
-    <div class="sc" style="--accent:var(--green2)"><div class="si">📅</div><div class="sn">${t.itinerary.length||'—'}</div><div class="sl">Days</div></div>
-    <div class="sc" style="--accent:var(--gold)"><div class="si">📍</div><div class="sn">${totalStops}</div><div class="sl">Stops</div></div>
+    <div class="sc" style="--accent:var(--green2)"><div class="si">📍</div><div class="sn">${linkedPlaces.length||'—'}</div><div class="sl">Places</div></div>
+    <div class="sc" style="--accent:var(--gold)"><div class="si">📅</div><div class="sn">${t.itinerary.length||'—'}</div><div class="sl">Days</div></div>
     <div class="sc" style="--accent:var(--sage)"><div class="si">${isDomestic?'🇺🇸':'🌍'}</div><div class="sn">${isDomestic?tripUSStates.length:tripCountries.length}</div><div class="sl">${isDomestic?'States':'Countries'}</div></div>
     <div class="sc" style="--accent:var(--earth2)"><div class="si">📓</div><div class="sn">${tripJournal.length}</div><div class="sl">Journal</div></div>
   </div>
