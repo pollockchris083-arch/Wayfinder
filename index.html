@@ -1129,6 +1129,7 @@ function migrate(){
   if(cj)save('journal',D.journal);
   D.wish.forEach(w=>{
     if(!('tripId' in w)){w.tripId='';cw=true}
+    if(!('placeId' in w)){w.placeId='';cw=true}
     if(!('graduated' in w)){w.graduated=false;cw=true}
     if(!w.addedAt){w.addedAt=Date.now();cw=true}
   });
