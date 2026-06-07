@@ -2414,14 +2414,17 @@ function rJournal(){
   }
   el.innerHTML=html;
 }
+function toggleJBody(id){const f=document.getElementById('jbf-'+id),b=document.getElementById('jbt-'+id);if(!f||!b)return;const show=f.style.display==='none';f.style.display=show?'':'none';b.textContent=show?'▲ Read less':'▼ Read more';}
 function journalCard(e,showTrip){
   const lp=e.placeId?D.places.find(x=>x.id===e.placeId):null;
   const lt=showTrip&&e.tripId?D.trips.find(x=>x.id===e.tripId):null;
+  const LIMIT=320;
+  const bodyHtml=e.body.length>LIMIT?`<div class="jbody" style="-webkit-line-clamp:initial;overflow:visible">${e.body.slice(0,LIMIT)}…<span id="jbf-${e.id}" style="display:none">${e.body.slice(LIMIT)}</span></div><button id="jbt-${e.id}" onclick="toggleJBody('${e.id}')" style="background:none;border:none;font-size:11px;color:var(--green3);cursor:pointer;padding:2px 0;margin-top:2px;display:block">▼ Read more</button>`:`<div class="jbody" style="-webkit-line-clamp:initial;overflow:visible">${e.body}</div>`;
   return`<div class="je">
     <div class="jdate">${fd(e.date)}${lt?` · <span style="color:var(--green3);font-weight:500">✈️ ${lt.name}</span>`:''}</div>
     <div class="jtitle">${e.title}</div>
     ${lp?`<div class="jloc" style="cursor:pointer" onclick="go('places');setTimeout(()=>openPlaceD('${lp.id}'),10)">📍 ${lp.name}${lp.region?' — '+lp.region:''}</div>`:e.loc?`<div class="jloc">📍 ${e.loc}</div>`:''}
-    <div class="jbody" style="-webkit-line-clamp:initial;overflow:visible">${e.body}</div>
+    ${bodyHtml}
     <div class="pact" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--bdr)">
       <button class="pbtn" onclick="openJournalEdit('${e.id}')">✏️ Edit</button>
       <button class="pbtn del" onclick="delJournal('${e.id}')">🗑️ Delete</button>
