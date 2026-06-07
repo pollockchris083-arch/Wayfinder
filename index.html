@@ -1193,7 +1193,7 @@ document.addEventListener('keydown',e=>{
 // ══════════════════════════════════════════════
 // BADGES
 // ══════════════════════════════════════════════
-function badges(){D=load();document.getElementById('b-places').textContent=D.places.length;document.getElementById('b-trips').textContent=D.trips.length;document.getElementById('b-wish').textContent=D.wish.length}
+function badges(){D=load();document.getElementById('b-places').textContent=D.places.length;document.getElementById('b-trips').textContent=D.trips.length;document.getElementById('b-wish').textContent=D.wish.filter(w=>!w.graduated).length}
 
 // ══════════════════════════════════════════════
 // HOME
@@ -1316,7 +1316,7 @@ function rHome(){
     <div class="sc" style="--accent:#4A7EBA;cursor:pointer" onclick="go('map')"><div class="si">🇺🇸</div><div class="sn">${usStates.length}</div><div class="sl">US States</div></div>
     <div class="sc" style="--accent:var(--sage);cursor:pointer" onclick="go('places')"><div class="si">📍</div><div class="sn">${vis.length}</div><div class="sl">Places Visited</div></div>
     <div class="sc" style="--accent:var(--gold);cursor:pointer" onclick="go('journal')"><div class="si">📓</div><div class="sn">${D.journal.length}</div><div class="sl">Journal Entries</div></div>
-    <div class="sc" style="--accent:var(--earth2);cursor:pointer" onclick="go('wishlist')"><div class="si">♡</div><div class="sn">${D.wish.length}</div><div class="sl">Wishlist</div></div>
+    <div class="sc" style="--accent:var(--earth2);cursor:pointer" onclick="go('wishlist')"><div class="si">♡</div><div class="sn">${D.wish.filter(w=>!w.graduated).length}</div><div class="sl">Wishlist</div></div>
   </div>
   ${activeTrips.length?'<div style="margin-bottom:6px;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px">Active Trips</div>':''}
   <div class="dash-trips">${tripsHTML}</div>
