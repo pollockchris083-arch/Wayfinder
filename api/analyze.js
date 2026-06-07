@@ -13,7 +13,7 @@ export default async function handler(req) {
   let body;
   try { body = await req.json(); } catch { return json({ error: 'Invalid JSON body' }, 400); }
 
-  const { prompt } = body || {};
+  const { prompt, max_tokens } = body || {};
   if (!prompt) return json({ error: 'prompt is required' }, 400);
 
   try {
@@ -26,7 +26,7 @@ export default async function handler(req) {
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 8192,
+        max_tokens: Math.min(max_tokens || 4096, 8192),
         messages: [{ role: 'user', content: prompt }],
       }),
     });

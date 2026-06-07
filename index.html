@@ -1608,7 +1608,7 @@ async function loadDriveFile(fileId,mimeType,fileName){
     document.getElementById('doc-paste').value=text;
     updateCharCount();
     const kb=Math.round(text.length/1000);
-    const chunks=Math.ceil(text.length/12000);
+    const chunks=Math.ceil(text.length/8000);
     if(statusEl)statusEl.textContent=`✓ ${fileName} — ${kb}k characters${chunks>1?` · will analyze in ${chunks} sections`:''}`;
   }catch(e){
     console.error('[Drive] loadDriveFile error:', e);
@@ -1671,7 +1671,7 @@ function setImportStatus(title, sub){
   if(s)s.textContent=sub;
 }
 
-function chunkText(text, size=12000, overlap=400){
+function chunkText(text, size=8000, overlap=400){
   if(text.length<=size)return[text];
   const chunks=[]; let start=0;
   while(start<text.length){
@@ -1838,7 +1838,7 @@ async function analyzeDoc(){
         setImportStatus('Reading your trip…','Claude is extracting places, dates, and memories');
       }
       const prompt=buildAnalysisPrompt(chunks[i],i+1,total);
-      const raw=await callAI(prompt);
+      const raw=await callAI(prompt, 4096);
       results.push(repairJSON(raw));
     }
 
@@ -1870,7 +1870,7 @@ async function analyzeDoc(){
 }
 
 // ── Universal AI helper — Cowork → Vercel proxy → direct API ──
-async function callAI(prompt) {
+async function callAI(prompt, maxTokens=4096) {
   // 1. Cowork runtime
   if (window.cowork && typeof window.cowork.askClaude === 'function') {
     try { return await window.cowork.askClaude(prompt, []); } catch(e) {
@@ -1882,7 +1882,7 @@ async function callAI(prompt) {
     const r = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({ prompt, max_tokens: maxTokens }),
     });
     if (r.ok) { const d = await r.json(); return d.text; }
     const body = await r.json().catch(() => ({}));
@@ -1914,7 +1914,7 @@ async function callAI(prompt) {
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 8192,
+      max_tokens: maxTokens,
       messages: [{ role: 'user', content: prompt }],
     }),
   });
