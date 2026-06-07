@@ -1519,7 +1519,7 @@ Extract ALL specifically visited places — restaurants, trails, hotels, viewpoi
     document.getElementById('import-step2').style.display='none';
     document.getElementById('import-step1').style.display='block';
     if(e.message && e.message.toLowerCase().includes('api key')){
-      showImportError('AI not detected in this environment. If you\'re using this on the web (Netlify), go to Settings → paste your Claude API key from console.anthropic.com. If you\'re using this inside Cowork, try refreshing the artifact.');
+      showImportError('No API key found. Go to Settings and paste your Claude API key (get one free at console.anthropic.com). If you\'re the site owner on Vercel, add ANTHROPIC_API_KEY in your Vercel project → Settings → Environment Variables, then redeploy.');
     } else if(e.message && e.message.includes('401')){
       showImportError('Invalid API key — check it in Settings. It should start with "sk-ant-api03-".');
     } else if(e.message && e.message.includes('429')){
@@ -1532,13 +1532,31 @@ Extract ALL specifically visited places — restaurants, trails, hotels, viewpoi
   }
 }
 
-// ── Universal AI helper — works in Cowork AND standalone web ──
+// ── Universal AI helper — Cowork → Vercel proxy → direct API ──
 async function callAI(prompt) {
+  // 1. Cowork runtime
   if (window.cowork && typeof window.cowork.askClaude === 'function') {
     try { return await window.cowork.askClaude(prompt, []); } catch(e) {
-      console.warn('Cowork askClaude failed, trying direct API:', e.message);
+      console.warn('Cowork askClaude failed, trying proxy:', e.message);
     }
   }
+  // 2. Server-side proxy (Vercel deployment — uses ANTHROPIC_API_KEY env var)
+  try {
+    const r = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }),
+    });
+    if (r.ok) { const d = await r.json(); return d.text; }
+    const err = await r.json().catch(() => ({}));
+    // 404 = not on Vercel; 500 w/ "not configured" = env var missing → fall through to direct API
+    if (r.status !== 404 && !(r.status === 500 && (err.error || '').includes('not configured'))) {
+      throw new Error(err.error || `Server error ${r.status}`);
+    }
+  } catch(e) {
+    if (!(e instanceof TypeError)) throw e; // TypeError = no server (file:// or offline), fall through
+  }
+  // 3. Direct API with user-provided key (Settings → API Key)
   const key = D.settings?.apiKey || '';
   if (!key) throw new Error('API key required — go to Settings and paste your Claude API key (get one free at console.anthropic.com).');
   const res = await fetch('https://api.anthropic.com/v1/messages', {
