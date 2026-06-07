@@ -1582,26 +1582,36 @@ async function loadDriveFile(fileId,mimeType,fileName){
   const statusEl=document.getElementById('file-status');
   if(statusEl)statusEl.textContent='Downloading '+fileName+' from Drive…';
   showImportError('');
+  console.log('[Drive] loadDriveFile | name:', fileName, '| mimeType:', mimeType, '| fileId:', fileId);
   try{
-    const isDoc=mimeType==='application/vnd.google-apps.document';
+    // Any Google Workspace type (Docs, Sheets, Slides, etc.) must use the export endpoint
+    const isGoogleDoc=mimeType.startsWith('application/vnd.google-apps.');
     const isPdf=mimeType==='application/pdf'||fileName.toLowerCase().endsWith('.pdf');
-    const url=isDoc
+    const url=isGoogleDoc
       ?`https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/plain`
       :`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+    console.log('[Drive] fetching:', url);
     const res=await fetch(url,{headers:{'Authorization':'Bearer '+_driveToken}});
-    if(!res.ok)throw new Error('Drive '+res.status);
+    console.log('[Drive] response status:', res.status, '| content-type:', res.headers.get('content-type'));
+    if(!res.ok){
+      const errBody=await res.text().catch(()=>'');
+      console.error('[Drive] fetch error body:', errBody);
+      throw new Error('Drive '+res.status);
+    }
     let text;
-    if(isPdf&&!isDoc){
+    if(isPdf&&!isGoogleDoc){
       text=extractPdfText(await res.arrayBuffer());
     }else{
       text=await res.text();
     }
+    console.log('[Drive] text length:', text.length);
     document.getElementById('doc-paste').value=text;
     updateCharCount();
     const kb=Math.round(text.length/1000);
     const chunks=Math.ceil(text.length/12000);
     if(statusEl)statusEl.textContent=`✓ ${fileName} — ${kb}k characters${chunks>1?` · will analyze in ${chunks} sections`:''}`;
   }catch(e){
+    console.error('[Drive] loadDriveFile error:', e);
     if(statusEl)statusEl.textContent='';
     showImportError('Could not load "'+fileName+'" from Drive. '+(e.message.includes('401')?'Try re-connecting to Google (click the button again).':'Try downloading the file manually and uploading it here.'));
   }
