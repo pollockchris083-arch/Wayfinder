@@ -1144,6 +1144,7 @@ const ACTS={home:{l:'+ Add Place',f:'openPlace'},places:{l:'+ Add Place',f:'open
 let cur='home';
 function go(p){
   sbClose();
+  if(p!==cur){const s=document.getElementById('srch');if(s)s.value='';}
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
   document.querySelectorAll('.ni').forEach(x=>x.classList.remove('on'));
   document.getElementById('page-'+p).classList.add('on');
