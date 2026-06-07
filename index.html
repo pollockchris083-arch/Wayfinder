@@ -707,12 +707,17 @@ input,textarea,select{font-family:inherit;font-weight:400}
       <div class="fg"><label class="fl">Tags (comma separated)</label><input class="fi" id="p-tags" placeholder="sierra, backpacking…" list="p-tags-list"/><datalist id="p-tags-list"></datalist></div>
       <div class="fg"><label class="fl">Visit Date <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(optional)</span></label><input class="fi" id="p-visit-date" type="date"/></div>
     </div>
-    <div class="fg" style="margin-bottom:0"><label class="fl">Rating</label>
-      <select class="fs" id="p-rating">
-        <option value="">—</option><option value="5">⭐⭐⭐⭐⭐ Life-changing</option>
-        <option value="4">⭐⭐⭐⭐ Excellent</option><option value="3">⭐⭐⭐ Good</option>
-        <option value="2">⭐⭐ OK</option><option value="1">⭐ Skip it</option>
-      </select>
+    <div class="fr">
+      <div class="fg"><label class="fl">Rating</label>
+        <select class="fs" id="p-rating">
+          <option value="">—</option><option value="5">⭐⭐⭐⭐⭐ Life-changing</option>
+          <option value="4">⭐⭐⭐⭐ Excellent</option><option value="3">⭐⭐⭐ Good</option>
+          <option value="2">⭐⭐ OK</option><option value="1">⭐ Skip it</option>
+        </select>
+      </div>
+      <div class="fg" style="margin-bottom:0"><label class="fl">Link to Trip <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(optional)</span></label>
+        <select class="fs" id="p-trip"><option value="">— No trip —</option></select>
+      </div>
     </div>
     <div class="fa"><button class="btn-s" onclick="closeM('m-place')">Cancel</button><button class="btn-p" onclick="savePlace()">Save Place</button></div>
   </div>
@@ -1637,6 +1642,9 @@ function openPlace(id){
   document.getElementById('p-visit-date').value=p?.visitDate||'';
   const allTags=[...new Set(D.places.flatMap(x=>x.tags||[]))].sort();
   const dl=document.getElementById('p-tags-list');if(dl)dl.innerHTML=allTags.map(t=>`<option value="${t}">`).join('');
+  const tsel=document.getElementById('p-trip');
+  tsel.innerHTML='<option value="">— No trip —</option>'+[...D.trips].sort((a,b)=>a.name.localeCompare(b.name)).map(t=>`<option value="${t.id}">${t.name}${t.startDate?' ('+new Date(t.startDate).getFullYear()+')':''}</option>`).join('');
+  tsel.value=(p?.tripIds||[])[0]||'';
   openM('m-place');
 }
 function savePlace(){
@@ -1656,7 +1664,7 @@ function savePlace(){
     tags:document.getElementById('p-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
     rating:document.getElementById('p-rating').value,
     visitDate:document.getElementById('p-visit-date').value,
-    tripIds:existing?.tripIds||[],journalIds:existing?.journalIds||[],photos:existing?.photos||[],
+    tripIds:(()=>{const sel=document.getElementById('p-trip').value;const base=existing?.tripIds||[];return sel&&!base.includes(sel)?[...base,sel]:base;})(),journalIds:existing?.journalIds||[],photos:existing?.photos||[],
     addedAt:existing?.addedAt||Date.now()
   };
   if(eid){const i=D.places.findIndex(x=>x.id===eid);D.places[i]=pl}else D.places.push(pl);
