@@ -539,7 +539,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
   <div id="topbar">
     <button id="sb-menu" onclick="sbOpen()">☰</button>
     <div class="tb-title" id="tbt">Dashboard</div>
-    <div class="tb-search"><span style="font-size:12px;color:var(--muted2)">🔍</span><input id="srch" placeholder="Search places, trips…" oninput="onSearch(this.value)"/></div>
+    <div class="tb-search"><span style="font-size:12px;color:var(--muted2)">🔍</span><input id="srch" placeholder="Search…" oninput="onSearch(this.value)"/></div>
     <button class="tb-btn" id="tba" onclick="topAct()">+ Add Place</button>
   </div>
   <div id="content">
@@ -2220,7 +2220,8 @@ function graduateWish(id){
 }
 function fWish(b,f){document.querySelectorAll('#page-wishlist .fc').forEach(x=>x.classList.remove('on'));b.classList.add('on');wf=f;rWish()}
 function rWish(){
-  D=load();let list=D.wish.filter(w=>wf==='all'||w.priority===wf||w.type===wf).sort((a,b)=>({must:0,soon:1,someday:2}[a.priority]||3)-({must:0,soon:1,someday:2}[b.priority]||3));
+  D=load();const wq=(document.getElementById('srch')?.value||'').toLowerCase();
+  let list=D.wish.filter(w=>{const mf=wf==='all'||w.priority===wf||w.type===wf;const ms=!wq||(w.name||'').toLowerCase().includes(wq)||(w.notes||'').toLowerCase().includes(wq)||(w.type||'').toLowerCase().includes(wq)||(w.season||'').toLowerCase().includes(wq);return mf&&ms}).sort((a,b)=>({must:0,soon:1,someday:2}[a.priority]||3)-({must:0,soon:1,someday:2}[b.priority]||3));
   const el=document.getElementById('wish-list');
   if(!list.length){el.innerHTML=`<div class="empty"><div class="empty-icon">♡</div><h3>Wishlist empty</h3><p>Add dream destinations and bucket list items.</p><button class="tb-btn" onclick="openWish()">+ Add First Dream</button></div>`;return}
   el.innerHTML=list.map((w,i)=>{
@@ -3291,7 +3292,7 @@ function loadSettings(){const s=D.settings;document.getElementById('s-name').val
 function exportData(){const b=new Blob([JSON.stringify(load(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='wayfinder-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('📥 Exported!')}
 function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);Object.keys(K).forEach(k=>{if(d[k])localStorage.setItem(K[k],JSON.stringify(d[k]))});if(d.abroad)localStorage.setItem('wf_abroad',JSON.stringify(d.abroad));D=load();loadSettings();rHome();badges();toast('📤 Imported!')}catch{toast('⚠️ Invalid file')}};r.readAsText(f)}
 function clearAll(){if(!confirm('Clear ALL data? Cannot be undone.'))return;Object.values(K).forEach(k=>localStorage.removeItem(k));D=load();loadSettings();rHome();badges();toast('🗑️ Cleared')}
-function onSearch(q){if(cur==='places')rPlaces();else if(cur==='trips')rTrips();else if(cur==='journal')rJournal();}
+function onSearch(q){if(cur==='places')rPlaces();else if(cur==='trips')rTrips();else if(cur==='journal')rJournal();else if(cur==='wishlist')rWish();}
 function sbOpen(){document.getElementById('sb').classList.add('sb-open');document.getElementById('sb-overlay').classList.add('sb-open');}
 function sbClose(){document.getElementById('sb').classList.remove('sb-open');document.getElementById('sb-overlay').classList.remove('sb-open');}
 
