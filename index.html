@@ -420,7 +420,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
   <div class="sb-foot">
     <div class="sb-prof" onclick="go('settings')">
       <div class="av" id="av">C</div>
-      <div><div class="pn" id="pn">Chris</div><div class="pl">& Partner</div></div>
+      <div><div class="pn" id="pn">Chris</div><div class="pl" id="pl-partner">& Partner</div></div>
     </div>
     <div id="sync-bar" style="display:none;align-items:center;justify-content:space-between;padding:5px 6px;border-top:1px solid var(--bdr);margin-top:6px">
       <span id="sync-status" style="font-size:10px;color:var(--muted)">☁️ Synced</span>
@@ -1975,7 +1975,7 @@ function rAbroad(){
 // SETTINGS
 // ══════════════════════════════════════════════
 function setSetting(k,v){D.settings[k]=v;save('settings',D.settings);if(k==='name'){document.getElementById('pn').textContent=v||'You';document.getElementById('av').textContent=(v||'Y')[0].toUpperCase()}}
-function loadSettings(){const s=D.settings;document.getElementById('s-name').value=s.name||'';document.getElementById('s-partner').value=s.partner||'';document.getElementById('s-city').value=s.homeCity||'';document.getElementById('s-since').value=s.since||'';document.getElementById('s-apikey').value=s.apiKey||'';document.getElementById('s-google-client-id').value=s.googleClientId||'';document.getElementById('s-drive-folder').value=s.driveFolderId||'';document.getElementById('s-abroad-notes').value=s.abroadNotes||'';document.getElementById('pn').textContent=s.name||'You';document.getElementById('av').textContent=(s.name||'Y')[0].toUpperCase()}
+function loadSettings(){const s=D.settings;document.getElementById('s-name').value=s.name||'';document.getElementById('s-partner').value=s.partner||'';document.getElementById('s-city').value=s.homeCity||'';document.getElementById('s-since').value=s.since||'';document.getElementById('s-apikey').value=s.apiKey||'';document.getElementById('s-google-client-id').value=s.googleClientId||'';document.getElementById('s-drive-folder').value=s.driveFolderId||'';document.getElementById('s-abroad-notes').value=s.abroadNotes||'';document.getElementById('pn').textContent=s.name||'You';document.getElementById('av').textContent=(s.name||'Y')[0].toUpperCase();const pl=document.getElementById('pl-partner');if(pl)pl.textContent=s.partner?'& '+s.partner:'';}
 function exportData(){const b=new Blob([JSON.stringify(load(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='wayfinder-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('📥 Exported!')}
 function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);Object.keys(K).forEach(k=>{if(d[k])localStorage.setItem(K[k],JSON.stringify(d[k]))});D=load();loadSettings();rHome();badges();toast('📤 Imported!')}catch{toast('⚠️ Invalid file')}};r.readAsText(f)}
 function clearAll(){if(!confirm('Clear ALL data? Cannot be undone.'))return;Object.values(K).forEach(k=>localStorage.removeItem(k));D=load();loadSettings();rHome();badges();toast('🗑️ Cleared')}
