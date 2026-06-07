@@ -705,13 +705,14 @@ input,textarea,select{font-family:inherit;font-weight:400}
     <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="p-notes" placeholder="Why this place? Any tips or memories…"></textarea></div>
     <div class="fr">
       <div class="fg"><label class="fl">Tags (comma separated)</label><input class="fi" id="p-tags" placeholder="sierra, backpacking…"/></div>
-      <div class="fg"><label class="fl">Rating</label>
-        <select class="fs" id="p-rating">
-          <option value="">—</option><option value="5">⭐⭐⭐⭐⭐ Life-changing</option>
-          <option value="4">⭐⭐⭐⭐ Excellent</option><option value="3">⭐⭐⭐ Good</option>
-          <option value="2">⭐⭐ OK</option><option value="1">⭐ Skip it</option>
-        </select>
-      </div>
+      <div class="fg"><label class="fl">Visit Date <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(optional)</span></label><input class="fi" id="p-visit-date" type="date"/></div>
+    </div>
+    <div class="fg" style="margin-bottom:0"><label class="fl">Rating</label>
+      <select class="fs" id="p-rating">
+        <option value="">—</option><option value="5">⭐⭐⭐⭐⭐ Life-changing</option>
+        <option value="4">⭐⭐⭐⭐ Excellent</option><option value="3">⭐⭐⭐ Good</option>
+        <option value="2">⭐⭐ OK</option><option value="1">⭐ Skip it</option>
+      </select>
     </div>
     <div class="fa"><button class="btn-s" onclick="closeM('m-place')">Cancel</button><button class="btn-p" onclick="savePlace()">Save Place</button></div>
   </div>
@@ -1632,6 +1633,7 @@ function openPlace(id){
   document.getElementById('p-notes').value=p?.notes||'';
   document.getElementById('p-tags').value=(p?.tags||[]).join(', ');
   document.getElementById('p-rating').value=p?.rating||'';
+  document.getElementById('p-visit-date').value=p?.visitDate||'';
   openM('m-place');
 }
 function savePlace(){
@@ -1650,6 +1652,7 @@ function savePlace(){
     notes:document.getElementById('p-notes').value.trim(),
     tags:document.getElementById('p-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
     rating:document.getElementById('p-rating').value,
+    visitDate:document.getElementById('p-visit-date').value,
     tripIds:existing?.tripIds||[],journalIds:existing?.journalIds||[],photos:existing?.photos||[],
     addedAt:existing?.addedAt||Date.now()
   };
@@ -1700,7 +1703,7 @@ function openPlaceD(id){
       <div><div style="font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.3px;margin-bottom:3px">${ci(p.category)} ${p.name}</div>${loc?`<div style="font-size:12px;color:var(--muted)">📍 ${loc}</div>`:''}</div>
       <span class="tag" style="background:${statusColor}22;color:${statusColor};flex-shrink:0;margin-top:3px">${sl(p.status)}</span>
     </div>
-    <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--muted)">${[cl(p.category),p.source?'🔗 '+p.source:'',rStars?'⭐'.repeat(rStars):''].filter(Boolean).join('<span style="margin:0 2px;opacity:.4">·</span>')}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--muted)">${[cl(p.category),p.visitDate?'📅 '+fd(p.visitDate):'',p.source?'🔗 '+p.source:'',rStars?'⭐'.repeat(rStars):''].filter(Boolean).join('<span style="margin:0 2px;opacity:.4">·</span>')}</div>
     ${p.notes?`<div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7;padding:10px;background:rgba(0,0,0,.03);border-radius:6px">${p.notes}</div>`:''}
     ${(p.tags||[]).length?`<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px">${p.tags.map(t=>`<span style="background:rgba(74,114,89,.08);color:var(--green3);border:1px solid rgba(74,114,89,.15);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:500">${t}</span>`).join('')}</div>`:''}
   </div>
@@ -1725,7 +1728,7 @@ function rPlaces(){
   if(!list.length){g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📍</div><h3>No places found</h3><p>Add places you've been or want to go.</p><button class="tb-btn" onclick="openPlace()">+ Add First Place</button></div>`;return}
   g.innerHTML=list.map(p=>{
     const loc=p.usState&&p.country?p.usState+', '+p.country:p.country||p.region||'';
-    const meta=[ci(p.category)+' '+cl(p.category),p.source?p.source:'',p.rating?'⭐'.repeat(parseInt(p.rating)):''].filter(Boolean).join(' · ');
+    const meta=[ci(p.category)+' '+cl(p.category),p.visitDate?fd(p.visitDate):'',p.source?p.source:'',p.rating?'⭐'.repeat(parseInt(p.rating)):''].filter(Boolean).join(' · ');
     const links=[(p.tripIds||[]).length?`✈️ ${p.tripIds.length} trip${p.tripIds.length>1?'s':''}`:'',(p.journalIds||[]).length?`📓 ${p.journalIds.length}`:'',(p.tags||[]).slice(0,2).join(', ')].filter(Boolean).join(' · ');
     return`<div class="pc" onclick="openPlaceD('${p.id}')">
       <div class="pch">
