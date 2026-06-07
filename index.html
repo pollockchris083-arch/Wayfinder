@@ -1544,6 +1544,46 @@ function handleDrop(e){
   loadFileIntoTextarea(e.dataTransfer.files[0]);
 }
 
+// Robust JSON extractor — handles markdown fences, leading/trailing text, and truncated responses.
+// Uses brace/bracket depth tracking instead of fragile regex so it works with emojis,
+// Unicode, and multi-byte characters that can fool character-class patterns.
+function repairJSON(raw) {
+  // Strip markdown code fences (```json ... ``` or ``` ... ```)
+  let s = raw.replace(/^```(?:json)?\s*/im, '').replace(/\s*```\s*$/im, '').trim();
+  // Fast path: try direct parse
+  try { return JSON.parse(s); } catch (_) {}
+  // Find the opening brace of the top-level object
+  const start = s.indexOf('{');
+  if (start < 0) throw new SyntaxError('No JSON object found in AI response');
+  s = s.slice(start);
+  // Walk character-by-character, tracking open structures and string state
+  const stack = []; // holds expected closing char for each open { or [
+  let inStr = false, esc = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (esc)          { esc = false; continue; }
+    if (c === '\\' && inStr) { esc = true; continue; }
+    if (c === '"')    { inStr = !inStr; continue; }
+    if (inStr)        continue;
+    if (c === '{' || c === '[') { stack.push(c === '{' ? '}' : ']'); }
+    else if ((c === '}' || c === ']') && stack.length) {
+      stack.pop();
+      if (!stack.length) {
+        // Found a syntactically complete top-level object
+        try { return JSON.parse(s.slice(0, i + 1)); } catch (_) {}
+      }
+    }
+  }
+  // Response was truncated — attempt repair:
+  // 1. Strip trailing comma or whitespace left by an incomplete value
+  let r = s.trimEnd().replace(/[,\s]+$/, '');
+  // 2. If we were inside a string literal, close it
+  if (inStr) r += '"';
+  // 3. Close every unclosed bracket/brace from innermost outward
+  r += stack.reverse().join('');
+  return JSON.parse(r); // throws SyntaxError if still unparseable
+}
+
 async function analyzeDoc(){
   showImportError('');
   const text=document.getElementById('doc-paste').value.trim();
@@ -1605,17 +1645,14 @@ Respond ONLY with valid raw JSON — no markdown fences, no explanation, nothing
   "summary": "One sentence: what was found (X places, Y journal entries) and the trip's overall theme"
 }
 
-Extract ALL specifically visited places — restaurants, trails, hotels, viewpoints, towns, beaches, museums. For journal entries, aim for 3–8 of the most vivid and specific moments that tell the complete story. Preserve the original voice and specific details from the source text.`;
+Extract ALL specifically visited places — restaurants, trails, hotels, viewpoints, towns, beaches, museums. For journal entries, aim for 3–8 of the most vivid and specific moments. Keep notes and journal body fields under 120 words each — concise is better than truncated. The entire JSON response MUST be complete and valid; if space is tight, shorten journal bodies before cutting places.`;
 
   try {
     const raw = await callAI(prompt);
-    // Strip markdown fences and any leading/trailing non-JSON text
-    let clean = raw.replace(/^[\s\S]*?(\{)/,'$1').replace(/(\})[^}]*$/,'$1').trim();
-    importedData = JSON.parse(clean);
+    importedData = repairJSON(raw);
     showPreview(importedData);
   } catch(e) {
-    console.warn('AI error:', e.message);
-    // Reset to step 1 and show the error inline
+    console.warn('AI import error:', e.message, e);
     document.getElementById('import-loading').style.display='none';
     document.getElementById('import-step2').style.display='none';
     document.getElementById('import-step1').style.display='block';
@@ -1626,10 +1663,12 @@ Extract ALL specifically visited places — restaurants, trails, hotels, viewpoi
       showImportError('API key rejected (401). Double-check that ANTHROPIC_API_KEY in your Vercel environment variables is correct and starts with "sk-ant-api03-".');
     } else if(status === 429 || e.message.includes('429')){
       showImportError('Rate limit hit — wait a moment and try again.');
+    } else if(e instanceof SyntaxError){
+      showImportError('The AI response couldn\'t be parsed — the document may still be too long. Try pasting just the key highlights: place names, dates, and a few memorable moments rather than the full text.');
     } else if(e.message && (e.message.includes('fetch') || e.message.includes('network') || e.message.includes('Failed'))){
       showImportError('Network error. If you\'re inside an embedded iframe, try opening the app directly at its Vercel URL.');
     } else {
-      showImportError('Error: ' + (e.message || 'unknown') + '. Open the browser console for details.');
+      showImportError('Error: ' + (e.message || 'unknown') + '. Open the browser console (F12) for details.');
     }
   }
 }
@@ -1679,7 +1718,7 @@ async function callAI(prompt) {
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4096,
+      max_tokens: 8192,
       messages: [{ role: 'user', content: prompt }],
     }),
   });
