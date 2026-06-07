@@ -4086,13 +4086,16 @@ function confirmImport(){
   }
   D.trips.push(t);save('trips',D.trips);
 
-  // Create places
+  // Create places (skip exact-name duplicates; link existing ones to this trip)
   let pCount=0;
   (importedData.places||[]).forEach(p=>{
     if(!p.name)return;
     const country=normCountry(p.country||'');
     const usState=p.usState||'';
     const region=p.region||(usState&&country?usState+', '+country:country||'');
+    const normName=(p.name||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+    const existing=D.places.find(x=>(x.name||'').toLowerCase().replace(/[^a-z0-9]/g,'')=== normName);
+    if(existing){if(!existing.tripIds.includes(t.id))existing.tripIds.push(t.id);return;}
     D.places.push({id:uid(),name:p.name,country,usState,region,category:p.category||'other',status:'visited',source:'import',notes:p.notes||'',tags:['imported'],rating:p.rating||'',visitDate:p.visitDate||'',tripIds:[t.id],journalIds:[],photos:[],addedAt:Date.now()});
     pCount++;
   });
