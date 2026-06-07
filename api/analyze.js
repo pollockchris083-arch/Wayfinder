@@ -1,20 +1,20 @@
-// Edge runtime: 30-second timeout (vs 10s for serverless on Hobby plan)
-export const config = { runtime: 'edge' };
+// Node.js serverless runtime with extended timeout.
+// maxDuration: 60 requires Vercel Pro plan — on Hobby it's capped at 10s.
+// Edge runtime (30s fixed) is incompatible with maxDuration, so we use Node.js here.
+export const config = { maxDuration: 60 };
 
-const json = (data, status = 200) =>
-  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
-
-export default async function handler(req) {
-  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
   const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) return json({ error: 'ANTHROPIC_API_KEY is not configured on this server' }, 500);
+  if (!key) {
+    return res.status(500).json({ error: 'ANTHROPIC_API_KEY is not configured on this server' });
+  }
 
-  let body;
-  try { body = await req.json(); } catch { return json({ error: 'Invalid JSON body' }, 400); }
-
-  const { prompt, max_tokens } = body || {};
-  if (!prompt) return json({ error: 'prompt is required' }, 400);
+  const { prompt, max_tokens } = req.body || {};
+  if (!prompt) return res.status(400).json({ error: 'prompt is required' });
 
   try {
     const upstream = await fetch('https://api.anthropic.com/v1/messages', {
@@ -33,15 +33,15 @@ export default async function handler(req) {
 
     if (!upstream.ok) {
       const err = await upstream.json().catch(() => ({}));
-      return json({
+      return res.status(upstream.status).json({
         error: err.error?.message || `Upstream error ${upstream.status}`,
         upstreamStatus: upstream.status,
-      }, upstream.status);
+      });
     }
 
     const data = await upstream.json();
-    return json({ text: data.content[0].text });
+    return res.status(200).json({ text: data.content[0].text });
   } catch (e) {
-    return json({ error: e.message || 'Internal server error' }, 500);
+    return res.status(500).json({ error: e.message || 'Internal server error' });
   }
 }
