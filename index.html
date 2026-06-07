@@ -520,9 +520,17 @@ input,textarea,select{font-family:inherit;font-weight:400}
           <button class="fc" onclick="fPlace(this,'road-trip')">🚗 Road Trip</button>
           <button class="fc" onclick="fPlace(this,'international')">🌍 Intl</button>
         </div>
-        <div class="fb" style="margin-bottom:0;flex-shrink:0">
-          <button class="fc on" id="pv-grid" onclick="setPlaceView('grid')">⊞ Grid</button>
-          <button class="fc" id="pv-group" onclick="setPlaceView('group')">≡ By Region</button>
+        <div style="display:flex;gap:7px;align-items:center;flex-shrink:0">
+          <select class="fs" id="psort" style="font-size:11px;padding:5px 10px;height:auto;width:auto" onchange="rPlaces()">
+            <option value="recent">Most Recent</option>
+            <option value="az">A–Z</option>
+            <option value="rating">Top Rated</option>
+            <option value="country">By Country</option>
+          </select>
+          <div class="fb" style="margin-bottom:0">
+            <button class="fc on" id="pv-grid" onclick="setPlaceView('grid')">⊞ Grid</button>
+            <button class="fc" id="pv-group" onclick="setPlaceView('group')">≡ Region</button>
+          </div>
         </div>
       </div>
       <div id="places-grid" class="ga"></div>
@@ -1614,7 +1622,8 @@ function cycleStatus(id){const o=['saved','want','planned','visited'],p=D.places
 function fPlace(b,f){document.querySelectorAll('#pfb .fc').forEach(x=>x.classList.remove('on'));b.classList.add('on');pf=f;rPlaces()}
 function rPlaces(){
   D=load();const q=document.getElementById('srch').value.toLowerCase();
-  let list=D.places.filter(p=>{const mf=pf==='all'||p.status===pf||p.category===pf||(p.tags||[]).includes(pf);const ms=!q||p.name.toLowerCase().includes(q)||(p.region||'').toLowerCase().includes(q)||(p.country||'').toLowerCase().includes(q)||(p.usState||'').toLowerCase().includes(q);return mf&&ms}).sort((a,b)=>b.addedAt-a.addedAt);
+  const sortMode=document.getElementById('psort')?.value||'recent';
+  let list=D.places.filter(p=>{const mf=pf==='all'||p.status===pf||p.category===pf||(p.tags||[]).includes(pf);const ms=!q||p.name.toLowerCase().includes(q)||(p.region||'').toLowerCase().includes(q)||(p.country||'').toLowerCase().includes(q)||(p.usState||'').toLowerCase().includes(q)||(p.notes||'').toLowerCase().includes(q);return mf&&ms}).sort((a,b)=>{if(sortMode==='az')return a.name.localeCompare(b.name);if(sortMode==='rating')return(parseInt(b.rating)||0)-(parseInt(a.rating)||0)||b.addedAt-a.addedAt;if(sortMode==='country')return(normCountry(a.country)||'zzz').localeCompare(normCountry(b.country)||'zzz')||a.name.localeCompare(b.name);return b.addedAt-a.addedAt;});
   const g=document.getElementById('places-grid');
   if(placeView==='group'){g.className='';rPlacesGrouped(list);return;}
   g.className='ga';
@@ -1731,7 +1740,8 @@ function delTrip(id){
 function fTrip(b,f){document.querySelectorAll('#trips-lv .fc').forEach(x=>x.classList.remove('on'));b.classList.add('on');tf=f;rTrips()}
 function rTrips(){
   D=load();document.getElementById('trips-lv').style.display='block';document.getElementById('trip-dv').classList.remove('on');atid=null;
-  let list=D.trips.filter(t=>{if(tf==='all')return true;if(tf==='upcoming')return t.status==='upcoming'||t.status==='active';if(tf==='past')return t.status==='past';if(tf==='planning')return t.status==='planning';return true}).sort((a,b)=>{if(a.startDate&&b.startDate)return new Date(b.startDate)-new Date(a.startDate);return b.addedAt-a.addedAt});
+  const tq=(document.getElementById('srch')?.value||'').toLowerCase();
+  let list=D.trips.filter(t=>{const mf=tf==='all'||(tf==='upcoming'&&(t.status==='upcoming'||t.status==='active'))||(tf==='past'&&t.status==='past')||(tf==='planning'&&t.status==='planning');const ms=!tq||t.name.toLowerCase().includes(tq)||(t.destinations||[]).some(d=>(d||'').toLowerCase().includes(tq))||(t.notes||'').toLowerCase().includes(tq);return mf&&ms}).sort((a,b)=>{if(a.startDate&&b.startDate)return new Date(b.startDate)-new Date(a.startDate);return b.addedAt-a.addedAt});
   const g=document.getElementById('trips-grid');
   if(!list.length){g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">✈️</div><h3>No trips yet</h3><p>Create a trip or import from a doc.</p><button class="tb-btn" onclick="openTrip()" style="margin-bottom:8px">+ New Trip</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;return}
   g.innerHTML=list.map(t=>{
@@ -2136,8 +2146,10 @@ let jf='all',jeid=null;
 function fJournal(b,f){document.querySelectorAll('#jfilter .fc').forEach(x=>x.classList.remove('on'));b.classList.add('on');jf=f;rJournal()}
 function rJournal(){
   D=load();const el=document.getElementById('jlist');
+  const jq=(document.getElementById('srch')?.value||'').toLowerCase();
   let entries=[...D.journal].sort((a,b)=>new Date(b.date)-new Date(a.date));
   if(jf!=='all')entries=entries.filter(e=>e.tripId===jf);
+  if(jq)entries=entries.filter(e=>(e.title||'').toLowerCase().includes(jq)||(e.body||'').toLowerCase().includes(jq)||(e.loc||'').toLowerCase().includes(jq));
 
   // Build trip filter bar
   const tripFilter=D.trips.length?`<div class="fb" id="jfilter" style="margin-bottom:13px;flex-wrap:wrap">
@@ -3134,7 +3146,7 @@ function loadSettings(){const s=D.settings;document.getElementById('s-name').val
 function exportData(){const b=new Blob([JSON.stringify(load(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='wayfinder-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('📥 Exported!')}
 function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);Object.keys(K).forEach(k=>{if(d[k])localStorage.setItem(K[k],JSON.stringify(d[k]))});if(d.abroad)localStorage.setItem('wf_abroad',JSON.stringify(d.abroad));D=load();loadSettings();rHome();badges();toast('📤 Imported!')}catch{toast('⚠️ Invalid file')}};r.readAsText(f)}
 function clearAll(){if(!confirm('Clear ALL data? Cannot be undone.'))return;Object.values(K).forEach(k=>localStorage.removeItem(k));D=load();loadSettings();rHome();badges();toast('🗑️ Cleared')}
-function onSearch(q){if(cur==='places')rPlaces()}
+function onSearch(q){if(cur==='places')rPlaces();else if(cur==='trips')rTrips();else if(cur==='journal')rJournal();}
 
 // ══════════════════════════════════════════════
 // GOOGLE DOC IMPORT
