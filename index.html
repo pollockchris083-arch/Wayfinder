@@ -679,7 +679,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
 <div class="mo" id="m-trip">
   <div class="modal">
     <button class="mcl" onclick="closeM('m-trip')">✕</button>
-    <h2>New Trip</h2>
+    <h2 id="tm-title">New Trip</h2>
     <div class="fg"><label class="fl">Trip Name *</label><input class="fi" id="t-name" placeholder="e.g. Sierra High Route 2026"/></div>
     <div class="fr">
       <div class="fg"><label class="fl">Start Date</label><input class="fi" id="t-start" type="date"/></div>
@@ -706,7 +706,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
       <div class="fg"></div>
     </div>
     <div class="fg" style="margin-bottom:0"><label class="fl">Notes</label><textarea class="ft" id="t-notes" placeholder="Inspiration, goals, ideas…"></textarea></div>
-    <div class="fa"><button class="btn-s" onclick="closeM('m-trip')">Cancel</button><button class="btn-p" onclick="saveTrip()">Create Trip</button></div>
+    <div class="fa"><button class="btn-s" onclick="closeM('m-trip')">Cancel</button><button class="btn-p" id="tm-save" onclick="saveTrip()">Create Trip</button></div>
   </div>
 </div>
 
@@ -1750,15 +1750,49 @@ function rPlacesByTrip(list){
 // ══════════════════════════════════════════════
 // TRIPS
 // ══════════════════════════════════════════════
-let tf='all',atid=null,pendStop=null;
-function openTrip(){['t-name','t-dests','t-notes'].forEach(id=>document.getElementById(id).value='');['t-start','t-end','t-budget'].forEach(id=>document.getElementById(id).value='');document.getElementById('t-type').value='road-trip';document.getElementById('t-status').value='planning';openM('m-trip')}
-function saveTrip(){const n=document.getElementById('t-name').value.trim();if(!n){toast('⚠️ Name required');return}const t={id:uid(),name:n,startDate:document.getElementById('t-start').value,endDate:document.getElementById('t-end').value,destinations:document.getElementById('t-dests').value.split(',').map(d=>d.trim()).filter(Boolean),type:document.getElementById('t-type').value,status:document.getElementById('t-status').value,budget:parseFloat(document.getElementById('t-budget').value)||null,notes:document.getElementById('t-notes').value.trim(),itinerary:[],addedAt:Date.now()};if(t.startDate&&t.endDate){const s=new Date(t.startDate),e=new Date(t.endDate);for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1))t.itinerary.push({date:d.toISOString().split('T')[0],stops:[]})}D.trips.push(t);save('trips',D.trips);
-  if(pendGraduateWishId){
-    const w=D.wish.find(x=>x.id===pendGraduateWishId);
-    if(w){w.tripId=t.id;w.graduated=true;save('wish',D.wish);}
-    pendGraduateWishId=null;
+let tf='all',atid=null,pendStop=null,teid=null;
+function openTrip(){
+  teid=null;
+  ['t-name','t-dests','t-notes'].forEach(id=>document.getElementById(id).value='');
+  ['t-start','t-end','t-budget'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('t-type').value='road-trip';document.getElementById('t-status').value='planning';
+  document.getElementById('tm-title').textContent='New Trip';document.getElementById('tm-save').textContent='Create Trip';
+  openM('m-trip');
+}
+function openTripEdit(id){
+  D=load();const t=D.trips.find(x=>x.id===id);if(!t)return;
+  teid=id;
+  document.getElementById('t-name').value=t.name||'';
+  document.getElementById('t-start').value=t.startDate||'';
+  document.getElementById('t-end').value=t.endDate||'';
+  document.getElementById('t-dests').value=(t.destinations||[]).join(', ');
+  document.getElementById('t-type').value=t.type||'other';
+  document.getElementById('t-status').value=t.status||'planning';
+  document.getElementById('t-budget').value=t.budget||'';
+  document.getElementById('t-notes').value=t.notes||'';
+  document.getElementById('tm-title').textContent='Edit Trip';document.getElementById('tm-save').textContent='Save Changes';
+  openM('m-trip');
+}
+function saveTrip(){
+  const n=document.getElementById('t-name').value.trim();if(!n){toast('⚠️ Name required');return}
+  const startDate=document.getElementById('t-start').value;const endDate=document.getElementById('t-end').value;
+  if(teid){
+    const ex=D.trips.find(x=>x.id===teid);if(!ex)return;
+    ex.name=n;ex.startDate=startDate;ex.endDate=endDate;
+    ex.destinations=document.getElementById('t-dests').value.split(',').map(d=>d.trim()).filter(Boolean);
+    ex.type=document.getElementById('t-type').value;ex.status=document.getElementById('t-status').value;
+    ex.budget=parseFloat(document.getElementById('t-budget').value)||null;ex.notes=document.getElementById('t-notes').value.trim();
+    // Rebuild itinerary only if dates changed and itinerary was empty or not set
+    if(startDate&&endDate&&!(ex.itinerary||[]).length){ex.itinerary=[];const s=new Date(startDate),e=new Date(endDate);for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1))ex.itinerary.push({date:d.toISOString().split('T')[0],stops:[]});}
+    save('trips',D.trips);teid=null;closeM('m-trip');toast('✅ Trip updated!');
+    if(atid===ex.id)openTripD(ex.id);else rTrips();badges();return;
   }
-  closeM('m-trip');toast('✈️ Trip created!');rTrips();badges()}
+  const t={id:uid(),name:n,startDate,endDate,destinations:document.getElementById('t-dests').value.split(',').map(d=>d.trim()).filter(Boolean),type:document.getElementById('t-type').value,status:document.getElementById('t-status').value,budget:parseFloat(document.getElementById('t-budget').value)||null,notes:document.getElementById('t-notes').value.trim(),itinerary:[],addedAt:Date.now()};
+  if(t.startDate&&t.endDate){const s=new Date(t.startDate),e=new Date(t.endDate);for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1))t.itinerary.push({date:d.toISOString().split('T')[0],stops:[]});}
+  D.trips.push(t);save('trips',D.trips);
+  if(pendGraduateWishId){const w=D.wish.find(x=>x.id===pendGraduateWishId);if(w){w.tripId=t.id;w.graduated=true;save('wish',D.wish);}pendGraduateWishId=null;}
+  closeM('m-trip');toast('✈️ Trip created!');rTrips();badges();
+}
 function delTrip(id){
   const t=D.trips.find(x=>x.id===id);if(!t)return;
   const linkedPlaces=D.places.filter(p=>(p.tripIds||[]).includes(id));
@@ -1905,7 +1939,10 @@ function openTripD(id){
   dv.innerHTML=`
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
     <button class="td-back" onclick="rTrips()">← All Trips</button>
-    <button class="pbtn del" onclick="delTrip('${t.id}')">🗑️ Delete</button>
+    <div style="display:flex;gap:7px">
+      <button class="pbtn" onclick="openTripEdit('${t.id}')">✏️ Edit</button>
+      <button class="pbtn del" onclick="delTrip('${t.id}')">🗑️ Delete</button>
+    </div>
   </div>
   <div style="background:linear-gradient(135deg,var(--card2),var(--card));border:1px solid var(--bdr);border-radius:var(--r);padding:16px 18px;margin-bottom:13px;position:relative;overflow:hidden">
     <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--green),var(--gold))"></div>
