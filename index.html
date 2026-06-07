@@ -378,6 +378,36 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .abr-chip{font-size:10px;color:var(--muted2);background:var(--card2);padding:2px 7px;border-radius:100px;border:1px solid var(--bdr);white-space:nowrap}
 .goal-row{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--bdr)}
 .goal-row:last-child{border-bottom:none}
+/* ── JOURNEY ROADMAP ── */
+.jr{background:linear-gradient(135deg,var(--green3) 0%,var(--green2) 100%);border-radius:var(--r);padding:18px 20px 16px;position:relative;overflow:hidden;margin-bottom:13px;color:#fff}
+.jr::after{content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.05)}
+.jr-track{display:flex;align-items:flex-start;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;gap:0}
+.jr-track::-webkit-scrollbar{display:none}
+.jr-node{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;cursor:pointer;transition:transform .15s;min-width:66px;padding:0 3px}
+.jr-node:hover{transform:translateY(-2px)}
+.jr-dot{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .2s}
+.jr-node.done .jr-dot{background:rgba(255,255,255,.88);border-color:rgba(255,255,255,.88);color:var(--green3);font-size:14px;font-weight:700}
+.jr-node.active .jr-dot{background:rgba(255,255,255,.2);border-color:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.18)}
+.jr-nnum{font-size:8px;opacity:.55;font-weight:700;letter-spacing:.5px}
+.jr-nlbl{font-size:9px;font-weight:600;text-align:center;opacity:.7;line-height:1.2;max-width:64px}
+.jr-node.active .jr-nlbl{opacity:1;font-weight:700}
+.jr-node.done .jr-nlbl{opacity:.8}
+.jr-line{flex:1;height:2px;background:rgba(255,255,255,.18);margin-top:19px;min-width:8px}
+.jr-line.done{background:rgba(255,255,255,.6)}
+/* ── AI CHAT ── */
+.ai-chat-wrap{max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin:10px 0;scroll-behavior:smooth}
+.ai-msg{padding:9px 12px;border-radius:9px;font-size:12px;line-height:1.5;max-width:90%;white-space:pre-wrap}
+.ai-msg.user{background:var(--green3);color:#fff;align-self:flex-end;border-bottom-right-radius:3px}
+.ai-msg.ai-r{background:var(--card2);color:var(--text2);align-self:flex-start;border:1px solid var(--bdr);border-bottom-left-radius:3px}
+.ai-pill{background:var(--card2);border:1px solid var(--bdr2);border-radius:100px;padding:5px 11px;font-size:11px;color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0}
+.ai-pill:hover{border-color:var(--green);color:var(--green3);background:rgba(74,114,89,.06)}
+/* ── DECISION FRAMEWORK ── */
+.df-row{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--bdr)}
+.df-row:last-child{border-bottom:none}
+.df-rank{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bdr)}
+.df-rank:last-child{border-bottom:none}
+.df-bar{height:4px;border-radius:3px;background:linear-gradient(90deg,var(--green3),var(--green2));transition:width .4s}
+.df-score{font-size:12px;font-weight:700;color:var(--green3);min-width:28px;text-align:right}
 /* ── DASHBOARD HERO ── */
 .hero{background:linear-gradient(135deg,var(--green) 0%,var(--green3) 100%);border-radius:var(--r);padding:20px 22px 18px;position:relative;overflow:hidden;margin-bottom:13px;color:#fff}
 .hero::after{content:'';position:absolute;bottom:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.06)}
@@ -2067,6 +2097,32 @@ const ABR_STATUS={
   eliminated:{label:'Eliminated',c:'#B04040',bg:'rgba(176,64,64,.08)',icon:'✕'}
 };
 const ABR_VISA_LABEL={researching:'Researching',applying:'Applying',approved:'✓ Approved',rejected:'✕ Rejected'};
+const JOURNEY_STAGES=[
+  {n:1,icon:'💭',label:'Dream & Research',sub:'Explore possibilities',tasks:['Set your target timeline and budget','Define your top priorities (cost, climate, safety…)','Research 5+ countries using the tables below','Read or watch expat stories from your shortlist','Fill out Your Situation section below'],anchors:[]},
+  {n:2,icon:'⭐',label:'Shortlist Countries',sub:'Narrow to 3–5',tasks:['Add countries in the Country Manager below','Mark 3+ countries as Shortlisted or Top Pick','Fill in visa type for each country','Compare costs across your shortlist','Research expat communities for each country'],anchors:['ctry-anchor']},
+  {n:3,icon:'🧭',label:'Scout Trips',sub:'See it in person',tasks:['Plan a scout trip to your #1 country','Stay in a real neighborhood (not tourist area)','Attend a local Internations or expat meetup','Visit 2+ coworking spaces','Check out a local hospital or clinic','Do a grocery run — reality-check the costs'],anchors:['scout-anchor']},
+  {n:4,icon:'🎯',label:'Choose Your Country',sub:'Commit to one',tasks:['Score countries using the Decision Framework below','Make your final choice','Research specific cities and neighborhoods','Consult an expat attorney for visa strategy','Begin your visa application','Open a Wise account for international transfers'],anchors:['df-anchor']},
+  {n:5,icon:'📋',label:'Logistics & Prep',sub:'6–12 months out',tasks:['Decide what to do with your US property','Set up a mail forwarding service','Arrange pet relocation if applicable','Get international health insurance quotes','Create a Power of Attorney','Register for STEP program (step.state.gov)','Get an International Driving Permit from AAA','Open a Schwab checking account'],anchors:['log-anchor','work-anchor','legal-anchor','emrg-anchor']},
+  {n:6,icon:'✈️',label:'Make the Move',sub:'Ship, sell, go!',tasks:['Secure long-term housing in your new country','Ship essentials — sell or donate the rest','Cancel US subscriptions and transfer accounts','Get a local SIM card on arrival','Register with the local municipality','Open a local bank account'],anchors:['house-anchor','log-anchor']},
+  {n:7,icon:'🏡',label:'Settled In',sub:'You made it!',tasks:['Join Internations and local expat groups','Enroll in language classes','File US taxes using the FEIE exclusion','File FBAR if foreign accounts exceed $10k','Transition to local health insurance','Explore your new home deeply'],anchors:['comm-anchor','work-anchor']},
+];
+const COUNTRY_SCORES={
+  'Mexico':      {cost:9,climate:7,safety:5,language:5,proximity:10,expat:9,healthcare:7,visaEase:8},
+  'Portugal':    {cost:7,climate:8,safety:9,language:7,proximity:5,expat:9,healthcare:9,visaEase:7},
+  'Spain':       {cost:6,climate:9,safety:9,language:4,proximity:5,expat:8,healthcare:9,visaEase:7},
+  'Costa Rica':  {cost:7,climate:8,safety:8,language:5,proximity:9,expat:8,healthcare:7,visaEase:8},
+  'Panama':      {cost:7,climate:6,safety:6,language:7,proximity:8,expat:7,healthcare:7,visaEase:9},
+  'Colombia':    {cost:9,climate:8,safety:6,language:4,proximity:7,expat:9,healthcare:7,visaEase:9},
+  'Greece':      {cost:7,climate:9,safety:9,language:5,proximity:4,expat:6,healthcare:7,visaEase:7},
+  'Thailand':    {cost:9,climate:7,safety:8,language:3,proximity:2,expat:9,healthcare:8,visaEase:8},
+  'Italy':       {cost:6,climate:9,safety:9,language:3,proximity:4,expat:6,healthcare:9,visaEase:6},
+  'Georgia':     {cost:10,climate:6,safety:9,language:4,proximity:3,expat:5,healthcare:5,visaEase:10},
+  'Brazil':      {cost:8,climate:8,safety:5,language:3,proximity:6,expat:6,healthcare:5,visaEase:7},
+  'Morocco':     {cost:9,climate:8,safety:6,language:5,proximity:5,expat:4,healthcare:5,visaEase:7},
+  'Ecuador':     {cost:9,climate:8,safety:6,language:4,proximity:8,expat:6,healthcare:5,visaEase:8},
+  'New Zealand': {cost:3,climate:7,safety:10,language:10,proximity:1,expat:6,healthcare:10,visaEase:3},
+  'Argentina':   {cost:9,climate:7,safety:6,language:3,proximity:7,expat:7,healthcare:7,visaEase:7},
+};
 let abroadEid=null;
 
 function abroadCountryCard(c){
@@ -2185,6 +2241,113 @@ function saveAbroadSituation(field,value){
   if(!D.abroad.situation)D.abroad.situation={};
   D.abroad.situation[field]=value;
   saveAbroad();
+}
+function toggleJourneyTask(stage,idx){
+  if(!D.abroad.checklists)D.abroad.checklists={};
+  if(!Array.isArray(D.abroad.checklists[stage]))D.abroad.checklists[stage]=[];
+  D.abroad.checklists[stage][idx]=!D.abroad.checklists[stage][idx];
+  saveAbroad();
+  // Update checklist in-place without full re-render
+  const wrap=document.getElementById('jcl-'+stage);
+  if(wrap){
+    const checks=wrap.querySelectorAll('input[type=checkbox]');
+    if(checks[idx])checks[idx].checked=D.abroad.checklists[stage][idx];
+    const done=(D.abroad.checklists[stage]||[]).filter(Boolean).length;
+    const lbl=document.getElementById('jcl-lbl-'+stage);
+    if(lbl)lbl.textContent=done+'/'+JOURNEY_STAGES[stage-1].tasks.length+' complete';
+  }
+  const pct=(D.abroad.checklists[stage]||[]).filter(Boolean).length/JOURNEY_STAGES[stage-1].tasks.length*100;
+  const pb=document.getElementById('jcl-pb-'+stage);
+  if(pb)pb.style.width=Math.round(pct)+'%';
+}
+function setJourneyStage(n){
+  if(!D.abroad)D.abroad={countries:[],goals:[]};
+  D.abroad.journeyStage=n;
+  saveAbroad();
+  rAbroad();
+}
+function markStageDone(n){
+  if(!D.abroad)D.abroad={countries:[],goals:[]};
+  if(!D.abroad.stagesDone)D.abroad.stagesDone=[];
+  if(!D.abroad.stagesDone.includes(n))D.abroad.stagesDone.push(n);
+  if(n<7)D.abroad.journeyStage=n+1;
+  saveAbroad();
+  rAbroad();
+  toast('🎉 Stage '+n+' complete! Welcome to Stage '+(n+1));
+}
+function buildDFRankings(weights,userCountries){
+  const w=weights||{cost:5,climate:3,safety:4,language:3,proximity:5,expat:4,healthcare:4,visaEase:4};
+  const fields=['cost','climate','safety','language','proximity','expat','healthcare','visaEase'];
+  const total=fields.reduce((s,f)=>s+(w[f]||3),0)||1;
+  const scored=Object.entries(COUNTRY_SCORES).map(([name,sc])=>{
+    const raw=fields.reduce((s,f)=>s+(w[f]||3)*(sc[f]||5),0)/total;
+    const uc=userCountries.find(c=>{const cn=(c.name||'').toLowerCase();const sn=name.toLowerCase();return cn===sn||cn.includes(sn)||sn.includes(cn);});
+    return{name,score:Math.round(raw*10)/10,isShortlisted:!!uc,status:uc?uc.status:null,flag:uc?uc.flag||'':''};
+  }).sort((a,b)=>b.score-a.score).slice(0,10);
+  const maxScore=scored[0]?.score||10;
+  return scored.map((c,i)=>{
+    const pct=Math.round(c.score/maxScore*100);
+    const hl=c.isShortlisted?'background:rgba(74,114,89,.06);border-radius:6px;padding:3px 6px;margin:0 -6px':'';
+    const badge=c.status==='top'?'🏆 ':c.status==='shortlisted'?'⭐ ':'';
+    return`<div class="df-rank" style="${hl}"><div style="font-size:10px;color:var(--muted);min-width:18px;font-weight:600">#${i+1}</div><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:${c.isShortlisted?600:400};color:${c.isShortlisted?'var(--text)':'var(--text2)'}">${badge}${c.flag?c.flag+' ':''}${c.name}</div><div class="df-bar" style="width:${pct}%;margin-top:4px"></div></div><div class="df-score">${c.score.toFixed(1)}</div></div>`;
+  }).join('');
+}
+function updateDFWeights(){
+  if(!D.abroad)D.abroad={countries:[],goals:[]};
+  if(!D.abroad.weights)D.abroad.weights={};
+  ['cost','climate','safety','language','proximity','expat','healthcare','visaEase'].forEach(f=>{
+    const el=document.getElementById('df-w-'+f);
+    if(el)D.abroad.weights[f]=parseInt(el.value)||3;
+  });
+  saveAbroad();
+  const el=document.getElementById('df-rankings');
+  if(el)el.innerHTML=buildDFRankings(D.abroad.weights,D.abroad.countries||[]);
+}
+async function sendAbroadAI(){
+  const input=document.getElementById('ai-abroad-input');
+  if(!input)return;
+  const q=input.value.trim();
+  if(!q){toast('⚠️ Enter a question first');return;}
+  input.value='';
+  const wrap=document.getElementById('ai-abroad-msgs');
+  if(!wrap)return;
+  const abroad=D.abroad||{};
+  const sit=abroad.situation||{};
+  const ctryList=(abroad.countries||[]).filter(c=>c.status!=='eliminated').map(c=>c.name).join(', ')||'none yet';
+  const stage=JOURNEY_STAGES[(abroad.journeyStage||1)-1];
+  const ctx=`You are a concise relocation advisor. Answer in 2–5 sentences, practical and specific.\nUser context: Home in ${D.settings.homeCity||'Santa Cruz CA'}, target move: ${sit.timeline||'TBD'}, work: ${sit.workType||'remote'}, pets: ${sit.pets||'none'}, budget: ${sit.budget||'TBD'}/mo, US property: ${sit.usProperty||'unknown'}, countries considering: ${ctryList}, journey stage: ${stage.n} (${stage.label}).\n\nQuestion: ${q}`;
+  const uDiv=document.createElement('div');
+  uDiv.className='ai-msg user';
+  uDiv.textContent=q;
+  wrap.appendChild(uDiv);
+  const spin=document.createElement('div');
+  spin.className='ai-msg ai-r';
+  spin.innerHTML='<span style="opacity:.6">Thinking…</span>';
+  wrap.appendChild(spin);
+  wrap.scrollTop=wrap.scrollHeight;
+  try{
+    const ans=await callAI(ctx,700);
+    spin.remove();
+    const aDiv=document.createElement('div');
+    aDiv.className='ai-msg ai-r';
+    aDiv.textContent=ans;
+    wrap.appendChild(aDiv);
+    if(!D.abroad.aiConvo)D.abroad.aiConvo=[];
+    D.abroad.aiConvo.push({role:'user',text:q,time:Date.now()},{role:'ai',text:ans,time:Date.now()});
+    if(D.abroad.aiConvo.length>60)D.abroad.aiConvo=D.abroad.aiConvo.slice(-60);
+    saveAbroad();
+  }catch(e){
+    spin.remove();
+    const eDiv=document.createElement('div');
+    eDiv.className='ai-msg ai-r';
+    eDiv.textContent='Could not reach AI. Check your API key in Settings.';
+    wrap.appendChild(eDiv);
+  }
+  wrap.scrollTop=wrap.scrollHeight;
+}
+function abroadAISuggest(q){
+  const inp=document.getElementById('ai-abroad-input');
+  if(inp){inp.value=q;sendAbroadAI();}
 }
 
 function rAbroad(){
@@ -2690,16 +2853,159 @@ function rAbroad(){
     </div>
   </div>`;
 
-  document.getElementById('abroad-in').innerHTML=`<div style="max-width:680px">
-    <div style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-      <div><div style="font-size:17px;font-weight:600;color:var(--text);margin-bottom:4px">Living Abroad 🌍</div><div style="font-size:12px;color:var(--muted);line-height:1.6">Research for moving and buying property internationally.</div></div>
-      ${activeCount?`<div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${countries.filter(c=>c.status==='top').length?`<span style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:100px;color:var(--green3);background:rgba(74,114,89,.1)">🏆 ${countries.filter(c=>c.status==='top').length} Top Pick${countries.filter(c=>c.status==='top').length>1?'s':''}</span>`:''}
-        ${countries.filter(c=>c.status==='shortlisted').length?`<span style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:100px;color:var(--gold2);background:rgba(155,116,32,.1)">⭐ ${countries.filter(c=>c.status==='shortlisted').length} Shortlisted</span>`:''}
-      </div>`:''}
+  // ── Journey data ──────────────────────────
+  const journeyStage=abroad.journeyStage||1;
+  const stagesDone=abroad.stagesDone||[];
+  const checklists=abroad.checklists||{};
+  const weights=abroad.weights||{cost:5,climate:3,safety:4,language:3,proximity:5,expat:4,healthcare:4,visaEase:4};
+  const cStage=JOURNEY_STAGES[journeyStage-1];
+  const cChecklist=checklists[journeyStage]||[];
+  const cDone=cChecklist.filter(Boolean).length;
+  const cTotal=cStage.tasks.length;
+  const pct=cTotal?Math.round(cDone/cTotal*100):0;
+  const topCountry=countries.find(c=>c.status==='top')||countries.find(c=>c.status==='shortlisted');
+  const nextUndonei=cStage.tasks.findIndex((t,i)=>!cChecklist[i]);
+  const nextAction=nextUndonei>=0?`Next task: "${cStage.tasks[nextUndonei]}"`:journeyStage<7?`All tasks done! Mark Stage ${journeyStage} complete to advance →`:'🎉 Journey complete — you made it!';
+
+  // ── Roadmap ─────────────────────────────
+  const roadmapHTML=`<div class="jr">
+    <div style="font-size:9px;font-weight:700;opacity:.7;text-transform:uppercase;letter-spacing:.9px;margin-bottom:13px">Your Journey to Living Abroad</div>
+    <div class="jr-track">
+      ${JOURNEY_STAGES.map((s,i)=>{
+        const isDone=stagesDone.includes(s.n)||s.n<journeyStage;
+        const isActive=s.n===journeyStage;
+        const cls=isDone?'done':isActive?'active':'future';
+        const dotContent=isDone?'✓':`<span style="font-size:${isActive?'16':'13'}px;opacity:${isActive?1:.6}">${s.icon}</span>`;
+        const line=i<6?`<div class="jr-line${isDone||s.n<journeyStage?' done':''}"></div>`:'';
+        return`<div class="jr-node ${cls}" onclick="setJourneyStage(${s.n})"><div class="jr-nnum">${s.n}</div><div class="jr-dot">${dotContent}</div><div class="jr-nlbl">${s.label.split(' ').slice(0,2).join(' ')}</div></div>${line}`;
+      }).join('')}
     </div>
-    ${baseCard}${countriesCard}${visaCard}${costCard}${expatCard}${propertyCard}${housingCard}${workingCard}${logisticsCard}${legalCard}${communityCard}${entryCard}${emergencyCard}${goalsCard}${notesCard}
   </div>`;
+
+  // ── Summary card ─────────────────────────
+  const summaryCard=`<div class="card" style="margin-bottom:13px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:10px;font-weight:700;color:var(--green3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Stage ${journeyStage} of 7</div>
+        <div style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px">${cStage.icon} ${cStage.label}</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.5">${topCountry?`🌍 Top pick: <strong>${topCountry.flag||''} ${topCountry.name}</strong> · `:''}${cDone}/${cTotal} stage tasks complete${countries.filter(c=>c.status!=='eliminated').length?' · '+countries.filter(c=>c.status!=='eliminated').length+' countries in research':''}</div>
+        <div style="margin-top:10px;height:4px;background:var(--bdr2);border-radius:3px;overflow:hidden"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,var(--green3),var(--green2));transition:width .4s;border-radius:3px"></div></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">${pct}% of current stage complete</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+        ${journeyStage>1?`<button class="pbtn" onclick="setJourneyStage(${journeyStage-1})" style="font-size:10px;padding:5px 9px">← Back</button>`:''}
+        ${journeyStage<7?`<button class="pbtn" onclick="markStageDone(${journeyStage})" style="font-size:10px;padding:5px 9px;background:${pct===100?'var(--green)':'var(--card2)'};color:${pct===100?'#fff':'var(--muted)'};border:1px solid ${pct===100?'var(--green)':'var(--bdr2)'}">Stage Done →</button>`:'<div style="font-size:18px;text-align:center">🏡</div>'}
+      </div>
+    </div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bdr)">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px">Next Best Action</div>
+      <div style="font-size:12px;color:var(--text2)">${nextAction}</div>
+    </div>
+  </div>`;
+
+  // ── Stage checklist ──────────────────────
+  const checklistCard=`<div class="card" style="margin-bottom:13px" id="jcl-${journeyStage}">
+    <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">📋 Stage ${journeyStage} Checklist — ${cStage.label}</div><div class="cs" id="jcl-lbl-${journeyStage}">${cDone}/${cTotal} complete</div></div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="width:60px;height:4px;background:var(--bdr2);border-radius:3px;overflow:hidden"><div id="jcl-pb-${journeyStage}" class="df-bar" style="width:${pct}%"></div></div>
+        <span class="coll-arrow">▾</span>
+      </div>
+    </div>
+    <div class="coll-body coll-open">
+      ${cStage.tasks.map((task,i)=>`<div class="goal-row">
+        <input type="checkbox" onclick="toggleJourneyTask(${journeyStage},${i})" ${cChecklist[i]?'checked':''} style="margin-top:2px;cursor:pointer;accent-color:var(--green);width:15px;height:15px;flex-shrink:0"/>
+        <div style="font-size:12px;color:${cChecklist[i]?'var(--muted2)':'var(--text2)'};text-decoration:${cChecklist[i]?'line-through':'none'};line-height:1.4;flex:1">${task}</div>
+      </div>`).join('')}
+      <div style="padding-top:8px;border-top:1px solid var(--bdr);margin-top:4px;display:flex;gap:8px;flex-wrap:wrap">
+        ${JOURNEY_STAGES.filter(s=>s.n!==journeyStage).map(s=>{
+          const d=(checklists[s.n]||[]).filter(Boolean).length;
+          const done=stagesDone.includes(s.n)||s.n<journeyStage;
+          return`<button onclick="setJourneyStage(${s.n})" class="ai-pill" style="${done?'color:var(--green3);border-color:rgba(74,114,89,.3)':''}">${done?'✓':s.icon} ${s.label.split(' ')[0]}${!done&&d?' ('+d+'/'+s.tasks.length+')':''}</button>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>`;
+
+  // ── AI Planning Assistant ────────────────
+  const aiSuggestions=[
+    journeyStage<=2?'What visa do I need to live in Portugal as a remote worker?':'',
+    journeyStage<=2?'Compare cost of living in Mexico vs Colombia for a couple':'',
+    journeyStage===3?'What should I evaluate during a scout trip to Portugal?':'',
+    journeyStage===3?'What questions should I ask at an Internations meetup?':'',
+    journeyStage===4?'How do I score my top countries objectively?':'',
+    journeyStage>=5?'What is the best sequence for pet relocation to Europe?':'',
+    journeyStage>=5?'When should I cancel my US health insurance?':'',
+    'What are the biggest mistakes first-time expats make?',
+    'How does the FEIE tax exclusion work?',
+  ].filter(Boolean).slice(0,5);
+  const savedMsgs=(abroad.aiConvo||[]).slice(-10);
+  const aiCard=`<div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">🤖 AI Planning Assistant</div><div class="cs">Ask anything about visas, costs, timing, logistics…</div></div>
+      <span class="coll-arrow">▾</span>
+    </div>
+    <div class="coll-body">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+        ${aiSuggestions.map(q=>`<div class="ai-pill" onclick="abroadAISuggest(this.textContent)">${q}</div>`).join('')}
+      </div>
+      <div class="ai-chat-wrap" id="ai-abroad-msgs">
+        ${savedMsgs.map(m=>`<div class="ai-msg ${m.role==='user'?'user':'ai-r'}">${m.text}</div>`).join('')}
+        ${!savedMsgs.length?'<div style="text-align:center;padding:16px;color:var(--muted2);font-size:12px">Ask anything about your move — I have your situation context.</div>':''}
+      </div>
+      <div style="display:flex;gap:7px;margin-top:8px">
+        <input class="fi" id="ai-abroad-input" placeholder="e.g. What visa do I need for Portugal?" onkeydown="if(event.key==='Enter')sendAbroadAI()" style="flex:1"/>
+        <button class="tb-btn" onclick="sendAbroadAI()" style="flex-shrink:0">Ask →</button>
+      </div>
+    </div>
+  </div>`;
+
+  // ── Decision Framework ───────────────────
+  const dfLabels={cost:'Cost of Living',climate:'Climate',safety:'Safety',language:'English Spoken',proximity:'Proximity to US',expat:'Expat Community',healthcare:'Healthcare',visaEase:'Visa Ease'};
+  const dfCard=`<div class="card" style="margin-bottom:13px" id="df-anchor">
+    <div class="ch coll-toggle${journeyStage>=4?' coll-open':''}" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">⚖️ Decision Framework</div><div class="cs">Weight what matters, score your countries</div></div>
+      <span class="coll-arrow">▾</span>
+    </div>
+    <div class="coll-body${journeyStage>=4?' coll-open':''}">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">What matters most to you? (1 = less · 5 = critical)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin-bottom:14px">
+        ${Object.entries(dfLabels).map(([k,lbl])=>`<div class="df-row"><label style="font-size:11px;color:var(--text2);flex:1">${lbl}</label><input id="df-w-${k}" type="range" min="1" max="5" value="${weights[k]||3}" oninput="updateDFWeights()" style="width:80px;accent-color:var(--green)"/><span id="df-wv-${k}" style="font-size:11px;font-weight:600;color:var(--green3);min-width:12px;text-align:right">${weights[k]||3}</span></div>`).join('')}
+      </div>
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Ranking <span style="font-weight:400;text-transform:none;letter-spacing:0">(your shortlisted countries highlighted)</span></div>
+      <div id="df-rankings">${buildDFRankings(weights,countries)}</div>
+      <div style="font-size:10px;color:var(--muted2);margin-top:8px;line-height:1.5">Scores use curated data for 15 countries. Add countries above to highlight your shortlist.</div>
+    </div>
+  </div>`;
+
+  document.getElementById('abroad-in').innerHTML=`<div style="max-width:680px">
+    ${roadmapHTML}
+    ${summaryCard}
+    ${checklistCard}
+    ${aiCard}
+    <div id="ctry-anchor"></div>
+    ${baseCard}${countriesCard}${visaCard}${costCard}${expatCard}
+    <div id="df-anchor-ref" style="scroll-margin-top:12px"></div>
+    ${dfCard}
+    <div id="house-anchor"></div>
+    ${propertyCard}${housingCard}
+    <div id="work-anchor"></div>
+    ${workingCard}
+    <div id="log-anchor"></div>
+    ${logisticsCard}
+    <div id="legal-anchor"></div>
+    ${legalCard}
+    <div id="comm-anchor"></div>
+    ${communityCard}
+    <div id="scout-anchor"></div>
+    ${entryCard}
+    <div id="emrg-anchor"></div>
+    ${emergencyCard}${goalsCard}${notesCard}
+  </div>`;
+
+  // Sync slider display values after render
+  const wKeys=Object.keys(dfLabels);
+  wKeys.forEach(k=>{const el=document.getElementById('df-wv-'+k);if(el)el.textContent=weights[k]||3;});
 }
 
 // ══════════════════════════════════════════════
