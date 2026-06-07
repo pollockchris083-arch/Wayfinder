@@ -2128,7 +2128,15 @@ let abroadEid=null;
 function abroadCountryCard(c){
   const s=ABR_STATUS[c.status]||ABR_STATUS.researching;
   const vis=D.places.filter(p=>{const cn=normCountry(p.country);return(cn===c.name||cn===normCountry(c.name))&&p.status==='visited';});
+  const tripCount=D.trips.filter(t=>(t.destinations||[]).some(d=>normCountry(d)===c.name||(d||'').toLowerCase().includes((c.name||'').toLowerCase()))).length;
   const borderColor=c.status==='eliminated'?'rgba(176,64,64,.2)':c.status==='top'?'rgba(74,114,89,.25)':'var(--bdr)';
+  // Readiness score
+  const readinessItems=[c.status!=='researching',!!c.visaType,!!c.visaNotes,!!c.monthlyBudget,!!c.notes,vis.length>0,!!c.propertyNotes];
+  const readiness=readinessItems.filter(Boolean).length;
+  const readinessMax=readinessItems.length;
+  const readinessPct=Math.round(readiness/readinessMax*100);
+  const readinessColor=readiness<=2?'var(--muted2)':readiness<=4?'var(--gold2)':'var(--green3)';
+  const readinessLabel=readiness<=2?'Getting started':readiness<=4?'Researching':readiness<=5?'Well researched':'Fully researched';
   return`<div class="je" style="border-color:${borderColor}">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
       <div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0">
@@ -2139,12 +2147,19 @@ function abroadCountryCard(c){
             <span class="abr-badge ${c.status||'researching'}">${s.icon} ${s.label}</span>
             ${c.visaType?`<span class="abr-chip">🛂 ${c.visaType}${c.visaStatus&&ABR_VISA_LABEL[c.visaStatus]?' · '+ABR_VISA_LABEL[c.visaStatus]:''}</span>`:''}
             ${c.monthlyBudget?`<span class="abr-chip">💰 ${c.monthlyBudget}/mo</span>`:''}
+            ${vis.length?`<span class="abr-chip" style="color:var(--green3)">📍 ${vis.length} visited${tripCount?' · '+tripCount+' trip'+(tripCount>1?'s':''):''}</span>`:''}
           </div>
         </div>
       </div>
-      <div style="display:flex;gap:4px;flex-shrink:0">
-        <button class="pbtn" onclick="openAbroadCountry('${c.id}')">✏️ Edit</button>
-        <button class="pbtn del" onclick="delAbroadCountry('${c.id}')">×</button>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
+        <div style="display:flex;gap:4px">
+          <button class="pbtn" onclick="openAbroadCountry('${c.id}')">✏️ Edit</button>
+          <button class="pbtn del" onclick="delAbroadCountry('${c.id}')">×</button>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:9px;font-weight:600;color:${readinessColor};white-space:nowrap">${readinessLabel}</div>
+          <div style="display:flex;gap:2px;margin-top:3px">${readinessItems.map(v=>`<div style="width:10px;height:3px;border-radius:2px;background:${v?readinessColor:'var(--bdr2)'}"></div>`).join('')}</div>
+        </div>
       </div>
     </div>
     ${c.notes?`<div style="font-size:12px;color:var(--text2);line-height:1.55;margin-top:8px">${c.notes}</div>`:''}
@@ -2265,6 +2280,7 @@ function setJourneyStage(n){
   D.abroad.journeyStage=n;
   saveAbroad();
   rAbroad();
+  setTimeout(()=>{const el=document.getElementById('jcl-'+n);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},80);
 }
 function markStageDone(n){
   if(!D.abroad)D.abroad={countries:[],goals:[]};
@@ -2297,7 +2313,7 @@ function updateDFWeights(){
   if(!D.abroad.weights)D.abroad.weights={};
   ['cost','climate','safety','language','proximity','expat','healthcare','visaEase'].forEach(f=>{
     const el=document.getElementById('df-w-'+f);
-    if(el)D.abroad.weights[f]=parseInt(el.value)||3;
+    if(el){const v=parseInt(el.value)||3;D.abroad.weights[f]=v;const sp=document.getElementById('df-wv-'+f);if(sp)sp.textContent=v;}
   });
   saveAbroad();
   const el=document.getElementById('df-rankings');
