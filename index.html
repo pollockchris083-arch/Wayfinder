@@ -2023,13 +2023,13 @@ function openTripD(id){
           </div>
           ${(day.stops||[]).length?(day.stops||[]).map((s,si)=>{
             const lp=s.placeId?D.places.find(x=>x.id===s.placeId):null;
-            return`<div class="stop-row">
+            return`<div class="stop-row" ${lp?`style="cursor:pointer" onclick="go('places');setTimeout(()=>openPlaceD('${lp.id}'),10)"`:''}>
               <div class="stopnum">${si+1}</div>
               <div style="flex:1">
-                <div class="stopname">${s.name}${lp?` <span style="font-size:9px;color:var(--muted);margin-left:3px">· linked</span>`:''}</div>
+                <div class="stopname">${s.name}${lp?` <span style="font-size:9px;color:var(--green3);margin-left:3px">↗</span>`:''}</div>
                 ${s.note?`<div class="stopnote">${s.note}</div>`:''}
               </div>
-              <button onclick="delStop('${t.id}',${di},${si})" title="Remove stop" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:2px 4px;border-radius:4px;line-height:1;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
+              <button onclick="event.stopPropagation();delStop('${t.id}',${di},${si})" title="Remove stop" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:2px 4px;border-radius:4px;line-height:1;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
             </div>`;
           }).join(''):`<div style="font-size:11px;color:var(--muted2);padding:5px 0">No stops yet</div>`}
           <button class="add-stop" onclick="openStop('${t.id}',${di})">+ Add Stop</button>
