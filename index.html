@@ -2175,6 +2175,17 @@ function saveAbroadWork(v){
   D.abroad.workNotes=v;
   saveAbroad();
 }
+function saveAbroadField(field,value){
+  if(!D.abroad)D.abroad={countries:[],goals:[]};
+  D.abroad[field]=value;
+  saveAbroad();
+}
+function saveAbroadSituation(field,value){
+  if(!D.abroad)D.abroad={countries:[],goals:[]};
+  if(!D.abroad.situation)D.abroad.situation={};
+  D.abroad.situation[field]=value;
+  saveAbroad();
+}
 
 function rAbroad(){
   D=load();
@@ -2186,13 +2197,15 @@ function rAbroad(){
   const countries=[...abroad.countries||[]].sort((a,b)=>(sortOrd[a.status]||2)-(sortOrd[b.status]||2));
   const goals=abroad.goals||[];
   const workNotes=abroad.workNotes||'';
+  const situation=abroad.situation||{};
   const homePlaces=homeState?D.places.filter(p=>p.usState===homeState&&normCountry(p.country)==='United States'):[];
   const homeVis=homePlaces.filter(p=>p.status==='visited');
   const activeCount=countries.filter(c=>c.status!=='eliminated').length;
 
-  // ── Your Base ──────────────────────────────
+  // ── Your Base + Situation ──────────────────
+  const situOpts={workType:['','Remote Employee','Freelance/Contract','Business Owner','Retired','Sabbatical'],usProperty:['','Own — plan to sell','Own — plan to rent out','Rent — lease ending','Renting month-to-month'],relationship:['','Couple (2 people)','Solo','Family with kids']};
   const baseCard=`<div class="card" style="margin-bottom:13px">
-    <div class="ch"><div><div class="ct">🏠 Your Base</div><div class="cs">${homeCity||'Set in Settings'}</div></div></div>
+    <div class="ch"><div><div class="ct">🏠 Your Base & Situation</div><div class="cs">${homeCity||'Set in Settings'}</div></div></div>
     ${homeCity?`<div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:${homeVis.length?'10px':'0'}">
       <div style="font-size:12px;color:var(--text2)"><span style="color:var(--muted)">City:</span> ${homeCity}</div>
       ${homeState?`<div style="font-size:12px;color:var(--text2)"><span style="color:var(--muted)">State:</span> ${homeState}</div>`:''}
@@ -2200,10 +2213,21 @@ function rAbroad(){
     </div>`:
     `<div style="font-size:12px;color:var(--muted2)">Set your Home City in <a onclick="go('settings')" style="color:var(--green3);cursor:pointer;text-decoration:underline">Settings</a>.</div>`}
     ${homeVis.length?`<div style="font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Places visited in ${homeState}</div>
-    <div style="display:flex;flex-wrap:wrap;gap:5px">
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px">
       ${homeVis.slice(0,14).map(p=>`<div class="state-chip">${ci(p.category)} ${p.name}</div>`).join('')}
       ${homeVis.length>14?`<div class="state-chip" style="color:var(--muted)">+${homeVis.length-14} more</div>`:''}
     </div>`:''}
+    <div style="border-top:1px solid var(--bdr);padding-top:12px">
+      <div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px">Your Situation</div>
+      <div class="g2" style="gap:9px">
+        <div class="fg" style="margin-bottom:0"><label class="fl">Target Timeline</label><input class="fi" placeholder="e.g. 2027–2028" value="${situation.timeline||''}" oninput="saveAbroadSituation('timeline',this.value)"/></div>
+        <div class="fg" style="margin-bottom:0"><label class="fl">Work Type</label><select class="fs" onchange="saveAbroadSituation('workType',this.value)">${situOpts.workType.map(o=>`<option ${situation.workType===o?'selected':''}>${o}</option>`).join('')}</select></div>
+        <div class="fg" style="margin-bottom:0"><label class="fl">Pets</label><input class="fi" placeholder="e.g. 1 dog, medium breed" value="${situation.pets||''}" oninput="saveAbroadSituation('pets',this.value)"/></div>
+        <div class="fg" style="margin-bottom:0"><label class="fl">US Property</label><select class="fs" onchange="saveAbroadSituation('usProperty',this.value)">${situOpts.usProperty.map(o=>`<option ${situation.usProperty===o?'selected':''}>${o}</option>`).join('')}</select></div>
+        <div class="fg" style="margin-bottom:0"><label class="fl">Monthly Budget (2 people)</label><input class="fi" placeholder="e.g. $2,500–3,500/mo" value="${situation.budget||''}" oninput="saveAbroadSituation('budget',this.value)"/></div>
+        <div class="fg" style="margin-bottom:0"><label class="fl">Relationship Status</label><select class="fs" onchange="saveAbroadSituation('relationship',this.value)">${situOpts.relationship.map(o=>`<option ${situation.relationship===o?'selected':''}>${o}</option>`).join('')}</select></div>
+      </div>
+    </div>
   </div>`;
 
   // ── Countries ──────────────────────────────
@@ -2294,6 +2318,279 @@ function rAbroad(){
       </div>`).join('')}
     </div>
   </div>`:'';
+
+  // ── Expat Quality of Life ─────────────────
+  const expatRows=[
+    ['🇲🇽 Mexico','⚡ Fast','👥 Very Large','Some','🏥 Good','🟡 Moderate'],
+    ['🇵🇹 Portugal','⚡ Fast','👥 Very Large','Good','🏥 Excellent','🟢 Safe'],
+    ['🇪🇸 Spain','⚡ Fast','👥 Large','Some','🏥 Excellent','🟢 Safe'],
+    ['🇨🇷 Costa Rica','📶 Good','👥 Large','Some','🏥 Good','🟢 Safe'],
+    ['🇵🇦 Panama','📶 Good','👥 Large','Good','🏥 Good','🟡 Moderate'],
+    ['🇨🇴 Colombia','⚡ Fast','👥 Very Large','Some','🏥 Good','🟡 Moderate'],
+    ['🇬🇷 Greece','📶 Good','👥 Medium','Some','🏥 Good','🟢 Safe'],
+    ['🇹🇭 Thailand','⚡ Fast','👥 Very Large','Limited','🏥 Good','🟢 Safe'],
+    ['🇮🇹 Italy','⚡ Fast','👥 Medium','Limited','🏥 Excellent','🟢 Safe'],
+    ['🇬🇪 Georgia','⚡ Fast','👥 Growing','Some','🏥 Fair','🟢 Safe'],
+    ['🇧🇷 Brazil','📶 Good','👥 Medium','Limited','🏥 Fair','🟠 Variable'],
+    ['🇲🇦 Morocco','📶 Good','👥 Small','Some','🏥 Fair','🟡 Moderate'],
+    ['🇪🇨 Ecuador','📶 Good','👥 Medium','Limited','🏥 Fair','🟡 Moderate'],
+    ['🇳🇿 New Zealand','⚡ Fast','👥 Medium','Native','🏥 Excellent','🟢 Very Safe'],
+    ['🇦🇷 Argentina','📶 Good','👥 Large','Limited','🏥 Good','🟡 Moderate'],
+  ];
+  const expatCard=`<div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">🌐 Expat Quality of Life</div><div class="cs">Internet · community · English · healthcare · safety</div></div>
+      <span class="coll-arrow">▾</span>
+    </div>
+    <div class="coll-body">
+      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="border-bottom:1px solid var(--bdr)">${['Country','Internet','Expat Community','English','Healthcare','Safety'].map(h=>`<th style="text-align:left;padding:5px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;font-size:9px">${h}</th>`).join('')}</tr></thead>
+        <tbody>${expatRows.map((r,i)=>`<tr style="border-bottom:1px solid var(--bdr);background:${i%2?'transparent':'rgba(74,114,89,.025)'}">
+          <td style="padding:6px 8px;font-weight:500;color:var(--text);white-space:nowrap">${r[0]}</td>
+          <td style="padding:6px 8px;color:var(--text2);white-space:nowrap">${r[1]}</td>
+          <td style="padding:6px 8px;color:var(--text2);white-space:nowrap">${r[2]}</td>
+          <td style="padding:6px 8px;color:var(--text2)">${r[3]}</td>
+          <td style="padding:6px 8px;color:var(--text2);white-space:nowrap">${r[4]}</td>
+          <td style="padding:6px 8px;white-space:nowrap">${r[5]}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>
+  </div>`;
+
+  // ── Housing & Property ────────────────────
+  const housingNotes=abroad.housingNotes||'';
+  const housingCard=`<div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">🏘️ Housing & Property</div><div class="cs">Renting, buying, and ownership rules for Americans</div></div>
+      <span class="coll-arrow">▾</span>
+    </div>
+    <div class="coll-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
+        <div style="background:var(--card2);border-radius:8px;padding:10px 12px;border:1px solid var(--bdr)">
+          <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:7px">🏠 Renting First</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.5">Strongly recommended for Year 1 — get to know neighborhoods, local prices, and lifestyle before committing to a purchase. Most expats find their ideal area differs from their initial plan.</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.5;margin-top:4px">Typical leases: 3–12 months in most countries. Short-term furnished rentals easy to find via Airbnb, local Facebook groups, or Idealista (Spain/Portugal).</div>
+        </div>
+        <div style="background:var(--card2);border-radius:8px;padding:10px 12px;border:1px solid var(--bdr)">
+          <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:7px">📜 Ownership Rules for Americans</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45"><strong>Freehold:</strong> Portugal, Spain, Italy, Greece, Georgia, Panama, Colombia, Ecuador, NZ — full ownership, same rights as locals</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45"><strong>Fideicomiso (Mexico):</strong> Bank trust for foreigners in restricted zones (coastal, border). Full freehold in interior.</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45"><strong>Condo title:</strong> Most countries allow foreigners to own condos (strata title) even where land is restricted.</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45"><strong>Thailand:</strong> No land ownership for foreigners. Leasehold (30+30yr) or Thai company structure.</div>
+        </div>
+        <div style="background:var(--card2);border-radius:8px;padding:10px 12px;border:1px solid var(--bdr)">
+          <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:7px">💸 Purchase Costs & Process</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Budget 1–5% of purchase price for notary, legal fees, transfer taxes</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Always hire a local real estate attorney — title verification is critical</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Separate from your buyer's agent — avoid dual representation</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Wire transfers: use Wise for favorable exchange rates</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Foreign property must be reported if value &gt;$300k (IRS Form 3520 etc.)</div>
+        </div>
+        <div style="background:var(--card2);border-radius:8px;padding:10px 12px;border:1px solid var(--bdr)">
+          <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:7px">🔍 Finding Properties</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Idealista.com — Spain, Portugal, Italy</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Imovirtual — Portugal specifically</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">RE/MAX, Century 21 — operate in 50+ countries</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Facebook Groups: "[City] expats buy/rent"</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Nomad List, Expatistan for cost comparisons</div>
+        </div>
+      </div>
+      <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Your Housing Notes</div>
+      <textarea class="ft" style="min-height:80px" placeholder="Areas you're researching, budget, rental vs buying decision, specific neighborhoods…" oninput="saveAbroadField('housingNotes',this.value)">${housingNotes}</textarea>
+    </div>
+  </div>`;
+
+  // ── Logistics & Life ──────────────────────
+  const logisticsNotes=abroad.logisticsNotes||'';
+  const logisticsCard=`<div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">📦 Logistics & Life</div><div class="cs">Pets, shipping, mail, driving, and the practical move</div></div>
+      <span class="coll-arrow">▾</span>
+    </div>
+    <div class="coll-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
+        <div style="background:var(--card2);border-radius:8px;padding:10px 12px;border:1px solid var(--bdr)">
+          <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:7px">🐾 Pet Relocation</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">USDA APHIS health certificate (endorsed) required for most countries</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Rabies vaccination + ISO microchip required almost everywhere</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45"><strong>Easy:</strong> Mexico, Portugal, Spain, Costa Rica, Panama, Colombia</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45"><strong>Stricter:</strong> UK, Australia, NZ (quarantine + extensive health checks)</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Service: PetRelocation.com, IPATA, Happy Tails Travel</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Cost: $500–3,000 depending on country and size of pet</div>
+        </div>
+        <div style="background:var(--card2);border-radius:8px;padding:10px 12px;border:1px solid var(--bdr)">
+          <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:7px">📦 Shipping & Stuff</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Most expats: sell 80%, ship sentimental items only</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Air freight: $3–10/kg. Good for smaller shipments (&lt;100kg)</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Sea container: $3,000–8,000 for a 20ft container, 4–8 weeks</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">LCL (Less than Container): share a container, more affordable</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Services: Seven Seas Worldwide, Crown Relocations, Movehub</div>
+        </div>
+        <div style="background:var(--card2);border-radius:8px;padding:10px 12px;border:1px solid var(--bdr)">
+          <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:7px">📬 Mail & Admin</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45"><strong>Mail forwarding:</strong> Traveling Mailbox, PostScan Mail, Earth Class Mail (~$15–30/mo)</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Keep US address for banking, DMV, voter registration</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Register to vote from abroad: vote.org/overseas-voters</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">US state residency: consider SD, TX, FL (no state income tax)</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Notify SSA, IRS, Medicare of address change</div>
+        </div>
+        <div style="background:var(--card2);border-radius:8px;padding:10px 12px;border:1px solid var(--bdr)">
+          <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:7px">🚗 Driving Abroad</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">International Driving Permit: AAA, $20, valid in 150+ countries for 1yr</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Use IDP + US license together (bring both)</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Convert to local license after ~90 days in most countries</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Car: buy locally vs ship. Local usually cheaper for long stays.</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Digital Nomad Visa countries: may allow tourist driving longer</div>
+        </div>
+      </div>
+      <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Your Logistics Notes</div>
+      <textarea class="ft" style="min-height:80px" placeholder="Pet travel plan, shipping decisions, mail forwarding choice, US address strategy…" oninput="saveAbroadField('logisticsNotes',this.value)">${logisticsNotes}</textarea>
+    </div>
+  </div>`;
+
+  // ── Legal & Financial ─────────────────────
+  const legalNotes=abroad.legalNotes||'';
+  const legalCard=`<div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">⚖️ Legal & Financial</div><div class="cs">POA, estate planning, Medicare, Social Security</div></div>
+      <span class="coll-arrow">▾</span>
+    </div>
+    <div class="coll-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
+        <div style="background:var(--card2);border-radius:8px;padding:10px 12px;border:1px solid var(--bdr)">
+          <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:7px">📋 Power of Attorney</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Assign a trusted US person as POA before leaving — critical for managing US accounts, taxes, and property from abroad</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Get it notarized + apostille if you'll need it used internationally</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Types: General POA, Limited POA, Durable POA (survives incapacity)</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">US notary + apostille available at Secretary of State offices</div>
+        </div>
+        <div style="background:var(--card2);border-radius:8px;padding:10px 12px;border:1px solid var(--bdr)">
+          <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:7px">📜 Estate Planning</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">US will may not cover foreign assets — consult international estate attorney</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">May need a local will in each country where you own property</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Consider a Revocable Living Trust — avoids probate across borders</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Beneficiary designations: update for retirement accounts and life insurance</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Services: AMCITS, Taxes for Expats, American Citizens Abroad</div>
+        </div>
+        <div style="background:var(--card2);border-radius:8px;padding:10px 12px;border:1px solid var(--bdr)">
+          <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:7px">🏥 Medicare Abroad</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Medicare does NOT cover care outside the US (with very limited exceptions)</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">You can suspend Medicare Part B (optional coverage) while abroad to save premiums</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Keep Medicare Part A (hospital, usually free) active to avoid gaps</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">If not yet on Medicare: use international health insurance abroad</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Re-enroll in Medicare when returning to US without penalty if you had equivalent coverage</div>
+        </div>
+        <div style="background:var(--card2);border-radius:8px;padding:10px 12px;border:1px solid var(--bdr)">
+          <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:7px">💰 Social Security & Investments</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">SS payments can be received in most foreign countries (check ssa.gov for restrictions)</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">US-Foreign tax treaties may prevent double taxation on SS benefits</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Fidelity, Schwab, Vanguard generally OK with foreign addresses</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Some brokerage accounts (especially options) may be restricted for non-US residents</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">IRA/401k rules unchanged — can contribute if you have US earned income</div>
+        </div>
+      </div>
+      <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Your Legal & Financial Notes</div>
+      <textarea class="ft" style="min-height:80px" placeholder="POA status, will/trust plans, brokerage notes, Medicare decisions, SS strategy…" oninput="saveAbroadField('legalNotes',this.value)">${legalNotes}</textarea>
+    </div>
+  </div>`;
+
+  // ── Community & Culture ───────────────────
+  const communityNotes=abroad.communityNotes||'';
+  const communityCard=`<div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">👥 Community & Culture</div><div class="cs">Expat groups, language learning, finding your people</div></div>
+      <span class="coll-arrow">▾</span>
+    </div>
+    <div class="coll-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
+        <div style="background:var(--card2);border-radius:8px;padding:10px 12px;border:1px solid var(--bdr)">
+          <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:7px">🌐 Expat Networks</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45"><strong>Internations.org</strong> — largest expat network, 4M+ members, events in 420+ cities</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45"><strong>Meetup.com</strong> — expat groups, language exchange, hiking, activities</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Facebook: search "[City] expats" or "[City] Americans"</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Reddit: r/expats, r/digitalnomad, country-specific subs</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Churches, coworking spaces, yoga studios — organic community</div>
+        </div>
+        <div style="background:var(--card2);border-radius:8px;padding:10px 12px;border:1px solid var(--bdr)">
+          <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:7px">🗣️ Language Learning</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45"><strong>Duolingo</strong> — fun, consistent habit-building, free</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45"><strong>Pimsleur</strong> — audio-first, great for speaking quickly</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45"><strong>italki.com</strong> — affordable 1-on-1 tutors ($8–25/hr)</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Language schools in-country: immersive, ~$200–400/week</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Start 3–6 months before departure; locals notice and appreciate it</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Spanish covers Mexico, Colombia, Costa Rica, Spain, Panama, Ecuador</div>
+        </div>
+      </div>
+      <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Your Community Notes</div>
+      <textarea class="ft" style="min-height:70px" placeholder="Language goals, groups you've found, community contacts, cultural notes…" oninput="saveAbroadField('communityNotes',this.value)">${communityNotes}</textarea>
+    </div>
+  </div>`;
+
+  // ── Entry Requirements ────────────────────
+  const entryCard=`<div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">🛂 Entry Requirements</div><div class="cs">Passport, proof of funds, vaccinations, and visa rules</div></div>
+      <span class="coll-arrow">▾</span>
+    </div>
+    <div class="coll-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+        <div style="background:var(--card2);border-radius:8px;padding:10px 12px;border:1px solid var(--bdr)">
+          <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:7px">🛂 Passport & Entry</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Passport must have 6 months validity beyond your planned stay in most countries</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">US citizens: visa-free/on-arrival in 186+ countries</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Schengen Area: max 90 days in any 180-day period (EU block)</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Onward ticket required: some countries want proof of exit (buy a refundable flight)</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Renew passport abroad: nearest US consulate; allow 2–3 months</div>
+        </div>
+        <div style="background:var(--card2);border-radius:8px;padding:10px 12px;border:1px solid var(--bdr)">
+          <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:7px">💉 Health & Vaccinations</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">CDC recommended for most international travel: Hep A/B, Typhoid, Tdap</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Yellow Fever certificate required for some African/South American countries</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45"><strong>Proof of health insurance required</strong> to enter: Portugal, Spain, Costa Rica (for long-stay visas)</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Proof of sufficient funds: some countries require $1,500–2,000/mo or bank statement</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Check cdc.gov/travel for destination-specific requirements</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  // ── Emergency Planning ────────────────────
+  const emergencyNotes=abroad.emergencyNotes||'';
+  const emergencyCard=`<div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">🆘 Emergency Planning</div><div class="cs">STEP program, evacuation insurance, and crisis prep</div></div>
+      <span class="coll-arrow">▾</span>
+    </div>
+    <div class="coll-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
+        <div style="background:var(--card2);border-radius:8px;padding:10px 12px;border:1px solid var(--bdr)">
+          <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:7px">📋 STEP Program</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45"><strong>Smart Traveler Enrollment Program</strong> — register at step.state.gov</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Free. Receives security alerts, natural disaster warnings, embassy messages</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Embassy can locate you in a crisis and contact your emergency contact</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Register for each country you live in or visit for extended stays</div>
+        </div>
+        <div style="background:var(--card2);border-radius:8px;padding:10px 12px;border:1px solid var(--bdr)">
+          <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:7px">🚁 Medical Evacuation</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45"><strong>MedJet Assist</strong> — $310/yr couple. Airlifts to US hospital of choice, no questions asked</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45"><strong>Global Rescue</strong> — $329/yr. Medevac + security evacuation + travel protection</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Many international health plans include medevac coverage</div>
+          <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">Crisis evacuation (political/natural): typically a separate policy</div>
+        </div>
+        <div style="background:var(--card2);border-radius:8px;padding:10px 12px;border:1px solid var(--bdr);grid-column:1/-1">
+          <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:7px">📱 Documents & Preparedness</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px">
+            <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">• Scan passport, visas, insurance cards — store in Google Drive + email to yourself</div>
+            <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">• Save local emergency number in each country (112 EU, 911 Americas, 999 UK)</div>
+            <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">• Bookmark nearest US embassy: usembassy.gov</div>
+            <div style="font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45">• Emergency fund: 3–6 months expenses accessible abroad (Schwab/Wise)</div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Your Emergency Notes</div>
+      <textarea class="ft" style="min-height:70px" placeholder="STEP status, medevac insurance purchased, emergency contacts, local numbers…" oninput="saveAbroadField('emergencyNotes',this.value)">${emergencyNotes}</textarea>
+    </div>
+  </div>`;
 
   // ── Working Abroad ────────────────────────
   const refStyle='background:var(--card2);border-radius:8px;padding:10px 12px;border:1px solid var(--bdr)';
@@ -2401,7 +2698,7 @@ function rAbroad(){
         ${countries.filter(c=>c.status==='shortlisted').length?`<span style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:100px;color:var(--gold2);background:rgba(155,116,32,.1)">⭐ ${countries.filter(c=>c.status==='shortlisted').length} Shortlisted</span>`:''}
       </div>`:''}
     </div>
-    ${baseCard}${countriesCard}${visaCard}${costCard}${propertyCard}${workingCard}${goalsCard}${notesCard}
+    ${baseCard}${countriesCard}${visaCard}${costCard}${expatCard}${propertyCard}${housingCard}${workingCard}${logisticsCard}${legalCard}${communityCard}${entryCard}${emergencyCard}${goalsCard}${notesCard}
   </div>`;
 }
 
