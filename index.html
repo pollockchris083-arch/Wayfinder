@@ -1921,6 +1921,7 @@ function openTripEdit(id){
 function saveTrip(){
   const n=document.getElementById('t-name').value.trim();if(!n){toast('⚠️ Name required');return}
   const startDate=document.getElementById('t-start').value;const endDate=document.getElementById('t-end').value;
+  if(startDate&&endDate&&endDate<startDate){toast('⚠️ End date must be after start date');return}
   if(teid){
     const ex=D.trips.find(x=>x.id===teid);if(!ex)return;
     ex.name=n;ex.startDate=startDate;ex.endDate=endDate;
