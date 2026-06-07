@@ -1266,39 +1266,61 @@ const CONTINENTS={'North America':['United States','Canada','Mexico','Cuba','Cos
 let mCharts=null;
 
 // ── Interactive Map ──────────────────────────────
-let leafletMap=null,mapLayer_c=null,mapLayer_s=null,mapLayer_p=null;
+let leafletMap=null,mapLayer_c=null,mapLayer_s=null,mapLayer_p=null,mapRouteLayer=null;
 let mapFilter='all',mapViewMode='world',geoWorld=null,geoUSStates=null,mapLayer_home=null;
-const MAP_COLORS={visited:'#4A7259',want:'#9B7420',planned:'#4A7EBA',saved:'#8A7D6E',wishlist:'#B05080'};
+let mapTripFilter='all',mapYearFilter='all';
+const MAP_COLORS={visited:'#4A7259',want:'#B8892A',planned:'#4A7EBA',saved:'#8A7D6E',wishlist:'#B05080'};
 
 function rMap(){
   D=load();
+  mapTripFilter='all';mapYearFilter='all';
+  const years=[...new Set(D.places.filter(p=>p.addedAt||(p.tripIds||[]).length).map(p=>{
+    const tid=(p.tripIds||[])[0];const t=tid&&D.trips.find(x=>x.id===tid);
+    return new Date(t&&t.startDate?t.startDate:p.addedAt||0).getFullYear();
+  }).filter(y=>y>2000))].sort((a,b)=>b-a);
+  const tripOpts=[...D.trips].sort((a,b)=>(b.startDate||'').localeCompare(a.startDate||'')).map(t=>'<option value="'+t.id+'">'+t.name+(t.startDate?' ('+new Date(t.startDate).getFullYear()+')':'')+'</option>').join('');
+  const yearOpts=years.map(y=>'<option value="'+y+'">'+y+'</option>').join('');
+  const legendPins=Object.entries(MAP_COLORS).map(([k,c])=>'<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:9px;height:9px;border-radius:50%;background:'+c+';border:1.5px solid #fff;box-shadow:0 0 0 1px '+c+'40"></div>'+(k==='wishlist'?'Wishlist':sl(k))+'</div>').join('');
   document.getElementById('map-in').innerHTML=`
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
       <div class="fb" id="map-fb" style="margin-bottom:0;flex-wrap:wrap">
         <button class="fc on" onclick="mapSetFilter(this,'all')">All Places</button>
         <button class="fc" onclick="mapSetFilter(this,'visited')">✅ Visited</button>
-        <button class="fc" onclick="mapSetFilter(this,'want')">⭐ Want to Go</button>
+        <button class="fc" onclick="mapSetFilter(this,'want')">⭐ Want</button>
         <button class="fc" onclick="mapSetFilter(this,'planned')">📅 Planned</button>
         <button class="fc" onclick="mapSetFilter(this,'saved')">🔖 Saved</button>
         <button class="fc" onclick="mapSetFilter(this,'wishlist')">♡ Wishlist</button>
       </div>
-      <div class="fb" id="map-vb" style="margin-bottom:0">
-        <button class="fc on" onclick="mapSetView(this,'world')">🌍 World</button>
-        <button class="fc" onclick="mapSetView(this,'us')">🇺🇸 United States</button>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">
+        <select id="map-trip-sel" class="fs" style="font-size:11px;padding:5px 10px;height:auto;width:auto;min-width:130px" onchange="mapSetTrip(this.value)">
+          <option value="all">All Trips</option>
+          ${tripOpts}
+        </select>
+        <select id="map-year-sel" class="fs" style="font-size:11px;padding:5px 10px;height:auto;width:auto;min-width:85px" onchange="mapSetYear(this.value)">
+          <option value="all">All Years</option>
+          ${yearOpts}
+        </select>
+        <div class="fb" id="map-vb" style="margin-bottom:0">
+          <button class="fc on" onclick="mapSetView(this,'world')">🌍 World</button>
+          <button class="fc" onclick="mapSetView(this,'us')">🇺🇸 US</button>
+        </div>
       </div>
     </div>
-    <div id="the-map" style="height:calc(100vh - 270px);min-height:420px;border-radius:var(--r);overflow:hidden;border:1px solid var(--bdr);box-shadow:var(--shadow)"></div>
-    <div style="display:flex;flex-wrap:wrap;gap:14px;padding:9px 2px;align-items:center">
-      ${Object.entries(MAP_COLORS).map(([k,c])=>`<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:10px;height:10px;border-radius:50%;background:${c};border:1.5px solid #fff;box-shadow:0 0 0 1px ${c}40"></div>${k==='wishlist'?'Wishlist':sl(k)}</div>`).join('')}
-      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:14px;height:9px;background:rgba(74,114,89,.3);border:1.5px solid #4A7259;border-radius:2px"></div>Visited</div>
-      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:14px;height:9px;background:rgba(155,116,32,.2);border:1.5px solid #9B7420;border-radius:2px"></div>Want to Go</div>
+    <div id="the-map" style="height:calc(100vh - 300px);min-height:400px;border-radius:var(--r);overflow:hidden;border:1px solid var(--bdr);box-shadow:var(--shadow)"></div>
+    <div style="display:flex;flex-wrap:wrap;gap:13px;padding:9px 2px;align-items:center">
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:14px;height:9px;background:#C27D5C;border-radius:2px;opacity:.85"></div>Visited (heat)</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:14px;height:9px;background:transparent;border:2px dashed #B8892A;border-radius:2px"></div>Want to Go</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)">🏠 Home</div>
+      ${legendPins}
     </div>
     <div class="g4" id="map-stats-row" style="margin-top:6px"></div>
   `;
-  if(leafletMap){leafletMap.remove();leafletMap=null;mapLayer_c=null;mapLayer_s=null;mapLayer_p=null;}
+  if(leafletMap){leafletMap.remove();leafletMap=null;mapLayer_c=null;mapLayer_s=null;mapLayer_p=null;mapRouteLayer=null;}
   leafletMap=L.map('the-map',{center:[20,0],zoom:2});
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© <a href="https://openstreetmap.org" target="_blank">OpenStreetMap</a>',maxZoom:19}).addTo(leafletMap);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+    attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains:'abcd',maxZoom:19
+  }).addTo(leafletMap);
   mapRenderStats();
   mapInit();
 }
@@ -1322,30 +1344,41 @@ function mapGeoToName(raw){
 function mapRenderCountries(){
   if(mapLayer_c){mapLayer_c.remove();mapLayer_c=null;}
   if(!geoWorld||!leafletMap)return;
-  const vis=new Set(D.places.filter(p=>p.status==='visited').map(p=>normCountry(p.country)).filter(Boolean));
-  const want=new Set(D.places.filter(p=>p.status==='want'||p.status==='planned').map(p=>normCountry(p.country)).filter(Boolean));
+  const countryData={};
+  D.places.forEach(p=>{const c=normCountry(p.country);if(!c)return;if(!countryData[c])countryData[c]={vis:0,want:0};if(p.status==='visited')countryData[c].vis++;else if(p.status==='want'||p.status==='planned')countryData[c].want++;});
   mapLayer_c=L.geoJSON(geoWorld,{
-    style:f=>{const raw=f.properties.ADMIN||'';const n=mapGeoToName(raw);const v=vis.has(n)||vis.has(raw);const w=!v&&(want.has(n)||want.has(raw));return{fillColor:v?'#4A7259':w?'#9B7420':'#888',fillOpacity:v?0.35:w?0.15:0,color:v?'#3D5E49':w?'#7A5520':'#bbb',weight:v?1.5:0.4,opacity:v?0.8:0.3};},
+    style:f=>{
+      const raw=f.properties.ADMIN||'';const n=mapGeoToName(raw);
+      const d=countryData[n]||countryData[raw]||{vis:0,want:0};
+      if(d.vis>0){const h=d.vis<=1?'#EDBA9E':d.vis<=3?'#D9885D':d.vis<=7?'#C27D5C':'#A66040';return{fillColor:h,fillOpacity:0.72,color:'#9C5535',weight:1.2,opacity:0.8};}
+      if(d.want>0)return{fillColor:'transparent',fillOpacity:0,color:'#B8892A',weight:1.5,opacity:0.65,dashArray:'5 3'};
+      return{fillColor:'transparent',fillOpacity:0,color:'#ccc',weight:0.4,opacity:0.5};
+    },
     onEachFeature:(f,layer)=>{
       const raw=f.properties.ADMIN||'';const n=mapGeoToName(raw);
       const ps=D.places.filter(p=>{const c=normCountry(p.country);return c===n||c===raw;});
-      const vis=ps.filter(p=>p.status==='visited');
-      layer.bindTooltip(`<strong>${raw}</strong>${ps.length?`<br>${vis.length} visited · ${ps.length} total`:''}`,{sticky:true});
+      const visPlaces=ps.filter(p=>p.status==='visited');
+      const d=countryData[n]||countryData[raw]||{vis:0,want:0};
+      layer.bindTooltip('<div style="font-family:-apple-system,sans-serif"><strong style="font-size:12px">'+raw+'</strong>'+(d.vis>0?'<div style="font-size:11px;color:#666;margin-top:2px">'+d.vis+' place'+(d.vis!==1?'s':'')+' visited</div>':d.want>0?'<div style="font-size:11px;color:#999;margin-top:2px">On your list</div>':'')+'</div>',{sticky:true,opacity:0.95});
       layer.on('click',()=>{
         try{leafletMap.fitBounds(layer.getBounds(),{padding:[30,30],maxZoom:7});}catch(e){}
         if(!ps.length)return;
         const tripIds=new Set(ps.flatMap(p=>p.tripIds||[]));
         const trips=D.trips.filter(t=>tripIds.has(t.id));
-        const html=`<div style="font-family:-apple-system,sans-serif;min-width:170px;max-width:230px">
-          <div style="font-weight:700;font-size:13px;margin-bottom:7px">${raw}</div>
-          ${vis.length?`<div style="font-size:9px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Places (${vis.length})</div>`
-            +vis.slice(0,6).map(p=>`<div style="font-size:11px;padding:2px 0">${ci(p.category)} ${p.name}</div>`).join('')
-            +(vis.length>6?`<div style="font-size:10px;color:#999">+${vis.length-6} more</div>`:''): ''}
-          ${trips.length?`<div style="font-size:9px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.5px;margin:${vis.length?'7px':'0'} 0 4px">Trips (${trips.length})</div>`
-            +trips.slice(0,4).map(t=>`<div style="font-size:11px;padding:2px 0">✈️ ${t.name}</div>`).join('')
-            +(trips.length>4?`<div style="font-size:10px;color:#999">+${trips.length-4} more</div>`:''): ''}
-        </div>`;
-        layer.bindPopup(html,{maxWidth:250,closeButton:true}).openPopup();
+        const tripYears=trips.filter(t=>t.startDate).map(t=>new Date(t.startDate).getFullYear()).sort();
+        const journalCount=(D.journal||[]).filter(j=>ps.some(p=>p.id===j.placeId)).length;
+        const html='<div style="font-family:-apple-system,sans-serif;min-width:185px;max-width:250px">'
+          +'<div style="font-weight:700;font-size:14px;margin-bottom:4px">'+raw+'</div>'
+          +(tripYears.length?'<div style="font-size:10px;color:#999;margin-bottom:8px">First visit: '+tripYears[0]+(tripYears.length>1?' · Last: '+tripYears[tripYears.length-1]:'')+'</div>':'')
+          +(visPlaces.length?'<div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Places ('+visPlaces.length+')</div>'
+            +visPlaces.slice(0,6).map(p=>'<div style="font-size:11px;padding:2px 0">'+ci(p.category)+' '+p.name+'</div>').join('')
+            +(visPlaces.length>6?'<div style="font-size:10px;color:#aaa">+'+( visPlaces.length-6)+' more</div>':''):'')
+          +(trips.length?'<div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin:'+(visPlaces.length?'8':'0')+'px 0 5px">Trips ('+trips.length+')</div>'
+            +trips.slice(0,3).map(t=>'<div style="font-size:11px;padding:2px 0">✈️ '+t.name+(t.startDate?' ('+new Date(t.startDate).getFullYear()+')':'')+'</div>').join('')
+            +(trips.length>3?'<div style="font-size:10px;color:#aaa">+'+(trips.length-3)+' more</div>':''):'')
+          +(journalCount?'<div style="font-size:10px;color:#888;margin-top:7px;padding-top:7px;border-top:1px solid #eee">📓 '+journalCount+' journal '+(journalCount===1?'entry':'entries')+'</div>':'')
+          +'</div>';
+        layer.bindPopup(html,{maxWidth:270,closeButton:true}).openPopup();
       });
     }
   }).addTo(leafletMap);
@@ -1353,45 +1386,73 @@ function mapRenderCountries(){
 function mapRenderStates(){
   if(mapLayer_s){mapLayer_s.remove();mapLayer_s=null;}
   if(!geoUSStates||!leafletMap)return;
-  const vis=new Set(D.places.filter(p=>normCountry(p.country)==='United States'&&p.status==='visited').map(p=>p.usState).filter(Boolean));
-  const want=new Set(D.places.filter(p=>normCountry(p.country)==='United States'&&p.status!=='visited').map(p=>p.usState).filter(Boolean));
+  const stateData={};
+  D.places.filter(p=>normCountry(p.country)==='United States').forEach(p=>{if(!p.usState)return;if(!stateData[p.usState])stateData[p.usState]={vis:0,want:0};if(p.status==='visited')stateData[p.usState].vis++;else stateData[p.usState].want++;});
+  const homeState=getHomeState();
   mapLayer_s=L.geoJSON(geoUSStates,{
-    style:f=>{const n=f.properties.name||'';const v=vis.has(n);const w=!v&&want.has(n);return{fillColor:v?'#4A7259':w?'#9B7420':'transparent',fillOpacity:v?0.4:w?0.2:0,color:v?'#3D5E49':w?'#7A5520':'#aaa',weight:v?1.5:0.5,opacity:mapViewMode==='us'?0.8:0.4};},
+    style:f=>{
+      const n=f.properties.name||'';const d=stateData[n]||{vis:0,want:0};const isHome=homeState&&n===homeState;
+      if(d.vis>0){const op=mapViewMode==='us'?0.75:0.5;const h=d.vis<=1?'#EDBA9E':d.vis<=3?'#D9885D':d.vis<=7?'#C27D5C':'#A66040';return{fillColor:h,fillOpacity:op,color:'#9C5535',weight:mapViewMode==='us'?1.2:0.6,opacity:0.8};}
+      if(isHome)return{fillColor:'rgba(74,114,89,.15)',fillOpacity:1,color:'#4A7259',weight:1.2,opacity:0.5};
+      if(d.want>0)return{fillColor:'transparent',fillOpacity:0,color:'#B8892A',weight:1.2,opacity:0.6,dashArray:'4 3'};
+      return{fillColor:'transparent',fillOpacity:0,color:'#bbb',weight:0.4,opacity:mapViewMode==='us'?0.5:0.15};
+    },
     onEachFeature:(f,layer)=>{
       const n=f.properties.name||'';
       const ps=D.places.filter(p=>p.usState===n&&normCountry(p.country)==='United States');
-      const vis=ps.filter(p=>p.status==='visited');
-      layer.bindTooltip(`<strong>${n}</strong>${ps.length?`<br>${vis.length} visited · ${ps.length} total`:''}`,{sticky:true});
+      const visPlaces=ps.filter(p=>p.status==='visited');
+      const d=stateData[n]||{vis:0,want:0};const isHome=homeState&&n===homeState;
+      layer.bindTooltip('<div style="font-family:-apple-system,sans-serif"><strong style="font-size:12px">'+(isHome?'🏠 ':'')+n+'</strong>'+(d.vis>0?'<div style="font-size:11px;color:#666;margin-top:2px">'+d.vis+' visited</div>':'')+'</div>',{sticky:true,opacity:0.95});
       layer.on('click',()=>{
         try{leafletMap.fitBounds(layer.getBounds(),{padding:[20,20]});}catch(e){}
         if(!ps.length)return;
         const tripIds=new Set(ps.flatMap(p=>p.tripIds||[]));
         const trips=D.trips.filter(t=>tripIds.has(t.id));
-        const html=`<div style="font-family:-apple-system,sans-serif;min-width:170px;max-width:230px">
-          <div style="font-weight:700;font-size:13px;margin-bottom:7px">${n}</div>
-          ${vis.length?`<div style="font-size:9px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Places (${vis.length})</div>`
-            +vis.slice(0,6).map(p=>`<div style="font-size:11px;padding:2px 0">${ci(p.category)} ${p.name}</div>`).join('')
-            +(vis.length>6?`<div style="font-size:10px;color:#999">+${vis.length-6} more</div>`:''): ''}
-          ${trips.length?`<div style="font-size:9px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.5px;margin:${vis.length?'7px':'0'} 0 4px">Trips (${trips.length})</div>`
-            +trips.slice(0,4).map(t=>`<div style="font-size:11px;padding:2px 0">✈️ ${t.name}</div>`).join('')
-            +(trips.length>4?`<div style="font-size:10px;color:#999">+${trips.length-4} more</div>`:''): ''}
-        </div>`;
-        layer.bindPopup(html,{maxWidth:250,closeButton:true}).openPopup();
+        const journalCount=(D.journal||[]).filter(j=>ps.some(p=>p.id===j.placeId)).length;
+        const html='<div style="font-family:-apple-system,sans-serif;min-width:175px;max-width:240px">'
+          +'<div style="font-weight:700;font-size:14px;margin-bottom:6px">'+(isHome?'🏠 ':'')+n+'</div>'
+          +(visPlaces.length?'<div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Places ('+visPlaces.length+')</div>'
+            +visPlaces.slice(0,6).map(p=>'<div style="font-size:11px;padding:2px 0">'+ci(p.category)+' '+p.name+'</div>').join('')
+            +(visPlaces.length>6?'<div style="font-size:10px;color:#aaa">+'+(visPlaces.length-6)+' more</div>':''):'')
+          +(trips.length?'<div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin:'+(visPlaces.length?'8':'0')+'px 0 5px">Trips ('+trips.length+')</div>'
+            +trips.slice(0,4).map(t=>'<div style="font-size:11px;padding:2px 0">✈️ '+t.name+'</div>').join('')
+            +(trips.length>4?'<div style="font-size:10px;color:#aaa">+'+(trips.length-4)+' more</div>':''):'')
+          +(journalCount?'<div style="font-size:10px;color:#888;margin-top:6px">📓 '+journalCount+' journal '+(journalCount===1?'entry':'entries')+'</div>':'')
+          +'</div>';
+        layer.bindPopup(html,{maxWidth:260,closeButton:true}).openPopup();
       });
     }
   }).addTo(leafletMap);
 }
-function mapSetFilter(btn,f){document.querySelectorAll('#map-fb .fc').forEach(x=>x.classList.remove('on'));btn.classList.add('on');mapFilter=f;mapRenderPins();}
+function mapSetFilter(btn,f){
+  document.querySelectorAll('#map-fb .fc').forEach(x=>x.classList.remove('on'));btn.classList.add('on');mapFilter=f;
+  mapTripFilter='all';mapYearFilter='all';
+  const ts=document.getElementById('map-trip-sel');if(ts)ts.value='all';
+  const ys=document.getElementById('map-year-sel');if(ys)ys.value='all';
+  mapRenderPins();
+}
 function mapSetView(btn,v){document.querySelectorAll('#map-vb .fc').forEach(x=>x.classList.remove('on'));btn.classList.add('on');mapViewMode=v;if(v==='world')leafletMap.setView([20,0],2);else leafletMap.setView([39.5,-98.35],4);mapRenderStates();}
 async function mapRenderPins(){
   if(mapLayer_p){mapLayer_p.remove();mapLayer_p=null;}
+  if(mapRouteLayer){mapRouteLayer.remove();mapRouteLayer=null;}
   if(!leafletMap)return;
   mapLayer_p=L.markerClusterGroup({maxClusterRadius:50,showCoverageOnHover:false,spiderfyOnMaxZoom:true});
-  const items=mapFilter==='wishlist'?D.wish.map(w=>({_wish:true,name:w.name,notes:w.notes||'',status:'wishlist',type:w.type,usState:'',country:'',region:'',rating:''})):(mapFilter==='all'?D.places:D.places.filter(p=>p.status===mapFilter));
+  let items;
+  if(mapTripFilter!=='all'){
+    items=D.places.filter(p=>(p.tripIds||[]).includes(mapTripFilter));
+  } else if(mapFilter==='wishlist'){
+    items=D.wish.map(w=>({_wish:true,name:w.name,notes:w.notes||'',status:'wishlist',type:w.type,usState:'',country:'',region:'',rating:'',tripIds:[]}));
+  } else {
+    items=(mapFilter==='all'?D.places:D.places.filter(p=>p.status===mapFilter));
+    if(mapYearFilter!=='all'){
+      items=items.filter(p=>{const tid=(p.tripIds||[])[0];const t=tid&&D.trips.find(x=>x.id===tid);return String(new Date(t&&t.startDate?t.startDate:p.addedAt||0).getFullYear())===mapYearFilter;});
+    }
+  }
   const cache=JSON.parse(localStorage.getItem('wf_geocache')||'{}');
   const toGeo=[];
   items.forEach(item=>{const k=mapCacheKey(item);if(cache[k])mapAddPin(item,cache[k]);else toGeo.push(item);});
   mapLayer_p.addTo(leafletMap);
+  if(mapTripFilter!=='all')mapDrawRoute(mapTripFilter);
   for(let i=0;i<toGeo.length;i++){
     const coords=await mapGeocode(toGeo[i]);
     if(coords&&mapLayer_p)mapAddPin(toGeo[i],coords);
@@ -1414,10 +1475,26 @@ async function mapGeocode(item){
 function mapAddPin(item,coords){
   if(!mapLayer_p||!coords)return;
   const color=MAP_COLORS[item.status]||MAP_COLORS.saved;
-  const m=L.circleMarker([coords.lat,coords.lng],{radius:item._wish?6:8,fillColor:color,color:'#fff',weight:2,opacity:1,fillOpacity:0.9});
+  const catIcon=item._wish?'♡':ci(item.category)||'📍';
+  const size=item.status==='visited'?30:26;
+  const icon=L.divIcon({
+    html:'<div style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:'+color+';border:2.5px solid rgba(255,255,255,.9);box-shadow:0 2px 8px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-size:'+(size===30?'13':'11')+'px">'+catIcon+'</div>',
+    className:'',iconSize:[size,size],iconAnchor:[size/2,size/2]
+  });
+  const m=L.marker([coords.lat,coords.lng],{icon});
   const loc=[item.usState,normCountry(item.country)||item.region].filter(Boolean).join(', ');
-  const stars=item.rating?'⭐'.repeat(parseInt(item.rating)):'';
-  m.bindPopup(`<div style="min-width:155px;font-family:-apple-system,sans-serif"><div style="font-weight:600;font-size:13px;margin-bottom:4px">${item.name}</div>${loc?`<div style="font-size:11px;color:#777;margin-bottom:5px">${loc}</div>`:''}<span style="background:${color};color:#fff;font-size:10px;padding:2px 8px;border-radius:3px">${item._wish?'♡ Wishlist':sl(item.status)}</span>${stars?`<div style="margin-top:5px;font-size:11px">${stars}</div>`:''}${item.notes?`<div style="font-size:11px;color:#666;border-top:1px solid #eee;padding-top:5px;margin-top:5px">${item.notes.slice(0,120)}${item.notes.length>120?'…':''}</div>`:''}</div>`);
+  const stars=item.rating?'⭐'.repeat(Math.min(parseInt(item.rating)||0,5)):'';
+  const tripNames=(item.tripIds||[]).map(tid=>{const t=D.trips.find(x=>x.id===tid);return t?t.name:null;}).filter(Boolean);
+  const journalCount=(D.journal||[]).filter(j=>j.placeId===item.id).length;
+  m.bindPopup('<div style="min-width:165px;max-width:240px;font-family:-apple-system,sans-serif">'
+    +'<div style="font-weight:700;font-size:13px;margin-bottom:2px">'+item.name+'</div>'
+    +(loc?'<div style="font-size:11px;color:#777;margin-bottom:6px">'+loc+'</div>':'')
+    +'<span style="background:'+color+';color:#fff;font-size:9px;font-weight:600;padding:2px 8px;border-radius:100px">'+(item._wish?'♡ Wishlist':sl(item.status))+'</span>'
+    +(stars?'<div style="margin-top:5px;font-size:11px">'+stars+'</div>':'')
+    +(tripNames.length?'<div style="font-size:10px;color:#666;margin-top:6px;border-top:1px solid #eee;padding-top:5px">✈️ '+tripNames.slice(0,2).join(' · ')+(tripNames.length>2?' +'+(tripNames.length-2):'')+'</div>':'')
+    +(journalCount?'<div style="font-size:10px;color:#666;margin-top:3px">📓 '+journalCount+' journal '+(journalCount===1?'entry':'entries')+'</div>':'')
+    +(item.notes?'<div style="font-size:11px;color:#666;border-top:1px solid #eee;padding-top:5px;margin-top:5px">'+item.notes.slice(0,100)+(item.notes.length>100?'…':'')+'</div>':'')
+    +'</div>',{maxWidth:260});
   mapLayer_p.addLayer(m);
 }
 async function mapRenderHome(){
@@ -1445,8 +1522,33 @@ function mapRenderStats(){
   const vis=D.places.filter(p=>p.status==='visited');
   const intl=[...new Set(vis.map(p=>normCountry(p.country)).filter(c=>c&&c!=='United States'))];
   const states=[...new Set(vis.filter(p=>normCountry(p.country)==='United States').map(p=>p.usState).filter(Boolean))];
+  const continents=[...new Set(intl.map(c=>Object.entries(CONTINENTS).find(([,v])=>v.includes(c))?.[0]).filter(Boolean))];
   const el=document.getElementById('map-stats-row');if(!el)return;
-  el.innerHTML=`<div class="sc" style="--accent:var(--green2)"><div class="si">📍</div><div class="sn">${vis.length}</div><div class="sl">Places Visited</div></div><div class="sc" style="--accent:var(--gold)"><div class="si">🌍</div><div class="sn">${intl.length}</div><div class="sl">Countries</div></div><div class="sc" style="--accent:var(--sage)"><div class="si">🇺🇸</div><div class="sn">${states.length}</div><div class="sl">US States</div></div><div class="sc" style="--accent:var(--earth2)"><div class="si">✈️</div><div class="sn">${D.trips.filter(t=>t.status==='past').length}</div><div class="sl">Trips Done</div></div>`;
+  el.innerHTML='<div class="sc" style="--accent:var(--green2)"><div class="si">📍</div><div class="sn">'+vis.length+'</div><div class="sl">Places Visited</div></div>'
+    +'<div class="sc" style="--accent:var(--gold)"><div class="si">🌍</div><div class="sn">'+intl.length+'</div><div class="sl">Countries</div></div>'
+    +'<div class="sc" style="--accent:var(--earth)"><div class="si">🗺️</div><div class="sn">'+continents.length+'</div><div class="sl">Continents</div></div>'
+    +'<div class="sc" style="--accent:var(--sage)"><div class="si">🇺🇸</div><div class="sn">'+states.length+'</div><div class="sl">US States</div></div>';
+}
+function mapSetTrip(tripId){
+  mapTripFilter=tripId;
+  if(tripId!=='all'){mapYearFilter='all';const ys=document.getElementById('map-year-sel');if(ys)ys.value='all';}
+  mapRenderPins();
+}
+function mapSetYear(year){
+  mapYearFilter=year;
+  if(year!=='all'){mapTripFilter='all';const ts=document.getElementById('map-trip-sel');if(ts)ts.value='all';}
+  mapRenderPins();
+}
+async function mapDrawRoute(tripId){
+  if(mapRouteLayer){mapRouteLayer.remove();mapRouteLayer=null;}
+  if(tripId==='all'||!leafletMap)return;
+  const places=D.places.filter(p=>(p.tripIds||[]).includes(tripId));
+  if(places.length<2)return;
+  const cache=JSON.parse(localStorage.getItem('wf_geocache')||'{}');
+  const coords=places.map(p=>{const k=mapCacheKey(p);return cache[k]?[cache[k].lat,cache[k].lng]:null;}).filter(Boolean);
+  if(coords.length<2)return;
+  mapRouteLayer=L.polyline(coords,{color:'#C27D5C',weight:2.5,opacity:0.72,dashArray:'8 5',lineCap:'round',lineJoin:'round'}).addTo(leafletMap);
+  try{leafletMap.fitBounds(mapRouteLayer.getBounds(),{padding:[50,50],maxZoom:8});}catch(e){}
 }
 
 
