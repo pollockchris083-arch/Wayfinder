@@ -370,6 +370,14 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .country-row:last-child{border-bottom:none}
 .state-chip{background:var(--card2);border:1px solid var(--bdr);border-radius:5px;padding:3px 8px;font-size:11px;color:var(--text2);white-space:nowrap}
 .state-chip.home{background:rgba(74,114,89,.12);border-color:rgba(74,114,89,.3);color:var(--green3)}
+.abr-badge{display:inline-flex;align-items:center;font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;white-space:nowrap}
+.abr-badge.top{color:var(--green3);background:rgba(74,114,89,.12)}
+.abr-badge.shortlisted{color:var(--gold2);background:rgba(155,116,32,.1)}
+.abr-badge.researching{color:var(--muted);background:var(--card2)}
+.abr-badge.eliminated{color:#B04040;background:rgba(176,64,64,.08)}
+.abr-chip{font-size:10px;color:var(--muted2);background:var(--card2);padding:2px 7px;border-radius:100px;border:1px solid var(--bdr);white-space:nowrap}
+.goal-row{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--bdr)}
+.goal-row:last-child{border-bottom:none}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" crossorigin=""/>
@@ -711,6 +719,30 @@ input,textarea,select{font-family:inherit;font-weight:400}
   </div>
 </div>
 
+<!-- ABROAD COUNTRY -->
+<div class="mo" id="m-abroad-country">
+  <div class="modal" style="width:500px">
+    <button class="mcl" onclick="closeM('m-abroad-country')">✕</button>
+    <h2 id="abt-title">Add Country</h2>
+    <div class="fr">
+      <div class="fg" style="flex:1"><label class="fl">Country *</label><input class="fi" id="abt-name" placeholder="e.g. Portugal"/></div>
+      <div class="fg" style="width:70px;flex-shrink:0"><label class="fl">Flag</label><input class="fi" id="abt-flag" placeholder="🇵🇹"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg" style="flex:1"><label class="fl">Status</label><select class="fs" id="abt-status"><option value="researching">🔍 Researching</option><option value="shortlisted">⭐ Shortlisted</option><option value="top">🏆 Top Pick</option><option value="eliminated">✕ Eliminated</option></select></div>
+      <div class="fg" style="flex:1"><label class="fl">Monthly Budget (couple)</label><input class="fi" id="abt-budget" placeholder="e.g. $2,500"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg" style="flex:1"><label class="fl">Visa Type</label><input class="fi" id="abt-visa-type" placeholder="e.g. D7, Digital Nomad"/></div>
+      <div class="fg" style="flex:1"><label class="fl">Visa Status</label><select class="fs" id="abt-visa-status"><option value="">— not started —</option><option value="researching">Researching</option><option value="applying">Applying</option><option value="approved">✓ Approved</option><option value="rejected">✕ Rejected</option></select></div>
+    </div>
+    <div class="fg"><label class="fl">General Notes</label><textarea class="ft" id="abt-notes" style="min-height:65px" placeholder="Cost of living, lifestyle, pros/cons…"></textarea></div>
+    <div class="fg"><label class="fl">Visa & Residency Notes</label><textarea class="ft" id="abt-visa-notes" style="min-height:55px" placeholder="Requirements, timeline, costs, application steps…"></textarea></div>
+    <div class="fg" style="margin-bottom:0"><label class="fl">Property Research Notes</label><textarea class="ft" id="abt-prop-notes" style="min-height:55px" placeholder="Ownership rules, areas to consider, prices…"></textarea></div>
+    <div class="fa"><button class="btn-s" onclick="closeM('m-abroad-country')">Cancel</button><button class="btn-p" id="abt-save" onclick="saveAbroadCountry()">Save Country</button></div>
+  </div>
+</div>
+
 <!-- ════════════════════════════════════════
      GOOGLE DOC IMPORT MODAL
 ════════════════════════════════════════ -->
@@ -810,8 +842,9 @@ input,textarea,select{font-family:inherit;font-weight:400}
 // DATA
 // ══════════════════════════════════════════════
 const K={places:'wf_places',trips:'wf_trips',wish:'wf_wishlist',journal:'wf_journal',settings:'wf_settings'};
-function load(){return{places:JSON.parse(localStorage.getItem(K.places)||'[]'),trips:JSON.parse(localStorage.getItem(K.trips)||'[]'),wish:JSON.parse(localStorage.getItem(K.wish)||'[]'),journal:JSON.parse(localStorage.getItem(K.journal)||'[]'),settings:JSON.parse(localStorage.getItem(K.settings)||'{"name":"Chris","partner":"Partner","homeCity":"","since":"2020"}')}}
+function load(){return{places:JSON.parse(localStorage.getItem(K.places)||'[]'),trips:JSON.parse(localStorage.getItem(K.trips)||'[]'),wish:JSON.parse(localStorage.getItem(K.wish)||'[]'),journal:JSON.parse(localStorage.getItem(K.journal)||'[]'),settings:JSON.parse(localStorage.getItem(K.settings)||'{"name":"Chris","partner":"Partner","homeCity":"","since":"2020"}'),abroad:JSON.parse(localStorage.getItem('wf_abroad')||'{"countries":[],"goals":[]}')}}
 function save(k,d){localStorage.setItem(K[k],JSON.stringify(d));scheduledSync(k,d);}
+function saveAbroad(){localStorage.setItem('wf_abroad',JSON.stringify(D.abroad));}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
 let D=load();
 
@@ -1940,34 +1973,279 @@ function journalCard(e,showTrip){
 // ══════════════════════════════════════════════
 // ABROAD
 // ══════════════════════════════════════════════
+const ABR_STATUS={
+  top:{label:'Top Pick',c:'var(--green3)',bg:'rgba(74,114,89,.12)',icon:'🏆'},
+  shortlisted:{label:'Shortlisted',c:'var(--gold2)',bg:'rgba(155,116,32,.1)',icon:'⭐'},
+  researching:{label:'Researching',c:'var(--muted)',bg:'var(--card2)',icon:'🔍'},
+  eliminated:{label:'Eliminated',c:'#B04040',bg:'rgba(176,64,64,.08)',icon:'✕'}
+};
+const ABR_VISA_LABEL={researching:'Researching',applying:'Applying',approved:'✓ Approved',rejected:'✕ Rejected'};
+let abroadEid=null;
+
+function abroadCountryCard(c){
+  const s=ABR_STATUS[c.status]||ABR_STATUS.researching;
+  const vis=D.places.filter(p=>{const cn=normCountry(p.country);return(cn===c.name||cn===normCountry(c.name))&&p.status==='visited';});
+  const borderColor=c.status==='eliminated'?'rgba(176,64,64,.2)':c.status==='top'?'rgba(74,114,89,.25)':'var(--bdr)';
+  return`<div class="je" style="border-color:${borderColor}">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+      <div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0">
+        <span style="font-size:22px;flex-shrink:0;line-height:1">${c.flag||'🌍'}</span>
+        <div style="min-width:0">
+          <div style="font-size:13px;font-weight:600;color:${c.status==='eliminated'?'var(--muted2)':'var(--text)'};text-decoration:${c.status==='eliminated'?'line-through':'none'}">${c.name}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:3px">
+            <span class="abr-badge ${c.status||'researching'}">${s.icon} ${s.label}</span>
+            ${c.visaType?`<span class="abr-chip">🛂 ${c.visaType}${c.visaStatus&&ABR_VISA_LABEL[c.visaStatus]?' · '+ABR_VISA_LABEL[c.visaStatus]:''}</span>`:''}
+            ${c.monthlyBudget?`<span class="abr-chip">💰 ${c.monthlyBudget}/mo</span>`:''}
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:4px;flex-shrink:0">
+        <button class="pbtn" onclick="openAbroadCountry('${c.id}')">✏️ Edit</button>
+        <button class="pbtn del" onclick="delAbroadCountry('${c.id}')">×</button>
+      </div>
+    </div>
+    ${c.notes?`<div style="font-size:12px;color:var(--text2);line-height:1.55;margin-top:8px">${c.notes}</div>`:''}
+    ${c.visaNotes||c.propertyNotes?`<div style="display:grid;grid-template-columns:${c.visaNotes&&c.propertyNotes?'1fr 1fr':'1fr'};gap:7px;margin-top:8px">
+      ${c.visaNotes?`<div style="background:rgba(74,114,89,.04);border-left:2px solid rgba(74,114,89,.3);border-radius:0 5px 5px 0;padding:7px 9px"><div style="font-size:9px;font-weight:600;color:var(--green3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px">🛂 Visa & Residency</div><div style="font-size:11px;color:var(--text2);line-height:1.5">${c.visaNotes}</div></div>`:''}
+      ${c.propertyNotes?`<div style="background:rgba(155,116,32,.04);border-left:2px solid rgba(155,116,32,.3);border-radius:0 5px 5px 0;padding:7px 9px"><div style="font-size:9px;font-weight:600;color:var(--gold2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px">🏘️ Property</div><div style="font-size:11px;color:var(--text2);line-height:1.5">${c.propertyNotes}</div></div>`:''}
+    </div>`:''}
+    ${vis.length?`<div style="margin-top:8px"><div style="font-size:9px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px">📍 Your visited places</div><div style="display:flex;flex-wrap:wrap;gap:4px">${vis.slice(0,8).map(p=>`<span class="state-chip">${ci(p.category)} ${p.name}</span>`).join('')}${vis.length>8?`<span class="state-chip" style="color:var(--muted)">+${vis.length-8}</span>`:''}</div></div>`:''}
+  </div>`;
+}
+
+function openAbroadCountry(id){
+  D=load();
+  abroadEid=id||null;
+  const c=id?(D.abroad.countries||[]).find(x=>x.id===id):null;
+  document.getElementById('abt-title').textContent=c?'Edit Country':'Add Country';
+  document.getElementById('abt-save').textContent=c?'Update Country':'Save Country';
+  document.getElementById('abt-name').value=c?c.name:'';
+  document.getElementById('abt-flag').value=c?c.flag||'':'';
+  document.getElementById('abt-status').value=c?c.status||'researching':'researching';
+  document.getElementById('abt-budget').value=c?c.monthlyBudget||'':'';
+  document.getElementById('abt-visa-type').value=c?c.visaType||'':'';
+  document.getElementById('abt-visa-status').value=c?c.visaStatus||'':'';
+  document.getElementById('abt-notes').value=c?c.notes||'':'';
+  document.getElementById('abt-visa-notes').value=c?c.visaNotes||'':'';
+  document.getElementById('abt-prop-notes').value=c?c.propertyNotes||'':'';
+  openM('m-abroad-country');
+}
+function saveAbroadCountry(){
+  const name=document.getElementById('abt-name').value.trim();
+  if(!name){toast('⚠️ Country name required');return;}
+  const country={
+    id:abroadEid||uid(),
+    name,
+    flag:document.getElementById('abt-flag').value.trim(),
+    status:document.getElementById('abt-status').value,
+    monthlyBudget:document.getElementById('abt-budget').value.trim(),
+    visaType:document.getElementById('abt-visa-type').value.trim(),
+    visaStatus:document.getElementById('abt-visa-status').value,
+    notes:document.getElementById('abt-notes').value.trim(),
+    visaNotes:document.getElementById('abt-visa-notes').value.trim(),
+    propertyNotes:document.getElementById('abt-prop-notes').value.trim(),
+    addedAt:abroadEid?((D.abroad.countries||[]).find(x=>x.id===abroadEid)||{}).addedAt||Date.now():Date.now()
+  };
+  if(!D.abroad)D.abroad={countries:[],goals:[]};
+  if(!D.abroad.countries)D.abroad.countries=[];
+  if(abroadEid){
+    const i=D.abroad.countries.findIndex(x=>x.id===abroadEid);
+    if(i>=0)D.abroad.countries[i]=country;else D.abroad.countries.push(country);
+  } else {
+    D.abroad.countries.push(country);
+  }
+  saveAbroad();
+  closeM('m-abroad-country');
+  toast(abroadEid?'✅ Updated':'🌍 Country added!');
+  abroadEid=null;
+  rAbroad();
+}
+function delAbroadCountry(id){
+  if(!confirm('Remove this country from your research?'))return;
+  D.abroad.countries=(D.abroad.countries||[]).filter(c=>c.id!==id);
+  saveAbroad();
+  toast('Removed');rAbroad();
+}
+function addAbroadGoal(){
+  const text=document.getElementById('abroad-goal-text').value.trim();
+  if(!text)return;
+  const date=document.getElementById('abroad-goal-date').value;
+  if(!D.abroad)D.abroad={countries:[],goals:[]};
+  if(!D.abroad.goals)D.abroad.goals=[];
+  D.abroad.goals.push({id:uid(),text,targetDate:date,done:false,addedAt:Date.now()});
+  saveAbroad();rAbroad();
+}
+function toggleAbroadGoal(id){
+  const g=(D.abroad.goals||[]).find(x=>x.id===id);
+  if(g){g.done=!g.done;saveAbroad();rAbroad();}
+}
+function delAbroadGoal(id){
+  D.abroad.goals=(D.abroad.goals||[]).filter(x=>x.id!==id);
+  saveAbroad();rAbroad();
+}
+
 function rAbroad(){
   D=load();
   const homeState=getHomeState();
   const homeCity=D.settings.homeCity||'';
   const abroadNotes=D.settings.abroadNotes||'';
+  const abroad=D.abroad||{countries:[],goals:[]};
+  const sortOrd={top:0,shortlisted:1,researching:2,eliminated:3};
+  const countries=[...abroad.countries||[]].sort((a,b)=>(sortOrd[a.status]||2)-(sortOrd[b.status]||2));
+  const goals=abroad.goals||[];
   const homePlaces=homeState?D.places.filter(p=>p.usState===homeState&&normCountry(p.country)==='United States'):[];
-  const vis=homePlaces.filter(p=>p.status==='visited');
+  const homeVis=homePlaces.filter(p=>p.status==='visited');
+  const activeCount=countries.filter(c=>c.status!=='eliminated').length;
 
-  const baseCard=homeCity?`<div class="card" style="margin-bottom:13px">
-    <div class="ch"><div><div class="ct">🏠 Your Base</div><div class="cs">${homeCity}</div></div></div>
-    ${vis.length?`<div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">Places visited in ${homeState}</div>
+  // ── Your Base ──────────────────────────────
+  const baseCard=`<div class="card" style="margin-bottom:13px">
+    <div class="ch"><div><div class="ct">🏠 Your Base</div><div class="cs">${homeCity||'Set in Settings'}</div></div></div>
+    ${homeCity?`<div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:${homeVis.length?'10px':'0'}">
+      <div style="font-size:12px;color:var(--text2)"><span style="color:var(--muted)">City:</span> ${homeCity}</div>
+      ${homeState?`<div style="font-size:12px;color:var(--text2)"><span style="color:var(--muted)">State:</span> ${homeState}</div>`:''}
+      <div style="font-size:12px;color:var(--text2)"><span style="color:var(--muted)">Considering:</span> ${activeCount} ${activeCount===1?'country':'countries'}</div>
+    </div>`:
+    `<div style="font-size:12px;color:var(--muted2)">Set your Home City in <a onclick="go('settings')" style="color:var(--green3);cursor:pointer;text-decoration:underline">Settings</a>.</div>`}
+    ${homeVis.length?`<div style="font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Places visited in ${homeState}</div>
     <div style="display:flex;flex-wrap:wrap;gap:5px">
-      ${vis.slice(0,12).map(p=>`<div class="state-chip">${ci(p.category)} ${p.name}</div>`).join('')}
-      ${vis.length>12?`<div class="state-chip" style="color:var(--muted)">+${vis.length-12} more</div>`:''}
-    </div>`:homeCity?`<div style="font-size:12px;color:var(--muted2)">No visited places in ${homeState} yet.</div>`:''}
-  </div>`:
-  `<div class="card" style="margin-bottom:13px"><div class="ch"><div><div class="ct">🏠 Your Base</div><div class="cs">Not set</div></div></div><div style="font-size:12px;color:var(--muted2)">Set your Home City in <a onclick="go('settings')" style="color:var(--green3);cursor:pointer;text-decoration:underline">Settings</a> to see local places here.</div></div>`;
-
-  const notesCard=`<div class="card" style="margin-bottom:13px">
-    <div class="ch"><div><div class="ct">📝 Research Notes</div><div class="cs">Your living abroad thoughts</div></div></div>
-    <textarea class="ft" style="min-height:110px" placeholder="Target countries, timeline, property research, visa notes, cost of living comparisons…" oninput="setSetting('abroadNotes',this.value)">${abroadNotes}</textarea>
+      ${homeVis.slice(0,14).map(p=>`<div class="state-chip">${ci(p.category)} ${p.name}</div>`).join('')}
+      ${homeVis.length>14?`<div class="state-chip" style="color:var(--muted)">+${homeVis.length-14} more</div>`:''}
+    </div>`:''}
   </div>`;
 
-  const expatTable=`<div class="card"><div class="ch"><div class="ct">Top Countries for US Expats</div></div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="border-bottom:1px solid var(--bdr)">${['Country','Visa','Cost vs US','Own Property','Best For'].map(h=>`<th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;font-size:9px">${h}</th>`).join('')}</tr></thead><tbody>${[['🇲🇽 Mexico','Temp Resident','40–60% less','Yes (fideicomiso)','Proximity, cost, food'],['🇵🇹 Portugal','D7 + DNV','55–70% less','Full freehold','EU base, safety, culture'],['🇪🇸 Spain','Digital Nomad','50–65% less','Full freehold','City life, EU, cuisine'],['🇨🇷 Costa Rica','Rentista/DNV','50–60% less','Mostly freehold','Nature, stability'],['🇵🇦 Panama','Friendly Nations','45–60% less','Full freehold','No foreign tax, USD'],['🇨🇴 Colombia','Digital Nomad','60–75% less','Full freehold','Medellín, low cost'],['🇬🇷 Greece','Digital Nomad','55–70% less','Full freehold','Islands, 7% tax regime'],['🇹🇭 Thailand','LTR Visa','60–75% less','No land ownership','Infrastructure, food'],['🇮🇹 Italy','Elective Resid.','50–65% less','Full freehold','Culture, flat-tax option'],['🇬🇪 Georgia','1yr visa-free','70–80% less','Full freehold','Zero foreign income tax']].map((r,i)=>`<tr style="border-bottom:1px solid var(--bdr);background:${i%2?'transparent':'rgba(74,114,89,.03)'}">${r.map((c,j)=>`<td style="padding:6px 8px;color:${j===0?'var(--text)':'var(--text2)'};font-weight:${j===0?'500':'400'};white-space:${j<2?'nowrap':'normal'}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+  // ── Countries ──────────────────────────────
+  const countriesCard=`<div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">🌍 Countries We're Considering</div><div class="cs">${activeCount} active${countries.filter(c=>c.status==='top').length?' · '+countries.filter(c=>c.status==='top').length+' top '+( countries.filter(c=>c.status==='top').length===1?'pick':'picks'):''}</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="pbtn" onclick="event.stopPropagation();openAbroadCountry(null)">+ Add</button>
+        <span class="coll-arrow">▾</span>
+      </div>
+    </div>
+    <div class="coll-body coll-open">
+      ${countries.length?countries.map(c=>abroadCountryCard(c)).join(''):`<div style="font-size:12px;color:var(--muted2);padding:12px 0;text-align:center">No countries added yet — click <strong>+ Add</strong> to start tracking.</div>`}
+    </div>
+  </div>`;
 
-  document.getElementById('abroad-in').innerHTML=`<div style="max-width:660px">
-    <div style="margin-bottom:16px"><div style="font-size:17px;font-weight:600;color:var(--text);margin-bottom:4px">Living Abroad 🌍</div><div style="font-size:12px;color:var(--muted);line-height:1.6">Research for buying property, moving, and working internationally.</div></div>
-    ${baseCard}${notesCard}${expatTable}
+  // ── Visa Summary ──────────────────────────
+  const tracked=countries.filter(c=>c.visaType||c.visaStatus);
+  const visaCard=tracked.length?`<div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">🛂 Visa & Residency Tracker</div><div class="cs">${tracked.length} visa${tracked.length===1?'':'s'} tracked</div></div>
+      <span class="coll-arrow">▾</span>
+    </div>
+    <div class="coll-body coll-open">
+      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="border-bottom:1px solid var(--bdr)">${['Country','Visa Type','Status','Notes'].map(h=>`<th style="text-align:left;padding:5px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:9px;white-space:nowrap">${h}</th>`).join('')}</tr></thead>
+        <tbody>${tracked.map((c,i)=>{const vs=c.visaStatus&&ABR_VISA_LABEL[c.visaStatus]?ABR_VISA_LABEL[c.visaStatus]:'—';const vsColor=c.visaStatus==='approved'?'var(--green3)':c.visaStatus==='rejected'?'#B04040':c.visaStatus==='applying'?'var(--gold2)':'var(--muted)';return`<tr style="border-bottom:1px solid var(--bdr);background:${i%2?'transparent':'rgba(74,114,89,.02)'}">
+          <td style="padding:6px 8px;font-weight:500;color:var(--text)">${c.flag||'🌍'} ${c.name}</td>
+          <td style="padding:6px 8px;color:var(--text2)">${c.visaType||'—'}</td>
+          <td style="padding:6px 8px;color:${vsColor};font-weight:500">${vs}</td>
+          <td style="padding:6px 8px;color:var(--muted2);font-size:10px;max-width:160px">${c.visaNotes?c.visaNotes.slice(0,80)+(c.visaNotes.length>80?'…':''):'—'}</td>
+        </tr>`;}).join('')}</tbody>
+      </table></div>
+    </div>
+  </div>`:'';
+
+  // ── Cost of Living ──────────────────────────
+  const costRows=[
+    ['🇲🇽 Mexico','Temp Resident','40–60%','$1,800–3,000','Yes (fideicomiso)','Proximity, cost, food, culture'],
+    ['🇵🇹 Portugal','D7 / Digital Nomad','55–70%','$2,200–3,500','Full freehold','EU base, safety, NHR tax regime'],
+    ['🇪🇸 Spain','Digital Nomad Visa','50–65%','$2,500–3,800','Full freehold','City life, EU, cuisine, climate'],
+    ['🇨🇷 Costa Rica','Rentista / DNV','50–60%','$2,000–3,200','Mostly freehold','Nature, stability, proximity'],
+    ['🇵🇦 Panama','Friendly Nations','45–60%','$1,900–3,000','Full freehold','No foreign income tax, USD'],
+    ['🇨🇴 Colombia','Digital Nomad','60–75%','$1,400–2,200','Full freehold','Medellín, low cost, spring climate'],
+    ['🇬🇷 Greece','Digital Nomad','55–70%','$1,800–3,000','Full freehold','Islands, 7% flat tax for foreigners'],
+    ['🇹🇭 Thailand','LTR Visa (10yr)','60–75%','$1,500–2,500','No land ownership','Infrastructure, food, digital nomads'],
+    ['🇮🇹 Italy','Elective Residency','50–65%','$2,200–3,500','Full freehold','Culture, €100k flat-tax option'],
+    ['🇬🇪 Georgia','1yr visa-free','70–80%','$1,000–1,800','Full freehold','Zero foreign income tax, low cost'],
+    ['🇧🇷 Brazil','Digital Nomad (2024)','60–75%','$1,600–2,800','Full freehold','Florianópolis, beaches, surf'],
+    ['🇲🇦 Morocco','Residency card','65–75%','$1,200–2,000','Full freehold','Culture, EU proximity, Essaouira'],
+    ['🇪🇨 Ecuador','Rentista / DNV','65–75%','$1,200–2,200','Full freehold','Cuenca, stable (dollarized), altitude'],
+    ['🇳🇿 New Zealand','Requires PR path','10–20%','$4,500–6,000','Full freehold','Similar lifestyle, safe, English'],
+    ['🇦🇷 Argentina','Rentista','65–80%','$1,000–2,000','Full freehold','Buenos Aires, culture, low cost now'],
+  ];
+  const costCard=`<div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">💰 Cost of Living Comparison</div><div class="cs">vs. Santa Cruz CA · couple estimate</div></div>
+      <span class="coll-arrow">▾</span>
+    </div>
+    <div class="coll-body coll-open">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Monthly budget estimates for 2 people including rent, food, transport, utilities. Santa Cruz baseline ≈ $6,000–8,000/mo.</div>
+      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="border-bottom:1px solid var(--bdr)">${['Country','Visa','Savings vs CA','Monthly (2 people)','Own Property','Best For'].map(h=>`<th style="text-align:left;padding:5px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;font-size:9px">${h}</th>`).join('')}</tr></thead>
+        <tbody>${costRows.map((r,i)=>`<tr style="border-bottom:1px solid var(--bdr);background:${i%2?'transparent':'rgba(74,114,89,.025)'}">
+          <td style="padding:6px 8px;font-weight:500;color:var(--text);white-space:nowrap">${r[0]}</td>
+          <td style="padding:6px 8px;color:var(--text2);white-space:nowrap">${r[1]}</td>
+          <td style="padding:6px 8px;color:var(--green3);font-weight:500;white-space:nowrap">${r[2]}</td>
+          <td style="padding:6px 8px;color:var(--text2);font-weight:500;white-space:nowrap">${r[3]}</td>
+          <td style="padding:6px 8px;color:var(--text2)">${r[4]}</td>
+          <td style="padding:6px 8px;color:var(--muted2);font-size:10px">${r[5]}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+      <div style="font-size:10px;color:var(--muted2);margin-top:8px;line-height:1.5">* Savings estimates vs. Santa Cruz CA. Monthly budgets are broad estimates; actual costs vary significantly by city, lifestyle, and accommodation type. All figures assume 2 adults, no children.</div>
+    </div>
+  </div>`;
+
+  // ── Property Research ──────────────────────
+  const propCountries=countries.filter(c=>c.propertyNotes);
+  const propertyCard=propCountries.length?`<div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">🏘️ Property Research</div><div class="cs">${propCountries.length} ${propCountries.length===1?'country':'countries'} with notes</div></div>
+      <span class="coll-arrow">▾</span>
+    </div>
+    <div class="coll-body coll-open">
+      ${propCountries.map(c=>`<div style="padding:10px 0;border-bottom:1px solid var(--bdr)">
+        <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:5px">${c.flag||'🌍'} ${c.name}</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.55">${c.propertyNotes}</div>
+      </div>`).join('')}
+    </div>
+  </div>`:'';
+
+  // ── Timeline & Goals ──────────────────────
+  const doneCount=goals.filter(g=>g.done).length;
+  const goalsCard=`<div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">🎯 Timeline & Goals</div><div class="cs">${goals.length?doneCount+'/'+goals.length+' complete':'No goals yet'}</div></div>
+      <span class="coll-arrow">▾</span>
+    </div>
+    <div class="coll-body coll-open">
+      ${goals.length?goals.map(g=>`<div class="goal-row">
+        <input type="checkbox" onclick="toggleAbroadGoal('${g.id}')" ${g.done?'checked':''} style="margin-top:2px;cursor:pointer;accent-color:var(--green);width:14px;height:14px;flex-shrink:0"/>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;color:${g.done?'var(--muted2)':'var(--text)'};text-decoration:${g.done?'line-through':'none'};line-height:1.4">${g.text}</div>
+          ${g.targetDate?`<div style="font-size:10px;color:var(--muted)">📅 ${fd(g.targetDate)}</div>`:''}
+        </div>
+        <button class="pbtn del" onclick="delAbroadGoal('${g.id}')">×</button>
+      </div>`).join(''):`<div style="font-size:12px;color:var(--muted2);padding:8px 0">No goals yet — add milestones for your move.</div>`}
+      <div style="display:flex;gap:7px;margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr)">
+        <input class="fi" id="abroad-goal-text" placeholder="New goal or milestone…" style="flex:1" onkeydown="if(event.key==='Enter')addAbroadGoal()"/>
+        <input class="fi" id="abroad-goal-date" type="date" style="width:130px;flex-shrink:0"/>
+        <button class="pbtn" onclick="addAbroadGoal()" style="flex-shrink:0;padding:4px 10px;white-space:nowrap">+ Add</button>
+      </div>
+    </div>
+  </div>`;
+
+  // ── Research Notes ──────────────────────────
+  const notesCard=`<div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">📝 Research Notes</div><div class="cs">Freeform thoughts & links</div></div>
+      <span class="coll-arrow">▾</span>
+    </div>
+    <div class="coll-body coll-open">
+      <textarea class="ft" style="min-height:130px" placeholder="General thoughts, links, tax strategy notes, language goals, healthcare research, school options, timing considerations…" oninput="setSetting('abroadNotes',this.value)">${abroadNotes}</textarea>
+    </div>
+  </div>`;
+
+  document.getElementById('abroad-in').innerHTML=`<div style="max-width:680px">
+    <div style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div><div style="font-size:17px;font-weight:600;color:var(--text);margin-bottom:4px">Living Abroad 🌍</div><div style="font-size:12px;color:var(--muted);line-height:1.6">Research for moving and buying property internationally.</div></div>
+      ${activeCount?`<div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${countries.filter(c=>c.status==='top').length?`<span style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:100px;color:var(--green3);background:rgba(74,114,89,.1)">🏆 ${countries.filter(c=>c.status==='top').length} Top Pick${countries.filter(c=>c.status==='top').length>1?'s':''}</span>`:''}
+        ${countries.filter(c=>c.status==='shortlisted').length?`<span style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:100px;color:var(--gold2);background:rgba(155,116,32,.1)">⭐ ${countries.filter(c=>c.status==='shortlisted').length} Shortlisted</span>`:''}
+      </div>`:''}
+    </div>
+    ${baseCard}${countriesCard}${visaCard}${costCard}${propertyCard}${goalsCard}${notesCard}
   </div>`;
 }
 
@@ -1977,7 +2255,7 @@ function rAbroad(){
 function setSetting(k,v){D.settings[k]=v;save('settings',D.settings);if(k==='name'){document.getElementById('pn').textContent=v||'You';document.getElementById('av').textContent=(v||'Y')[0].toUpperCase()}}
 function loadSettings(){const s=D.settings;document.getElementById('s-name').value=s.name||'';document.getElementById('s-partner').value=s.partner||'';document.getElementById('s-city').value=s.homeCity||'';document.getElementById('s-since').value=s.since||'';document.getElementById('s-apikey').value=s.apiKey||'';document.getElementById('s-google-client-id').value=s.googleClientId||'';document.getElementById('s-drive-folder').value=s.driveFolderId||'';document.getElementById('s-abroad-notes').value=s.abroadNotes||'';document.getElementById('pn').textContent=s.name||'You';document.getElementById('av').textContent=(s.name||'Y')[0].toUpperCase();const pl=document.getElementById('pl-partner');if(pl)pl.textContent=s.partner?'& '+s.partner:'';}
 function exportData(){const b=new Blob([JSON.stringify(load(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='wayfinder-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('📥 Exported!')}
-function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);Object.keys(K).forEach(k=>{if(d[k])localStorage.setItem(K[k],JSON.stringify(d[k]))});D=load();loadSettings();rHome();badges();toast('📤 Imported!')}catch{toast('⚠️ Invalid file')}};r.readAsText(f)}
+function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);Object.keys(K).forEach(k=>{if(d[k])localStorage.setItem(K[k],JSON.stringify(d[k]))});if(d.abroad)localStorage.setItem('wf_abroad',JSON.stringify(d.abroad));D=load();loadSettings();rHome();badges();toast('📤 Imported!')}catch{toast('⚠️ Invalid file')}};r.readAsText(f)}
 function clearAll(){if(!confirm('Clear ALL data? Cannot be undone.'))return;Object.values(K).forEach(k=>localStorage.removeItem(k));D=load();loadSettings();rHome();badges();toast('🗑️ Cleared')}
 function onSearch(q){if(cur==='places')rPlaces()}
 
