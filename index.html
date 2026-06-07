@@ -1750,7 +1750,10 @@ function openPlaceD(id){
     <div class="sc" style="--accent:var(--earth2)"><div class="si">📓</div><div class="sn">${linkedJournal.length||'—'}</div><div class="sl">Journal</div></div>
     <div class="sc" style="--accent:var(--gold)"><div class="si">⭐</div><div class="sn">${rStars||'—'}</div><div class="sl">Rating</div></div>
   </div>
-  ${linkedTrips.length?`<div class="card" style="margin-bottom:13px"><div class="ch"><div class="ct">Trips</div></div>${linkedTrips.map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bdr)"><div><div style="font-size:13px;font-weight:500;color:var(--text)">✈️ ${t.name}</div>${t.startDate?`<div style="font-size:11px;color:var(--muted)">${fd(t.startDate)}${t.endDate?' — '+fd(t.endDate):''}</div>`:''}</div><button class="pbtn" onclick="go('trips');openTripD('${t.id}')">Open →</button></div>`).join('')}</div>`:''}
+  <div class="card" style="margin-bottom:13px">
+    <div class="ch"><div class="ct">Trips</div><button class="pbtn" onclick="openPlace('${p.id}')">+ Link</button></div>
+    ${linkedTrips.length?linkedTrips.map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bdr);cursor:pointer" onclick="go('trips');openTripD('${t.id}')"><div><div style="font-size:13px;font-weight:500;color:var(--text)">✈️ ${t.name}</div>${t.startDate?`<div style="font-size:11px;color:var(--muted)">${fd(t.startDate)}${t.endDate?' — '+fd(t.endDate):''}</div>`:''}</div><span style="font-size:11px;color:var(--green3)">Open →</span></div>`).join(''):'<div style="font-size:12px;color:var(--muted2);padding:8px 0;text-align:center">Not linked to any trip yet</div>'}
+  </div>
   <div class="card" style="margin-bottom:13px">
     <div class="ch"><div class="ct">Journal Entries</div><button class="pbtn" onclick="openJournalForPlace('${p.id}')">+ Write</button></div>
     ${linkedJournal.length?linkedJournal.map(j=>journalCard(j,false)).join(''):'<div style="font-size:12px;color:var(--muted2);padding:8px 0;text-align:center">No entries yet</div>'}
