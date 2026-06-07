@@ -1163,6 +1163,13 @@ let tt;function toast(m){const e=document.getElementById('toast');e.textContent=
 function openM(id){document.getElementById(id).classList.add('on')}
 function closeM(id){document.getElementById(id).classList.remove('on')}
 document.querySelectorAll('.mo').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('on')}));
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    const open=document.querySelector('.mo.on');
+    if(open)open.classList.remove('on');
+    else sbClose();
+  }
+});
 
 // ══════════════════════════════════════════════
 // BADGES
