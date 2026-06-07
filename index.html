@@ -378,6 +378,33 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .abr-chip{font-size:10px;color:var(--muted2);background:var(--card2);padding:2px 7px;border-radius:100px;border:1px solid var(--bdr);white-space:nowrap}
 .goal-row{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--bdr)}
 .goal-row:last-child{border-bottom:none}
+/* ── DASHBOARD HERO ── */
+.hero{background:linear-gradient(135deg,var(--green) 0%,var(--green3) 100%);border-radius:var(--r);padding:20px 22px 18px;position:relative;overflow:hidden;margin-bottom:13px;color:#fff}
+.hero::after{content:'';position:absolute;bottom:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.06)}
+.hero-greet{font-size:20px;font-weight:700;letter-spacing:-.3px;line-height:1.2}
+.hero-date{font-size:11px;opacity:.7;margin-top:3px}
+.hero-next{margin-top:12px;background:rgba(255,255,255,.13);border-radius:7px;padding:10px 13px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hero-next-num{font-size:28px;font-weight:700;letter-spacing:-1px;line-height:1;flex-shrink:0}
+.hero-next-lbl{font-size:9px;opacity:.75;text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
+.hero-next-name{font-size:13px;font-weight:600;line-height:1.3}
+.hero-next-dates{font-size:10px;opacity:.8;margin-top:2px}
+/* ── TRIP CARDS (dashboard) ── */
+.dash-trips{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin-bottom:13px}
+.dash-trips::-webkit-scrollbar{display:none}
+.tc{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:14px 15px;min-width:162px;flex-shrink:0;position:relative;overflow:hidden;box-shadow:var(--shadow);cursor:pointer;transition:box-shadow .15s}
+.tc:hover{box-shadow:var(--shadowm)}
+.tc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--tc-accent,var(--green))}
+.tc-num{font-size:30px;font-weight:700;color:var(--tc-accent,var(--green));letter-spacing:-1px;line-height:1;margin-top:4px}
+.tc-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
+.tc-name{font-size:12px;font-weight:600;color:var(--text);margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.tc-dates{font-size:10px;color:var(--muted);margin-top:2px}
+.tc-badge{display:inline-flex;align-items:center;font-size:9px;font-weight:600;border-radius:4px;padding:2px 6px;margin-bottom:3px}
+/* ── HIGHLIGHTS STRIP ── */
+.hlt{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:13px}
+.hlt-item{background:var(--card2);border:1px solid var(--bdr);border-radius:var(--r);padding:11px 13px}
+.hlt-icon{font-size:15px;margin-bottom:4px}
+.hlt-val{font-size:13px;font-weight:600;color:var(--text);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hlt-lbl{font-size:10px;color:var(--muted);margin-top:2px;line-height:1.3}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" crossorigin=""/>
@@ -1067,13 +1094,11 @@ function badges(){D=load();document.getElementById('b-places').textContent=D.pla
 function rHome(){
   D=load();
   const vis=D.places.filter(p=>p.status==='visited');
-  const up=D.trips.filter(t=>t.status==='upcoming'||t.status==='planning').sort((a,b)=>new Date(a.startDate)-new Date(b.startDate));
+  const up=D.trips.filter(t=>t.status==='upcoming').sort((a,b)=>new Date(a.startDate)-new Date(b.startDate));
+  const plan=D.trips.filter(t=>t.status==='planning');
+  const activeTrips=[...up,...plan];
   const next=up[0];
   const days=next?Math.ceil((new Date(next.startDate)-new Date())/86400000):null;
-  const recent=[...D.places].sort((a,b)=>b.addedAt-a.addedAt).slice(0,5);
-  const pastTrips=D.trips.filter(t=>t.status==='past').length;
-
-  // Atlas stats
   const countries=[...new Set(vis.map(p=>normCountry(p.country)).filter(c=>c&&c!=='United States'))].sort();
   const usStates=[...new Set(vis.filter(p=>normCountry(p.country)==='United States').map(p=>p.usState).filter(Boolean))].sort();
   const homeState=getHomeState();
@@ -1090,29 +1115,95 @@ function rHome(){
     });
   });
 
-  const cdHTML=next?`<div class="cdwn"><div class="cdn">${days>0?days:'🚀'}</div><div class="cdl">${days>0?'days until next trip':'happening now!'}</div><div class="cdt">${next.name}</div><div class="cdd">${fd(next.startDate)} — ${fd(next.endDate)}</div></div>`
-    :`<div class="cdwn" style="text-align:center;cursor:pointer" onclick="openTrip()"><div style="font-size:26px;margin-bottom:8px">✈️</div><div style="font-size:13px;font-weight:500;color:var(--text2)">No trips planned yet</div><div style="font-size:11px;color:var(--muted);margin-top:3px">Tap to create your first →</div></div>`;
+  // Travel highlights
+  const countryCounts={};
+  vis.filter(p=>normCountry(p.country)!=='United States').forEach(p=>{
+    const c=normCountry(p.country);if(c)countryCounts[c]=(countryCounts[c]||0)+1;
+  });
+  const topCountryEntry=Object.entries(countryCounts).sort((a,b)=>b[1]-a[1])[0];
+  const longestTrip=[...D.trips].filter(t=>t.startDate&&t.endDate).map(t=>({...t,dur:Math.ceil((new Date(t.endDate)-new Date(t.startDate))/86400000)})).sort((a,b)=>b.dur-a.dur)[0];
+  const since=D.settings.since?parseInt(D.settings.since):null;
+  const yearsCount=since?Math.max(1,new Date().getFullYear()-since+1):null;
 
-  const recHTML=recent.length?recent.map(p=>`<div class="ai"><div class="ai-icon">${ci(p.category)}</div><div style="flex:1"><div class="ai-text"><strong>${p.name}</strong> — ${p.usState&&p.country?p.usState+', '+p.country:p.country||p.region||'—'}</div><div class="ai-time">${sl(p.status)}</div></div></div>`).join('')
-    :`<div style="text-align:center;padding:20px;color:var(--muted2);font-size:12px">No places yet — add some above ↑</div>`;
+  // Recent activity feed (last places + last journal entry)
+  const recentPlaces=[...D.places].sort((a,b)=>b.addedAt-a.addedAt).slice(0,4);
+  const recentJournal=[...D.journal].sort((a,b)=>b.addedAt-a.addedAt)[0];
+  const actItems=[
+    ...recentPlaces.map(p=>({icon:ci(p.category),title:p.name,sub:(p.usState&&p.country?p.usState+', '+p.country:p.country||p.region||'—'),time:p.addedAt})),
+    ...(recentJournal?[{icon:'📓',title:recentJournal.title||'Journal Entry',sub:recentJournal.loc||fd(recentJournal.date)||'',time:recentJournal.addedAt}]:[]),
+  ].sort((a,b)=>b.time-a.time).slice(0,5);
 
+  // Hero greeting
+  const hour=new Date().getHours();
+  const greetWord=hour<12?'Good morning':hour<17?'Good afternoon':'Good evening';
+  const greetEmoji=hour<12?'🌅':hour<17?'☀️':'🌙';
+  const nameStr=D.settings.name||'Chris';
+  const partnerStr=D.settings.partner?` & ${D.settings.partner}`:'';
+
+  let heroNextHTML='';
+  if(next&&days!==null){
+    heroNextHTML=`<div class="hero-next"><div><div class="hero-next-name">${next.name}</div><div class="hero-next-dates">${fd(next.startDate)}${next.endDate?' — '+fd(next.endDate):''}</div></div><div style="text-align:right"><div class="hero-next-num">${days>0?days:'🚀'}</div><div class="hero-next-lbl">${days>0?'days away':'now!'}</div></div></div>`;
+  } else if(countries.length>0||usStates.length>0){
+    heroNextHTML=`<div class="hero-next"><div style="font-size:12px;opacity:.9;line-height:1.5">Explored <strong>${countries.length} ${countries.length===1?'country':'countries'}</strong>${usStates.length?` and <strong>${usStates.length} US states</strong>`:''} together${yearsCount?' over '+yearsCount+' years':''}</div></div>`;
+  } else {
+    heroNextHTML=`<div class="hero-next" style="cursor:pointer" onclick="openTrip()"><div style="font-size:12px;opacity:.9">Ready to start exploring? <strong>Add your first trip →</strong></div></div>`;
+  }
+
+  // Trip cards
+  let tripsHTML='';
+  if(activeTrips.length){
+    tripsHTML=activeTrips.map(t=>{
+      const isUp=t.status==='upcoming';
+      const d=t.startDate?Math.ceil((new Date(t.startDate)-new Date())/86400000):null;
+      const accent=isUp?'var(--green)':'var(--gold)';
+      const badge=`<div class="tc-badge" style="background:${isUp?'rgba(74,114,89,.1)':'rgba(155,116,32,.1)'};color:${isUp?'var(--green3)':'var(--gold2)'}">${isUp?'✈️ Upcoming':'📋 Planning'}</div>`;
+      const numHTML=isUp&&d!==null?`<div class="tc-num">${d>0?d:'🚀'}</div><div class="tc-lbl">${d>0?'days away':'happening now'}</div>`:`<div class="tc-num" style="font-size:22px;margin-top:8px">→</div><div class="tc-lbl">continue planning</div>`;
+      return`<div class="tc" style="--tc-accent:${accent}" onclick="go('trips')">${badge}${numHTML}<div class="tc-name">${t.name}</div><div class="tc-dates">${t.startDate?fd(t.startDate)+(t.endDate?' — '+fd(t.endDate):''):'No dates set'}</div></div>`;
+    }).join('');
+  } else {
+    tripsHTML=`<div class="tc" style="--tc-accent:var(--muted2);cursor:pointer;text-align:center" onclick="openTrip()"><div style="font-size:24px;margin-bottom:6px;opacity:.5;margin-top:6px">✈️</div><div style="font-size:12px;color:var(--text2);font-weight:500">No active trips</div><div style="font-size:10px;color:var(--muted);margin-top:3px">Tap to plan one →</div></div>`;
+  }
+
+  // Highlights
+  const hltItems=[
+    topCountryEntry?{icon:'🏆',val:topCountryEntry[0],lbl:'Most places visited'}:{icon:'🌍',val:'—',lbl:'Top destination'},
+    longestTrip?{icon:'📅',val:longestTrip.dur+'d',lbl:longestTrip.name.length>16?longestTrip.name.slice(0,14)+'…':longestTrip.name}:{icon:'📅',val:'—',lbl:'Longest trip'},
+    yearsCount?{icon:'🗓️',val:yearsCount+'yr',lbl:'Exploring since '+since}:{icon:'🗓️',val:'—',lbl:'Years exploring'},
+    {icon:'📓',val:''+D.journal.length,lbl:'Journal entries'},
+  ];
+
+  // Countries atlas
   const countriesBody=countries.length
-    ?countries.map(c=>`<div class="country-row"><span style="font-size:12px;color:var(--text);font-weight:500">${c}</span>${countryLastVisit[c]?`<span style="font-size:10px;color:var(--muted)">${fd(countryLastVisit[c])}</span>`:''}</div>`).join('')
+    ?countries.slice(0,8).map(c=>`<div class="country-row"><span style="font-size:12px;color:var(--text);font-weight:500">${c}</span>${countryLastVisit[c]?`<span style="font-size:10px;color:var(--muted)">${fd(countryLastVisit[c])}</span>`:''}</div>`).join('')+(countries.length>8?`<div style="font-size:11px;color:var(--muted);padding:8px 0;text-align:center">${countries.length-8} more · <span style="color:var(--green);cursor:pointer" onclick="go('map')">see map →</span></div>`:'')
     :`<div style="font-size:12px;color:var(--muted2);padding:12px 0;text-align:center">No international places yet</div>`;
 
   const statesBody=usStates.length
     ?`<div style="display:flex;flex-wrap:wrap;gap:5px;padding-top:4px">${usStates.map(s=>{const isHome=homeState&&s===homeState;return`<div class="state-chip${isHome?' home':''}">${s}${isHome?' 🏠':''}</div>`}).join('')}</div>`
     :`<div style="font-size:12px;color:var(--muted2);padding:12px 0;text-align:center">No US places yet</div>`;
 
+  const actFeedHTML=actItems.length?actItems.map(a=>`<div class="ai"><div class="ai-icon">${a.icon}</div><div style="flex:1"><div class="ai-text"><strong>${a.title}</strong></div><div class="ai-time">${a.sub}</div></div></div>`).join('')
+    :`<div style="text-align:center;padding:20px;color:var(--muted2);font-size:12px">No activity yet — add your first place</div>`;
+
   document.getElementById('home-in').innerHTML=`
-  <div style="margin-bottom:16px"><div style="font-size:18px;font-weight:600;color:var(--text);letter-spacing:-.3px">Welcome back, ${D.settings.name} 👋</div><div style="font-size:11px;color:var(--muted);margin-top:3px">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}</div></div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:13px">
-    <div class="sc" style="--accent:var(--green2)"><div class="si">📍</div><div class="sn">${D.places.length}</div><div class="sl">Places Saved</div></div>
-    <div class="sc" style="--accent:var(--sage)"><div class="si">✅</div><div class="sn">${vis.length}</div><div class="sl">Places Visited</div></div>
-    <div class="sc" style="--accent:var(--gold)"><div class="si">✈️</div><div class="sn">${pastTrips}</div><div class="sl">Trips Done</div></div>
-    <div class="sc" style="--accent:var(--earth)"><div class="si">🌍</div><div class="sn">${countries.length}</div><div class="sl">Countries</div></div>
-    <div class="sc" style="--accent:#4A7EBA"><div class="si">🇺🇸</div><div class="sn">${usStates.length}</div><div class="sl">US States</div></div>
-    <div class="sc" style="--accent:var(--earth2)"><div class="si">♡</div><div class="sn">${D.wish.length}</div><div class="sl">Wishlist</div></div>
+  <div class="hero">
+    <div class="hero-greet">${greetWord}, ${nameStr}${partnerStr} ${greetEmoji}</div>
+    <div class="hero-date">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}</div>
+    ${heroNextHTML}
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:13px">
+    <div class="sc" style="--accent:var(--green2);cursor:pointer" onclick="go('trips')"><div class="si">✈️</div><div class="sn">${D.trips.length}</div><div class="sl">Total Trips</div></div>
+    <div class="sc" style="--accent:var(--earth);cursor:pointer" onclick="go('map')"><div class="si">🌍</div><div class="sn">${countries.length}</div><div class="sl">Countries</div></div>
+    <div class="sc" style="--accent:#4A7EBA;cursor:pointer" onclick="go('map')"><div class="si">🇺🇸</div><div class="sn">${usStates.length}</div><div class="sl">US States</div></div>
+    <div class="sc" style="--accent:var(--sage);cursor:pointer" onclick="go('places')"><div class="si">📍</div><div class="sn">${vis.length}</div><div class="sl">Places Visited</div></div>
+    <div class="sc" style="--accent:var(--gold);cursor:pointer" onclick="go('journal')"><div class="si">📓</div><div class="sn">${D.journal.length}</div><div class="sl">Journal Entries</div></div>
+    <div class="sc" style="--accent:var(--earth2);cursor:pointer" onclick="go('wishlist')"><div class="si">♡</div><div class="sn">${D.wish.length}</div><div class="sl">Wishlist</div></div>
+  </div>
+  ${activeTrips.length?'<div style="margin-bottom:6px;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px">Active Trips</div>':''}
+  <div class="dash-trips">${tripsHTML}</div>
+  <div class="hlt">${hltItems.map(h=>`<div class="hlt-item"><div class="hlt-icon">${h.icon}</div><div class="hlt-val">${h.val}</div><div class="hlt-lbl">${h.lbl}</div></div>`).join('')}</div>
+  <div class="g2" style="margin-bottom:13px">
+    <div class="card"><div class="ch"><div><div class="ct">Recent Activity</div><div class="cs">Latest additions</div></div><button class="pbtn" onclick="go('places')">All places →</button></div>${actFeedHTML}</div>
+    <div class="card"><div class="ch"><div class="ct">Quick Add</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;padding-top:4px"><button class="tb-btn" onclick="openPlace()" style="justify-content:center;font-size:11px;padding:9px 6px">📍 Place</button><button class="tb-btn gold" onclick="openTrip()" style="justify-content:center;font-size:11px;padding:9px 6px">✈️ Trip</button><button class="tb-btn" style="background:var(--card2);border:1px solid var(--bdr2);color:var(--text2);justify-content:center;font-size:11px;padding:9px 6px" onclick="openWish()">♡ Wishlist</button><button class="tb-btn" style="background:var(--card2);border:1px solid var(--bdr2);color:var(--text2);justify-content:center;font-size:11px;padding:9px 6px" onclick="openJournal()">📓 Journal</button></div></div>
   </div>
   <div class="g2" style="margin-bottom:13px">
     <div class="card">
@@ -1130,13 +1221,9 @@ function rHome(){
       <div class="coll-body coll-open">${statesBody}</div>
     </div>
   </div>
-  <div class="g2" style="margin-bottom:13px">
-    ${cdHTML}
-    <div class="card"><div class="ch"><div class="ct">Quick Add</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px"><button class="tb-btn" onclick="openPlace()" style="justify-content:center;font-size:11px">📍 Place</button><button class="tb-btn gold" onclick="openTrip()" style="justify-content:center;font-size:11px">✈️ Trip</button><button class="tb-btn" style="background:var(--card2);border:1px solid var(--bdr2);color:var(--text2);justify-content:center;font-size:11px" onclick="openWish()">♡ Wishlist</button><button class="tb-btn" style="background:var(--card2);border:1px solid var(--bdr2);color:var(--text2);justify-content:center;font-size:11px" onclick="openJournal()">📓 Journal</button></div></div>
-  </div>
   <div class="g2">
-    <div class="card"><div class="ch"><div><div class="ct">Recently Saved</div><div class="cs">Latest places</div></div><button class="pbtn" onclick="go('places')">All →</button></div>${recHTML}</div>
     <div class="card"><div class="ch"><div><div class="ct">Top Wishlist</div><div class="cs">Where you want to go</div></div><button class="pbtn" onclick="go('wishlist')">All →</button></div>${D.wish.slice(0,4).map(w=>`<div class="ai"><div class="ai-icon">${pi(w.priority)}</div><div style="flex:1"><div class="ai-text"><strong>${w.name}</strong></div><div class="ai-time">${w.type}${w.season?' · '+w.season:''}</div></div></div>`).join('')||'<div style="text-align:center;padding:20px;color:var(--muted2);font-size:12px">Wishlist is empty</div>'}</div>
+    <div class="card"><div class="ch"><div><div class="ct">Recently Saved</div><div class="cs">Latest places added</div></div><button class="pbtn" onclick="go('places')">All →</button></div>${recentPlaces.length?recentPlaces.map(p=>`<div class="ai"><div class="ai-icon">${ci(p.category)}</div><div style="flex:1"><div class="ai-text"><strong>${p.name}</strong></div><div class="ai-time">${p.usState&&p.country?p.usState+', '+p.country:p.country||p.region||'—'} · ${sl(p.status)}</div></div></div>`).join(''):'<div style="text-align:center;padding:20px;color:var(--muted2);font-size:12px">No places yet</div>'}</div>
   </div>`;
 }
 
