@@ -1218,13 +1218,12 @@ function rHome(){
   const since=D.settings.since?parseInt(D.settings.since):null;
   const yearsCount=since?Math.max(1,new Date().getFullYear()-since+1):null;
 
-  // Recent activity feed (last places + last journal entry)
-  const recentPlaces=[...D.places].sort((a,b)=>b.addedAt-a.addedAt).slice(0,4);
-  const recentJournal=[...D.journal].sort((a,b)=>b.addedAt-a.addedAt)[0];
+  // Recent activity feed — places, journals, trips merged by recency
   const actItems=[
-    ...recentPlaces.map(p=>({icon:ci(p.category),title:p.name,sub:(p.usState&&p.country?p.usState+', '+p.country:p.country||p.region||'—'),time:p.addedAt})),
-    ...(recentJournal?[{icon:'📓',title:recentJournal.title||'Journal Entry',sub:recentJournal.loc||fd(recentJournal.date)||'',time:recentJournal.addedAt}]:[]),
-  ].sort((a,b)=>b.time-a.time).slice(0,5);
+    ...[...D.places].sort((a,b)=>b.addedAt-a.addedAt).slice(0,6).map(p=>({icon:ci(p.category),title:p.name,sub:(p.usState&&p.country?p.usState+', '+p.country:p.country||p.region||'—'),badge:sl(p.status),time:p.addedAt,click:`go('places');setTimeout(()=>openPlaceD('${p.id}'),10)`})),
+    ...[...D.journal].sort((a,b)=>b.addedAt-a.addedAt).slice(0,4).map(j=>({icon:'📓',title:j.title||'Journal Entry',sub:j.loc||fd(j.date)||'',badge:'Journal',time:j.addedAt,click:`go('journal')`})),
+    ...[...D.trips].sort((a,b)=>b.addedAt-a.addedAt).slice(0,3).map(t=>({icon:'✈️',title:t.name,sub:t.startDate?fd(t.startDate):'Planning',badge:tsl(t.status),time:t.addedAt,click:`go('trips');openTripD('${t.id}')`})),
+  ].sort((a,b)=>b.time-a.time).slice(0,7);
 
   // Hero greeting
   const hour=new Date().getHours();
@@ -1274,7 +1273,7 @@ function rHome(){
     ?`<div style="display:flex;flex-wrap:wrap;gap:5px;padding-top:4px">${usStates.map(s=>{const isHome=homeState&&s===homeState;return`<div class="state-chip${isHome?' home':''}">${s}${isHome?' 🏠':''}</div>`}).join('')}</div>`
     :`<div style="font-size:12px;color:var(--muted2);padding:12px 0;text-align:center">No US places yet</div>`;
 
-  const actFeedHTML=actItems.length?actItems.map(a=>`<div class="ai"><div class="ai-icon">${a.icon}</div><div style="flex:1"><div class="ai-text"><strong>${a.title}</strong></div><div class="ai-time">${a.sub}</div></div></div>`).join('')
+  const actFeedHTML=actItems.length?actItems.map(a=>`<div class="ai" style="cursor:pointer" onclick="${a.click}"><div class="ai-icon">${a.icon}</div><div style="flex:1"><div class="ai-text"><strong>${a.title}</strong></div><div class="ai-time">${a.sub}</div></div><span style="font-size:9px;font-weight:600;color:var(--muted);border:1px solid var(--bdr2);border-radius:3px;padding:1px 5px;white-space:nowrap;flex-shrink:0">${a.badge||''}</span></div>`).join('')
     :`<div style="text-align:center;padding:20px;color:var(--muted2);font-size:12px">No activity yet — add your first place</div>`;
 
   document.getElementById('home-in').innerHTML=`
