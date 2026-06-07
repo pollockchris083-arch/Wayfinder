@@ -1,18 +1,20 @@
-module.exports = async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+// Edge runtime: 30-second timeout (vs 10s for serverless on Hobby plan)
+export const config = { runtime: 'edge' };
+
+const json = (data, status = 200) =>
+  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
+
+export default async function handler(req) {
+  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) {
-    return res.status(500).json({ error: 'ANTHROPIC_API_KEY is not configured on this server' });
-  }
+  if (!key) return json({ error: 'ANTHROPIC_API_KEY is not configured on this server' }, 500);
 
-  const { prompt } = req.body || {};
-  if (!prompt) {
-    return res.status(400).json({ error: 'prompt is required' });
-  }
+  let body;
+  try { body = await req.json(); } catch { return json({ error: 'Invalid JSON body' }, 400); }
+
+  const { prompt } = body || {};
+  if (!prompt) return json({ error: 'prompt is required' }, 400);
 
   try {
     const upstream = await fetch('https://api.anthropic.com/v1/messages', {
@@ -31,15 +33,15 @@ module.exports = async function handler(req, res) {
 
     if (!upstream.ok) {
       const err = await upstream.json().catch(() => ({}));
-      return res.status(upstream.status).json({
+      return json({
         error: err.error?.message || `Upstream error ${upstream.status}`,
         upstreamStatus: upstream.status,
-      });
+      }, upstream.status);
     }
 
     const data = await upstream.json();
-    return res.status(200).json({ text: data.content[0].text });
+    return json({ text: data.content[0].text });
   } catch (e) {
-    return res.status(500).json({ error: e.message || 'Internal server error' });
+    return json({ error: e.message || 'Internal server error' }, 500);
   }
-};
+}

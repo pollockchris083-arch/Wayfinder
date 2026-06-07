@@ -484,10 +484,17 @@ input,textarea,select{font-family:inherit;font-weight:400}
             <div class="fg"><label class="fl">Partner's Name</label><input class="fi" id="s-partner" placeholder="Partner" oninput="setSetting('partner',this.value)"/></div>
             <div class="fg"><label class="fl">Home City</label><input class="fi" id="s-city" placeholder="e.g. Los Angeles, CA" oninput="setSetting('homeCity',this.value)"/></div>
             <div class="fg"><label class="fl">Traveling Together Since</label><input class="fi" id="s-since" type="number" placeholder="2020" oninput="setSetting('since',this.value)"/></div>
-            <div class="fg" style="margin-bottom:0">
+            <div class="fg">
               <label class="fl">Claude API Key <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(for AI features on the web)</span></label>
               <input class="fi" id="s-apikey" type="password" placeholder="sk-ant-api03-…" oninput="setSetting('apiKey',this.value)" autocomplete="off"/>
               <div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.6">Get a free key at <a href="https://console.anthropic.com" target="_blank" style="color:var(--green)">console.anthropic.com</a>. Only needed when using Wayfinder outside of Cowork. Stored locally in your browser only.</div>
+            </div>
+            <div class="fg" style="margin-bottom:0">
+              <label class="fl">Google Client ID <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(for Google Drive import)</span></label>
+              <input class="fi" id="s-google-client-id" placeholder="….apps.googleusercontent.com" oninput="setSetting('googleClientId',this.value)" autocomplete="off"/>
+              <div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.6">
+                <strong>Setup:</strong> <a href="https://console.cloud.google.com" target="_blank" style="color:var(--green)">Google Cloud Console</a> → Create project → Enable <em>Google Drive API</em> + <em>Google Picker API</em> → Credentials → Create OAuth 2.0 Client ID (Web app) → add your site URL to Authorized JavaScript Origins → copy the Client ID here.
+              </div>
             </div>
           </div>
         </div>
@@ -673,22 +680,29 @@ input,textarea,select{font-family:inherit;font-weight:400}
   <div class="modal" style="width:560px">
     <button class="mcl" onclick="closeImport()">✕</button>
     <h2>📄 Import Past Trip from Doc</h2>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.7">Upload a Google Doc (exported as <strong>.txt</strong>) or paste the text below. Wayfinder will read it and automatically create the trip, visited places, and journal entries.</p>
-
-    <div style="background:rgba(155,116,32,.07);border:1px solid rgba(155,116,32,.2);border-radius:8px;padding:10px 13px;margin-bottom:16px;font-size:11px;color:var(--gold);line-height:1.6">
-      <strong>Supported formats:</strong> PDF, or Google Doc exported as File → Download → Plain Text (.txt)
-    </div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.7">Connect your Google Drive, upload a file, or paste text. Claude will extract trip dates, places, and journal entries automatically.</p>
 
     <div id="import-step1">
-      <!-- File upload — label wrapping the input is the most reliable approach in iframes -->
-      <label for="doc-file" style="display:flex;align-items:center;gap:10px;background:var(--card2);border:1px solid var(--bdr2);border-radius:8px;padding:12px 14px;cursor:pointer;transition:border-color .15s;margin-bottom:4px" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor=''">
+      <!-- File upload -->
+      <label for="doc-file" style="display:flex;align-items:center;gap:10px;background:var(--card2);border:1px solid var(--bdr2);border-radius:8px;padding:12px 14px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor=''">
         <span style="font-size:20px">📂</span>
         <div>
-          <div style="font-size:13px;font-weight:500;color:var(--text)">Choose a file</div>
+          <div style="font-size:13px;font-weight:500;color:var(--text)">Upload a file</div>
           <div style="font-size:11px;color:var(--muted);margin-top:1px">PDF, .txt, or .md</div>
         </div>
         <input type="file" id="doc-file" accept=".txt,.md,.text,.pdf" onchange="handleFile(event)" style="display:none"/>
       </label>
+
+      <!-- Google Drive -->
+      <button onclick="openGoogleDrivePicker()" style="display:flex;align-items:center;gap:10px;width:100%;background:var(--card2);border:1px solid var(--bdr2);border-radius:8px;padding:12px 14px;cursor:pointer;text-align:left;margin-top:8px;transition:border-color .15s;font:inherit" onmouseover="this.style.borderColor='#4285F4'" onmouseout="this.style.borderColor=''">
+        <span style="flex-shrink:0;display:flex;align-items:center">
+          <svg width="20" height="18" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.5l5.85 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>
+        </span>
+        <div>
+          <div style="font-size:13px;font-weight:500;color:var(--text)">Import from Google Drive</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:1px">Browse your Past Trips, Active Travel, and other folders directly</div>
+        </div>
+      </button>
       <div id="file-status" style="font-size:11px;color:var(--muted);padding:3px 4px;min-height:18px"></div>
 
       <div class="import-or" style="margin:12px 0">or paste text directly</div>
@@ -1312,7 +1326,7 @@ function rAbroad(){
 // SETTINGS
 // ══════════════════════════════════════════════
 function setSetting(k,v){D.settings[k]=v;save('settings',D.settings);if(k==='name'){document.getElementById('pn').textContent=v||'You';document.getElementById('av').textContent=(v||'Y')[0].toUpperCase()}}
-function loadSettings(){const s=D.settings;document.getElementById('s-name').value=s.name||'';document.getElementById('s-partner').value=s.partner||'';document.getElementById('s-city').value=s.homeCity||'';document.getElementById('s-since').value=s.since||'';document.getElementById('s-apikey').value=s.apiKey||'';document.getElementById('pn').textContent=s.name||'You';document.getElementById('av').textContent=(s.name||'Y')[0].toUpperCase()}
+function loadSettings(){const s=D.settings;document.getElementById('s-name').value=s.name||'';document.getElementById('s-partner').value=s.partner||'';document.getElementById('s-city').value=s.homeCity||'';document.getElementById('s-since').value=s.since||'';document.getElementById('s-apikey').value=s.apiKey||'';document.getElementById('s-google-client-id').value=s.googleClientId||'';document.getElementById('pn').textContent=s.name||'You';document.getElementById('av').textContent=(s.name||'Y')[0].toUpperCase()}
 function exportData(){const b=new Blob([JSON.stringify(load(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='wayfinder-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('📥 Exported!')}
 function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);Object.keys(K).forEach(k=>{if(d[k])localStorage.setItem(K[k],JSON.stringify(d[k]))});D=load();loadSettings();rHome();badges();toast('📤 Imported!')}catch{toast('⚠️ Invalid file')}};r.readAsText(f)}
 function clearAll(){if(!confirm('Clear ALL data? Cannot be undone.'))return;Object.values(K).forEach(k=>localStorage.removeItem(k));D=load();loadSettings();rHome();badges();toast('🗑️ Cleared')}
@@ -1438,6 +1452,93 @@ function loadFileIntoTextarea(file){
 }
 
 function handleFile(e){ loadFileIntoTextarea(e.target.files[0]); }
+
+// ── Google Drive Import ──
+function loadScript(src){
+  return new Promise((resolve,reject)=>{
+    if(document.querySelector(`script[src="${src}"]`)){resolve();return;}
+    const s=document.createElement('script');
+    s.src=src;s.onload=resolve;s.onerror=reject;
+    document.head.appendChild(s);
+  });
+}
+let _driveToken='';
+async function openGoogleDrivePicker(){
+  showImportError('');
+  const clientId=D.settings?.googleClientId||'';
+  if(!clientId){
+    showImportError('Add your Google Client ID in Settings → Google Client ID to use Drive import. See the setup instructions there.');
+    return;
+  }
+  const statusEl=document.getElementById('file-status');
+  if(statusEl)statusEl.textContent='Loading Google APIs…';
+  try{
+    await Promise.all([
+      loadScript('https://apis.google.com/js/api.js'),
+      loadScript('https://accounts.google.com/gsi/client'),
+    ]);
+    await new Promise(resolve=>gapi.load('picker',resolve));
+    if(statusEl)statusEl.textContent='Connecting to Google…';
+    const tokenClient=google.accounts.oauth2.initTokenClient({
+      client_id:clientId,
+      scope:'https://www.googleapis.com/auth/drive.readonly',
+      callback:(resp)=>{
+        if(resp.error||!resp.access_token){
+          if(statusEl)statusEl.textContent='';
+          showImportError('Google sign-in failed. Check your Client ID in Settings and ensure your site URL is in Authorized JavaScript Origins.');
+          return;
+        }
+        _driveToken=resp.access_token;
+        if(statusEl)statusEl.textContent='';
+        const view=new google.picker.DocsView()
+          .setMimeTypes('text/plain,application/pdf,application/vnd.google-apps.document,text/markdown')
+          .setIncludeFolders(true).setSelectFolderEnabled(false);
+        new google.picker.PickerBuilder()
+          .addView(view)
+          .setOAuthToken(_driveToken)
+          .setTitle('Choose a trip document')
+          .setCallback(async data=>{
+            if(data.action===google.picker.Action.PICKED){
+              const f=data.docs[0];
+              await loadDriveFile(f.id,f.mimeType,f.name);
+            }
+          })
+          .build().setVisible(true);
+      },
+    });
+    tokenClient.requestAccessToken({prompt:_driveToken?'':'consent'});
+  }catch(e){
+    if(statusEl)statusEl.textContent='';
+    showImportError('Could not load Google APIs. Check your internet connection.');
+  }
+}
+async function loadDriveFile(fileId,mimeType,fileName){
+  const statusEl=document.getElementById('file-status');
+  if(statusEl)statusEl.textContent='Loading '+fileName+'…';
+  showImportError('');
+  try{
+    const isDoc=mimeType==='application/vnd.google-apps.document';
+    const isPdf=mimeType==='application/pdf'||fileName.toLowerCase().endsWith('.pdf');
+    const url=isDoc
+      ?`https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/plain`
+      :`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+    const res=await fetch(url,{headers:{'Authorization':'Bearer '+_driveToken}});
+    if(!res.ok)throw new Error('Drive error '+res.status);
+    let text;
+    if(isPdf&&!isDoc){
+      text=extractPdfText(await res.arrayBuffer());
+    }else{
+      text=await res.text();
+    }
+    document.getElementById('doc-paste').value=text;
+    updateCharCount();
+    if(statusEl)statusEl.textContent='✓ '+fileName+' — '+Math.round(text.length/1000)+'k characters ready';
+  }catch(e){
+    if(statusEl)statusEl.textContent='';
+    showImportError('Could not load "'+fileName+'" from Drive. '+(e.message.includes('401')?'Try re-connecting to Google.':'Try downloading the file and uploading it here instead.'));
+  }
+}
+
 function handleDrop(e){
   e.preventDefault();
   loadFileIntoTextarea(e.dataTransfer.files[0]);
