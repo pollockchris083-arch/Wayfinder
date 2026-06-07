@@ -1181,6 +1181,12 @@ document.addEventListener('keydown',e=>{
     if(tdv&&tdv.classList.contains('on')){rTrips();return;}
     sbClose();
   }
+  if(e.key==='/'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){
+    const tag=document.activeElement.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
+    const srch=['places','trips','journal','wishlist'];
+    if(srch.includes(cur)){e.preventDefault();const s=document.getElementById('srch');if(s){s.focus();s.select();}}
+  }
 });
 
 // ══════════════════════════════════════════════
