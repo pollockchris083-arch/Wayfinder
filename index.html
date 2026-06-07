@@ -1504,23 +1504,23 @@ function openTripD(id){
     </div>
   </div>`
 
-  const journalSection=tripJournal.length?`
+  const journalSection=`
   <div class="card" style="margin-bottom:13px">
     <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
       <div><div class="ct">📓 Journal</div><div class="cs">${tripJournal.length} entr${tripJournal.length===1?'y':'ies'}</div></div>
-      <span class="coll-arrow">▾</span>
+      <div style="display:flex;align-items:center;gap:8px"><button class="pbtn" onclick="event.stopPropagation();openJournalForTrip('${t.id}')">+ Write</button><span class="coll-arrow">▾</span></div>
     </div>
     <div class="coll-body coll-open">
-      ${tripJournal.map(j=>`<div style="padding:10px 0;border-bottom:1px solid var(--bdr)">
+      ${tripJournal.length?tripJournal.map(j=>`<div style="padding:10px 0;border-bottom:1px solid var(--bdr)">
         <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
           <div style="font-size:13px;font-weight:600;color:var(--text)">${j.title}</div>
           <div style="font-size:10px;color:var(--muted);flex-shrink:0">${fd(j.date)}</div>
         </div>
         ${j.loc?`<div style="font-size:11px;color:var(--gold2);margin-top:2px">📍 ${j.loc}</div>`:''}
         <div style="font-size:12px;color:var(--text2);margin-top:5px;line-height:1.6">${j.body}</div>
-      </div>`).join('')}
+      </div>`).join(''):`<div style="font-size:12px;color:var(--muted2);padding:10px 0;text-align:center">No entries yet — click Write to add one</div>`}
     </div>
-  </div>`:''
+  </div>`
 
   const itinerarySection=`
   <div class="card">
@@ -1623,6 +1623,19 @@ function unlinkPlace(placeId,tid){
   p.tripIds=(p.tripIds||[]).filter(id=>id!==tid);
   save('places',D.places);
   toast('Unlinked');openTripD(tid);
+}
+function openJournalForTrip(tid){
+  document.getElementById('j-date').value=new Date().toISOString().split('T')[0];
+  ['j-title','j-loc','j-body'].forEach(id=>document.getElementById(id).value='');
+  const tsel=document.getElementById('j-trip');
+  tsel.innerHTML='<option value="">— Not linked —</option>'+D.trips.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  tsel.value=tid;
+  const psel=document.getElementById('j-place');
+  psel.innerHTML='<option value="">— No specific place —</option>'+
+    [...D.places].sort((a,b)=>a.name.localeCompare(b.name))
+      .map(p=>`<option value="${p.id}">${ci(p.category)} ${p.name}${p.region?' — '+p.region:''}</option>`).join('');
+  psel.value='';
+  openM('m-journal');
 }
 function openLinkPlace(tid){
   const unlinked=[...D.places].filter(p=>!(p.tripIds||[]).includes(tid)).sort((a,b)=>a.name.localeCompare(b.name));
