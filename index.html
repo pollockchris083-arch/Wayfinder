@@ -1116,7 +1116,7 @@ let mCharts=null;
 
 // ── Interactive Map ──────────────────────────────
 let leafletMap=null,mapLayer_c=null,mapLayer_s=null,mapLayer_p=null;
-let mapFilter='all',mapViewMode='world',geoWorld=null,geoUSStates=null;
+let mapFilter='all',mapViewMode='world',geoWorld=null,geoUSStates=null,mapLayer_home=null;
 const MAP_COLORS={visited:'#4A7259',want:'#9B7420',planned:'#4A7EBA',saved:'#8A7D6E',wishlist:'#B05080'};
 
 function rMap(){
@@ -1141,6 +1141,7 @@ function rMap(){
       ${Object.entries(MAP_COLORS).map(([k,c])=>`<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:10px;height:10px;border-radius:50%;background:${c};border:1.5px solid #fff;box-shadow:0 0 0 1px ${c}40"></div>${k==='wishlist'?'Wishlist':sl(k)}</div>`).join('')}
       <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:14px;height:9px;background:rgba(74,114,89,.3);border:1.5px solid #4A7259;border-radius:2px"></div>Visited</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:14px;height:9px;background:rgba(155,116,32,.2);border:1.5px solid #9B7420;border-radius:2px"></div>Want to Go</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)">🏠 Home</div>
     </div>
     <div class="g4" id="map-stats-row" style="margin-top:6px"></div>
   `;
@@ -1153,7 +1154,7 @@ function rMap(){
 
 async function mapInit(){
   await Promise.all([mapLoadWorld(),mapLoadStates()]);
-  mapRenderCountries();mapRenderStates();mapRenderPins();
+  mapRenderCountries();mapRenderStates();mapRenderPins();mapRenderHome();
 }
 async function mapLoadWorld(){
   if(geoWorld)return;
@@ -1177,9 +1178,24 @@ function mapRenderCountries(){
     onEachFeature:(f,layer)=>{
       const raw=f.properties.ADMIN||'';const n=mapGeoToName(raw);
       const ps=D.places.filter(p=>{const c=normCountry(p.country);return c===n||c===raw;});
-      const tip=`<strong>${raw}</strong>${ps.length?`<br>${ps.filter(p=>p.status==='visited').length} visited · ${ps.length} total`:''}`;
-      layer.bindTooltip(tip,{sticky:true});
-      layer.on('click',()=>{try{leafletMap.fitBounds(layer.getBounds(),{padding:[30,30],maxZoom:7});}catch(e){}});
+      const vis=ps.filter(p=>p.status==='visited');
+      layer.bindTooltip(`<strong>${raw}</strong>${ps.length?`<br>${vis.length} visited · ${ps.length} total`:''}`,{sticky:true});
+      layer.on('click',()=>{
+        try{leafletMap.fitBounds(layer.getBounds(),{padding:[30,30],maxZoom:7});}catch(e){}
+        if(!ps.length)return;
+        const tripIds=new Set(ps.flatMap(p=>p.tripIds||[]));
+        const trips=D.trips.filter(t=>tripIds.has(t.id));
+        const html=`<div style="font-family:-apple-system,sans-serif;min-width:170px;max-width:230px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:7px">${raw}</div>
+          ${vis.length?`<div style="font-size:9px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Places (${vis.length})</div>`
+            +vis.slice(0,6).map(p=>`<div style="font-size:11px;padding:2px 0">${ci(p.category)} ${p.name}</div>`).join('')
+            +(vis.length>6?`<div style="font-size:10px;color:#999">+${vis.length-6} more</div>`:''): ''}
+          ${trips.length?`<div style="font-size:9px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.5px;margin:${vis.length?'7px':'0'} 0 4px">Trips (${trips.length})</div>`
+            +trips.slice(0,4).map(t=>`<div style="font-size:11px;padding:2px 0">✈️ ${t.name}</div>`).join('')
+            +(trips.length>4?`<div style="font-size:10px;color:#999">+${trips.length-4} more</div>`:''): ''}
+        </div>`;
+        layer.bindPopup(html,{maxWidth:250,closeButton:true}).openPopup();
+      });
     }
   }).addTo(leafletMap);
 }
@@ -1193,8 +1209,24 @@ function mapRenderStates(){
     onEachFeature:(f,layer)=>{
       const n=f.properties.name||'';
       const ps=D.places.filter(p=>p.usState===n&&normCountry(p.country)==='United States');
-      layer.bindTooltip(`<strong>${n}</strong>${ps.length?`<br>${ps.filter(p=>p.status==='visited').length} visited · ${ps.length} total`:''}`,{sticky:true});
-      layer.on('click',()=>{try{leafletMap.fitBounds(layer.getBounds(),{padding:[20,20]});}catch(e){}});
+      const vis=ps.filter(p=>p.status==='visited');
+      layer.bindTooltip(`<strong>${n}</strong>${ps.length?`<br>${vis.length} visited · ${ps.length} total`:''}`,{sticky:true});
+      layer.on('click',()=>{
+        try{leafletMap.fitBounds(layer.getBounds(),{padding:[20,20]});}catch(e){}
+        if(!ps.length)return;
+        const tripIds=new Set(ps.flatMap(p=>p.tripIds||[]));
+        const trips=D.trips.filter(t=>tripIds.has(t.id));
+        const html=`<div style="font-family:-apple-system,sans-serif;min-width:170px;max-width:230px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:7px">${n}</div>
+          ${vis.length?`<div style="font-size:9px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Places (${vis.length})</div>`
+            +vis.slice(0,6).map(p=>`<div style="font-size:11px;padding:2px 0">${ci(p.category)} ${p.name}</div>`).join('')
+            +(vis.length>6?`<div style="font-size:10px;color:#999">+${vis.length-6} more</div>`:''): ''}
+          ${trips.length?`<div style="font-size:9px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.5px;margin:${vis.length?'7px':'0'} 0 4px">Trips (${trips.length})</div>`
+            +trips.slice(0,4).map(t=>`<div style="font-size:11px;padding:2px 0">✈️ ${t.name}</div>`).join('')
+            +(trips.length>4?`<div style="font-size:10px;color:#999">+${trips.length-4} more</div>`:''): ''}
+        </div>`;
+        layer.bindPopup(html,{maxWidth:250,closeButton:true}).openPopup();
+      });
     }
   }).addTo(leafletMap);
 }
@@ -1236,6 +1268,27 @@ function mapAddPin(item,coords){
   const stars=item.rating?'⭐'.repeat(parseInt(item.rating)):'';
   m.bindPopup(`<div style="min-width:155px;font-family:-apple-system,sans-serif"><div style="font-weight:600;font-size:13px;margin-bottom:4px">${item.name}</div>${loc?`<div style="font-size:11px;color:#777;margin-bottom:5px">${loc}</div>`:''}<span style="background:${color};color:#fff;font-size:10px;padding:2px 8px;border-radius:3px">${item._wish?'♡ Wishlist':sl(item.status)}</span>${stars?`<div style="margin-top:5px;font-size:11px">${stars}</div>`:''}${item.notes?`<div style="font-size:11px;color:#666;border-top:1px solid #eee;padding-top:5px;margin-top:5px">${item.notes.slice(0,120)}${item.notes.length>120?'…':''}</div>`:''}</div>`);
   mapLayer_p.addLayer(m);
+}
+async function mapRenderHome(){
+  if(mapLayer_home){mapLayer_home.remove();mapLayer_home=null;}
+  if(!leafletMap)return;
+  const hc=(D.settings.homeCity||'').trim();
+  if(!hc)return;
+  const cacheKey='home:'+hc;
+  const cache=JSON.parse(localStorage.getItem('wf_geocache')||'{}');
+  let coords=cache[cacheKey];
+  if(!coords){
+    try{
+      const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(hc)}&format=json&limit=1`,{headers:{'User-Agent':'Wayfinder/1.0','Accept-Language':'en'}});
+      const d=await r.json();
+      if(d[0]){coords={lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon)};cache[cacheKey]=coords;localStorage.setItem('wf_geocache',JSON.stringify(cache));}
+    }catch(e){}
+  }
+  if(!coords)return;
+  const icon=L.divIcon({html:`<div style="font-size:20px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,.35))">🏠</div>`,className:'',iconSize:[24,24],iconAnchor:[12,20]});
+  mapLayer_home=L.marker([coords.lat,coords.lng],{icon,zIndexOffset:1000});
+  mapLayer_home.bindPopup(`<div style="font-family:-apple-system,sans-serif"><div style="font-weight:600;font-size:13px;margin-bottom:3px">🏠 Home</div><div style="font-size:11px;color:#777">${hc}</div></div>`);
+  mapLayer_home.addTo(leafletMap);
 }
 function mapRenderStats(){
   const vis=D.places.filter(p=>p.status==='visited');
