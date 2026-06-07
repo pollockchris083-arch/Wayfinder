@@ -504,6 +504,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
             <div class="fg"><label class="fl">Partner's Name</label><input class="fi" id="s-partner" placeholder="Partner" oninput="setSetting('partner',this.value)"/></div>
             <div class="fg"><label class="fl">Home City</label><input class="fi" id="s-city" placeholder="e.g. Santa Cruz, CA" oninput="setSetting('homeCity',this.value)"/><div style="font-size:10px;color:var(--muted2);margin-top:3px">Format: City, ST — used to mark your home state on the dashboard</div></div>
             <div class="fg"><label class="fl">Traveling Together Since</label><input class="fi" id="s-since" type="number" placeholder="2020" oninput="setSetting('since',this.value)"/></div>
+            <div class="fg"><label class="fl">Living Abroad Notes</label><textarea class="ft" id="s-abroad-notes" style="min-height:70px" placeholder="Target countries, timeline, visa research…" oninput="setSetting('abroadNotes',this.value)"></textarea></div>
             <div class="fg">
               <label class="fl">Claude API Key <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(for AI features on the web)</span></label>
               <input class="fi" id="s-apikey" type="password" placeholder="sk-ant-api03-…" oninput="setSetting('apiKey',this.value)" autocomplete="off"/>
@@ -1940,16 +1941,41 @@ function journalCard(e,showTrip){
 // ABROAD
 // ══════════════════════════════════════════════
 function rAbroad(){
-  document.getElementById('abroad-in').innerHTML=`<div style="max-width:660px"><div style="margin-bottom:16px"><div style="font-size:17px;font-weight:600;color:var(--text);margin-bottom:4px">Living Abroad 🌍</div><div style="font-size:12px;color:var(--muted);line-height:1.6">Research for buying property, moving, and working internationally.</div></div>
-  <div class="g2" style="margin-bottom:13px">${['🏠 Property Research|Track real estate & foreign ownership rules','🛂 Visas & Residency|Digital nomad visas & paths to residency','💼 Working Abroad|Remote work, freelancing & tax strategy','🏥 Country Profiles|Cost of living, healthcare & safety'].map(s=>{const[t,d]=s.split('|');return`<div class="card"><div style="font-size:22px;margin-bottom:7px">${t.split(' ')[0]}</div><div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:4px">${t.slice(2)}</div><div style="font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:9px">${d} — Phase 2</div><span class="tag te">Coming Soon</span></div>`}).join('')}</div>
-  <div class="card"><div class="ch"><div class="ct">Top Countries for US Expats</div></div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="border-bottom:1px solid var(--bdr)">${['Country','Visa','Cost vs US','Own Property','Best For'].map(h=>`<th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;font-size:9px">${h}</th>`).join('')}</tr></thead><tbody>${[['🇲🇽 Mexico','Temp Resident','40–60% less','Yes (fideicomiso)','Proximity, cost, food'],['🇵🇹 Portugal','D7 + DNV','55–70% less','Full freehold','EU base, safety, culture'],['🇪🇸 Spain','Digital Nomad','50–65% less','Full freehold','City life, EU, cuisine'],['🇨🇷 Costa Rica','Rentista/DNV','50–60% less','Mostly freehold','Nature, stability'],['🇵🇦 Panama','Friendly Nations','45–60% less','Full freehold','No foreign tax, USD'],['🇨🇴 Colombia','Digital Nomad','60–75% less','Full freehold','Medellín, low cost'],['🇬🇷 Greece','Digital Nomad','55–70% less','Full freehold','Islands, 7% tax regime'],['🇹🇭 Thailand','LTR Visa','60–75% less','No land ownership','Infrastructure, food'],['🇮🇹 Italy','Elective Resid.','50–65% less','Full freehold','Culture, flat-tax option'],['🇬🇪 Georgia','1yr visa-free','70–80% less','Full freehold','Zero foreign income tax']].map((r,i)=>`<tr style="border-bottom:1px solid var(--bdr);background:${i%2?'transparent':'rgba(74,114,89,.03)'}">${r.map((c,j)=>`<td style="padding:6px 8px;color:${j===0?'var(--text)':'var(--text2)'};font-weight:${j===0?'500':'400'};white-space:${j<2?'nowrap':'normal'}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div></div>`;
+  D=load();
+  const homeState=getHomeState();
+  const homeCity=D.settings.homeCity||'';
+  const abroadNotes=D.settings.abroadNotes||'';
+  const homePlaces=homeState?D.places.filter(p=>p.usState===homeState&&normCountry(p.country)==='United States'):[];
+  const vis=homePlaces.filter(p=>p.status==='visited');
+
+  const baseCard=homeCity?`<div class="card" style="margin-bottom:13px">
+    <div class="ch"><div><div class="ct">🏠 Your Base</div><div class="cs">${homeCity}</div></div></div>
+    ${vis.length?`<div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">Places visited in ${homeState}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px">
+      ${vis.slice(0,12).map(p=>`<div class="state-chip">${ci(p.category)} ${p.name}</div>`).join('')}
+      ${vis.length>12?`<div class="state-chip" style="color:var(--muted)">+${vis.length-12} more</div>`:''}
+    </div>`:homeCity?`<div style="font-size:12px;color:var(--muted2)">No visited places in ${homeState} yet.</div>`:''}
+  </div>`:
+  `<div class="card" style="margin-bottom:13px"><div class="ch"><div><div class="ct">🏠 Your Base</div><div class="cs">Not set</div></div></div><div style="font-size:12px;color:var(--muted2)">Set your Home City in <a onclick="go('settings')" style="color:var(--green3);cursor:pointer;text-decoration:underline">Settings</a> to see local places here.</div></div>`;
+
+  const notesCard=`<div class="card" style="margin-bottom:13px">
+    <div class="ch"><div><div class="ct">📝 Research Notes</div><div class="cs">Your living abroad thoughts</div></div></div>
+    <textarea class="ft" style="min-height:110px" placeholder="Target countries, timeline, property research, visa notes, cost of living comparisons…" oninput="setSetting('abroadNotes',this.value)">${abroadNotes}</textarea>
+  </div>`;
+
+  const expatTable=`<div class="card"><div class="ch"><div class="ct">Top Countries for US Expats</div></div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="border-bottom:1px solid var(--bdr)">${['Country','Visa','Cost vs US','Own Property','Best For'].map(h=>`<th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;font-size:9px">${h}</th>`).join('')}</tr></thead><tbody>${[['🇲🇽 Mexico','Temp Resident','40–60% less','Yes (fideicomiso)','Proximity, cost, food'],['🇵🇹 Portugal','D7 + DNV','55–70% less','Full freehold','EU base, safety, culture'],['🇪🇸 Spain','Digital Nomad','50–65% less','Full freehold','City life, EU, cuisine'],['🇨🇷 Costa Rica','Rentista/DNV','50–60% less','Mostly freehold','Nature, stability'],['🇵🇦 Panama','Friendly Nations','45–60% less','Full freehold','No foreign tax, USD'],['🇨🇴 Colombia','Digital Nomad','60–75% less','Full freehold','Medellín, low cost'],['🇬🇷 Greece','Digital Nomad','55–70% less','Full freehold','Islands, 7% tax regime'],['🇹🇭 Thailand','LTR Visa','60–75% less','No land ownership','Infrastructure, food'],['🇮🇹 Italy','Elective Resid.','50–65% less','Full freehold','Culture, flat-tax option'],['🇬🇪 Georgia','1yr visa-free','70–80% less','Full freehold','Zero foreign income tax']].map((r,i)=>`<tr style="border-bottom:1px solid var(--bdr);background:${i%2?'transparent':'rgba(74,114,89,.03)'}">${r.map((c,j)=>`<td style="padding:6px 8px;color:${j===0?'var(--text)':'var(--text2)'};font-weight:${j===0?'500':'400'};white-space:${j<2?'nowrap':'normal'}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+
+  document.getElementById('abroad-in').innerHTML=`<div style="max-width:660px">
+    <div style="margin-bottom:16px"><div style="font-size:17px;font-weight:600;color:var(--text);margin-bottom:4px">Living Abroad 🌍</div><div style="font-size:12px;color:var(--muted);line-height:1.6">Research for buying property, moving, and working internationally.</div></div>
+    ${baseCard}${notesCard}${expatTable}
+  </div>`;
 }
 
 // ══════════════════════════════════════════════
 // SETTINGS
 // ══════════════════════════════════════════════
 function setSetting(k,v){D.settings[k]=v;save('settings',D.settings);if(k==='name'){document.getElementById('pn').textContent=v||'You';document.getElementById('av').textContent=(v||'Y')[0].toUpperCase()}}
-function loadSettings(){const s=D.settings;document.getElementById('s-name').value=s.name||'';document.getElementById('s-partner').value=s.partner||'';document.getElementById('s-city').value=s.homeCity||'';document.getElementById('s-since').value=s.since||'';document.getElementById('s-apikey').value=s.apiKey||'';document.getElementById('s-google-client-id').value=s.googleClientId||'';document.getElementById('s-drive-folder').value=s.driveFolderId||'';document.getElementById('pn').textContent=s.name||'You';document.getElementById('av').textContent=(s.name||'Y')[0].toUpperCase()}
+function loadSettings(){const s=D.settings;document.getElementById('s-name').value=s.name||'';document.getElementById('s-partner').value=s.partner||'';document.getElementById('s-city').value=s.homeCity||'';document.getElementById('s-since').value=s.since||'';document.getElementById('s-apikey').value=s.apiKey||'';document.getElementById('s-google-client-id').value=s.googleClientId||'';document.getElementById('s-drive-folder').value=s.driveFolderId||'';document.getElementById('s-abroad-notes').value=s.abroadNotes||'';document.getElementById('pn').textContent=s.name||'You';document.getElementById('av').textContent=(s.name||'Y')[0].toUpperCase()}
 function exportData(){const b=new Blob([JSON.stringify(load(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='wayfinder-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('📥 Exported!')}
 function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);Object.keys(K).forEach(k=>{if(d[k])localStorage.setItem(K[k],JSON.stringify(d[k]))});D=load();loadSettings();rHome();badges();toast('📤 Imported!')}catch{toast('⚠️ Invalid file')}};r.readAsText(f)}
 function clearAll(){if(!confirm('Clear ALL data? Cannot be undone.'))return;Object.values(K).forEach(k=>localStorage.removeItem(k));D=load();loadSettings();rHome();badges();toast('🗑️ Cleared')}
