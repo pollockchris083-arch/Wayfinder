@@ -1550,7 +1550,44 @@ function openTripD(id){
     <div class="sc" style="--accent:var(--sage)"><div class="si">${isDomestic?'🇺🇸':'🌍'}</div><div class="sn">${isDomestic?tripUSStates.length:tripCountries.length}</div><div class="sl">${isDomestic?'States':'Countries'}</div></div>
     <div class="sc" style="--accent:var(--earth2)"><div class="si">📓</div><div class="sn">${tripJournal.length}</div><div class="sl">Journal</div></div>
   </div>
+  ${t.status==='past'?tripInsights(t,linkedPlaces,tripJournal,isDomestic,tripCountries,tripUSStates):''}
   ${placesSection}${journalSection}${itinerarySection}`;
+}
+function tripInsights(t,linkedPlaces,tripJournal,isDomestic,tripCountries,tripUSStates){
+  const facts=[];
+  // Days total
+  if(t.itinerary.length) facts.push(`You traveled for ${t.itinerary.length} day${t.itinerary.length>1?'s':''}.`);
+  // Places breakdown by location
+  if(!isDomestic&&tripCountries.length){
+    tripCountries.forEach(c=>{
+      const cnt=linkedPlaces.filter(p=>normCountry(p.country)===c).length;
+      if(cnt>1)facts.push(`Visited ${cnt} places in ${c}.`);
+    });
+    if(tripCountries.length>1)facts.push(`Crossed ${tripCountries.length} countries: ${tripCountries.join(', ')}.`);
+    else if(tripCountries.length===1)facts.push(`Trip was in ${tripCountries[0]}.`);
+  }
+  if(isDomestic&&tripUSStates.length){
+    if(tripUSStates.length>1)facts.push(`Drove through ${tripUSStates.length} states: ${tripUSStates.join(', ')}.`);
+    else facts.push(`Trip was in ${tripUSStates[0]}.`);
+  }
+  // Top-rated places
+  const rated=linkedPlaces.filter(p=>p.rating&&parseInt(p.rating)>=4).sort((a,b)=>parseInt(b.rating)-parseInt(a.rating));
+  if(rated.length)facts.push(`Standout: ${rated.slice(0,2).map(p=>p.name).join(' and ')}.`);
+  // Journal
+  if(tripJournal.length)facts.push(`You wrote ${tripJournal.length} journal entr${tripJournal.length>1?'ies':'y'} on this trip.`);
+  // Budget
+  if(t.budget)facts.push(`Budget was $${t.budget.toLocaleString()}.`);
+  // Total stops
+  const stops=t.itinerary.reduce((s,d)=>s+(d.stops||[]).length,0);
+  if(stops>3)facts.push(`Itinerary covered ${stops} stops across ${t.itinerary.length} days.`);
+
+  if(!facts.length)return'';
+  return`<div class="card" style="margin-bottom:13px;background:linear-gradient(135deg,rgba(74,114,89,.05),rgba(155,116,32,.04));border-color:rgba(74,114,89,.2)">
+    <div class="ch">
+      <div><div class="ct">✨ Trip Summary</div><div class="cs">Facts from your data</div></div>
+    </div>
+    <div>${facts.map(f=>`<div style="font-size:12px;color:var(--text2);padding:4px 0;border-bottom:1px solid var(--bdr);line-height:1.5">${f}</div>`).join('')}</div>
+  </div>`;
 }
 function delStop(tid,di,si){
   const t=D.trips.find(x=>x.id===tid);if(!t)return;
