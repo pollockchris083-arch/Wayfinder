@@ -1219,6 +1219,7 @@ function rHome(){
   const yearsCount=since?Math.max(1,new Date().getFullYear()-since+1):null;
 
   // Recent activity feed — places, journals, trips merged by recency
+  const recentPlaces=[...D.places].sort((a,b)=>b.addedAt-a.addedAt).slice(0,4);
   const actItems=[
     ...[...D.places].sort((a,b)=>b.addedAt-a.addedAt).slice(0,6).map(p=>({icon:ci(p.category),title:p.name,sub:(p.usState&&p.country?p.usState+', '+p.country:p.country||p.region||'—'),badge:sl(p.status),time:p.addedAt,click:`go('places');setTimeout(()=>openPlaceD('${p.id}'),10)`})),
     ...[...D.journal].sort((a,b)=>b.addedAt-a.addedAt).slice(0,4).map(j=>({icon:'📓',title:j.title||'Journal Entry',sub:j.loc||fd(j.date)||'',badge:'Journal',time:j.addedAt,click:`go('journal')`})),
