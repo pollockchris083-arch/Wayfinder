@@ -356,6 +356,20 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .pl-results-foot p{font-size:12px;color:var(--muted);margin-bottom:9px}
 .pl-btn-again{background:var(--card);border:1px solid var(--bdr2);color:var(--muted);border-radius:8px;padding:8px 20px;font-size:12px;font-weight:500;cursor:pointer;transition:all .18s}
 .pl-btn-again:hover{border-color:var(--green);color:var(--text)}
+
+/* ── COLLAPSIBLE SECTIONS ── */
+.coll-body{display:none;padding-top:4px}
+.coll-body.coll-open{display:block}
+.coll-toggle{cursor:pointer;user-select:none}
+.coll-arrow{font-size:11px;color:var(--muted);transition:transform .2s;display:inline-block}
+.coll-toggle.coll-open .coll-arrow{transform:rotate(0deg)}
+.coll-toggle:not(.coll-open) .coll-arrow{transform:rotate(-90deg)}
+
+/* ── ATLAS / COUNTRY LIST ── */
+.country-row{display:flex;align-items:baseline;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr)}
+.country-row:last-child{border-bottom:none}
+.state-chip{background:var(--card2);border:1px solid var(--bdr);border-radius:5px;padding:3px 8px;font-size:11px;color:var(--text2);white-space:nowrap}
+.state-chip.home{background:rgba(74,114,89,.12);border-color:rgba(74,114,89,.3);color:var(--green3)}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" crossorigin=""/>
@@ -977,22 +991,69 @@ function badges(){D=load();document.getElementById('b-places').textContent=D.pla
 // ══════════════════════════════════════════════
 function rHome(){
   D=load();
-  const vis=D.places.filter(p=>p.status==='visited').length;
+  const vis=D.places.filter(p=>p.status==='visited');
   const up=D.trips.filter(t=>t.status==='upcoming'||t.status==='planning').sort((a,b)=>new Date(a.startDate)-new Date(b.startDate));
   const next=up[0];
   const days=next?Math.ceil((new Date(next.startDate)-new Date())/86400000):null;
   const recent=[...D.places].sort((a,b)=>b.addedAt-a.addedAt).slice(0,5);
+  const pastTrips=D.trips.filter(t=>t.status==='past').length;
+
+  // Atlas stats
+  const countries=[...new Set(vis.map(p=>normCountry(p.country)).filter(c=>c&&c!=='United States'))].sort();
+  const usStates=[...new Set(vis.filter(p=>normCountry(p.country)==='United States').map(p=>p.usState).filter(Boolean))].sort();
+  const homeState=getHomeState();
+
+  // Most recent trip per country
+  const countryLastVisit={};
+  vis.filter(p=>p.country&&normCountry(p.country)!=='United States').forEach(p=>{
+    const c=normCountry(p.country);
+    (p.tripIds||[]).forEach(tid=>{
+      const t=D.trips.find(x=>x.id===tid);
+      if(t&&t.startDate&&(!countryLastVisit[c]||new Date(t.startDate)>new Date(countryLastVisit[c]))){
+        countryLastVisit[c]=t.startDate;
+      }
+    });
+  });
+
   const cdHTML=next?`<div class="cdwn"><div class="cdn">${days>0?days:'🚀'}</div><div class="cdl">${days>0?'days until next trip':'happening now!'}</div><div class="cdt">${next.name}</div><div class="cdd">${fd(next.startDate)} — ${fd(next.endDate)}</div></div>`
     :`<div class="cdwn" style="text-align:center;cursor:pointer" onclick="openTrip()"><div style="font-size:26px;margin-bottom:8px">✈️</div><div style="font-size:13px;font-weight:500;color:var(--text2)">No trips planned yet</div><div style="font-size:11px;color:var(--muted);margin-top:3px">Tap to create your first →</div></div>`;
-  const recHTML=recent.length?recent.map(p=>`<div class="ai"><div class="ai-icon">${ci(p.category)}</div><div style="flex:1"><div class="ai-text"><strong>${p.name}</strong> — ${p.region||'—'}</div><div class="ai-time">${sl(p.status)}</div></div><span class="tag ${stc(p.status)}">${sl(p.status)}</span></div>`).join('')
+
+  const recHTML=recent.length?recent.map(p=>`<div class="ai"><div class="ai-icon">${ci(p.category)}</div><div style="flex:1"><div class="ai-text"><strong>${p.name}</strong> — ${p.usState&&p.country?p.usState+', '+p.country:p.country||p.region||'—'}</div><div class="ai-time">${sl(p.status)}</div></div></div>`).join('')
     :`<div style="text-align:center;padding:20px;color:var(--muted2);font-size:12px">No places yet — add some above ↑</div>`;
+
+  const countriesBody=countries.length
+    ?countries.map(c=>`<div class="country-row"><span style="font-size:12px;color:var(--text);font-weight:500">${c}</span>${countryLastVisit[c]?`<span style="font-size:10px;color:var(--muted)">${fd(countryLastVisit[c])}</span>`:''}</div>`).join('')
+    :`<div style="font-size:12px;color:var(--muted2);padding:12px 0;text-align:center">No international places yet</div>`;
+
+  const statesBody=usStates.length
+    ?`<div style="display:flex;flex-wrap:wrap;gap:5px;padding-top:4px">${usStates.map(s=>{const isHome=homeState&&s===homeState;return`<div class="state-chip${isHome?' home':''}">${s}${isHome?' 🏠':''}</div>`}).join('')}</div>`
+    :`<div style="font-size:12px;color:var(--muted2);padding:12px 0;text-align:center">No US places yet</div>`;
+
   document.getElementById('home-in').innerHTML=`
   <div style="margin-bottom:16px"><div style="font-size:18px;font-weight:600;color:var(--text);letter-spacing:-.3px">Welcome back, ${D.settings.name} 👋</div><div style="font-size:11px;color:var(--muted);margin-top:3px">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}</div></div>
-  <div class="g4" style="margin-bottom:13px">
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:13px">
     <div class="sc" style="--accent:var(--green2)"><div class="si">📍</div><div class="sn">${D.places.length}</div><div class="sl">Places Saved</div></div>
-    <div class="sc" style="--accent:var(--sage)"><div class="si">✅</div><div class="sn">${vis}</div><div class="sl">Visited</div></div>
-    <div class="sc" style="--accent:var(--gold)"><div class="si">✈️</div><div class="sn">${D.trips.length}</div><div class="sl">Trips</div></div>
+    <div class="sc" style="--accent:var(--sage)"><div class="si">✅</div><div class="sn">${vis.length}</div><div class="sl">Places Visited</div></div>
+    <div class="sc" style="--accent:var(--gold)"><div class="si">✈️</div><div class="sn">${pastTrips}</div><div class="sl">Trips Done</div></div>
+    <div class="sc" style="--accent:var(--earth)"><div class="si">🌍</div><div class="sn">${countries.length}</div><div class="sl">Countries</div></div>
+    <div class="sc" style="--accent:#4A7EBA"><div class="si">🇺🇸</div><div class="sn">${usStates.length}</div><div class="sl">US States</div></div>
     <div class="sc" style="--accent:var(--earth2)"><div class="si">♡</div><div class="sn">${D.wish.length}</div><div class="sl">Wishlist</div></div>
+  </div>
+  <div class="g2" style="margin-bottom:13px">
+    <div class="card">
+      <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+        <div><div class="ct">Countries Visited</div><div class="cs">${countries.length} countries</div></div>
+        <span class="coll-arrow">▾</span>
+      </div>
+      <div class="coll-body coll-open">${countriesBody}</div>
+    </div>
+    <div class="card">
+      <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+        <div><div class="ct">US States</div><div class="cs">${usStates.length} of 50${homeState?' · '+homeState+' is home':''}</div></div>
+        <span class="coll-arrow">▾</span>
+      </div>
+      <div class="coll-body coll-open">${statesBody}</div>
+    </div>
   </div>
   <div class="g2" style="margin-bottom:13px">
     ${cdHTML}
@@ -1191,6 +1252,16 @@ function normCountry(c){
   if(l==='us'||l==='usa'||l==='united states'||l==='united states of america'||l==='america')return'United States';
   return c.trim();
 }
+function getHomeState(){
+  const hc=(D.settings.homeCity||'').trim();
+  if(!hc)return'';
+  // Parse "City, ST" or "City, State Name"
+  const m=hc.match(/,\s*([A-Za-z ]+)$/);
+  if(!m)return'';
+  const raw=m[1].trim();
+  const abbrev={CA:'California',NY:'New York',TX:'Texas',FL:'Florida',WA:'Washington',OR:'Oregon',CO:'Colorado',AZ:'Arizona',MA:'Massachusetts',IL:'Illinois',GA:'Georgia',NC:'North Carolina',VA:'Virginia',OH:'Ohio',MI:'Michigan',PA:'Pennsylvania',NJ:'New Jersey',MN:'Minnesota',TN:'Tennessee',MO:'Missouri',WI:'Wisconsin',MD:'Maryland',IN:'Indiana',UT:'Utah',SC:'South Carolina',NV:'Nevada',KY:'Kentucky',LA:'Louisiana',AL:'Alabama',OK:'Oklahoma',CT:'Connecticut',AR:'Arkansas',MS:'Mississippi',KS:'Kansas',NE:'Nebraska',IA:'Iowa',HI:'Hawaii',ID:'Idaho',ME:'Maine',MT:'Montana',ND:'North Dakota',SD:'South Dakota',WY:'Wyoming',VT:'Vermont',NH:'New Hampshire',RI:'Rhode Island',DE:'Delaware',AK:'Alaska',WV:'West Virginia',NM:'New Mexico'};
+  return abbrev[raw.toUpperCase()]||US_STATES.find(s=>s.toLowerCase()===raw.toLowerCase())||'';
+}
 function delPlace(id){if(!confirm('Remove this place?'))return;D.places=D.places.filter(p=>p.id!==id);save('places',D.places);toast('🗑️ Removed');rPlaces();badges()}
 function cycleStatus(id){const o=['saved','want','planned','visited'],p=D.places.find(x=>x.id===id);p.status=o[(o.indexOf(p.status)+1)%4];save('places',D.places);toast(sl(p.status));rPlaces()}
 function fPlace(b,f){document.querySelectorAll('#pfb .fc').forEach(x=>x.classList.remove('on'));b.classList.add('on');pf=f;rPlaces()}
@@ -1242,20 +1313,146 @@ function rTrips(){
   let list=D.trips.filter(t=>{if(tf==='all')return true;if(tf==='upcoming')return t.status==='upcoming'||t.status==='active';if(tf==='past')return t.status==='past';if(tf==='planning')return t.status==='planning';return true}).sort((a,b)=>{if(a.startDate&&b.startDate)return new Date(b.startDate)-new Date(a.startDate);return b.addedAt-a.addedAt});
   const g=document.getElementById('trips-grid');
   if(!list.length){g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">✈️</div><h3>No trips yet</h3><p>Create a trip or import from a doc.</p><button class="tb-btn" onclick="openTrip()" style="margin-bottom:8px">+ New Trip</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;return}
-  g.innerHTML=list.map(t=>`<div class="tc" onclick="openTripD('${t.id}')"><div class="tc-bar"></div><div class="tcb"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px"><div class="tname" style="flex:1">${t.name}</div><button onclick="event.stopPropagation();delTrip('${t.id}')" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0;line-height:1;flex-shrink:0" title="Delete trip">×</button></div><div class="tdates">${t.startDate?fd(t.startDate)+' — '+fd(t.endDate):'Dates TBD'}</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:9px">${t.destinations.slice(0,3).map(d=>`<span class="tag tg">📍 ${d}</span>`).join('')}${t.destinations.length>3?`<span class="tag te">+${t.destinations.length-3}</span>`:''}</div><div class="tfoot"><div class="tstat">${t.itinerary.reduce((s,d)=>s+d.stops.length,0)} stops · ${t.itinerary.length} days</div><span class="tag ${tsc(t.status)}">${tsl(t.status)}</span></div></div></div>`).join('');
+  g.innerHTML=list.map(t=>{
+    const stops=t.itinerary.reduce((s,d)=>s+(d.stops||[]).length,0);
+    const dests=t.destinations.slice(0,3).join(', ')+(t.destinations.length>3?` +${t.destinations.length-3} more`:'');
+    return`<div class="tc" onclick="openTripD('${t.id}')"><div class="tc-bar"></div><div class="tcb">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        <div class="tname" style="flex:1">${t.name}</div>
+        <button onclick="event.stopPropagation();delTrip('${t.id}')" style="background:none;border:none;cursor:pointer;font-size:15px;color:var(--muted2);padding:0 2px;line-height:1;flex-shrink:0;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'" title="Delete trip">×</button>
+      </div>
+      <div class="tdates">${t.startDate?fd(t.startDate)+' — '+fd(t.endDate):'Dates TBD'}</div>
+      ${dests?`<div style="font-size:11px;color:var(--text2);margin-bottom:9px">📍 ${dests}</div>`:''}
+      <div class="tfoot">
+        <div class="tstat">${stops} stops · ${t.itinerary.length} days</div>
+        <div style="font-size:11px;color:var(--muted);text-transform:capitalize">${tsl(t.status)}</div>
+      </div>
+    </div></div>`;
+  }).join('');
 }
 function openTripD(id){
   D=load();const t=D.trips.find(x=>x.id===id);if(!t)return;atid=id;
   document.getElementById('trips-lv').style.display='none';
   const dv=document.getElementById('trip-dv');dv.classList.add('on');
   const linkedPlaces=D.places.filter(p=>(p.tripIds||[]).includes(t.id));
-  const tripJournal=D.journal.filter(j=>j.tripId===t.id);
-  dv.innerHTML=`<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px"><button class="td-back" onclick="rTrips()">← All Trips</button><button class="pbtn del" onclick="delTrip('${t.id}')">🗑️ Delete</button></div>
-  <div style="margin-bottom:16px"><div style="font-size:20px;font-weight:600;color:var(--text);letter-spacing:-.3px;margin-bottom:5px">${t.name}</div><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">${t.startDate?`<span class="tag tb2">📅 ${fd(t.startDate)} — ${fd(t.endDate)}</span>`:''}<span class="tag ${tsc(t.status)}">${tsl(t.status)}</span>${t.budget?`<span class="tag to">💰 $${t.budget.toLocaleString()}</span>`:''}</div>${t.destinations.length?`<div style="margin-top:7px;display:flex;gap:5px;flex-wrap:wrap">${t.destinations.map(d=>`<span class="tag tg">📍 ${d}</span>`).join('')}</div>`:''} ${t.notes?`<div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.6;padding:10px;background:var(--card2);border-radius:7px;border-left:2px solid var(--green)">${t.notes}</div>`:''}</div>
-  ${linkedPlaces.length?`<div class="card" style="margin-bottom:13px"><div class="ch"><div class="ct">📍 Places on this Trip</div><div class="cs">${linkedPlaces.length} linked</div></div><div style="display:flex;flex-wrap:wrap;gap:6px">${linkedPlaces.map(p=>`<div class="rg-chip">${ci(p.category)} ${p.name}${p.region?` <span style="color:var(--muted);font-size:10px">— ${p.region}</span>`:''}</div>`).join('')}</div></div>`:''}
-  ${tripJournal.length?`<div class="card" style="margin-bottom:13px"><div class="ch"><div class="ct">📓 Journal Entries</div><div class="cs">${tripJournal.length} entries</div></div>${tripJournal.map(j=>`<div style="padding:8px 0;border-bottom:1px solid var(--bdr)"><div style="font-size:10px;color:var(--muted)">${fd(j.date)}</div><div style="font-size:13px;font-weight:500;color:var(--text)">${j.title}</div>${j.loc?`<div style="font-size:11px;color:var(--gold2)">📍 ${j.loc}</div>`:''}<div style="font-size:12px;color:var(--text2);margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${j.body}</div></div>`).join('')}</div>`:''}
-  <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:11px">📅 Itinerary</div>
-  ${t.itinerary.length?t.itinerary.map((day,di)=>`<div class="day-blk"><div class="day-hdr"><div class="day-lbl">Day ${di+1}</div><div class="day-dt">${fd(day.date)}</div></div><div class="day-body">${day.stops.length?day.stops.map((s,si)=>{const lp=s.placeId?D.places.find(x=>x.id===s.placeId):null;return`<div class="stop-row"><div class="stopnum">${si+1}</div><div style="flex:1"><div class="stopname">${s.name}${lp?` <span class="tag tg" style="font-size:9px;padding:1px 5px;margin-left:4px">📍 linked</span>`:''}</div>${s.note?`<div class="stopnote">${s.note}</div>`:''}</div></div>`}).join(''):'<div style="font-size:11px;color:var(--muted2);padding:3px 0">No stops yet</div>'}<button class="add-stop" onclick="openStop('${t.id}',${di})">+ Add Stop</button></div></div>`).join(''):'<div style="background:var(--card2);border:1px dashed var(--bdr2);border-radius:var(--r);padding:16px;text-align:center;font-size:12px;color:var(--muted)">Add dates to build a day-by-day itinerary</div>'}`;
+  const tripJournal=D.journal.filter(j=>j.tripId===t.id).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const totalStops=t.itinerary.reduce((s,d)=>s+(d.stops||[]).length,0);
+
+  // Geography breakdown
+  const tripCountries=[...new Set(linkedPlaces.filter(p=>p.country&&normCountry(p.country)!=='United States').map(p=>normCountry(p.country)))];
+  const tripUSStates=[...new Set(linkedPlaces.filter(p=>normCountry(p.country)==='United States').map(p=>p.usState).filter(Boolean))];
+  const isDomestic=tripCountries.length===0;
+  const scopeNote=isDomestic?
+    (tripUSStates.length?tripUSStates.join(', '):''):
+    (tripCountries.length===1?tripCountries[0]:tripCountries.slice(0,3).join(', ')+(tripCountries.length>3?` +${tripCountries.length-3} more`:''));
+
+  // Group linked places by geography
+  const placesByRegion={};
+  linkedPlaces.forEach(p=>{
+    const key=isDomestic?(p.usState||'Other'):(normCountry(p.country)||'Other');
+    if(!placesByRegion[key])placesByRegion[key]=[];
+    placesByRegion[key].push(p);
+  });
+
+  const placesSection=linkedPlaces.length?`
+  <div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">📍 Places</div><div class="cs">${linkedPlaces.length} linked${scopeNote?' · '+scopeNote:''}</div></div>
+      <span class="coll-arrow">▾</span>
+    </div>
+    <div class="coll-body coll-open">
+      ${Object.entries(placesByRegion).map(([region,places])=>`
+        <div style="margin-bottom:10px">
+          <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px;padding-top:4px">${region}</div>
+          ${places.map(p=>`<div style="display:flex;align-items:flex-start;gap:9px;padding:6px 0;border-bottom:1px solid var(--bdr)">
+            <span style="font-size:15px;flex-shrink:0;margin-top:1px">${ci(p.category)}</span>
+            <div style="flex:1">
+              <div style="font-size:12px;font-weight:500;color:var(--text)">${p.name}</div>
+              ${p.region&&p.region!==region?`<div style="font-size:11px;color:var(--muted2)">${p.region}</div>`:''}
+              ${p.notes?`<div style="font-size:11px;color:var(--muted2);margin-top:2px">${p.notes.slice(0,100)}${p.notes.length>100?'…':''}</div>`:''}
+            </div>
+            ${p.rating?`<div style="font-size:10px;flex-shrink:0">${'⭐'.repeat(parseInt(p.rating))}</div>`:''}
+          </div>`).join('')}
+        </div>`).join('')}
+    </div>
+  </div>`:''
+
+  const journalSection=tripJournal.length?`
+  <div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">📓 Journal</div><div class="cs">${tripJournal.length} entr${tripJournal.length===1?'y':'ies'}</div></div>
+      <span class="coll-arrow">▾</span>
+    </div>
+    <div class="coll-body coll-open">
+      ${tripJournal.map(j=>`<div style="padding:10px 0;border-bottom:1px solid var(--bdr)">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${j.title}</div>
+          <div style="font-size:10px;color:var(--muted);flex-shrink:0">${fd(j.date)}</div>
+        </div>
+        ${j.loc?`<div style="font-size:11px;color:var(--gold2);margin-top:2px">📍 ${j.loc}</div>`:''}
+        <div style="font-size:12px;color:var(--text2);margin-top:5px;line-height:1.6">${j.body}</div>
+      </div>`).join('')}
+    </div>
+  </div>`:''
+
+  const itinerarySection=`
+  <div class="card">
+    <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">📅 Itinerary</div><div class="cs">${t.itinerary.length} days · ${totalStops} stops</div></div>
+      <span class="coll-arrow">▾</span>
+    </div>
+    <div class="coll-body coll-open">
+      ${t.itinerary.length?t.itinerary.map((day,di)=>`
+        <div style="margin-bottom:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--card2);border-radius:6px;margin-bottom:4px">
+            <div style="font-size:12px;font-weight:600;color:var(--text)">Day ${di+1}</div>
+            <div style="font-size:11px;color:var(--muted)">${fd(day.date)}</div>
+          </div>
+          ${(day.stops||[]).length?(day.stops||[]).map((s,si)=>{
+            const lp=s.placeId?D.places.find(x=>x.id===s.placeId):null;
+            return`<div class="stop-row">
+              <div class="stopnum">${si+1}</div>
+              <div style="flex:1">
+                <div class="stopname">${s.name}${lp?` <span style="font-size:9px;color:var(--muted);margin-left:3px">· linked</span>`:''}</div>
+                ${s.note?`<div class="stopnote">${s.note}</div>`:''}
+              </div>
+              <button onclick="delStop('${t.id}',${di},${si})" title="Remove stop" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:2px 4px;border-radius:4px;line-height:1;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
+            </div>`;
+          }).join(''):`<div style="font-size:11px;color:var(--muted2);padding:5px 0">No stops yet</div>`}
+          <button class="add-stop" onclick="openStop('${t.id}',${di})">+ Add Stop</button>
+        </div>`).join(''):`<div style="padding:16px;text-align:center;font-size:12px;color:var(--muted)">Add dates to build a day-by-day itinerary</div>`}
+    </div>
+  </div>`
+
+  dv.innerHTML=`
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <button class="td-back" onclick="rTrips()">← All Trips</button>
+    <button class="pbtn del" onclick="delTrip('${t.id}')">🗑️ Delete</button>
+  </div>
+  <div style="background:linear-gradient(135deg,var(--card2),var(--card));border:1px solid var(--bdr);border-radius:var(--r);padding:16px 18px;margin-bottom:13px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--green),var(--gold))"></div>
+    <div style="font-size:21px;font-weight:700;color:var(--text);letter-spacing:-.4px;margin-bottom:6px">${t.name}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:14px">
+      ${t.startDate?`<div style="font-size:12px;color:var(--muted)">📅 ${fd(t.startDate)} — ${fd(t.endDate)}</div>`:''}
+      <div style="font-size:12px;color:var(--muted);text-transform:capitalize">${tsl(t.status)}</div>
+      ${t.budget?`<div style="font-size:12px;color:var(--muted)">💰 $${t.budget.toLocaleString()}</div>`:''}
+      ${scopeNote?`<div style="font-size:12px;color:var(--muted)">📍 ${scopeNote}</div>`:''}
+    </div>
+    ${t.notes?`<div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.6;padding:10px;background:rgba(0,0,0,.03);border-radius:6px;border-left:2px solid var(--green)">${t.notes}</div>`:''}
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:13px">
+    <div class="sc" style="--accent:var(--green2)"><div class="si">📅</div><div class="sn">${t.itinerary.length||'—'}</div><div class="sl">Days</div></div>
+    <div class="sc" style="--accent:var(--gold)"><div class="si">📍</div><div class="sn">${totalStops}</div><div class="sl">Stops</div></div>
+    <div class="sc" style="--accent:var(--sage)"><div class="si">${isDomestic?'🇺🇸':'🌍'}</div><div class="sn">${isDomestic?tripUSStates.length:tripCountries.length}</div><div class="sl">${isDomestic?'States':'Countries'}</div></div>
+    <div class="sc" style="--accent:var(--earth2)"><div class="si">📓</div><div class="sn">${tripJournal.length}</div><div class="sl">Journal</div></div>
+  </div>
+  ${placesSection}${journalSection}${itinerarySection}`;
+}
+function delStop(tid,di,si){
+  const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  t.itinerary[di].stops.splice(si,1);
+  save('trips',D.trips);
+  openTripD(tid);
 }
 function openStop(tid,di){
   pendStop={tid,di};
