@@ -2201,7 +2201,8 @@ Budget: ${t.budget?'$'+t.budget.toLocaleString():'not set'}`;
     if(el2)el2.innerHTML=renderAIInsights(insights);
   }catch(e){
     const el2=document.getElementById('ai-insights-'+t.id);
-    if(el2)el2.innerHTML='';
+    if(el2)el2.innerHTML=e.code==='NO_KEY'?`<div style="font-size:11px;color:var(--muted2)">✦ AI Reflections — <span style="cursor:pointer;color:var(--green3)" onclick="go('settings')">Add API key in Settings →</span></div>`:
+      e.httpStatus?`<div style="font-size:11px;color:var(--muted2)">AI insights unavailable (${e.message})</div>`:'';
   }
 }
 function addItineraryDay(tid){
