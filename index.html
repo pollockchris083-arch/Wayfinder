@@ -1545,6 +1545,8 @@ function _openPicker(){
 async function openGoogleDrivePicker(){
   showImportError('');
   const clientId=D.settings?.googleClientId||'';
+  console.log('[Drive] clientId from D.settings:', JSON.stringify(clientId));
+  console.log('[Drive] raw localStorage value:', localStorage.getItem('wf_settings'));
   if(!clientId){
     showImportError('Add your Google Client ID in Settings → Google Client ID to use Drive import.');
     return;
@@ -1570,7 +1572,9 @@ async function openGoogleDrivePicker(){
   // sessionStorage flag tells the page-load handler to re-open the picker on return.
   sessionStorage.setItem('pendingDriveAuth','1');
   if(statusEl)statusEl.textContent='Redirecting to Google sign-in…';
-  window.location.href=_oauthUrl(clientId);
+  const url=_oauthUrl(clientId);
+  console.log('[Drive] OAuth redirect URL:', url);
+  window.location.href=url;
   // Page navigates away — nothing after this runs
 }
 
