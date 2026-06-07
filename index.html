@@ -1526,7 +1526,7 @@ function mapSetFilter(btn,f){
   mapTripFilter='all';mapYearFilter='all';
   const ts=document.getElementById('map-trip-sel');if(ts)ts.value='all';
   const ys=document.getElementById('map-year-sel');if(ys)ys.value='all';
-  mapRenderPins();
+  mapRenderPins();mapRenderStats();
 }
 function mapSetView(btn,v){document.querySelectorAll('#map-vb .fc').forEach(x=>x.classList.remove('on'));btn.classList.add('on');mapViewMode=v;if(v==='world')leafletMap.setView([20,0],2);else leafletMap.setView([39.5,-98.35],4);mapRenderStates();}
 async function mapRenderPins(){
@@ -1616,11 +1616,19 @@ async function mapRenderHome(){
   mapLayer_home.addTo(leafletMap);
 }
 function mapRenderStats(){
-  const vis=D.places.filter(p=>p.status==='visited');
+  let vis;
+  if(mapTripFilter!=='all'){
+    vis=D.places.filter(p=>(p.tripIds||[]).includes(mapTripFilter)&&p.status==='visited');
+  } else if(mapYearFilter!=='all'){
+    vis=D.places.filter(p=>{if(p.status!=='visited')return false;const tid=(p.tripIds||[])[0];const t=tid&&D.trips.find(x=>x.id===tid);return String(new Date(t&&t.startDate?t.startDate:p.addedAt||0).getFullYear())===mapYearFilter;});
+  } else {
+    vis=D.places.filter(p=>p.status==='visited');
+  }
   const intl=[...new Set(vis.map(p=>normCountry(p.country)).filter(c=>c&&c!=='United States'))];
   const states=[...new Set(vis.filter(p=>normCountry(p.country)==='United States').map(p=>p.usState).filter(Boolean))];
   const continents=[...new Set(intl.map(c=>Object.entries(CONTINENTS).find(([,v])=>v.includes(c))?.[0]).filter(Boolean))];
   const el=document.getElementById('map-stats-row');if(!el)return;
+  const label=mapTripFilter!=='all'?(D.trips.find(x=>x.id===mapTripFilter)?.name||'Trip'):mapYearFilter!=='all'?mapYearFilter:'All time';
   el.innerHTML='<div class="sc" style="--accent:var(--green2)"><div class="si">📍</div><div class="sn">'+vis.length+'</div><div class="sl">Places Visited</div></div>'
     +'<div class="sc" style="--accent:var(--gold)"><div class="si">🌍</div><div class="sn">'+intl.length+'</div><div class="sl">Countries</div></div>'
     +'<div class="sc" style="--accent:var(--earth)"><div class="si">🗺️</div><div class="sn">'+continents.length+'</div><div class="sl">Continents</div></div>'
@@ -1629,12 +1637,12 @@ function mapRenderStats(){
 function mapSetTrip(tripId){
   mapTripFilter=tripId;
   if(tripId!=='all'){mapYearFilter='all';const ys=document.getElementById('map-year-sel');if(ys)ys.value='all';}
-  mapRenderPins();
+  mapRenderPins();mapRenderStats();
 }
 function mapSetYear(year){
   mapYearFilter=year;
   if(year!=='all'){mapTripFilter='all';const ts=document.getElementById('map-trip-sel');if(ts)ts.value='all';}
-  mapRenderPins();
+  mapRenderPins();mapRenderStats();
 }
 async function mapDrawRoute(tripId){
   if(mapRouteLayer){mapRouteLayer.remove();mapRouteLayer=null;}
