@@ -2083,6 +2083,11 @@ function delAbroadGoal(id){
   D.abroad.goals=(D.abroad.goals||[]).filter(x=>x.id!==id);
   saveAbroad();rAbroad();
 }
+function saveAbroadWork(v){
+  if(!D.abroad)D.abroad={countries:[],goals:[]};
+  D.abroad.workNotes=v;
+  saveAbroad();
+}
 
 function rAbroad(){
   D=load();
@@ -2093,6 +2098,7 @@ function rAbroad(){
   const sortOrd={top:0,shortlisted:1,researching:2,eliminated:3};
   const countries=[...abroad.countries||[]].sort((a,b)=>(sortOrd[a.status]||2)-(sortOrd[b.status]||2));
   const goals=abroad.goals||[];
+  const workNotes=abroad.workNotes||'';
   const homePlaces=homeState?D.places.filter(p=>p.usState===homeState&&normCountry(p.country)==='United States'):[];
   const homeVis=homePlaces.filter(p=>p.status==='visited');
   const activeCount=countries.filter(c=>c.status!=='eliminated').length;
@@ -2202,6 +2208,69 @@ function rAbroad(){
     </div>
   </div>`:'';
 
+  // ── Working Abroad ────────────────────────
+  const refStyle='background:var(--card2);border-radius:8px;padding:10px 12px;border:1px solid var(--bdr)';
+  const refHead='font-size:10px;font-weight:700;color:var(--text);margin-bottom:7px;display:flex;align-items:center;gap:5px';
+  const refFact='font-size:11px;color:var(--text2);padding:2px 0;line-height:1.45;display:flex;align-items:baseline;gap:5px';
+  const dot='<span style="flex-shrink:0;width:3px;height:3px;border-radius:50%;background:var(--muted2);margin-top:6px;display:inline-block"></span>';
+  const workingCard=`<div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">💼 Working Abroad</div><div class="cs">Tax, healthcare & logistics for US remote workers</div></div>
+      <span class="coll-arrow">▾</span>
+    </div>
+    <div class="coll-body coll-open">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
+
+        <div style="${refStyle}">
+          <div style="${refHead}">🇺🇸 US Tax Obligations</div>
+          <div style="${refFact}">${dot}<span>Still file US taxes — worldwide income</span></div>
+          <div style="${refFact}">${dot}<span><strong>FEIE</strong>: $126,500/person (2024) — excludes foreign earned income</span></div>
+          <div style="${refFact}">${dot}<span>Physical Presence Test: 330 days in 12 months</span></div>
+          <div style="${refFact}">${dot}<span><strong>FBAR</strong> (FinCEN 114) if foreign accounts &gt; $10k</span></div>
+          <div style="${refFact}">${dot}<span>FATCA Form 8938 if assets &gt; $200k abroad</span></div>
+          <div style="${refFact}">${dot}<span>Filing deadline: June 15 for expats</span></div>
+          <div style="${refFact}">${dot}<span>Self-employed: still pay SE/Social Security</span></div>
+          <div style="margin-top:6px;font-size:10px;color:var(--muted2)">Services: Greenback Tax, MyExpatTaxes, Taxes for Expats</div>
+        </div>
+
+        <div style="${refStyle}">
+          <div style="${refHead}">🏥 Healthcare Abroad</div>
+          <div style="${refFact}">${dot}<span>International plans: ~$200–500/mo for couple</span></div>
+          <div style="${refFact}">${dot}<span>GeoBlue, Cigna Global, Allianz Care, Aetna Intl.</span></div>
+          <div style="${refFact}">${dot}<span>SafetyWing (nomad): ~$180/mo couple, flexible</span></div>
+          <div style="${refFact}">${dot}<span>Local insurance often 60–80% cheaper once resident</span></div>
+          <div style="${refFact}">${dot}<span>Dental abroad: 50–90% cheaper (Mexico, Hungary, Thailand)</span></div>
+          <div style="${refFact}">${dot}<span>Cancel ACA plan when establishing foreign residency</span></div>
+          <div style="${refFact}">${dot}<span>Medevac: often included in international plans</span></div>
+        </div>
+
+        <div style="${refStyle}">
+          <div style="${refHead}">🏦 Banking & Money</div>
+          <div style="${refFact}">${dot}<span><strong>Schwab Bank</strong>: reimburses all foreign ATM fees worldwide</span></div>
+          <div style="${refFact}">${dot}<span><strong>Wise</strong>: best rates for international transfers, multi-currency</span></div>
+          <div style="${refFact}">${dot}<span>Chase Sapphire / Capital One: no foreign txn fees</span></div>
+          <div style="${refFact}">${dot}<span>Keep US checking + 1 credit card active</span></div>
+          <div style="${refFact}">${dot}<span>Maintain US mailing address (family, UPS Box, etc.)</span></div>
+          <div style="${refFact}">${dot}<span>Social Security continues unaffected if not working</span></div>
+        </div>
+
+        <div style="${refStyle}">
+          <div style="${refHead}">💻 Remote Work & Timezones</div>
+          <div style="font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px">Hours ahead of Pacific Time</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;margin-bottom:7px">
+            ${[['Mexico City','+2h'],['Colombia','+3h'],['Panama','+3h'],['Costa Rica','+2h'],['Portugal','+8–9h'],['Spain','+9–10h'],['Italy / Greece','+9–10h'],['Georgia','+11–12h'],['Thailand','+15–16h']].map(([c,h])=>`<div style="font-size:10px;color:var(--text2);padding:1px 0"><span style="color:var(--muted)">${c}</span> <strong>${h}</strong></div>`).join('')}
+          </div>
+          <div style="${refFact}">${dot}<span>VPN: Mullvad, ExpressVPN, ProtonVPN</span></div>
+          <div style="${refFact}">${dot}<span>Check Nomad List for city internet speeds</span></div>
+          <div style="${refFact}">${dot}<span>Confirm employer/clients allow foreign-based work</span></div>
+        </div>
+
+      </div>
+      <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Your Work Situation Notes</div>
+      <textarea class="ft" style="min-height:90px" placeholder="Your employment type, client locations, timezone constraints, healthcare needs, existing accounts…" oninput="saveAbroadWork(this.value)">${workNotes}</textarea>
+    </div>
+  </div>`;
+
   // ── Timeline & Goals ──────────────────────
   const doneCount=goals.filter(g=>g.done).length;
   const goalsCard=`<div class="card" style="margin-bottom:13px">
@@ -2245,7 +2314,7 @@ function rAbroad(){
         ${countries.filter(c=>c.status==='shortlisted').length?`<span style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:100px;color:var(--gold2);background:rgba(155,116,32,.1)">⭐ ${countries.filter(c=>c.status==='shortlisted').length} Shortlisted</span>`:''}
       </div>`:''}
     </div>
-    ${baseCard}${countriesCard}${visaCard}${costCard}${propertyCard}${goalsCard}${notesCard}
+    ${baseCard}${countriesCard}${visaCard}${costCard}${propertyCard}${workingCard}${goalsCard}${notesCard}
   </div>`;
 }
 
