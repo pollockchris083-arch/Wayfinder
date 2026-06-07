@@ -2080,6 +2080,7 @@ function openTripD(id){
           }).join(''):`<div style="font-size:11px;color:var(--muted2);padding:5px 0">No stops yet</div>`}
           <button class="add-stop" onclick="openStop('${t.id}',${di})">+ Add Stop</button>
         </div>`).join(''):`<div style="padding:16px;text-align:center;font-size:12px;color:var(--muted)">Add dates to build a day-by-day itinerary</div>`}
+      <button class="add-stop" style="margin-top:6px;opacity:.7" onclick="addItineraryDay('${t.id}')">+ Add Day</button>
     </div>
   </div>`
 
@@ -2202,6 +2203,15 @@ Budget: ${t.budget?'$'+t.budget.toLocaleString():'not set'}`;
     const el2=document.getElementById('ai-insights-'+t.id);
     if(el2)el2.innerHTML='';
   }
+}
+function addItineraryDay(tid){
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  const last=t.itinerary.length?t.itinerary[t.itinerary.length-1].date:'';
+  let nextDate='';
+  if(last){const d=new Date(last);d.setDate(d.getDate()+1);nextDate=d.toISOString().split('T')[0];}
+  else nextDate=new Date().toISOString().split('T')[0];
+  t.itinerary.push({date:nextDate,stops:[]});
+  save('trips',D.trips);toast('📅 Day added');openTripD(tid);
 }
 function delStop(tid,di,si){
   const t=D.trips.find(x=>x.id===tid);if(!t)return;
