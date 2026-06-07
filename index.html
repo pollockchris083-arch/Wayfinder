@@ -1134,6 +1134,25 @@ function migrate(){
     if(!w.addedAt){w.addedAt=Date.now();cw=true}
   });
   if(cw)save('wish',D.wish);
+
+  // One-time patch: standardize 4 international trip names, dates, and destinations
+  if(!localStorage.getItem('wf_intl_v1')){
+    const patches=[
+      {y:'2022',m:'10',name:'Italy 2022',start:'2022-10-06',end:'2022-10-22',dests:['Italy'],status:'past'},
+      {y:'2023',m:'10',name:'Balkans & Alps 2023',start:'2023-10-18',end:'2023-11-04',dests:['Croatia','Slovenia','Austria','Montenegro','Bosnia'],status:'past'},
+      {y:'2024',m:'10',name:'Central Europe 2024',start:'2024-10-16',end:'2024-10-31',dests:['Italy','Switzerland','Austria','Liechtenstein','Germany','Czech Republic'],status:'past'},
+      {y:'2025',m:'09',name:'Iceland 2025',start:'2025-09-11',end:'2025-09-26',dests:['Iceland'],status:'past'},
+    ];
+    let pfx=false;
+    D.trips.forEach(t=>{
+      if(!t.startDate)return;
+      const parts=t.startDate.split('-');
+      const p=patches.find(x=>x.y===parts[0]&&x.m===parts[1]);
+      if(p){t.name=p.name;t.startDate=p.start;t.endDate=p.end;t.destinations=p.dests;t.status=p.status;pfx=true;}
+    });
+    if(pfx)save('trips',D.trips);
+    localStorage.setItem('wf_intl_v1','1');
+  }
 }
 try { migrate(); } catch(e) { console.error('migrate() failed:', e); }
 
