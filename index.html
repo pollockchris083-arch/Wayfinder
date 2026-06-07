@@ -2250,9 +2250,11 @@ function openJournalForPlace(pid){
   document.getElementById('jm-save').textContent='Save Entry';
   document.getElementById('j-date').value=new Date().toISOString().split('T')[0];
   ['j-title','j-loc','j-body'].forEach(id=>document.getElementById(id).value='');
+  const place=D.places.find(x=>x.id===pid);
+  const linkedTripIds=place?.tripIds||[];
   const tsel=document.getElementById('j-trip');
   tsel.innerHTML='<option value="">— Not linked —</option>'+D.trips.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
-  tsel.value='';
+  tsel.value=linkedTripIds.length===1?linkedTripIds[0]:'';
   const psel=document.getElementById('j-place');
   psel.innerHTML='<option value="">— No specific place —</option>'+
     [...D.places].sort((a,b)=>a.name.localeCompare(b.name))
@@ -2457,9 +2459,10 @@ function rJournal(){
   if(jq)entries=entries.filter(e=>(e.title||'').toLowerCase().includes(jq)||(e.body||'').toLowerCase().includes(jq)||(e.loc||'').toLowerCase().includes(jq));
 
   // Build trip filter bar
-  const tripFilter=D.trips.length?`<div class="fb" id="jfilter" style="margin-bottom:13px;flex-wrap:wrap">
+  const journalTrips=[...D.trips.filter(t=>D.journal.some(j=>j.tripId===t.id))].sort((a,b)=>(b.startDate||'').localeCompare(a.startDate||'')||b.addedAt-a.addedAt);
+  const tripFilter=journalTrips.length?`<div class="fb" id="jfilter" style="margin-bottom:13px;flex-wrap:wrap">
     <button class="fc ${jf==='all'?'on':''}" onclick="fJournal(this,'all')">All</button>
-    ${D.trips.filter(t=>D.journal.some(j=>j.tripId===t.id)).map(t=>`<button class="fc ${jf===t.id?'on':''}" onclick="fJournal(this,'${t.id}')">${t.name}</button>`).join('')}
+    ${journalTrips.map(t=>`<button class="fc ${jf===t.id?'on':''}" onclick="fJournal(this,'${t.id}')">${t.name}</button>`).join('')}
   </div>`:'';
 
   if(!entries.length){el.innerHTML=tripFilter+`<div class="empty"><div class="empty-icon">📓</div><h3>${jf==='all'?'No journal entries':'No entries for this trip'}</h3><p>Record your travel memories and stories.</p><button class="tb-btn" onclick="openJournal()">+ Write First Entry</button></div>`;return}
