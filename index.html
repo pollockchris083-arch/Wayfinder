@@ -1194,10 +1194,11 @@ function rHome(){
   D=load();
   const vis=D.places.filter(p=>p.status==='visited');
   const up=D.trips.filter(t=>t.status==='upcoming').sort((a,b)=>new Date(a.startDate)-new Date(b.startDate));
+  const activeNow=D.trips.filter(t=>t.status==='active');
   const plan=D.trips.filter(t=>t.status==='planning');
-  const activeTrips=[...up,...plan];
-  const next=up[0];
-  const days=next?Math.ceil((new Date(next.startDate)-new Date())/86400000):null;
+  const activeTrips=[...activeNow,...up,...plan];
+  const next=activeNow[0]||up[0];
+  const days=next&&next.status==='upcoming'?Math.ceil((new Date(next.startDate)-new Date())/86400000):null;
   const countries=[...new Set(vis.map(p=>normCountry(p.country)).filter(c=>c&&c!=='United States'))].sort();
   const usStates=[...new Set(vis.filter(p=>normCountry(p.country)==='United States').map(p=>p.usState).filter(Boolean))].sort();
   const continents=[...new Set(countries.map(c=>Object.entries(CONTINENTS).find(([,v])=>v.includes(c))?.[0]).filter(Boolean))];
@@ -1241,8 +1242,10 @@ function rHome(){
   const partnerStr=D.settings.partner?` & ${D.settings.partner}`:'';
 
   let heroNextHTML='';
-  if(next&&days!==null){
-    heroNextHTML=`<div class="hero-next"><div><div class="hero-next-name">${next.name}</div><div class="hero-next-dates">${fd(next.startDate)}${next.endDate?' — '+fd(next.endDate):''}</div></div><div style="text-align:right"><div class="hero-next-num">${days>0?days:'🚀'}</div><div class="hero-next-lbl">${days>0?'days away':'now!'}</div></div></div>`;
+  if(next&&next.status==='active'){
+    heroNextHTML=`<div class="hero-next" style="cursor:pointer" onclick="go('trips');openTripD('${next.id}')"><div><div class="hero-next-name">${next.name}</div><div class="hero-next-dates">${next.startDate?fd(next.startDate)+(next.endDate?' — '+fd(next.endDate):''):''}</div></div><div style="text-align:right"><div class="hero-next-num">🚀</div><div class="hero-next-lbl">Happening now!</div></div></div>`;
+  } else if(next&&days!==null){
+    heroNextHTML=`<div class="hero-next" style="cursor:pointer" onclick="go('trips');openTripD('${next.id}')"><div><div class="hero-next-name">${next.name}</div><div class="hero-next-dates">${fd(next.startDate)}${next.endDate?' — '+fd(next.endDate):''}</div></div><div style="text-align:right"><div class="hero-next-num">${days>0?days:'🚀'}</div><div class="hero-next-lbl">${days>0?'days away':'now!'}</div></div></div>`;
   } else if(countries.length>0||usStates.length>0){
     heroNextHTML=`<div class="hero-next"><div style="font-size:12px;opacity:.9;line-height:1.5">Explored <strong>${countries.length} ${countries.length===1?'country':'countries'}</strong>${usStates.length?` and <strong>${usStates.length} US states</strong>`:''} together${yearsCount?' over '+yearsCount+' years':''}</div></div>`;
   } else {
@@ -1253,11 +1256,12 @@ function rHome(){
   let tripsHTML='';
   if(activeTrips.length){
     tripsHTML=activeTrips.map(t=>{
+      const isAct=t.status==='active';
       const isUp=t.status==='upcoming';
-      const d=t.startDate?Math.ceil((new Date(t.startDate)-new Date())/86400000):null;
-      const accent=isUp?'var(--green)':'var(--gold)';
-      const badge=`<div class="tc-badge" style="background:${isUp?'rgba(74,114,89,.1)':'rgba(155,116,32,.1)'};color:${isUp?'var(--green3)':'var(--gold2)'}">${isUp?'✈️ Upcoming':'📋 Planning'}</div>`;
-      const numHTML=isUp&&d!==null?`<div class="tc-num">${d>0?d:'🚀'}</div><div class="tc-lbl">${d>0?'days away':'happening now'}</div>`:`<div class="tc-num" style="font-size:22px;margin-top:8px">→</div><div class="tc-lbl">continue planning</div>`;
+      const d=isUp&&t.startDate?Math.ceil((new Date(t.startDate)-new Date())/86400000):null;
+      const accent=isAct?'var(--green)':isUp?'var(--gold)':'#4A7EBA';
+      const badge=`<div class="tc-badge" style="background:${isAct?'rgba(74,114,89,.15)':isUp?'rgba(155,116,32,.1)':'rgba(74,126,186,.1)'};color:${isAct?'var(--green3)':isUp?'var(--gold2)':'#4A7EBA'}">${isAct?'🚀 Active':isUp?'✈️ Upcoming':'📋 Planning'}</div>`;
+      const numHTML=isAct?`<div class="tc-num">🚀</div><div class="tc-lbl">happening now</div>`:isUp&&d!==null?`<div class="tc-num">${d>0?d:'🚀'}</div><div class="tc-lbl">${d>0?'days away':'now!'}</div>`:`<div class="tc-num" style="font-size:22px;margin-top:8px">→</div><div class="tc-lbl">continue planning</div>`;
       return`<div class="tc" style="--tc-accent:${accent}" onclick="go('trips');openTripD('${t.id}')">${badge}${numHTML}<div class="tc-name">${t.name}</div><div class="tc-dates">${t.startDate?fd(t.startDate)+(t.endDate?' — '+fd(t.endDate):''):'No dates set'}</div></div>`;
     }).join('');
   } else {
