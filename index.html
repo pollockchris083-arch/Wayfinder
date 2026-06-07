@@ -530,6 +530,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
           <div class="fb" style="margin-bottom:0">
             <button class="fc on" id="pv-grid" onclick="setPlaceView('grid')">⊞ Grid</button>
             <button class="fc" id="pv-group" onclick="setPlaceView('group')">≡ Region</button>
+            <button class="fc" id="pv-trip" onclick="setPlaceView('trip')">✈️ Trip</button>
           </div>
         </div>
       </div>
@@ -1626,6 +1627,7 @@ function rPlaces(){
   let list=D.places.filter(p=>{const mf=pf==='all'||p.status===pf||p.category===pf||(p.tags||[]).includes(pf);const ms=!q||p.name.toLowerCase().includes(q)||(p.region||'').toLowerCase().includes(q)||(p.country||'').toLowerCase().includes(q)||(p.usState||'').toLowerCase().includes(q)||(p.notes||'').toLowerCase().includes(q);return mf&&ms}).sort((a,b)=>{if(sortMode==='az')return a.name.localeCompare(b.name);if(sortMode==='rating')return(parseInt(b.rating)||0)-(parseInt(a.rating)||0)||b.addedAt-a.addedAt;if(sortMode==='country')return(normCountry(a.country)||'zzz').localeCompare(normCountry(b.country)||'zzz')||a.name.localeCompare(b.name);return b.addedAt-a.addedAt;});
   const g=document.getElementById('places-grid');
   if(placeView==='group'){g.className='';rPlacesGrouped(list);return;}
+  if(placeView==='trip'){g.className='';rPlacesByTrip(list);return;}
   g.className='ga';
   if(!list.length){g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📍</div><h3>No places found</h3><p>Add places you've been or want to go.</p><button class="tb-btn" onclick="openPlace()">+ Add First Place</button></div>`;return}
   g.innerHTML=list.map(p=>{
@@ -1653,6 +1655,7 @@ function setPlaceView(v){
   placeView=v;
   document.getElementById('pv-grid').classList.toggle('on',v==='grid');
   document.getElementById('pv-group').classList.toggle('on',v==='group');
+  const pvt=document.getElementById('pv-trip');if(pvt)pvt.classList.toggle('on',v==='trip');
   rPlaces();
 }
 function rPlacesGrouped(list){
@@ -1703,6 +1706,45 @@ function rPlacesGrouped(list){
   if(noLocPlaces.length)html+=regionSection('📍 Other',noLocPlaces,'category');
   document.getElementById('places-grid').className='';
   document.getElementById('places-grid').innerHTML=html||'<div class="empty"><div class="empty-icon">📍</div><h3>No places</h3></div>';
+}
+
+function rPlacesByTrip(list){
+  if(!list.length){document.getElementById('places-grid').innerHTML='<div class="empty"><div class="empty-icon">📍</div><h3>No places found</h3><p>Add places you\'ve been or want to go.</p></div>';return;}
+  function placeRow(p){
+    const meta=[sl(p.status),p.rating?'⭐'.repeat(Math.min(parseInt(p.rating)||0,5)):'',p.usState&&p.country?p.usState+', '+p.country:p.country||p.region||''].filter(Boolean).join(' · ');
+    return`<div style="display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid var(--bdr);cursor:pointer" onclick="openPlace('${p.id}')">
+      <span style="font-size:15px;flex-shrink:0;margin-top:1px">${ci(p.category)}</span>
+      <div style="flex:1"><div style="font-size:12px;font-weight:500;color:var(--text)">${p.name}</div>
+        ${p.notes?`<div style="font-size:11px;color:var(--muted2);margin-top:1px">${p.notes.slice(0,80)}${p.notes.length>80?'…':''}</div>`:''}
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">${meta}</div>
+      </div>
+      <span class="sd ${p.status==='visited'?'dv':p.status==='want'?'dw':p.status==='planned'?'dp':'ds'}" style="margin-top:4px;flex-shrink:0"></span>
+    </div>`;
+  }
+  const tripMap={};const noTrip=[];
+  list.forEach(p=>{const tids=p.tripIds||[];if(tids.length)tids.forEach(tid=>{if(!tripMap[tid])tripMap[tid]=[];if(!tripMap[tid].includes(p))tripMap[tid].push(p);});else noTrip.push(p);});
+  const sortedTrips=Object.keys(tripMap).map(tid=>D.trips.find(t=>t.id===tid)).filter(Boolean).sort((a,b)=>{if(a.startDate&&b.startDate)return new Date(b.startDate)-new Date(a.startDate);return b.addedAt-a.addedAt});
+  let html='';
+  sortedTrips.forEach(t=>{
+    const places=tripMap[t.id];
+    const yr=t.startDate?new Date(t.startDate).getFullYear():'TBD';
+    html+=`<div class="card" style="margin-bottom:12px">
+      <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+        <div><div class="ct">✈️ ${t.name}</div><div class="cs">${yr} · ${places.length} place${places.length!==1?'s':''}</div></div>
+        <div style="display:flex;align-items:center;gap:8px"><button class="pbtn" onclick="event.stopPropagation();go('trips');setTimeout(()=>openTripD('${t.id}'),80)">Open →</button><span class="coll-arrow">▾</span></div>
+      </div>
+      <div class="coll-body coll-open">${places.map(placeRow).join('')}</div>
+    </div>`;
+  });
+  if(noTrip.length)html+=`<div class="card" style="margin-bottom:12px">
+    <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">📍 Not linked to a trip</div><div class="cs">${noTrip.length} place${noTrip.length!==1?'s':''}</div></div>
+      <span class="coll-arrow">▾</span>
+    </div>
+    <div class="coll-body coll-open">${noTrip.map(placeRow).join('')}</div>
+  </div>`;
+  document.getElementById('places-grid').className='';
+  document.getElementById('places-grid').innerHTML=html;
 }
 
 // ══════════════════════════════════════════════
