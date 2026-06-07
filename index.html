@@ -1241,6 +1241,14 @@ function rHome(){
     ...[...D.trips].sort((a,b)=>b.addedAt-a.addedAt).slice(0,3).map(t=>({icon:'✈️',title:t.name,sub:t.startDate?fd(t.startDate):'Planning',badge:tsl(t.status),time:t.addedAt,click:`go('trips');openTripD('${t.id}')`})),
   ].sort((a,b)=>b.time-a.time).slice(0,7);
 
+  // "This day in travel" — past journal entries or trips that overlap today's date in prior years
+  const todayMMDD=new Date().toISOString().slice(5,10);
+  const thisYear=new Date().getFullYear();
+  const todayMemories=[
+    ...D.journal.filter(j=>{if(!j.date)return false;const y=parseInt(j.date.slice(0,4));return y<thisYear&&j.date.slice(5,10)===todayMMDD;}),
+  ].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3);
+  const todayTrips=D.trips.filter(t=>{if(!t.startDate||!t.endDate)return false;const y=parseInt(t.startDate.slice(0,4));if(y>=thisYear)return false;const start=t.startDate.slice(5,10),end=t.endDate.slice(5,10);if(start<=end)return todayMMDD>=start&&todayMMDD<=end;return todayMMDD>=start||todayMMDD<=end;}).slice(0,2);
+
   // Hero greeting
   const hour=new Date().getHours();
   const greetWord=hour<12?'Good morning':hour<17?'Good afternoon':'Good evening';
@@ -1335,7 +1343,13 @@ function rHome(){
   <div class="g2">
     <div class="card"><div class="ch"><div><div class="ct">Top Wishlist</div><div class="cs">Where you want to go</div></div><button class="pbtn" onclick="go('wishlist')">All →</button></div>${D.wish.filter(w=>!w.graduated).slice(0,4).map(w=>`<div class="ai" style="cursor:pointer" onclick="go('wishlist')"><div class="ai-icon">${pi(w.priority)}</div><div style="flex:1"><div class="ai-text"><strong>${w.name}</strong></div><div class="ai-time">${w.type||'destination'}${w.season?' · '+w.season:''}</div></div></div>`).join('')||'<div style="text-align:center;padding:20px;color:var(--muted2);font-size:12px">Wishlist is empty</div>'}</div>
     <div class="card"><div class="ch"><div><div class="ct">Recently Saved</div><div class="cs">Latest places added</div></div><button class="pbtn" onclick="go('places')">All →</button></div>${recentPlaces.length?recentPlaces.map(p=>`<div class="ai" style="cursor:pointer" onclick="go('places');setTimeout(()=>openPlaceD('${p.id}'),10)"><div class="ai-icon">${ci(p.category)}</div><div style="flex:1"><div class="ai-text"><strong>${p.name}</strong></div><div class="ai-time">${p.usState&&p.country?p.usState+', '+p.country:p.country||p.region||'—'} · ${sl(p.status)}</div></div></div>`).join(''):'<div style="text-align:center;padding:20px;color:var(--muted2);font-size:12px">No places yet</div>'}</div>
-  </div>`;
+  </div>
+  ${(todayMemories.length||todayTrips.length)?`<div class="card" style="margin-top:13px;background:linear-gradient(135deg,rgba(155,116,32,.05),rgba(74,114,89,.04));border-color:rgba(155,116,32,.2)">
+    <div class="ch"><div><div class="ct">🕰️ This Day in Travel</div><div class="cs">On this date in past years</div></div></div>
+    ${todayTrips.map(t=>`<div class="ai" style="cursor:pointer" onclick="go('trips');openTripD('${t.id}')"><div class="ai-icon">✈️</div><div style="flex:1"><div class="ai-text"><strong>${t.name}</strong></div><div class="ai-time">You were here in ${t.startDate.slice(0,4)}</div></div><span style="font-size:9px;color:var(--gold2);font-weight:600;border:1px solid var(--gold2);border-radius:3px;padding:1px 5px;flex-shrink:0">${thisYear-parseInt(t.startDate.slice(0,4))}yr ago</span></div>`).join('')}
+    ${todayMemories.map(j=>`<div class="ai" style="cursor:pointer" onclick="go('journal')"><div class="ai-icon">📓</div><div style="flex:1"><div class="ai-text"><strong>${j.title||'Journal Entry'}</strong></div><div class="ai-time">${j.date.slice(0,4)} · ${j.loc||''}</div></div><span style="font-size:9px;color:var(--muted);font-weight:600;border:1px solid var(--bdr2);border-radius:3px;padding:1px 5px;flex-shrink:0">${thisYear-parseInt(j.date.slice(0,4))}yr ago</span></div>`).join('')}
+  </div>`:''}
+  `;
 }
 
 // ══════════════════════════════════════════════
