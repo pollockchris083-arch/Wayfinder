@@ -673,7 +673,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
 <div class="mo" id="m-journal">
   <div class="modal">
     <button class="mcl" onclick="closeM('m-journal')">✕</button>
-    <h2>New Journal Entry</h2>
+    <h2 id="jm-title">New Journal Entry</h2>
     <div class="fr">
       <div class="fg"><label class="fl">Date</label><input class="fi" id="j-date" type="date"/></div>
       <div class="fg"><label class="fl">Trip</label><select class="fs" id="j-trip"><option value="">— Not linked —</option></select></div>
@@ -682,7 +682,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
     <div class="fg"><label class="fl">Title</label><input class="fi" id="j-title" placeholder="e.g. Day 3 — The Narrows"/></div>
     <div class="fg"><label class="fl">Location</label><input class="fi" id="j-loc" placeholder="e.g. Zion National Park, Utah"/></div>
     <div class="fg" style="margin-bottom:0"><label class="fl">Entry</label><textarea class="ft" id="j-body" style="min-height:110px" placeholder="What happened? What did you feel? What will you never forget?"></textarea></div>
-    <div class="fa"><button class="btn-s" onclick="closeM('m-journal')">Cancel</button><button class="btn-p" onclick="saveJournal()">Save Entry</button></div>
+    <div class="fa"><button class="btn-s" onclick="closeM('m-journal')">Cancel</button><button class="btn-p" id="jm-save" onclick="saveJournal()">Save Entry</button></div>
   </div>
 </div>
 
@@ -1511,14 +1511,7 @@ function openTripD(id){
       <div style="display:flex;align-items:center;gap:8px"><button class="pbtn" onclick="event.stopPropagation();openJournalForTrip('${t.id}')">+ Write</button><span class="coll-arrow">▾</span></div>
     </div>
     <div class="coll-body coll-open">
-      ${tripJournal.length?tripJournal.map(j=>`<div style="padding:10px 0;border-bottom:1px solid var(--bdr)">
-        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
-          <div style="font-size:13px;font-weight:600;color:var(--text)">${j.title}</div>
-          <div style="font-size:10px;color:var(--muted);flex-shrink:0">${fd(j.date)}</div>
-        </div>
-        ${j.loc?`<div style="font-size:11px;color:var(--gold2);margin-top:2px">📍 ${j.loc}</div>`:''}
-        <div style="font-size:12px;color:var(--text2);margin-top:5px;line-height:1.6">${j.body}</div>
-      </div>`).join(''):`<div style="font-size:12px;color:var(--muted2);padding:10px 0;text-align:center">No entries yet — click Write to add one</div>`}
+      ${tripJournal.length?tripJournal.map(j=>journalCard(j,false)).join(''):`<div style="font-size:12px;color:var(--muted2);padding:10px 0;text-align:center">No entries yet — click Write to add one</div>`}
     </div>
   </div>`
 
@@ -1625,6 +1618,9 @@ function unlinkPlace(placeId,tid){
   toast('Unlinked');openTripD(tid);
 }
 function openJournalForTrip(tid){
+  jeid=null;
+  document.getElementById('jm-title').textContent='New Journal Entry';
+  document.getElementById('jm-save').textContent='Save Entry';
   document.getElementById('j-date').value=new Date().toISOString().split('T')[0];
   ['j-title','j-loc','j-body'].forEach(id=>document.getElementById(id).value='');
   const tsel=document.getElementById('j-trip');
@@ -1635,6 +1631,26 @@ function openJournalForTrip(tid){
     [...D.places].sort((a,b)=>a.name.localeCompare(b.name))
       .map(p=>`<option value="${p.id}">${ci(p.category)} ${p.name}${p.region?' — '+p.region:''}</option>`).join('');
   psel.value='';
+  openM('m-journal');
+}
+function openJournalEdit(id){
+  D=load();
+  const e=D.journal.find(x=>x.id===id);if(!e)return;
+  jeid=id;
+  document.getElementById('jm-title').textContent='Edit Journal Entry';
+  document.getElementById('jm-save').textContent='Update Entry';
+  document.getElementById('j-date').value=e.date||'';
+  document.getElementById('j-title').value=e.title||'';
+  document.getElementById('j-loc').value=e.loc||'';
+  document.getElementById('j-body').value=e.body||'';
+  const tsel=document.getElementById('j-trip');
+  tsel.innerHTML='<option value="">— Not linked —</option>'+D.trips.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  tsel.value=e.tripId||'';
+  const psel=document.getElementById('j-place');
+  psel.innerHTML='<option value="">— No specific place —</option>'+
+    [...D.places].sort((a,b)=>a.name.localeCompare(b.name))
+      .map(p=>`<option value="${p.id}">${ci(p.category)} ${p.name}${p.region?' — '+p.region:''}</option>`).join('');
+  psel.value=e.placeId||'';
   openM('m-journal');
 }
 function openLinkPlace(tid){
@@ -1720,6 +1736,9 @@ function rWish(){
 // JOURNAL
 // ══════════════════════════════════════════════
 function openJournal(){
+  jeid=null;
+  document.getElementById('jm-title').textContent='New Journal Entry';
+  document.getElementById('jm-save').textContent='Save Entry';
   document.getElementById('j-date').value=new Date().toISOString().split('T')[0];
   ['j-title','j-loc','j-body'].forEach(id=>document.getElementById(id).value='');
   const tsel=document.getElementById('j-trip');
@@ -1735,16 +1754,42 @@ function saveJournal(){
   const b=document.getElementById('j-body').value.trim();
   if(!b){toast('⚠️ Write something first');return}
   const placeId=document.getElementById('j-place').value;
-  const entry={id:uid(),date:document.getElementById('j-date').value,tripId:document.getElementById('j-trip').value,placeId,title:document.getElementById('j-title').value.trim()||'Untitled',loc:document.getElementById('j-loc').value.trim(),body:b,addedAt:Date.now()};
-  D.journal.push(entry);
-  save('journal',D.journal);
-  if(placeId){
-    const pl=D.places.find(x=>x.id===placeId);
-    if(pl&&!pl.journalIds.includes(entry.id)){pl.journalIds.push(entry.id);save('places',D.places);}
+  const existing=jeid?D.journal.find(x=>x.id===jeid):null;
+  const entry={
+    id:jeid||uid(),
+    date:document.getElementById('j-date').value,
+    tripId:document.getElementById('j-trip').value,
+    placeId,
+    title:document.getElementById('j-title').value.trim()||'Untitled',
+    loc:document.getElementById('j-loc').value.trim(),
+    body:b,
+    addedAt:existing?existing.addedAt:Date.now()
+  };
+  if(jeid){
+    const i=D.journal.findIndex(x=>x.id===jeid);
+    if(i>=0)D.journal[i]=entry;
+  } else {
+    D.journal.push(entry);
+    if(placeId){
+      const pl=D.places.find(x=>x.id===placeId);
+      if(pl&&!(pl.journalIds||[]).includes(entry.id)){pl.journalIds=pl.journalIds||[];pl.journalIds.push(entry.id);save('places',D.places);}
+    }
   }
-  closeM('m-journal');toast('📓 Saved!');rJournal();
+  save('journal',D.journal);
+  closeM('m-journal');
+  toast(jeid?'✅ Updated':'📓 Saved!');
+  jeid=null;
+  if(atid)openTripD(atid);else rJournal();
 }
-let jf='all';
+function delJournal(id){
+  if(!confirm('Delete this journal entry? This cannot be undone.'))return;
+  D.journal=D.journal.filter(j=>j.id!==id);
+  D.places.forEach(p=>{if((p.journalIds||[]).includes(id)){p.journalIds=p.journalIds.filter(x=>x!==id);}});
+  save('journal',D.journal);save('places',D.places);
+  toast('🗑️ Deleted');
+  if(atid)openTripD(atid);else rJournal();
+}
+let jf='all',jeid=null;
 function fJournal(b,f){document.querySelectorAll('#jfilter .fc').forEach(x=>x.classList.remove('on'));b.classList.add('on');jf=f;rJournal()}
 function rJournal(){
   D=load();const el=document.getElementById('jlist');
@@ -1794,6 +1839,10 @@ function journalCard(e,showTrip){
     <div class="jtitle">${e.title}</div>
     ${lp?`<div class="jloc">📍 ${lp.name}${lp.region?' — '+lp.region:''}</div>`:e.loc?`<div class="jloc">📍 ${e.loc}</div>`:''}
     <div class="jbody" style="-webkit-line-clamp:initial;overflow:visible">${e.body}</div>
+    <div class="pact" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--bdr)">
+      <button class="pbtn" onclick="openJournalEdit('${e.id}')">✏️ Edit</button>
+      <button class="pbtn del" onclick="delJournal('${e.id}')">🗑️ Delete</button>
+    </div>
   </div>`;
 }
 
