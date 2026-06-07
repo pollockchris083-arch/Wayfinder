@@ -1195,6 +1195,7 @@ function rHome(){
   const days=next?Math.ceil((new Date(next.startDate)-new Date())/86400000):null;
   const countries=[...new Set(vis.map(p=>normCountry(p.country)).filter(c=>c&&c!=='United States'))].sort();
   const usStates=[...new Set(vis.filter(p=>normCountry(p.country)==='United States').map(p=>p.usState).filter(Boolean))].sort();
+  const continents=[...new Set(countries.map(c=>Object.entries(CONTINENTS).find(([,v])=>v.includes(c))?.[0]).filter(Boolean))];
   const homeState=getHomeState();
 
   // Most recent trip per country
@@ -1262,8 +1263,8 @@ function rHome(){
   const hltItems=[
     topCountryEntry?{icon:'🏆',val:topCountryEntry[0],lbl:'Most places visited'}:{icon:'🌍',val:'—',lbl:'Top destination'},
     longestTrip?{icon:'📅',val:longestTrip.dur+'d',lbl:longestTrip.name.length>16?longestTrip.name.slice(0,14)+'…':longestTrip.name}:{icon:'📅',val:'—',lbl:'Longest trip'},
+    {icon:'🗺️',val:continents.length||'—',lbl:continents.length?continents.join(', ').slice(0,28)+(continents.join(', ').length>28?'…':''):'Continents'},
     yearsCount?{icon:'🗓️',val:yearsCount+'yr',lbl:'Exploring since '+since}:{icon:'🗓️',val:'—',lbl:'Years exploring'},
-    {icon:'📓',val:''+D.journal.length,lbl:'Journal entries'},
   ];
 
   // Countries atlas
