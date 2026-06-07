@@ -1345,6 +1345,8 @@ let importedData=null;
 function openImport(){
   resetImport();
   openM('m-import');
+  // Pre-warm Google APIs in background so Drive button opens picker on first click
+  if(D.settings?.googleClientId) _prewarmDriveApis(D.settings.googleClientId).catch(()=>{});
 }
 function closeImport(){closeM('m-import');resetImport()}
 function resetImport(){
@@ -1461,9 +1463,18 @@ function handleFile(e){ loadFileIntoTextarea(e.target.files[0]); }
 // ── Google Drive Import ──
 function loadScript(src){
   return new Promise((resolve,reject)=>{
-    if(document.querySelector(`script[src="${src}"]`)){resolve();return;}
+    const existing=document.querySelector(`script[src="${src}"]`);
+    if(existing){
+      // Tag exists but may still be loading — wait for its events rather than resolving early
+      if(existing._loaded){resolve();return;}
+      existing.addEventListener('load',resolve);
+      existing.addEventListener('error',reject);
+      return;
+    }
     const s=document.createElement('script');
-    s.src=src;s.onload=resolve;s.onerror=reject;
+    s.src=src;
+    s.onload=()=>{s._loaded=true;resolve();};
+    s.onerror=reject;
     document.head.appendChild(s);
   });
 }
@@ -1475,66 +1486,94 @@ function extractFolderId(urlOrId){
 }
 
 let _driveToken='';
+let _tokenClient=null;
+let _pickerReady=false;
+let _prewarmPromise=null;
 
-async function openGoogleDrivePicker(){
-  showImportError('');
-  const clientId=D.settings?.googleClientId||'';
-  if(!clientId){
-    showImportError('Add your Google Client ID in Settings → Google Client ID to use Drive import. See the setup instructions there.');
-    return;
-  }
-  const statusEl=document.getElementById('file-status');
-  if(statusEl)statusEl.textContent='Loading Google APIs…';
-  try{
+// Load scripts + picker API in background — called from openImport() so APIs are
+// ready before the user clicks the Drive button, keeping requestAccessToken()
+// synchronous with the click gesture (browsers block popup otherwise).
+function _prewarmDriveApis(clientId){
+  if(_prewarmPromise)return _prewarmPromise;
+  _prewarmPromise=(async()=>{
     await Promise.all([
       loadScript('https://apis.google.com/js/api.js'),
       loadScript('https://accounts.google.com/gsi/client'),
     ]);
     await new Promise(resolve=>gapi.load('picker',resolve));
-    if(statusEl)statusEl.textContent='Connecting to Google…';
-    const tokenClient=google.accounts.oauth2.initTokenClient({
+    _tokenClient=google.accounts.oauth2.initTokenClient({
       client_id:clientId,
       scope:'https://www.googleapis.com/auth/drive.readonly',
-      callback:(resp)=>{
-        if(resp.error||!resp.access_token){
-          if(statusEl)statusEl.textContent='';
-          showImportError('Google sign-in failed. Check your Client ID in Settings and make sure your site URL is in Authorized JavaScript Origins.');
-          return;
-        }
-        _driveToken=resp.access_token;
-        if(statusEl)statusEl.textContent='';
-
-        const MIME='text/plain,application/pdf,application/vnd.google-apps.document,text/markdown';
-        const folderId=extractFolderId(D.settings?.driveFolderId||'');
-
-        // Primary view: starts in travel folder (if set) or My Drive
-        const folderView=new google.picker.DocsView()
-          .setMimeTypes(MIME).setIncludeFolders(true).setSelectFolderEnabled(false);
-        if(folderId)folderView.setParent(folderId);
-
-        // Secondary view: all docs (fallback search)
-        const allView=new google.picker.DocsView(google.picker.ViewId.DOCS)
-          .setMimeTypes(MIME).setIncludeFolders(true).setSelectFolderEnabled(false);
-
-        new google.picker.PickerBuilder()
-          .addView(folderView)
-          .addView(allView)
-          .setOAuthToken(_driveToken)
-          .setTitle(folderId?'09 — TRAVEL & EXPERIENCES':'Choose a trip document')
-          .setCallback(async data=>{
-            if(data.action===google.picker.Action.PICKED){
-              const f=data.docs[0];
-              await loadDriveFile(f.id,f.mimeType,f.name);
-            }
-          })
-          .build().setVisible(true);
-      },
+      callback:_onDriveToken,
     });
-    tokenClient.requestAccessToken({prompt:_driveToken?'':'consent'});
-  }catch(e){
+    _pickerReady=true;
+  })().catch(e=>{_prewarmPromise=null;throw e;});
+  return _prewarmPromise;
+}
+
+function _onDriveToken(resp){
+  const statusEl=document.getElementById('file-status');
+  if(resp.error||!resp.access_token){
     if(statusEl)statusEl.textContent='';
-    showImportError('Could not load Google APIs. Check your internet connection and try again.');
+    showImportError('Google sign-in failed. Make sure '+window.location.origin+' is listed under Authorized JavaScript Origins in Google Cloud Console → Credentials.');
+    return;
   }
+  _driveToken=resp.access_token;
+  if(statusEl)statusEl.textContent='';
+
+  const MIME='text/plain,application/pdf,application/vnd.google-apps.document,text/markdown';
+  const folderId=extractFolderId(D.settings?.driveFolderId||'');
+
+  const folderView=new google.picker.DocsView()
+    .setMimeTypes(MIME).setIncludeFolders(true).setSelectFolderEnabled(false);
+  if(folderId)folderView.setParent(folderId);
+
+  const allView=new google.picker.DocsView(google.picker.ViewId.DOCS)
+    .setMimeTypes(MIME).setIncludeFolders(true).setSelectFolderEnabled(false);
+
+  new google.picker.PickerBuilder()
+    .addView(folderView)
+    .addView(allView)
+    .setOAuthToken(_driveToken)
+    .setTitle(folderId?'09 — TRAVEL & EXPERIENCES':'Choose a trip document')
+    .setCallback(async data=>{
+      if(data.action===google.picker.Action.PICKED){
+        const f=data.docs[0];
+        await loadDriveFile(f.id,f.mimeType,f.name);
+      }
+    })
+    .build().setVisible(true);
+}
+
+async function openGoogleDrivePicker(){
+  showImportError('');
+  const clientId=D.settings?.googleClientId||'';
+  if(!clientId){
+    showImportError('Add your Google Client ID in Settings → Google Client ID to use Drive import.');
+    return;
+  }
+
+  const statusEl=document.getElementById('file-status');
+
+  if(!_pickerReady){
+    // APIs not ready yet — await them now (breaks user gesture; user must click once more)
+    if(statusEl)statusEl.textContent='Loading Google APIs…';
+    try{
+      await _prewarmDriveApis(clientId);
+    }catch(e){
+      if(statusEl)statusEl.textContent='';
+      showImportError('Could not load Google APIs. Check your internet connection and try again.');
+      return;
+    }
+    // Ready now — prompt the user to click again so requestAccessToken fires
+    // synchronously from a fresh user gesture (required to avoid popup blocking).
+    if(statusEl)statusEl.textContent='✓ Connected to Google — click the button again to open Drive';
+    return;
+  }
+
+  // APIs already ready — call synchronously, no awaits before this line
+  if(statusEl)statusEl.textContent='Opening Google Drive…';
+  _tokenClient.requestAccessToken({prompt:_driveToken?'':'consent'});
 }
 
 async function loadDriveFile(fileId,mimeType,fileName){
