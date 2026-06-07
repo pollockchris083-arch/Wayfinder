@@ -2355,7 +2355,8 @@ function visitWish(id){
   const catMap={international:'other','road-trip':'road-trip',hiking:'outdoors',city:'city',beach:'beach'};
   document.getElementById('pm-title').textContent='Add as Visited Place';
   document.getElementById('p-name').value=w.name;
-  ['p-country','p-state','p-region','p-src','p-tags','p-rating','p-visit-date'].forEach(i=>document.getElementById(i).value='');
+  ['p-country','p-state','p-region','p-src','p-tags','p-rating'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('p-visit-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('p-cat').value=catMap[w.type]||'other';
   document.getElementById('p-status').value='visited';
   document.getElementById('p-notes').value=w.notes||'';
