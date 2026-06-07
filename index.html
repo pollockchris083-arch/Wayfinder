@@ -846,12 +846,29 @@ async function loadFromCloud(){
 async function cloudPush(collection,items){
   if(!currentUser||!items)return;
   const rows=items.map(item=>({...item,user_id:currentUser.id}));
-  await SUPA.from('wf_'+collection).delete().eq('user_id',currentUser.id);
-  if(rows.length)await SUPA.from('wf_'+collection).insert(rows);
+  const{error:delErr}=await SUPA.from('wf_'+collection).delete().eq('user_id',currentUser.id);
+  if(delErr)throw new Error('[Sync] delete '+collection+': '+delErr.message);
+  if(rows.length){
+    const{error:insErr}=await SUPA.from('wf_'+collection).insert(rows);
+    if(insErr){
+      console.error('[Sync] insert error on wf_'+collection,'| code:',insErr.code,'| msg:',insErr.message,'| detail:',insErr.details,'| hint:',insErr.hint);
+      throw new Error('[Sync] insert '+collection+': '+insErr.message);
+    }
+  }
 }
 async function cloudPushSettings(cfg){
   if(!currentUser)return;
-  await SUPA.from('wf_settings').upsert({user_id:currentUser.id,...cfg,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+  // Strip credentials — these are local-only; the Supabase schema has no column for them
+  // and API keys must never be stored server-side
+  const{apiKey,googleClientId,driveFolderId,...syncable}=cfg;
+  const{error}=await SUPA.from('wf_settings').upsert(
+    {user_id:currentUser.id,...syncable,updated_at:new Date().toISOString()},
+    {onConflict:'user_id'}
+  );
+  if(error){
+    console.error('[Sync] settings upsert error | code:',error.code,'| msg:',error.message,'| hint:',error.hint);
+    throw new Error('[Sync] settings: '+error.message);
+  }
 }
 
 function scheduledSync(k,items){
@@ -1693,7 +1710,7 @@ function buildAnalysisPrompt(text, chunkNum, totalChunks){
   const chunkNote=totalChunks>1
     ?`\nNOTE: This is section ${chunkNum} of ${totalChunks}. Extract every place, date, and memory from THIS section only — a separate pass will cover the rest.\n`
     :'';
-  return `You are extracting structured data from a travel document for a travel app called Wayfinder. This is a PAST trip that has already been completed.${chunkNote}
+  return `You are extracting structured data from a travel document for a travel app called Wayfinder. This document describes a PAST trip that has already been completed.${chunkNote}
 
 DOCUMENT SECTION:
 """
@@ -1707,6 +1724,11 @@ DATE EXTRACTION — be thorough and precise:
 - If only a year appears, use YYYY-01-01
 - endDate should be the last day of the trip (including travel home)
 - If dates aren't explicit, infer from context clues
+
+JOURNAL ENTRIES — only extract actual past experiences:
+- INCLUDE: personal memories written in past tense ("we ate", "I saw", "it was incredible"), diary-style entries, specific moments and sensory details the author actually experienced
+- EXCLUDE: future plans or wishlist items ("we want to", "planning to visit", "next time"), packing lists, gear or budget reference tables, generic destination research, itinerary templates written before the trip, bullet-point logistics notes
+- If the document is primarily a planning doc or reference list with no personal memories, return an empty journal array
 
 Respond ONLY with valid raw JSON — no markdown fences, no explanation:
 {
@@ -1732,16 +1754,16 @@ Respond ONLY with valid raw JSON — no markdown fences, no explanation:
   ],
   "journal": [
     {
-      "title": "Vivid, specific entry title (e.g. 'Sunrise on the Rim', not 'Day 3')",
+      "title": "Vivid, specific entry title capturing the moment (e.g. 'Sunrise on the Rim', not 'Day 3')",
       "date": "YYYY-MM-DD or empty string",
       "location": "Where this memory is from",
-      "body": "The key story — detailed, preserving original voice, specific sensory details, and emotions. At least 2-3 sentences."
+      "body": "The actual experience — past tense, preserving the original voice, specific sensory details, and emotions. At least 2-3 sentences. Do NOT include planning notes or future intent here."
     }
   ],
   "summary": "One sentence: what was found (X places, Y journal entries) and the trip's overall theme"
 }
 
-Extract ALL specifically visited places. For journal entries, capture every vivid and specific moment from this section. Keep notes/body fields under 120 words each — concise over truncated. The JSON MUST be complete and valid.`;
+Extract ALL specifically visited places. For journal entries, only include genuine past-tense memories — omit any entries that are plans, lists, or reference notes. Keep notes/body fields under 120 words each. The JSON MUST be complete and valid.`;
 }
 
 function mergeChunkResults(results){
@@ -2004,7 +2026,7 @@ function confirmImport(){
   let jCount=0;
   (importedData.journal||[]).forEach(j=>{
     if(!j.body)return;
-    D.journal.push({id:uid(),date:j.date||t.startDate||'',tripId:t.id,title:j.title||'Memory',loc:j.location||'',body:j.body,addedAt:Date.now()});
+    D.journal.push({id:uid(),date:j.date||t.startDate||'',tripId:t.id,placeId:null,title:j.title||'Memory',loc:j.location||'',body:j.body,addedAt:Date.now()});
     jCount++;
   });
   save('journal',D.journal);
