@@ -937,28 +937,51 @@ SUPA.auth.onAuthStateChange(async(event,session)=>{
   }
 });
 
-// ── Schema migration: add new link fields to existing records ──
+// ── Schema migration: add new fields and normalize data ──
 function migrate(){
   let cp=false,ct=false,cj=false,cw=false;
+  const tripIds=new Set(D.trips.map(t=>t.id));
+  const journalIds=new Set(D.journal.map(j=>j.id));
   D.places.forEach(p=>{
     if(!p.tripIds){p.tripIds=[];cp=true}
     if(!p.journalIds){p.journalIds=[];cp=true}
     if(!p.photos){p.photos=[];cp=true}
     if(!('country' in p)){p.country='';cp=true}
     if(!('usState' in p)){p.usState='';cp=true}
+    if(!p.addedAt){p.addedAt=Date.now();cp=true}
+    // Remove dangling tripId references
+    const before=p.tripIds.length;
+    p.tripIds=p.tripIds.filter(id=>tripIds.has(id));
+    if(p.tripIds.length!==before)cp=true;
+    // Normalize country
+    const norm=p.country?normCountry(p.country):'';
+    if(norm!==p.country){p.country=norm;cp=true}
+    // Ensure tags is array
+    if(!Array.isArray(p.tags)){p.tags=[];cp=true}
   });
   if(cp)save('places',D.places);
   D.trips.forEach(t=>{
-    (t.itinerary||[]).forEach(day=>(day.stops||[]).forEach(s=>{
-      if(!('placeId' in s)){s.placeId='';ct=true}
-    }));
+    if(!t.itinerary){t.itinerary=[];ct=true}
+    if(!Array.isArray(t.destinations)){t.destinations=[];ct=true}
+    if(!t.addedAt){t.addedAt=Date.now();ct=true}
+    (t.itinerary||[]).forEach(day=>{
+      if(!day.stops){day.stops=[];ct=true}
+      day.stops.forEach(s=>{
+        if(!('placeId' in s)){s.placeId='';ct=true}
+      });
+    });
   });
   if(ct)save('trips',D.trips);
-  D.journal.forEach(j=>{if(!('placeId' in j)){j.placeId='';cj=true}});
+  D.journal.forEach(j=>{
+    if(!('placeId' in j)){j.placeId='';cj=true}
+    if(!('tripId' in j)){j.tripId='';cj=true}
+    if(!j.addedAt){j.addedAt=Date.now();cj=true}
+  });
   if(cj)save('journal',D.journal);
   D.wish.forEach(w=>{
     if(!('tripId' in w)){w.tripId='';cw=true}
     if(!('graduated' in w)){w.graduated=false;cw=true}
+    if(!w.addedAt){w.addedAt=Date.now();cw=true}
   });
   if(cw)save('wish',D.wish);
 }
@@ -1708,14 +1731,57 @@ function saveJournal(){
   }
   closeM('m-journal');toast('📓 Saved!');rJournal();
 }
+let jf='all';
+function fJournal(b,f){document.querySelectorAll('#jfilter .fc').forEach(x=>x.classList.remove('on'));b.classList.add('on');jf=f;rJournal()}
 function rJournal(){
-  D=load();const el=document.getElementById('jlist');const entries=[...D.journal].sort((a,b)=>new Date(b.date)-new Date(a.date));
-  if(!entries.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📓</div><h3>No journal entries</h3><p>Record your travel memories and stories.</p><button class="tb-btn" onclick="openJournal()">+ Write First Entry</button></div>`;return}
-  el.innerHTML=entries.map(e=>{
-    const lp=e.placeId?D.places.find(x=>x.id===e.placeId):null;
-    const lt=e.tripId?D.trips.find(x=>x.id===e.tripId):null;
-    return`<div class="je"><div class="jdate">${fd(e.date)}${lt?` · <span style="color:var(--green3);font-weight:500">✈️ ${lt.name}</span>`:''}</div><div class="jtitle">${e.title}</div>${lp?`<div class="jloc" style="color:var(--green2)">📍 ${lp.name}${lp.region?' — '+lp.region:''}</div>`:e.loc?`<div class="jloc">📍 ${e.loc}</div>`:''}<div class="jbody">${e.body}</div></div>`;
-  }).join('');
+  D=load();const el=document.getElementById('jlist');
+  let entries=[...D.journal].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(jf!=='all')entries=entries.filter(e=>e.tripId===jf);
+
+  // Build trip filter bar
+  const tripFilter=D.trips.length?`<div class="fb" id="jfilter" style="margin-bottom:13px;flex-wrap:wrap">
+    <button class="fc ${jf==='all'?'on':''}" onclick="fJournal(this,'all')">All</button>
+    ${D.trips.filter(t=>D.journal.some(j=>j.tripId===t.id)).map(t=>`<button class="fc ${jf===t.id?'on':''}" onclick="fJournal(this,'${t.id}')">${t.name}</button>`).join('')}
+  </div>`:'';
+
+  if(!entries.length){el.innerHTML=tripFilter+`<div class="empty"><div class="empty-icon">📓</div><h3>${jf==='all'?'No journal entries':'No entries for this trip'}</h3><p>Record your travel memories and stories.</p><button class="tb-btn" onclick="openJournal()">+ Write First Entry</button></div>`;return}
+
+  // Group by trip then by date
+  const grouped={};const ungrouped=[];
+  entries.forEach(e=>{
+    if(e.tripId){if(!grouped[e.tripId])grouped[e.tripId]=[];grouped[e.tripId].push(e);}
+    else ungrouped.push(e);
+  });
+
+  let html=tripFilter;
+  if(jf!=='all'){
+    // Single trip view - just list entries
+    html+=entries.map(e=>journalCard(e,true)).join('');
+  } else {
+    // All view - group by trip, then ungrouped
+    Object.entries(grouped).forEach(([tid,grpEntries])=>{
+      const t=D.trips.find(x=>x.id===tid);
+      html+=`<div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:600;color:var(--green3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;display:flex;align-items:center;gap:6px">✈️ ${t?t.name:'Trip'}</div>
+        ${grpEntries.map(e=>journalCard(e,false)).join('')}
+      </div>`;
+    });
+    if(ungrouped.length){
+      if(Object.keys(grouped).length)html+=`<div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Other Entries</div>`;
+      html+=ungrouped.map(e=>journalCard(e,false)).join('');
+    }
+  }
+  el.innerHTML=html;
+}
+function journalCard(e,showTrip){
+  const lp=e.placeId?D.places.find(x=>x.id===e.placeId):null;
+  const lt=showTrip&&e.tripId?D.trips.find(x=>x.id===e.tripId):null;
+  return`<div class="je">
+    <div class="jdate">${fd(e.date)}${lt?` · <span style="color:var(--green3);font-weight:500">✈️ ${lt.name}</span>`:''}</div>
+    <div class="jtitle">${e.title}</div>
+    ${lp?`<div class="jloc">📍 ${lp.name}${lp.region?' — '+lp.region:''}</div>`:e.loc?`<div class="jloc">📍 ${e.loc}</div>`:''}
+    <div class="jbody" style="-webkit-line-clamp:initial;overflow:visible">${e.body}</div>
+  </div>`;
 }
 
 // ══════════════════════════════════════════════
