@@ -1934,6 +1934,7 @@ function delTrip(id){
 function fTrip(b,f){document.querySelectorAll('#trips-lv .fc').forEach(x=>x.classList.remove('on'));b.classList.add('on');tf=f;rTrips()}
 function rTrips(){
   D=load();document.getElementById('trips-lv').style.display='block';document.getElementById('trip-dv').classList.remove('on');atid=null;
+  document.querySelectorAll('#trips-lv .fc').forEach(b=>{const v=b.getAttribute('onclick')?.match(/'([^']+)'\)/)?.[1];if(v)b.classList.toggle('on',v===tf);});
   const tq=(document.getElementById('srch')?.value||'').toLowerCase();
   let list=D.trips.filter(t=>{const mf=tf==='all'||(tf==='upcoming'&&(t.status==='upcoming'||t.status==='active'))||(tf==='past'&&t.status==='past')||(tf==='planning'&&t.status==='planning');const ms=!tq||t.name.toLowerCase().includes(tq)||(t.destinations||[]).some(d=>(d||'').toLowerCase().includes(tq))||(t.notes||'').toLowerCase().includes(tq);return mf&&ms}).sort((a,b)=>{if(a.startDate&&b.startDate)return new Date(b.startDate)-new Date(a.startDate);return b.addedAt-a.addedAt});
   const g=document.getElementById('trips-grid');
