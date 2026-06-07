@@ -442,17 +442,23 @@ input,textarea,select{font-family:inherit;font-weight:400}
     <div class="page" id="page-map"><div id="map-in"></div></div>
 
     <div class="page" id="page-places">
-      <div class="fb" id="pfb">
-        <button class="fc on" onclick="fPlace(this,'all')">All</button>
-        <button class="fc" onclick="fPlace(this,'visited')">✅ Visited</button>
-        <button class="fc" onclick="fPlace(this,'want')">⭐ Want to Go</button>
-        <button class="fc" onclick="fPlace(this,'planned')">📅 Planned</button>
-        <button class="fc" onclick="fPlace(this,'saved')">🔖 Saved</button>
-        <button class="fc" onclick="fPlace(this,'hiking')">🥾 Hiking</button>
-        <button class="fc" onclick="fPlace(this,'camp')">⛺ Camp</button>
-        <button class="fc" onclick="fPlace(this,'food')">🍽️ Food</button>
-        <button class="fc" onclick="fPlace(this,'road-trip')">🚗 Road Trip</button>
-        <button class="fc" onclick="fPlace(this,'international')">🌍 International</button>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:13px;flex-wrap:wrap">
+        <div class="fb" id="pfb" style="margin-bottom:0;flex-wrap:wrap">
+          <button class="fc on" onclick="fPlace(this,'all')">All</button>
+          <button class="fc" onclick="fPlace(this,'visited')">✅ Visited</button>
+          <button class="fc" onclick="fPlace(this,'want')">⭐ Want to Go</button>
+          <button class="fc" onclick="fPlace(this,'planned')">📅 Planned</button>
+          <button class="fc" onclick="fPlace(this,'saved')">🔖 Saved</button>
+          <button class="fc" onclick="fPlace(this,'hiking')">🥾 Hiking</button>
+          <button class="fc" onclick="fPlace(this,'camp')">⛺ Camp</button>
+          <button class="fc" onclick="fPlace(this,'food')">🍽️ Food</button>
+          <button class="fc" onclick="fPlace(this,'road-trip')">🚗 Road Trip</button>
+          <button class="fc" onclick="fPlace(this,'international')">🌍 Intl</button>
+        </div>
+        <div class="fb" style="margin-bottom:0;flex-shrink:0">
+          <button class="fc on" id="pv-grid" onclick="setPlaceView('grid')">⊞ Grid</button>
+          <button class="fc" id="pv-group" onclick="setPlaceView('group')">≡ By Region</button>
+        </div>
       </div>
       <div id="places-grid" class="ga"></div>
     </div>
@@ -1281,6 +1287,8 @@ function rPlaces(){
   D=load();const q=document.getElementById('srch').value.toLowerCase();
   let list=D.places.filter(p=>{const mf=pf==='all'||p.status===pf||p.category===pf||(p.tags||[]).includes(pf);const ms=!q||p.name.toLowerCase().includes(q)||(p.region||'').toLowerCase().includes(q)||(p.country||'').toLowerCase().includes(q)||(p.usState||'').toLowerCase().includes(q);return mf&&ms}).sort((a,b)=>b.addedAt-a.addedAt);
   const g=document.getElementById('places-grid');
+  if(placeView==='group'){g.className='';rPlacesGrouped(list);return;}
+  g.className='ga';
   if(!list.length){g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📍</div><h3>No places found</h3><p>Add places you've been or want to go.</p><button class="tb-btn" onclick="openPlace()">+ Add First Place</button></div>`;return}
   g.innerHTML=list.map(p=>{
     const loc=p.usState&&p.country?p.usState+', '+p.country:p.country||p.region||'';
@@ -1301,6 +1309,62 @@ function rPlaces(){
       </div>
     </div>`;
   }).join('');
+}
+let placeView='grid';
+function setPlaceView(v){
+  placeView=v;
+  document.getElementById('pv-grid').classList.toggle('on',v==='grid');
+  document.getElementById('pv-group').classList.toggle('on',v==='group');
+  rPlaces();
+}
+function rPlacesGrouped(list){
+  if(!list.length){
+    document.getElementById('places-grid').innerHTML=`<div class="empty"><div class="empty-icon">📍</div><h3>No places found</h3><p>Add places you've been or want to go.</p></div>`;
+    return;
+  }
+  // Build hierarchy: International (by country) + United States (by state)
+  const usPlaces=list.filter(p=>normCountry(p.country)==='United States');
+  const intlPlaces=list.filter(p=>p.country&&normCountry(p.country)!=='United States');
+  const noLocPlaces=list.filter(p=>!p.country);
+
+  function placeRow(p){
+    const meta=[sl(p.status),p.rating?'⭐'.repeat(parseInt(p.rating)):'',p.source||''].filter(Boolean).join(' · ');
+    return`<div style="display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid var(--bdr);cursor:pointer" onclick="openPlace('${p.id}')">
+      <span style="font-size:15px;flex-shrink:0;margin-top:1px">${ci(p.category)}</span>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:500;color:var(--text)">${p.name}</div>
+        ${p.notes?`<div style="font-size:11px;color:var(--muted2);margin-top:1px">${p.notes.slice(0,80)}${p.notes.length>80?'…':''}</div>`:''}
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">${meta}</div>
+      </div>
+      <span class="sd ${p.status==='visited'?'dv':p.status==='want'?'dw':p.status==='planned'?'dp':'ds'}" style="margin-top:4px;flex-shrink:0"></span>
+    </div>`;
+  }
+
+  function regionSection(title,places,key){
+    if(!places.length)return'';
+    const groups={};
+    places.forEach(p=>{const k=p[key]||p.country||p.region||'Other';if(!groups[k])groups[k]=[];groups[k].push(p);});
+    return`<div class="card" style="margin-bottom:12px">
+      <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+        <div><div class="ct">${title}</div><div class="cs">${places.length} place${places.length>1?'s':''}</div></div>
+        <span class="coll-arrow">▾</span>
+      </div>
+      <div class="coll-body coll-open">
+        ${Object.entries(groups).sort((a,b)=>a[0].localeCompare(b[0])).map(([grp,ps])=>`
+          <div style="margin-bottom:8px">
+            <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;padding:6px 0 3px">${grp} <span style="font-weight:400;opacity:.7">(${ps.length})</span></div>
+            ${ps.map(placeRow).join('')}
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  let html='';
+  html+=regionSection('🌍 International',intlPlaces,'country');
+  html+=regionSection('🇺🇸 United States',usPlaces,'usState');
+  if(noLocPlaces.length)html+=regionSection('📍 Other',noLocPlaces,'category');
+  document.getElementById('places-grid').className='';
+  document.getElementById('places-grid').innerHTML=html||'<div class="empty"><div class="empty-icon">📍</div><h3>No places</h3></div>';
 }
 
 // ══════════════════════════════════════════════
@@ -1343,17 +1407,25 @@ function rTrips(){
   if(!list.length){g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">✈️</div><h3>No trips yet</h3><p>Create a trip or import from a doc.</p><button class="tb-btn" onclick="openTrip()" style="margin-bottom:8px">+ New Trip</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;return}
   g.innerHTML=list.map(t=>{
     const stops=t.itinerary.reduce((s,d)=>s+(d.stops||[]).length,0);
-    const dests=t.destinations.slice(0,3).join(', ')+(t.destinations.length>3?` +${t.destinations.length-3} more`:'');
+    const linked=D.places.filter(p=>(p.tripIds||[]).includes(t.id));
+    const intlCountries=[...new Set(linked.filter(p=>p.country&&normCountry(p.country)!=='United States').map(p=>normCountry(p.country)))];
+    const usStates=[...new Set(linked.filter(p=>normCountry(p.country)==='United States').map(p=>p.usState).filter(Boolean))];
+    const scopeParts=[];
+    if(intlCountries.length)scopeParts.push(intlCountries.length===1?intlCountries[0]:intlCountries.slice(0,2).join(', ')+(intlCountries.length>2?` +${intlCountries.length-2}`:''));
+    if(usStates.length)scopeParts.push(usStates.length===1?usStates[0]:'🇺🇸 '+usStates.length+' states');
+    const scopeStr=scopeParts.join(' · ')||(t.destinations.slice(0,2).join(', ')+(t.destinations.length>2?` +${t.destinations.length-2}`:'')||'');
+    const placesStat=linked.length?linked.length+' place'+(linked.length>1?'s':''):'';
+    const statParts=[t.itinerary.length?t.itinerary.length+' day'+(t.itinerary.length>1?'s':''):'',stops?stops+' stop'+(stops>1?'s':''):'',placesStat].filter(Boolean).join(' · ');
     return`<div class="tc" onclick="openTripD('${t.id}')"><div class="tc-bar"></div><div class="tcb">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
         <div class="tname" style="flex:1">${t.name}</div>
         <button onclick="event.stopPropagation();delTrip('${t.id}')" style="background:none;border:none;cursor:pointer;font-size:15px;color:var(--muted2);padding:0 2px;line-height:1;flex-shrink:0;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'" title="Delete trip">×</button>
       </div>
       <div class="tdates">${t.startDate?fd(t.startDate)+' — '+fd(t.endDate):'Dates TBD'}</div>
-      ${dests?`<div style="font-size:11px;color:var(--text2);margin-bottom:9px">📍 ${dests}</div>`:''}
+      ${scopeStr?`<div style="font-size:11px;color:var(--text2);margin-bottom:7px">📍 ${scopeStr}</div>`:''}
       <div class="tfoot">
-        <div class="tstat">${stops} stops · ${t.itinerary.length} days</div>
-        <div style="font-size:11px;color:var(--muted);text-transform:capitalize">${tsl(t.status)}</div>
+        <div class="tstat">${statParts||'No stops yet'}</div>
+        <div style="font-size:11px;color:var(--muted)">${tsl(t.status)}</div>
       </div>
     </div></div>`;
   }).join('');
