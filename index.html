@@ -1937,7 +1937,8 @@ function rTrips(){
     const scopeStr=scopeParts.join(' · ')||(t.destinations.slice(0,2).join(', ')+(t.destinations.length>2?` +${t.destinations.length-2}`:'')||'');
     const placesStat=linked.length?linked.length+' place'+(linked.length>1?'s':''):'';
     const statParts=[t.itinerary.length?t.itinerary.length+' day'+(t.itinerary.length>1?'s':''):'',stops?stops+' stop'+(stops>1?'s':''):'',placesStat].filter(Boolean).join(' · ');
-    return`<div class="tc" onclick="openTripD('${t.id}')"><div class="tc-bar"></div><div class="tcb">
+    const barColor=t.status==='active'?'linear-gradient(90deg,#3a9e5c,#5fc47a)':t.status==='upcoming'?'linear-gradient(90deg,#B8892A,var(--gold))':t.status==='planning'?'linear-gradient(90deg,#4A7EBA,#6BA3D6)':'linear-gradient(90deg,#8a7060,#b09880)';
+    return`<div class="tc" onclick="openTripD('${t.id}')"><div class="tc-bar" style="background:${barColor}"></div><div class="tcb">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
         <div class="tname" style="flex:1">${t.name}</div>
         <button onclick="event.stopPropagation();delTrip('${t.id}')" style="background:none;border:none;cursor:pointer;font-size:15px;color:var(--muted2);padding:0 2px;line-height:1;flex-shrink:0;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'" title="Delete trip">×</button>
