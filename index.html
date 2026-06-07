@@ -1723,8 +1723,11 @@ function openPlaceD(id){
 }
 function rPlaces(){
   apid=null;document.getElementById('places-grid').style.display='';const pdv=document.getElementById('place-dv');if(pdv)pdv.classList.remove('on');
-  // Sync filter bar .on class to current pf state
+  // Sync filter bar and view buttons .on class to current state
   document.querySelectorAll('#pfb .fc').forEach(b=>{const v=b.getAttribute('onclick')?.match(/'([^']+)'\)/)?.[1];if(v)b.classList.toggle('on',v===pf);});
+  document.getElementById('pv-grid')?.classList.toggle('on',placeView==='grid');
+  document.getElementById('pv-group')?.classList.toggle('on',placeView==='group');
+  document.getElementById('pv-trip')?.classList.toggle('on',placeView==='trip');
   D=load();const q=document.getElementById('srch').value.toLowerCase();
   const sortMode=document.getElementById('psort')?.value||'recent';
   let list=D.places.filter(p=>{const mf=pf==='all'||p.status===pf||p.category===pf||(p.tags||[]).includes(pf);const ms=!q||p.name.toLowerCase().includes(q)||(p.region||'').toLowerCase().includes(q)||(p.country||'').toLowerCase().includes(q)||(p.usState||'').toLowerCase().includes(q)||(p.notes||'').toLowerCase().includes(q)||(p.tags||[]).some(t=>t.toLowerCase().includes(q));return mf&&ms}).sort((a,b)=>{if(sortMode==='az')return a.name.localeCompare(b.name);if(sortMode==='rating')return(parseInt(b.rating)||0)-(parseInt(a.rating)||0)||b.addedAt-a.addedAt;if(sortMode==='country')return(normCountry(a.country)||'zzz').localeCompare(normCountry(b.country)||'zzz')||a.name.localeCompare(b.name);return b.addedAt-a.addedAt;});
