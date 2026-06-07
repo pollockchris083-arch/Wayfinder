@@ -1713,8 +1713,10 @@ function openPlaceD(id){
     <div class="sc" style="--accent:var(--gold)"><div class="si">⭐</div><div class="sn">${rStars||'—'}</div><div class="sl">Rating</div></div>
   </div>
   ${linkedTrips.length?`<div class="card" style="margin-bottom:13px"><div class="ch"><div class="ct">Trips</div></div>${linkedTrips.map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bdr)"><div><div style="font-size:13px;font-weight:500;color:var(--text)">✈️ ${t.name}</div>${t.startDate?`<div style="font-size:11px;color:var(--muted)">${fd(t.startDate)}${t.endDate?' — '+fd(t.endDate):''}</div>`:''}</div><button class="pbtn" onclick="go('trips');openTripD('${t.id}')">Open →</button></div>`).join('')}</div>`:''}
-  ${linkedJournal.length?`<div class="card" style="margin-bottom:13px"><div class="ch"><div class="ct">Journal Entries</div></div>${linkedJournal.map(j=>journalCard(j,false)).join('')}</div>`:''}
-  ${!linkedTrips.length&&!linkedJournal.length?`<div style="text-align:center;padding:24px;color:var(--muted2);font-size:12px;border:1px dashed var(--bdr2);border-radius:var(--r)">No trips or journal entries linked yet</div>`:''}`;
+  <div class="card" style="margin-bottom:13px">
+    <div class="ch"><div class="ct">Journal Entries</div><button class="pbtn" onclick="openJournalForPlace('${p.id}')">+ Write</button></div>
+    ${linkedJournal.length?linkedJournal.map(j=>journalCard(j,false)).join(''):'<div style="font-size:12px;color:var(--muted2);padding:8px 0;text-align:center">No entries yet</div>'}
+  </div>`;
 }
 function rPlaces(){
   apid=null;document.getElementById('places-grid').style.display='';const pdv=document.getElementById('place-dv');if(pdv)pdv.classList.remove('on');
@@ -2176,6 +2178,22 @@ function openJournalForTrip(tid){
   psel.value='';
   openM('m-journal');
 }
+function openJournalForPlace(pid){
+  D=load();jeid=null;
+  document.getElementById('jm-title').textContent='New Journal Entry';
+  document.getElementById('jm-save').textContent='Save Entry';
+  document.getElementById('j-date').value=new Date().toISOString().split('T')[0];
+  ['j-title','j-loc','j-body'].forEach(id=>document.getElementById(id).value='');
+  const tsel=document.getElementById('j-trip');
+  tsel.innerHTML='<option value="">— Not linked —</option>'+D.trips.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  tsel.value='';
+  const psel=document.getElementById('j-place');
+  psel.innerHTML='<option value="">— No specific place —</option>'+
+    [...D.places].sort((a,b)=>a.name.localeCompare(b.name))
+      .map(p=>`<option value="${p.id}">${ci(p.category)} ${p.name}${p.region?' — '+p.region:''}</option>`).join('');
+  psel.value=pid;
+  openM('m-journal');
+}
 function openJournalEdit(id){
   D=load();
   const e=D.journal.find(x=>x.id===id);if(!e)return;
@@ -2325,7 +2343,7 @@ function saveJournal(){
   closeM('m-journal');
   toast(jeid?'✅ Updated':'📓 Saved!');
   jeid=null;
-  if(atid)openTripD(atid);else rJournal();
+  if(atid)openTripD(atid);else if(apid)openPlaceD(apid);else rJournal();
 }
 function delJournal(id){
   if(!confirm('Delete this journal entry? This cannot be undone.'))return;
@@ -2333,7 +2351,7 @@ function delJournal(id){
   D.places.forEach(p=>{if((p.journalIds||[]).includes(id)){p.journalIds=p.journalIds.filter(x=>x!==id);}});
   save('journal',D.journal);save('places',D.places);
   toast('🗑️ Deleted');
-  if(atid)openTripD(atid);else rJournal();
+  if(atid)openTripD(atid);else if(apid)openPlaceD(apid);else rJournal();
 }
 let jf='all',jeid=null;
 function fJournal(b,f){document.querySelectorAll('#jfilter .fc').forEach(x=>x.classList.remove('on'));b.classList.add('on');jf=f;rJournal()}
