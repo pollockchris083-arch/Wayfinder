@@ -564,6 +564,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
         <div style="display:flex;gap:7px;align-items:center;flex-shrink:0">
           <select class="fs" id="psort" style="font-size:11px;padding:5px 10px;height:auto;width:auto" onchange="rPlaces()">
             <option value="recent">Most Recent</option>
+            <option value="visited">Visit Date</option>
             <option value="az">A–Z</option>
             <option value="rating">Top Rated</option>
             <option value="country">By Country</option>
@@ -1744,7 +1745,7 @@ function rPlaces(){
   document.getElementById('pv-trip')?.classList.toggle('on',placeView==='trip');
   D=load();const q=document.getElementById('srch').value.toLowerCase();
   const sortMode=document.getElementById('psort')?.value||'recent';
-  let list=D.places.filter(p=>{const mf=pf==='all'||p.status===pf||p.category===pf||(p.tags||[]).includes(pf);const ms=!q||p.name.toLowerCase().includes(q)||(p.region||'').toLowerCase().includes(q)||(p.country||'').toLowerCase().includes(q)||(p.usState||'').toLowerCase().includes(q)||(p.notes||'').toLowerCase().includes(q)||(p.tags||[]).some(t=>t.toLowerCase().includes(q));return mf&&ms}).sort((a,b)=>{if(sortMode==='az')return a.name.localeCompare(b.name);if(sortMode==='rating')return(parseInt(b.rating)||0)-(parseInt(a.rating)||0)||b.addedAt-a.addedAt;if(sortMode==='country')return(normCountry(a.country)||'zzz').localeCompare(normCountry(b.country)||'zzz')||a.name.localeCompare(b.name);return b.addedAt-a.addedAt;});
+  let list=D.places.filter(p=>{const mf=pf==='all'||p.status===pf||p.category===pf||(p.tags||[]).includes(pf);const ms=!q||p.name.toLowerCase().includes(q)||(p.region||'').toLowerCase().includes(q)||(p.country||'').toLowerCase().includes(q)||(p.usState||'').toLowerCase().includes(q)||(p.notes||'').toLowerCase().includes(q)||(p.tags||[]).some(t=>t.toLowerCase().includes(q));return mf&&ms}).sort((a,b)=>{if(sortMode==='az')return a.name.localeCompare(b.name);if(sortMode==='rating')return(parseInt(b.rating)||0)-(parseInt(a.rating)||0)||b.addedAt-a.addedAt;if(sortMode==='country')return(normCountry(a.country)||'zzz').localeCompare(normCountry(b.country)||'zzz')||a.name.localeCompare(b.name);if(sortMode==='visited'){const va=a.visitDate||'';const vb=b.visitDate||'';if(!va&&!vb)return b.addedAt-a.addedAt;if(!va)return 1;if(!vb)return -1;return vb.localeCompare(va);}return b.addedAt-a.addedAt;});
   const g=document.getElementById('places-grid');
   if(placeView==='group'){g.className='';rPlacesGrouped(list);return;}
   if(placeView==='trip'){g.className='';rPlacesByTrip(list);return;}
