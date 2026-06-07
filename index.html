@@ -704,7 +704,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
     </div>
     <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="p-notes" placeholder="Why this place? Any tips or memories…"></textarea></div>
     <div class="fr">
-      <div class="fg"><label class="fl">Tags (comma separated)</label><input class="fi" id="p-tags" placeholder="sierra, backpacking…"/></div>
+      <div class="fg"><label class="fl">Tags (comma separated)</label><input class="fi" id="p-tags" placeholder="sierra, backpacking…" list="p-tags-list"/><datalist id="p-tags-list"></datalist></div>
       <div class="fg"><label class="fl">Visit Date <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(optional)</span></label><input class="fi" id="p-visit-date" type="date"/></div>
     </div>
     <div class="fg" style="margin-bottom:0"><label class="fl">Rating</label>
@@ -1635,6 +1635,8 @@ function openPlace(id){
   document.getElementById('p-tags').value=(p?.tags||[]).join(', ');
   document.getElementById('p-rating').value=p?.rating||'';
   document.getElementById('p-visit-date').value=p?.visitDate||'';
+  const allTags=[...new Set(D.places.flatMap(x=>x.tags||[]))].sort();
+  const dl=document.getElementById('p-tags-list');if(dl)dl.innerHTML=allTags.map(t=>`<option value="${t}">`).join('');
   openM('m-place');
 }
 function savePlace(){
