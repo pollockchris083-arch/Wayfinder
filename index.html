@@ -41,6 +41,22 @@
   --shadowm:0 4px 24px rgba(50,35,15,.13);
   --r: 10px;
 }
+body.dark {
+  color-scheme: dark;
+  --bg:     #1C1812;
+  --bg2:    #231E18;
+  --card:   #2C2720;
+  --card2:  #342E27;
+  --card3:  #3C362E;
+  --text:   #EAE2D6;
+  --text2:  #BBA98E;
+  --muted:  #8A7D6E;
+  --muted2: #5E5348;
+  --bdr:    rgba(255,230,200,.08);
+  --bdr2:   rgba(255,230,200,.16);
+  --shadow: 0 1px 8px rgba(0,0,0,.32);
+  --shadowm:0 4px 24px rgba(0,0,0,.48);
+}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:13px;overflow:hidden;font-weight:400}
 button{font-family:inherit;cursor:pointer;font-weight:500}
@@ -487,7 +503,10 @@ input,textarea,select{font-family:inherit;font-weight:400}
       <div class="av" id="av">C</div>
       <div><div class="pn" id="pn">Chris</div><div class="pl" id="pl-partner">& Partner</div></div>
     </div>
-    <div id="sync-bar" style="display:none;align-items:center;justify-content:space-between;padding:5px 6px;border-top:1px solid var(--bdr);margin-top:6px">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 6px;margin-top:5px">
+      <button id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode" style="background:none;border:none;cursor:pointer;font-size:16px;padding:4px 6px;border-radius:6px;transition:background .15s;line-height:1" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background='none'">🌙</button>
+    </div>
+    <div id="sync-bar" style="display:none;align-items:center;justify-content:space-between;padding:5px 6px;border-top:1px solid var(--bdr);margin-top:3px">
       <span id="sync-status" style="font-size:10px;color:var(--muted)">☁️ Synced</span>
       <button onclick="signOut()" style="background:none;border:none;font-size:10px;color:var(--muted);cursor:pointer;padding:2px 6px;border-radius:4px;font-family:inherit;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Sign out</button>
     </div>
@@ -4375,6 +4394,17 @@ const si=s=>({youtube:'▶️',instagram:'📸',google:'🔍',blog:'📝',friend
   });
 })();
 
+function toggleDark(){
+  const dark=document.body.classList.toggle('dark');
+  localStorage.setItem('wf_dark',dark?'1':'');
+  const btn=document.getElementById('dark-toggle');
+  if(btn)btn.textContent=dark?'☀️':'🌙';
+}
+if(localStorage.getItem('wf_dark')==='1'){
+  document.body.classList.add('dark');
+  const btn=document.getElementById('dark-toggle');
+  if(btn)btn.textContent='☀️';
+}
 loadSettings();rHome();badges();
 document.getElementById('tba').style.display='flex';
 // Hide auth overlay immediately if session already exists (avoids flash)
