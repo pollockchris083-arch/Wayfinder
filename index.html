@@ -1490,9 +1490,9 @@ let _tokenClient=null;
 let _pickerReady=false;
 let _prewarmPromise=null;
 
-// Load scripts + picker API in background — called from openImport() so APIs are
-// ready before the user clicks the Drive button, keeping requestAccessToken()
-// synchronous with the click gesture (browsers block popup otherwise).
+// Redirect-based OAuth flow: navigates to Google, returns with token in URL hash.
+// Avoids the COOP popup conflict entirely — accounts.google.com sets COOP:same-origin
+// which severs the popup window reference regardless of what we set on our side.
 function _prewarmDriveApis(clientId){
   if(_prewarmPromise)return _prewarmPromise;
   _prewarmPromise=(async()=>{
@@ -1501,29 +1501,17 @@ function _prewarmDriveApis(clientId){
       loadScript('https://apis.google.com/js/api.js'),
       loadScript('https://accounts.google.com/gsi/client'),
     ]);
-    console.log('[Drive] scripts loaded | gapi:', typeof gapi, '| google.accounts:', typeof google?.accounts);
+    console.log('[Drive] scripts loaded');
     await new Promise(resolve=>gapi.load('picker',resolve));
-    console.log('[Drive] picker API ready | google.picker:', typeof google?.picker);
+    console.log('[Drive] picker API ready');
     _tokenClient=google.accounts.oauth2.initTokenClient({
       client_id:clientId,
       scope:'https://www.googleapis.com/auth/drive.readonly',
-      ux_mode:'popup',   // explicit — prevents silent redirect fallback
+      ux_mode:'redirect',
+      redirect_uri:window.location.href.split('#')[0],
       callback:_onDriveToken,
-      error_callback:(err)=>{
-        // Fires when the popup itself fails (blocked, closed, origin not allowed)
-        console.error('[Drive] GIS error_callback:', JSON.stringify(err));
-        const statusEl=document.getElementById('file-status');
-        if(statusEl)statusEl.textContent='';
-        if(err?.type==='popup_closed'){
-          showImportError('Sign-in popup was closed. Click the button to try again.');
-        }else if(err?.type==='popup_failed_to_open'){
-          showImportError('Popup was blocked. Allow popups for this site in your browser, then try again.');
-        }else{
-          showImportError('Google sign-in error: '+(err?.type||JSON.stringify(err))+'. Make sure '+window.location.origin+' is in Authorized JavaScript Origins in Google Cloud Console.');
-        }
-      },
     });
-    console.log('[Drive] token client initialized | ux_mode: popup forced');
+    console.log('[Drive] token client initialized (redirect mode)');
     _pickerReady=true;
   })().catch(e=>{
     console.error('[Drive] prewarm failed:', e);
@@ -1534,14 +1522,14 @@ function _prewarmDriveApis(clientId){
 }
 
 function _onDriveToken(resp){
-  console.log('[Drive] _onDriveToken | error:', resp?.error, '| has_token:', !!resp?.access_token, '| full resp:', JSON.stringify(resp));
+  console.log('[Drive] _onDriveToken | error:', resp?.error, '| has_token:', !!resp?.access_token);
   const statusEl=document.getElementById('file-status');
   if(resp.error||!resp.access_token){
     if(statusEl)statusEl.textContent='';
     if(resp.error==='access_denied'){
       showImportError('Access denied. Grant Drive access when prompted, then try again.');
     }else{
-      showImportError('Google sign-in failed: '+(resp.error||'no token')+'. Make sure '+window.location.origin+' is in Authorized JavaScript Origins in Google Cloud Console → Credentials.');
+      showImportError('Google sign-in failed: '+(resp.error||'no token')+'. Make sure '+window.location.origin+' is listed in Google Cloud Console → Credentials → Authorized Redirect URIs.');
     }
     return;
   }
@@ -1551,7 +1539,6 @@ function _onDriveToken(resp){
 
   const MIME='text/plain,application/pdf,application/vnd.google-apps.document,text/markdown';
   const folderId=extractFolderId(D.settings?.driveFolderId||'');
-  console.log('[Drive] folderId:', folderId||'(none)');
 
   try{
     const folderView=new google.picker.DocsView()
@@ -1561,7 +1548,7 @@ function _onDriveToken(resp){
     const allView=new google.picker.DocsView(google.picker.ViewId.DOCS)
       .setMimeTypes(MIME).setIncludeFolders(true).setSelectFolderEnabled(false);
 
-    console.log('[Drive] views built — calling PickerBuilder.build().setVisible(true)');
+    console.log('[Drive] building picker...');
     new google.picker.PickerBuilder()
       .addView(folderView)
       .addView(allView)
@@ -1571,7 +1558,7 @@ function _onDriveToken(resp){
         console.log('[Drive] picker callback | action:', data?.action);
         if(data.action===google.picker.Action.PICKED){
           const f=data.docs[0];
-          console.log('[Drive] file picked:', f?.name, f?.id, f?.mimeType);
+          console.log('[Drive] file picked:', f?.name);
           await loadDriveFile(f.id,f.mimeType,f.name);
         }
       })
@@ -1584,21 +1571,26 @@ function _onDriveToken(resp){
 }
 
 async function openGoogleDrivePicker(){
-  console.log('[Drive] openGoogleDrivePicker | _pickerReady:', _pickerReady, '| has_token:', !!_driveToken);
   showImportError('');
   const clientId=D.settings?.googleClientId||'';
   if(!clientId){
-    console.warn('[Drive] no googleClientId in settings');
     showImportError('Add your Google Client ID in Settings → Google Client ID to use Drive import.');
     return;
   }
-  console.log('[Drive] clientId prefix:', clientId.slice(0,12));
 
   const statusEl=document.getElementById('file-status');
 
+  // Reuse a cached token — skip OAuth entirely
+  if(_driveToken){
+    console.log('[Drive] reusing cached token');
+    if(statusEl)statusEl.textContent='Opening Google Drive…';
+    _onDriveToken({access_token:_driveToken});
+    return;
+  }
+
+  // Ensure APIs and token client are ready (async is fine — redirect needs no gesture)
   if(!_pickerReady){
     if(statusEl)statusEl.textContent='Loading Google APIs…';
-    console.log('[Drive] APIs not ready — awaiting prewarm (user must click again after)');
     try{
       await _prewarmDriveApis(clientId);
     }catch(e){
@@ -1606,16 +1598,15 @@ async function openGoogleDrivePicker(){
       showImportError('Could not load Google APIs. Check your internet connection and try again.');
       return;
     }
-    if(statusEl)statusEl.textContent='✓ Connected to Google — click the button again to open Drive';
-    console.log('[Drive] prewarm done from button — showing click-again prompt');
-    return;
   }
 
-  // No awaits before this point — requestAccessToken fires in user gesture context
-  console.log('[Drive] calling requestAccessToken | prompt:', _driveToken?'(silent)':'consent');
-  if(statusEl)statusEl.textContent='Opening Google Drive…';
-  _tokenClient.requestAccessToken({prompt:_driveToken?'':'consent'});
-  console.log('[Drive] requestAccessToken() called — awaiting GIS callback');
+  // Mark that we expect to return from an OAuth redirect so the page-load
+  // handler knows to re-open the picker on the way back.
+  sessionStorage.setItem('pendingDriveAuth','1');
+  console.log('[Drive] redirecting to Google OAuth…');
+  if(statusEl)statusEl.textContent='Redirecting to Google sign-in…';
+  _tokenClient.requestAccessToken({prompt:'consent'});
+  // Page navigates away — nothing below this runs
 }
 
 async function loadDriveFile(fileId,mimeType,fileName){
@@ -2489,12 +2480,25 @@ const si=s=>({youtube:'▶️',instagram:'📸',google:'🔍',blog:'📝',friend
 // INIT
 // ══════════════════════════════════════════════
 
-// Debug: detect if GIS did a full-page redirect (would put access_token in hash)
-if(window.location.hash.includes('access_token')){
-  console.warn('[Drive] ⚠️ Page loaded with access_token in URL hash — GIS used redirect mode instead of popup. This means requestAccessToken() was not treated as a user gesture. Hash:', window.location.hash.slice(0,80));
-}else{
-  console.log('[Drive] Page load — no OAuth hash detected (normal)');
-}
+// Handle return from Google OAuth redirect.
+// GIS puts the access token in the URL hash as #access_token=...
+// We check sessionStorage so we only process it when WE initiated the redirect.
+(function(){
+  const params=new URLSearchParams(window.location.hash.slice(1));
+  const token=params.get('access_token');
+  if(!token||!sessionStorage.getItem('pendingDriveAuth'))return;
+  console.log('[Drive] OAuth redirect return detected — restoring picker flow');
+  sessionStorage.removeItem('pendingDriveAuth');
+  // Remove token from URL bar so it's not visible or accidentally shared
+  history.replaceState(null,'',window.location.pathname+window.location.search);
+  const clientId=(function(){try{return JSON.parse(localStorage.getItem('wf_settings')||'{}').googleClientId||'';}catch{return '';}}());
+  if(!clientId){console.warn('[Drive] no clientId after redirect return');return;}
+  // Load picker API then re-open the import modal and show the picker
+  _prewarmDriveApis(clientId).then(()=>{
+    openImport();
+    _onDriveToken({access_token:token});
+  }).catch(e=>console.error('[Drive] post-redirect prewarm failed:',e));
+})();
 
 loadSettings();rHome();badges();
 document.getElementById('tba').style.display='flex';
