@@ -692,6 +692,18 @@ input,textarea,select{font-family:inherit;font-weight:400}
   </div>
 </div>
 
+<!-- Link Place to Trip Modal -->
+<div class="mo" id="m-link-place">
+  <div class="modal" style="width:420px">
+    <button class="mcl" onclick="closeM('m-link-place')">✕</button>
+    <h2>Link Place to Trip</h2>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:14px">Select an existing saved place to add to this trip.</p>
+    <input type="hidden" id="lp-tid"/>
+    <div class="fg"><label class="fl">Place</label><select class="fs" id="lp-place"></select></div>
+    <div class="fa"><button class="btn-s" onclick="closeM('m-link-place')">Cancel</button><button class="btn-p" onclick="saveLinkPlace()">Link Place</button></div>
+  </div>
+</div>
+
 <!-- ════════════════════════════════════════
      GOOGLE DOC IMPORT MODAL
 ════════════════════════════════════════ -->
@@ -1270,9 +1282,25 @@ function rPlaces(){
   let list=D.places.filter(p=>{const mf=pf==='all'||p.status===pf||p.category===pf||(p.tags||[]).includes(pf);const ms=!q||p.name.toLowerCase().includes(q)||(p.region||'').toLowerCase().includes(q)||(p.country||'').toLowerCase().includes(q)||(p.usState||'').toLowerCase().includes(q);return mf&&ms}).sort((a,b)=>b.addedAt-a.addedAt);
   const g=document.getElementById('places-grid');
   if(!list.length){g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📍</div><h3>No places found</h3><p>Add places you've been or want to go.</p><button class="tb-btn" onclick="openPlace()">+ Add First Place</button></div>`;return}
-  g.innerHTML=list.map(p=>`<div class="pc" onclick="openPlace('${p.id}')"><div class="pch"><div><div class="pname">${p.name}</div><div class="ploc">${p.usState&&p.country?p.usState+', '+p.country:p.country||p.region||'—'}</div></div><div class="pst"><span class="sd ${p.status==='visited'?'dv':p.status==='want'?'dw':p.status==='planned'?'dp':'ds'}"></span>${sl(p.status)}</div></div>${p.rating?`<div style="font-size:10px;margin-bottom:4px">${'⭐'.repeat(parseInt(p.rating))}</div>`:''} ${p.notes?`<div class="pnote">${p.notes}</div>`:''}
-<div class="ptags"><span class="tag tg">${ci(p.category)} ${cl(p.category)}</span>${p.source?`<span class="tag te">${si(p.source)} ${p.source}</span>`:''} ${(p.tripIds||[]).length?`<span class="tag tb2">✈️ ${p.tripIds.length} trip${p.tripIds.length>1?'s':''}</span>`:''} ${(p.journalIds||[]).length?`<span class="tag to">📓 ${p.journalIds.length}</span>`:''}</div>
-<div class="pact" onclick="event.stopPropagation()"><button class="pbtn" onclick="openPlace('${p.id}')">✏️ Edit</button><button class="pbtn" onclick="cycleStatus('${p.id}')">🔄</button><button class="pbtn del" onclick="delPlace('${p.id}')">🗑️</button></div></div>`).join('');
+  g.innerHTML=list.map(p=>{
+    const loc=p.usState&&p.country?p.usState+', '+p.country:p.country||p.region||'';
+    const meta=[ci(p.category)+' '+cl(p.category),p.source?p.source:'',p.rating?'⭐'.repeat(parseInt(p.rating)):''].filter(Boolean).join(' · ');
+    const links=[(p.tripIds||[]).length?`✈️ ${p.tripIds.length} trip${p.tripIds.length>1?'s':''}`:'',(p.journalIds||[]).length?`📓 ${p.journalIds.length}`:'',(p.tags||[]).slice(0,2).join(', ')].filter(Boolean).join(' · ');
+    return`<div class="pc" onclick="openPlace('${p.id}')">
+      <div class="pch">
+        <div><div class="pname">${p.name}</div>${loc?`<div class="ploc">${loc}</div>`:''}</div>
+        <div class="pst"><span class="sd ${p.status==='visited'?'dv':p.status==='want'?'dw':p.status==='planned'?'dp':'ds'}"></span>${sl(p.status)}</div>
+      </div>
+      ${p.notes?`<div class="pnote">${p.notes}</div>`:''}
+      <div style="font-size:10px;color:var(--muted);margin-top:6px">${meta}</div>
+      ${links?`<div style="font-size:10px;color:var(--muted2);margin-top:2px">${links}</div>`:''}
+      <div class="pact" onclick="event.stopPropagation()">
+        <button class="pbtn" onclick="openPlace('${p.id}')">✏️ Edit</button>
+        <button class="pbtn" onclick="cycleStatus('${p.id}')" title="Cycle status">🔄 ${sl(p.status)}</button>
+        <button class="pbtn del" onclick="delPlace('${p.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ══════════════════════════════════════════════
@@ -1354,14 +1382,14 @@ function openTripD(id){
     placesByRegion[key].push(p);
   });
 
-  const placesSection=linkedPlaces.length?`
+  const placesSection=`
   <div class="card" style="margin-bottom:13px">
     <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
       <div><div class="ct">📍 Places</div><div class="cs">${linkedPlaces.length} linked${scopeNote?' · '+scopeNote:''}</div></div>
-      <span class="coll-arrow">▾</span>
+      <div style="display:flex;align-items:center;gap:8px"><button class="pbtn" onclick="event.stopPropagation();openLinkPlace('${t.id}')" title="Link existing place to this trip">+ Link Place</button><span class="coll-arrow">▾</span></div>
     </div>
     <div class="coll-body coll-open">
-      ${Object.entries(placesByRegion).map(([region,places])=>`
+      ${linkedPlaces.length?Object.entries(placesByRegion).map(([region,places])=>`
         <div style="margin-bottom:10px">
           <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px;padding-top:4px">${region}</div>
           ${places.map(p=>`<div style="display:flex;align-items:flex-start;gap:9px;padding:6px 0;border-bottom:1px solid var(--bdr)">
@@ -1371,11 +1399,15 @@ function openTripD(id){
               ${p.region&&p.region!==region?`<div style="font-size:11px;color:var(--muted2)">${p.region}</div>`:''}
               ${p.notes?`<div style="font-size:11px;color:var(--muted2);margin-top:2px">${p.notes.slice(0,100)}${p.notes.length>100?'…':''}</div>`:''}
             </div>
-            ${p.rating?`<div style="font-size:10px;flex-shrink:0">${'⭐'.repeat(parseInt(p.rating))}</div>`:''}
+            <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+              ${p.rating?`<div style="font-size:10px">${'⭐'.repeat(parseInt(p.rating))}</div>`:''}
+              <button onclick="unlinkPlace('${p.id}','${t.id}')" title="Unlink from trip" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:2px 4px;border-radius:3px;line-height:1" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
+            </div>
           </div>`).join('')}
-        </div>`).join('')}
+        </div>`).join(''):
+        `<div style="font-size:12px;color:var(--muted2);padding:10px 0;text-align:center">No places linked yet — add a stop and link it to a place</div>`}
     </div>
-  </div>`:''
+  </div>`
 
   const journalSection=tripJournal.length?`
   <div class="card" style="margin-bottom:13px">
@@ -1454,6 +1486,31 @@ function delStop(tid,di,si){
   save('trips',D.trips);
   openTripD(tid);
 }
+function unlinkPlace(placeId,tid){
+  const p=D.places.find(x=>x.id===placeId);if(!p)return;
+  p.tripIds=(p.tripIds||[]).filter(id=>id!==tid);
+  save('places',D.places);
+  toast('Unlinked');openTripD(tid);
+}
+function openLinkPlace(tid){
+  const unlinked=[...D.places].filter(p=>!(p.tripIds||[]).includes(tid)).sort((a,b)=>a.name.localeCompare(b.name));
+  if(!unlinked.length){toast('All places are already linked to this trip');return;}
+  const sel=document.getElementById('lp-place');
+  sel.innerHTML=unlinked.map(p=>`<option value="${p.id}">${ci(p.category)} ${p.name}${p.region?' — '+p.region:''}</option>`).join('');
+  document.getElementById('lp-tid').value=tid;
+  openM('m-link-place');
+}
+function saveLinkPlace(){
+  const placeId=document.getElementById('lp-place').value;
+  const tid=document.getElementById('lp-tid').value;
+  if(!placeId||!tid)return;
+  const p=D.places.find(x=>x.id===placeId);if(!p)return;
+  if(!(p.tripIds||[]).includes(tid)){
+    p.tripIds=[...(p.tripIds||[]),tid];
+    save('places',D.places);
+  }
+  closeM('m-link-place');toast('📍 Place linked!');openTripD(tid);
+}
 function openStop(tid,di){
   pendStop={tid,di};
   document.getElementById('st-name').value='';
@@ -1509,7 +1566,8 @@ function rWish(){
   if(!list.length){el.innerHTML=`<div class="empty"><div class="empty-icon">♡</div><h3>Wishlist empty</h3><p>Add dream destinations and bucket list items.</p><button class="tb-btn" onclick="openWish()">+ Add First Dream</button></div>`;return}
   el.innerHTML=list.map((w,i)=>{
     const gt=w.graduated&&w.tripId?D.trips.find(x=>x.id===w.tripId):null;
-    return`<div class="wi"><div class="wrank">${w.graduated?'✈️':i+1}</div><div class="wbody"><div class="wname">${w.name}${w.graduated?` <span class="tag tg" style="font-size:9px">planned</span>`:''}</div><div class="wdesc">${w.type}${w.season?' · '+w.season:''}${gt?' · '+gt.name:''}</div><div class="wtags"><span class="tag ${w.priority==='must'?'tr':w.priority==='soon'?'to':'tg'}">${pi(w.priority)} ${w.priority}</span><span class="tag te">${w.type}</span></div></div><div style="display:flex;gap:5px;flex-shrink:0">${!w.graduated?`<button class="pbtn" onclick="graduateWish('${w.id}')" title="Convert to Trip">→ Plan</button>`:''}<button class="wdel" onclick="delWish('${w.id}')">🗑️</button></div></div>`;
+    const priorityColor=w.priority==='must'?'#B05050':w.priority==='soon'?'var(--gold2)':'var(--muted)';
+    return`<div class="wi"><div class="wrank" style="color:${priorityColor}">${w.graduated?'✈️':i+1}</div><div class="wbody"><div class="wname">${w.name}${w.graduated?' · planned':''}</div><div class="wdesc" style="margin-top:3px">${pi(w.priority)} ${w.priority}${w.type?' · '+w.type:''}${w.season?' · '+w.season:''}${gt?' · '+gt.name:''}</div>${w.notes?`<div style="font-size:11px;color:var(--muted2);margin-top:3px">${w.notes.slice(0,80)}${w.notes.length>80?'…':''}</div>`:''}</div><div style="display:flex;gap:5px;flex-shrink:0">${!w.graduated?`<button class="pbtn" onclick="graduateWish('${w.id}')" title="Convert to Trip">→ Plan</button>`:''}<button class="wdel" onclick="delWish('${w.id}')">🗑️</button></div></div>`;
   }).join('');
 }
 
