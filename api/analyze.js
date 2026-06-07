@@ -31,7 +31,10 @@ module.exports = async function handler(req, res) {
 
     if (!upstream.ok) {
       const err = await upstream.json().catch(() => ({}));
-      return res.status(upstream.status).json({ error: err.error?.message || `Upstream error ${upstream.status}` });
+      return res.status(upstream.status).json({
+        error: err.error?.message || `Upstream error ${upstream.status}`,
+        upstreamStatus: upstream.status,
+      });
     }
 
     const data = await upstream.json();

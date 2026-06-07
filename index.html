@@ -1518,16 +1518,17 @@ Extract ALL specifically visited places — restaurants, trails, hotels, viewpoi
     document.getElementById('import-loading').style.display='none';
     document.getElementById('import-step2').style.display='none';
     document.getElementById('import-step1').style.display='block';
-    if(e.message && e.message.toLowerCase().includes('api key')){
-      showImportError('No API key found. Go to Settings and paste your Claude API key (get one free at console.anthropic.com). If you\'re the site owner on Vercel, add ANTHROPIC_API_KEY in your Vercel project → Settings → Environment Variables, then redeploy.');
-    } else if(e.message && e.message.includes('401')){
-      showImportError('Invalid API key — check it in Settings. It should start with "sk-ant-api03-".');
-    } else if(e.message && e.message.includes('429')){
-      showImportError('Rate limit — wait a moment and try again.');
+    const status = e.httpStatus || 0;
+    if(e.code === 'NO_KEY'){
+      showImportError('No API key configured. If you\'re the site owner, add ANTHROPIC_API_KEY in Vercel project → Settings → Environment Variables, then redeploy. Otherwise go to app Settings and paste your own Claude API key from console.anthropic.com.');
+    } else if(status === 401 || status === 403){
+      showImportError('API key rejected (401). Double-check that ANTHROPIC_API_KEY in your Vercel environment variables is correct and starts with "sk-ant-api03-".');
+    } else if(status === 429 || e.message.includes('429')){
+      showImportError('Rate limit hit — wait a moment and try again.');
     } else if(e.message && (e.message.includes('fetch') || e.message.includes('network') || e.message.includes('Failed'))){
-      showImportError('Network blocked. Direct API calls are not allowed inside Cowork artifacts. Make sure you\'re using the app via the Wayfinder artifact panel, not an embedded iframe.');
+      showImportError('Network error. If you\'re inside an embedded iframe, try opening the app directly at its Vercel URL.');
     } else {
-      showImportError('Error: ' + (e.message || 'unknown') + '. If this keeps happening, try pasting the document text directly into the box instead of uploading the file.');
+      showImportError('Error: ' + (e.message || 'unknown') + '. Open the browser console for details.');
     }
   }
 }
@@ -1548,17 +1549,25 @@ async function callAI(prompt) {
       body: JSON.stringify({ prompt }),
     });
     if (r.ok) { const d = await r.json(); return d.text; }
-    const err = await r.json().catch(() => ({}));
-    // 404 = not on Vercel; 500 w/ "not configured" = env var missing → fall through to direct API
-    if (r.status !== 404 && !(r.status === 500 && (err.error || '').includes('not configured'))) {
-      throw new Error(err.error || `Server error ${r.status}`);
+    const body = await r.json().catch(() => ({}));
+    // 404 = not on Vercel; 500 "not configured" = env var missing → fall through to direct API
+    if (r.status !== 404 && !(r.status === 500 && (body.error || '').includes('not configured'))) {
+      const e = new Error(body.error || `Server error ${r.status}`);
+      e.httpStatus = body.upstreamStatus || r.status;
+      throw e;
     }
   } catch(e) {
-    if (!(e instanceof TypeError)) throw e; // TypeError = no server (file:// or offline), fall through
+    // Only swallow connection-level failures (no server / offline); rethrow real API errors
+    if (e.httpStatus || !(e instanceof TypeError || e instanceof DOMException)) throw e;
+    console.warn('Proxy unreachable, falling back to direct API:', e.message);
   }
   // 3. Direct API with user-provided key (Settings → API Key)
   const key = D.settings?.apiKey || '';
-  if (!key) throw new Error('API key required — go to Settings and paste your Claude API key (get one free at console.anthropic.com).');
+  if (!key) {
+    const e = new Error('API key required');
+    e.code = 'NO_KEY';
+    throw e;
+  }
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
