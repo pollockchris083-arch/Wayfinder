@@ -576,6 +576,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
         </div>
       </div>
       <div id="places-grid" class="ga"></div>
+      <div class="td-view" id="place-dv"></div>
     </div>
 
     <div class="page" id="page-wishlist">
@@ -1649,7 +1650,8 @@ function savePlace(){
     addedAt:existing?.addedAt||Date.now()
   };
   if(eid){const i=D.places.findIndex(x=>x.id===eid);D.places[i]=pl}else D.places.push(pl);
-  save('places',D.places);closeM('m-place');toast(eid?'✅ Updated':'📍 Place saved!');rPlaces();badges();eid=null;
+  const savedId=pl.id;save('places',D.places);closeM('m-place');toast(eid?'✅ Updated':'📍 Place saved!');badges();eid=null;
+  if(apid&&apid===savedId){openPlaceD(savedId);}else{rPlaces();}
 }
 function normCountry(c){
   if(!c)return'';
@@ -1668,9 +1670,47 @@ function getHomeState(){
   return abbrev[raw.toUpperCase()]||US_STATES.find(s=>s.toLowerCase()===raw.toLowerCase())||'';
 }
 function delPlace(id){if(!confirm('Remove this place?'))return;D.places=D.places.filter(p=>p.id!==id);save('places',D.places);toast('🗑️ Removed');rPlaces();badges()}
-function cycleStatus(id){const o=['saved','want','planned','visited'],p=D.places.find(x=>x.id===id);p.status=o[(o.indexOf(p.status)+1)%4];save('places',D.places);toast(sl(p.status));rPlaces()}
+function cycleStatus(id){const o=['saved','want','planned','visited'],p=D.places.find(x=>x.id===id);p.status=o[(o.indexOf(p.status)+1)%4];save('places',D.places);toast(sl(p.status));if(apid===id)openPlaceD(id);else rPlaces();}
 function fPlace(b,f){document.querySelectorAll('#pfb .fc').forEach(x=>x.classList.remove('on'));b.classList.add('on');pf=f;rPlaces()}
+let apid=null;
+function openPlaceD(id){
+  D=load();apid=id;const p=D.places.find(x=>x.id===id);if(!p)return;
+  document.getElementById('places-grid').style.display='none';
+  const dv=document.getElementById('place-dv');dv.classList.add('on');
+  const linkedTrips=D.trips.filter(t=>(p.tripIds||[]).includes(t.id));
+  const linkedJournal=[...D.journal].filter(j=>j.placeId===id||(p.journalIds||[]).includes(j.id)).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const loc=p.usState&&p.country?p.usState+', '+p.country:p.country||p.region||'';
+  const rStars=parseInt(p.rating)||0;
+  const statusColor=p.status==='visited'?'var(--green3)':p.status==='want'?'var(--gold2)':p.status==='planned'?'#4A7EBA':'var(--muted)';
+  dv.innerHTML=`
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <button class="td-back" onclick="rPlaces()">← All Places</button>
+    <div style="display:flex;gap:7px">
+      <button class="pbtn" onclick="openPlace('${p.id}')">✏️ Edit</button>
+      <button class="pbtn del" onclick="delPlace('${p.id}')">🗑️ Delete</button>
+    </div>
+  </div>
+  <div style="background:linear-gradient(135deg,var(--card2),var(--card));border:1px solid var(--bdr);border-radius:var(--r);padding:16px 18px;margin-bottom:13px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--sage),var(--earth))"></div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">
+      <div><div style="font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.3px;margin-bottom:3px">${ci(p.category)} ${p.name}</div>${loc?`<div style="font-size:12px;color:var(--muted)">📍 ${loc}</div>`:''}</div>
+      <span class="tag" style="background:${statusColor}22;color:${statusColor};flex-shrink:0;margin-top:3px">${sl(p.status)}</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--muted)">${[cl(p.category),p.source?'🔗 '+p.source:'',rStars?'⭐'.repeat(rStars):''].filter(Boolean).join('<span style="margin:0 2px;opacity:.4">·</span>')}</div>
+    ${p.notes?`<div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7;padding:10px;background:rgba(0,0,0,.03);border-radius:6px">${p.notes}</div>`:''}
+    ${(p.tags||[]).length?`<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px">${p.tags.map(t=>`<span style="background:rgba(74,114,89,.08);color:var(--green3);border:1px solid rgba(74,114,89,.15);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:500">${t}</span>`).join('')}</div>`:''}
+  </div>
+  <div class="g3" style="gap:10px;margin-bottom:13px">
+    <div class="sc" style="--accent:var(--green2)"><div class="si">✈️</div><div class="sn">${linkedTrips.length||'—'}</div><div class="sl">Trips</div></div>
+    <div class="sc" style="--accent:var(--earth2)"><div class="si">📓</div><div class="sn">${linkedJournal.length||'—'}</div><div class="sl">Journal</div></div>
+    <div class="sc" style="--accent:var(--gold)"><div class="si">⭐</div><div class="sn">${rStars||'—'}</div><div class="sl">Rating</div></div>
+  </div>
+  ${linkedTrips.length?`<div class="card" style="margin-bottom:13px"><div class="ch"><div class="ct">Trips</div></div>${linkedTrips.map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bdr)"><div><div style="font-size:13px;font-weight:500;color:var(--text)">✈️ ${t.name}</div>${t.startDate?`<div style="font-size:11px;color:var(--muted)">${fd(t.startDate)}${t.endDate?' — '+fd(t.endDate):''}</div>`:''}</div><button class="pbtn" onclick="go('trips');openTripD('${t.id}')">Open →</button></div>`).join('')}</div>`:''}
+  ${linkedJournal.length?`<div class="card" style="margin-bottom:13px"><div class="ch"><div class="ct">Journal Entries</div></div>${linkedJournal.map(j=>journalCard(j,false)).join('')}</div>`:''}
+  ${!linkedTrips.length&&!linkedJournal.length?`<div style="text-align:center;padding:24px;color:var(--muted2);font-size:12px;border:1px dashed var(--bdr2);border-radius:var(--r)">No trips or journal entries linked yet</div>`:''}`;
+}
 function rPlaces(){
+  apid=null;document.getElementById('places-grid').style.display='';const pdv=document.getElementById('place-dv');if(pdv)pdv.classList.remove('on');
   D=load();const q=document.getElementById('srch').value.toLowerCase();
   const sortMode=document.getElementById('psort')?.value||'recent';
   let list=D.places.filter(p=>{const mf=pf==='all'||p.status===pf||p.category===pf||(p.tags||[]).includes(pf);const ms=!q||p.name.toLowerCase().includes(q)||(p.region||'').toLowerCase().includes(q)||(p.country||'').toLowerCase().includes(q)||(p.usState||'').toLowerCase().includes(q)||(p.notes||'').toLowerCase().includes(q)||(p.tags||[]).some(t=>t.toLowerCase().includes(q));return mf&&ms}).sort((a,b)=>{if(sortMode==='az')return a.name.localeCompare(b.name);if(sortMode==='rating')return(parseInt(b.rating)||0)-(parseInt(a.rating)||0)||b.addedAt-a.addedAt;if(sortMode==='country')return(normCountry(a.country)||'zzz').localeCompare(normCountry(b.country)||'zzz')||a.name.localeCompare(b.name);return b.addedAt-a.addedAt;});
@@ -1683,12 +1723,12 @@ function rPlaces(){
     const loc=p.usState&&p.country?p.usState+', '+p.country:p.country||p.region||'';
     const meta=[ci(p.category)+' '+cl(p.category),p.source?p.source:'',p.rating?'⭐'.repeat(parseInt(p.rating)):''].filter(Boolean).join(' · ');
     const links=[(p.tripIds||[]).length?`✈️ ${p.tripIds.length} trip${p.tripIds.length>1?'s':''}`:'',(p.journalIds||[]).length?`📓 ${p.journalIds.length}`:'',(p.tags||[]).slice(0,2).join(', ')].filter(Boolean).join(' · ');
-    return`<div class="pc" onclick="openPlace('${p.id}')">
+    return`<div class="pc" onclick="openPlaceD('${p.id}')">
       <div class="pch">
         <div><div class="pname">${p.name}</div>${loc?`<div class="ploc">${loc}</div>`:''}</div>
         <div class="pst"><span class="sd ${p.status==='visited'?'dv':p.status==='want'?'dw':p.status==='planned'?'dp':'ds'}"></span>${sl(p.status)}</div>
       </div>
-      ${p.notes?`<div class="pnote">${p.notes}</div>`:''}
+      ${p.notes?`<div class="pnote">${p.notes.slice(0,80)}${p.notes.length>80?'…':''}</div>`:''}
       <div style="font-size:10px;color:var(--muted);margin-top:6px">${meta}</div>
       ${links?`<div style="font-size:10px;color:var(--muted2);margin-top:2px">${links}</div>`:''}
       <div class="pact" onclick="event.stopPropagation()">
@@ -1719,7 +1759,7 @@ function rPlacesGrouped(list){
 
   function placeRow(p){
     const meta=[sl(p.status),p.rating?'⭐'.repeat(parseInt(p.rating)):'',p.source||''].filter(Boolean).join(' · ');
-    return`<div style="display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid var(--bdr);cursor:pointer" onclick="openPlace('${p.id}')">
+    return`<div style="display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid var(--bdr);cursor:pointer" onclick="openPlaceD('${p.id}')">
       <span style="font-size:15px;flex-shrink:0;margin-top:1px">${ci(p.category)}</span>
       <div style="flex:1">
         <div style="font-size:12px;font-weight:500;color:var(--text)">${p.name}</div>
@@ -1761,7 +1801,7 @@ function rPlacesByTrip(list){
   if(!list.length){document.getElementById('places-grid').innerHTML='<div class="empty"><div class="empty-icon">📍</div><h3>No places found</h3><p>Add places you\'ve been or want to go.</p></div>';return;}
   function placeRow(p){
     const meta=[sl(p.status),p.rating?'⭐'.repeat(Math.min(parseInt(p.rating)||0,5)):'',p.usState&&p.country?p.usState+', '+p.country:p.country||p.region||''].filter(Boolean).join(' · ');
-    return`<div style="display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid var(--bdr);cursor:pointer" onclick="openPlace('${p.id}')">
+    return`<div style="display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid var(--bdr);cursor:pointer" onclick="openPlaceD('${p.id}')">
       <span style="font-size:15px;flex-shrink:0;margin-top:1px">${ci(p.category)}</span>
       <div style="flex:1"><div style="font-size:12px;font-weight:500;color:var(--text)">${p.name}</div>
         ${p.notes?`<div style="font-size:11px;color:var(--muted2);margin-top:1px">${p.notes.slice(0,80)}${p.notes.length>80?'…':''}</div>`:''}
