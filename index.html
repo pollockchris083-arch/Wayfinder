@@ -2386,7 +2386,7 @@ function rJournal(){
     Object.entries(grouped).forEach(([tid,grpEntries])=>{
       const t=D.trips.find(x=>x.id===tid);
       html+=`<div style="margin-bottom:16px">
-        <div style="font-size:11px;font-weight:600;color:var(--green3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;display:flex;align-items:center;gap:6px">✈️ ${t?t.name:'Trip'}</div>
+        <div style="font-size:11px;font-weight:600;color:var(--green3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;display:flex;align-items:center;gap:6px;cursor:pointer" onclick="go('trips');setTimeout(()=>openTripD('${tid}'),10)">✈️ ${t?t.name:'Trip'} <span style="font-size:9px;opacity:.6;text-transform:none;letter-spacing:0">Open →</span></div>
         ${grpEntries.map(e=>journalCard(e,false)).join('')}
       </div>`;
     });
@@ -2403,7 +2403,7 @@ function journalCard(e,showTrip){
   return`<div class="je">
     <div class="jdate">${fd(e.date)}${lt?` · <span style="color:var(--green3);font-weight:500">✈️ ${lt.name}</span>`:''}</div>
     <div class="jtitle">${e.title}</div>
-    ${lp?`<div class="jloc">📍 ${lp.name}${lp.region?' — '+lp.region:''}</div>`:e.loc?`<div class="jloc">📍 ${e.loc}</div>`:''}
+    ${lp?`<div class="jloc" style="cursor:pointer" onclick="go('places');setTimeout(()=>openPlaceD('${lp.id}'),10)">📍 ${lp.name}${lp.region?' — '+lp.region:''}</div>`:e.loc?`<div class="jloc">📍 ${e.loc}</div>`:''}
     <div class="jbody" style="-webkit-line-clamp:initial;overflow:visible">${e.body}</div>
     <div class="pact" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--bdr)">
       <button class="pbtn" onclick="openJournalEdit('${e.id}')">✏️ Edit</button>
