@@ -2415,7 +2415,15 @@ function saveJournal(){
   };
   if(jeid){
     const i=D.journal.findIndex(x=>x.id===jeid);
-    if(i>=0)D.journal[i]=entry;
+    if(i>=0){
+      const oldPlaceId=D.journal[i].placeId;
+      D.journal[i]=entry;
+      if(oldPlaceId!==placeId){
+        if(oldPlaceId){const op=D.places.find(x=>x.id===oldPlaceId);if(op){op.journalIds=(op.journalIds||[]).filter(x=>x!==entry.id);}}
+        if(placeId){const np=D.places.find(x=>x.id===placeId);if(np&&!(np.journalIds||[]).includes(entry.id)){np.journalIds=np.journalIds||[];np.journalIds.push(entry.id);}}
+        save('places',D.places);
+      }
+    }
   } else {
     D.journal.push(entry);
     if(placeId){
