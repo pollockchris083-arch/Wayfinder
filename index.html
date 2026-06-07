@@ -714,7 +714,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
 <div class="mo" id="m-wish">
   <div class="modal">
     <button class="mcl" onclick="closeM('m-wish')">✕</button>
-    <h2>Add to Wishlist</h2>
+    <h2 id="wm-title">Add to Wishlist</h2>
     <div class="fg"><label class="fl">Destination / Experience *</label><input class="fi" id="w-name" placeholder="e.g. Japan Cherry Blossom"/></div>
     <div class="fr">
       <div class="fg"><label class="fl">Type</label>
@@ -740,7 +740,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
       <div class="fg"></div>
     </div>
     <div class="fg" style="margin-bottom:0"><label class="fl">Notes</label><textarea class="ft" id="w-notes" placeholder="Why does this call to you?"></textarea></div>
-    <div class="fa"><button class="btn-s" onclick="closeM('m-wish')">Cancel</button><button class="btn-p" onclick="saveWish()">Add</button></div>
+    <div class="fa"><button class="btn-s" onclick="closeM('m-wish')">Cancel</button><button class="btn-p" id="wm-save" onclick="saveWish()">Add to Wishlist</button></div>
   </div>
 </div>
 
@@ -2137,8 +2137,10 @@ function saveStop(){
 // WISHLIST
 // ══════════════════════════════════════════════
 let wf='all';
-function openWish(){['w-name','w-notes'].forEach(id=>document.getElementById(id).value='');document.getElementById('w-type').value='international';document.getElementById('w-pri').value='must';document.getElementById('w-season').value='';openM('m-wish')}
-function saveWish(){const n=document.getElementById('w-name').value.trim();if(!n){toast('⚠️ Name required');return}D.wish.push({id:uid(),name:n,type:document.getElementById('w-type').value,priority:document.getElementById('w-pri').value,season:document.getElementById('w-season').value,notes:document.getElementById('w-notes').value.trim(),addedAt:Date.now()});save('wish',D.wish);closeM('m-wish');toast('♡ Added!');rWish();badges()}
+let weid=null;
+function openWish(){weid=null;['w-name','w-notes'].forEach(id=>document.getElementById(id).value='');document.getElementById('w-type').value='international';document.getElementById('w-pri').value='must';document.getElementById('w-season').value='';document.getElementById('wm-title').textContent='Add to Wishlist';document.getElementById('wm-save').textContent='Add to Wishlist';openM('m-wish')}
+function openWishEdit(id){D=load();const w=D.wish.find(x=>x.id===id);if(!w)return;weid=id;document.getElementById('w-name').value=w.name||'';document.getElementById('w-type').value=w.type||'international';document.getElementById('w-pri').value=w.priority||'must';document.getElementById('w-season').value=w.season||'';document.getElementById('w-notes').value=w.notes||'';document.getElementById('wm-title').textContent='Edit Wish';document.getElementById('wm-save').textContent='Save Changes';openM('m-wish');}
+function saveWish(){const n=document.getElementById('w-name').value.trim();if(!n){toast('⚠️ Name required');return}if(weid){const w=D.wish.find(x=>x.id===weid);if(w){w.name=n;w.type=document.getElementById('w-type').value;w.priority=document.getElementById('w-pri').value;w.season=document.getElementById('w-season').value;w.notes=document.getElementById('w-notes').value.trim();save('wish',D.wish);weid=null;closeM('m-wish');toast('✅ Updated!');rWish();badges();}return;}D.wish.push({id:uid(),name:n,type:document.getElementById('w-type').value,priority:document.getElementById('w-pri').value,season:document.getElementById('w-season').value,notes:document.getElementById('w-notes').value.trim(),addedAt:Date.now()});save('wish',D.wish);closeM('m-wish');toast('♡ Added!');rWish();badges()}
 function delWish(id){D.wish=D.wish.filter(w=>w.id!==id);save('wish',D.wish);toast('🗑️ Removed');rWish();badges()}
 let pendGraduateWishId=null;
 function graduateWish(id){
@@ -2160,7 +2162,7 @@ function rWish(){
   el.innerHTML=list.map((w,i)=>{
     const gt=w.graduated&&w.tripId?D.trips.find(x=>x.id===w.tripId):null;
     const priorityColor=w.priority==='must'?'#B05050':w.priority==='soon'?'var(--gold2)':'var(--muted)';
-    return`<div class="wi"><div class="wrank" style="color:${priorityColor}">${w.graduated?'✈️':i+1}</div><div class="wbody"><div class="wname">${w.name}${w.graduated?' · planned':''}</div><div class="wdesc" style="margin-top:3px">${pi(w.priority)} ${w.priority}${w.type?' · '+w.type:''}${w.season?' · '+w.season:''}${gt?' · '+gt.name:''}</div>${w.notes?`<div style="font-size:11px;color:var(--muted2);margin-top:3px">${w.notes.slice(0,80)}${w.notes.length>80?'…':''}</div>`:''}</div><div style="display:flex;gap:5px;flex-shrink:0">${!w.graduated?`<button class="pbtn" onclick="graduateWish('${w.id}')" title="Convert to Trip">→ Plan</button>`:''}<button class="wdel" onclick="delWish('${w.id}')">🗑️</button></div></div>`;
+    return`<div class="wi"><div class="wrank" style="color:${priorityColor}">${w.graduated?'✈️':i+1}</div><div class="wbody"><div class="wname">${w.name}${w.graduated?' · planned':''}</div><div class="wdesc" style="margin-top:3px">${pi(w.priority)} ${w.priority}${w.type?' · '+w.type:''}${w.season?' · '+w.season:''}${gt?' · '+gt.name:''}</div>${w.notes?`<div style="font-size:11px;color:var(--muted2);margin-top:3px">${w.notes.slice(0,80)}${w.notes.length>80?'…':''}</div>`:''}</div><div style="display:flex;gap:5px;flex-shrink:0"><button class="pbtn" onclick="openWishEdit('${w.id}')">✏️</button>${!w.graduated?`<button class="pbtn" onclick="graduateWish('${w.id}')" title="Convert to Trip">→ Plan</button>`:''}<button class="wdel" onclick="delWish('${w.id}')">🗑️</button></div></div>`;
   }).join('');
 }
 
