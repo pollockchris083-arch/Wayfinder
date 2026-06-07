@@ -1216,14 +1216,33 @@ function saveTrip(){const n=document.getElementById('t-name').value.trim();if(!n
     pendGraduateWishId=null;
   }
   closeM('m-trip');toast('✈️ Trip created!');rTrips();badges()}
-function delTrip(id){if(!confirm('Delete this trip?'))return;D.trips=D.trips.filter(t=>t.id!==id);save('trips',D.trips);toast('🗑️ Deleted');rTrips();badges()}
+function delTrip(id){
+  const t=D.trips.find(x=>x.id===id);if(!t)return;
+  const linkedPlaces=D.places.filter(p=>(p.tripIds||[]).includes(id));
+  const linkedJournal=D.journal.filter(j=>j.tripId===id);
+  const extras=[];
+  if(linkedPlaces.length)extras.push(linkedPlaces.length+' place'+(linkedPlaces.length>1?'s':''));
+  if(linkedJournal.length)extras.push(linkedJournal.length+' journal entr'+(linkedJournal.length>1?'ies':'y'));
+  const msg='Delete "'+t.name+'"?'+(extras.length?'\n\nAlso delete linked: '+extras.join(' and ')+'?':'');
+  if(!confirm(msg))return;
+  D.trips=D.trips.filter(x=>x.id!==id);
+  // Remove places that belong only to this trip; unlink from those that belong to others
+  D.places=D.places.filter(p=>{
+    if(!(p.tripIds||[]).includes(id))return true;
+    p.tripIds=p.tripIds.filter(tid=>tid!==id);
+    return p.tripIds.length>0; // keep if still linked to another trip
+  });
+  D.journal=D.journal.filter(j=>j.tripId!==id);
+  save('trips',D.trips);save('places',D.places);save('journal',D.journal);
+  toast('🗑️ Deleted');rTrips();badges();
+}
 function fTrip(b,f){document.querySelectorAll('#trips-lv .fc').forEach(x=>x.classList.remove('on'));b.classList.add('on');tf=f;rTrips()}
 function rTrips(){
   D=load();document.getElementById('trips-lv').style.display='block';document.getElementById('trip-dv').classList.remove('on');atid=null;
   let list=D.trips.filter(t=>{if(tf==='all')return true;if(tf==='upcoming')return t.status==='upcoming'||t.status==='active';if(tf==='past')return t.status==='past';if(tf==='planning')return t.status==='planning';return true}).sort((a,b)=>{if(a.startDate&&b.startDate)return new Date(b.startDate)-new Date(a.startDate);return b.addedAt-a.addedAt});
   const g=document.getElementById('trips-grid');
   if(!list.length){g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">✈️</div><h3>No trips yet</h3><p>Create a trip or import from a doc.</p><button class="tb-btn" onclick="openTrip()" style="margin-bottom:8px">+ New Trip</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;return}
-  g.innerHTML=list.map(t=>`<div class="tc" onclick="openTripD('${t.id}')"><div class="tc-bar"></div><div class="tcb"><div class="tname">${t.name}</div><div class="tdates">${t.startDate?fd(t.startDate)+' — '+fd(t.endDate):'Dates TBD'}</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:9px">${t.destinations.slice(0,3).map(d=>`<span class="tag tg">📍 ${d}</span>`).join('')}${t.destinations.length>3?`<span class="tag te">+${t.destinations.length-3}</span>`:''}</div><div class="tfoot"><div class="tstat">${t.itinerary.reduce((s,d)=>s+d.stops.length,0)} stops · ${t.itinerary.length} days</div><span class="tag ${tsc(t.status)}">${tsl(t.status)}</span></div></div></div>`).join('');
+  g.innerHTML=list.map(t=>`<div class="tc" onclick="openTripD('${t.id}')"><div class="tc-bar"></div><div class="tcb"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px"><div class="tname" style="flex:1">${t.name}</div><button onclick="event.stopPropagation();delTrip('${t.id}')" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0;line-height:1;flex-shrink:0" title="Delete trip">×</button></div><div class="tdates">${t.startDate?fd(t.startDate)+' — '+fd(t.endDate):'Dates TBD'}</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:9px">${t.destinations.slice(0,3).map(d=>`<span class="tag tg">📍 ${d}</span>`).join('')}${t.destinations.length>3?`<span class="tag te">+${t.destinations.length-3}</span>`:''}</div><div class="tfoot"><div class="tstat">${t.itinerary.reduce((s,d)=>s+d.stops.length,0)} stops · ${t.itinerary.length} days</div><span class="tag ${tsc(t.status)}">${tsl(t.status)}</span></div></div></div>`).join('');
 }
 function openTripD(id){
   D=load();const t=D.trips.find(x=>x.id===id);if(!t)return;atid=id;
