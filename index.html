@@ -1117,6 +1117,8 @@ async function loadFromCloud(){
       ]);
       toast('☁️ Data synced to your account!');
     } else {
+      // Fresh cloud load — clear migration flag so canonical fixes always re-validate
+      localStorage.removeItem('wf_cloud_v4');
       if(p.data?.length)localStorage.setItem(K.places,JSON.stringify(p.data.map(stripRow)));
       if(t.data?.length)localStorage.setItem(K.trips,JSON.stringify(t.data.map(stripRow)));
       if(w.data?.length)localStorage.setItem(K.wish,JSON.stringify(w.data.map(stripRow)));
@@ -1162,27 +1164,31 @@ async function cloudPushSettings(cfg){
 }
 
 async function migrateCloudData(){
-  if(localStorage.getItem('wf_cloud_v4'))return;
+  // No early exit — always run canonical fixes (idempotent: no-ops if data correct)
+  // wf_cloud_v4 flag only suppresses verbose audit logs after the first run
   D=load();
+  const verbose=!localStorage.getItem('wf_cloud_v4');
 
-  // CANONICAL trip definitions — match by name keyword OR approximate date
+  // CANONICAL trip definitions — match by name keyword only (no date fallbacks to avoid false matches)
   const CANONICAL=[
     {name:'Italy 2022',start:'2022-10-06',end:'2022-10-22',dests:['Italy'],status:'past',
-     test:t=>t.name==='Italy 2022'||t.name.toLowerCase().includes('italy 2022')||(t.startDate&&/^202[12]-10/.test(t.startDate)&&!t.name.toLowerCase().includes('balkan')&&!t.name.toLowerCase().includes('central'))},
+     test:t=>t.name.toLowerCase().includes('italy 2022')||(t.name.toLowerCase().includes('italy')&&!t.name.toLowerCase().includes('central')&&!t.name.toLowerCase().includes('europe'))},
     {name:'Balkans & Alps 2023',start:'2023-10-18',end:'2023-11-04',dests:['Croatia','Slovenia','Austria','Montenegro','Bosnia'],status:'past',
      test:t=>t.name.toLowerCase().includes('balkan')},
     {name:'Central Europe 2024',start:'2024-10-16',end:'2024-10-31',dests:['Italy','Switzerland','Austria','Liechtenstein','Germany','Czech Republic'],status:'past',
-     test:t=>t.name.toLowerCase().includes('central')||(t.startDate&&/^202[34]-10/.test(t.startDate)&&!t.name.toLowerCase().includes('italy 20')&&!t.name.toLowerCase().includes('balkan'))},
+     test:t=>t.name.toLowerCase().includes('central europe')||t.name.toLowerCase().includes('liechtenstein')||t.name.toLowerCase().includes('czech')},
     {name:'Iceland 2025',start:'2025-09-11',end:'2025-09-26',dests:['Iceland'],status:'past',
      test:t=>t.name.toLowerCase().includes('iceland')},
   ];
 
-  // ── Audit snapshot ──
-  const snap={ts:D.trips.map(t=>({id:t.id,name:t.name,sd:t.startDate,ed:t.endDate,dests:t.destinations||[],status:t.status,itLen:(t.itinerary||[]).length})),ps:D.places.map(p=>({id:p.id,name:p.name,tids:p.tripIds||[]})),js:D.journal.map(j=>({id:j.id,tid:j.tripId,date:j.date,title:j.title}))};
-  localStorage.setItem('wf_audit_v4',JSON.stringify(snap));
-  console.group('[Wayfinder] Pre-migration audit (cloud v4)');
-  snap.ts.forEach(t=>{const pl=snap.ps.filter(p=>p.tids.includes(t.id)).length,jr=snap.js.filter(j=>j.tid===t.id).length;console.log(`"${t.name}" [${t.id.slice(0,8)}] ${t.sd||'?'}→${t.ed||'?'} | dests:[${t.dests.join(',')}] | places:${pl} journal:${jr} itinerary:${t.itLen}days`);});
-  console.groupEnd();
+  // ── Audit snapshot (verbose first run only) ──
+  if(verbose){
+    const snap={ts:D.trips.map(t=>({id:t.id,name:t.name,sd:t.startDate,ed:t.endDate,dests:t.destinations||[],status:t.status,itLen:(t.itinerary||[]).length})),ps:D.places.map(p=>({id:p.id,name:p.name,tids:p.tripIds||[]})),js:D.journal.map(j=>({id:j.id,tid:j.tripId,date:j.date,title:j.title}))};
+    localStorage.setItem('wf_audit_v4',JSON.stringify(snap));
+    console.group('[Wayfinder] Pre-migration audit (cloud v4)');
+    snap.ts.forEach(t=>{const pl=snap.ps.filter(p=>p.tids.includes(t.id)).length,jr=snap.js.filter(j=>j.tid===t.id).length;console.log(`"${t.name}" [${t.id.slice(0,8)}] ${t.sd||'?'}→${t.ed||'?'} | dests:[${t.dests.join(',')}] | places:${pl} journal:${jr} itinerary:${t.itLen}days`);});
+    console.groupEnd();
+  }
 
   let changed=false;
 
@@ -1269,14 +1275,16 @@ async function migrateCloudData(){
       try{
         await Promise.all([cloudPush('places',D.places),cloudPush('trips',D.trips),cloudPush('journal',D.journal)]);
         setSyncStatus('☁️ Synced');
-        console.log('[Wayfinder] Cloud migration v3 pushed to Supabase');
-      }catch(e){console.error('[Wayfinder] Cloud migration v3 push failed:',e);setSyncStatus('⚠️ Migration sync failed');}
+        console.log('[Wayfinder] Migration fixes pushed to Supabase');
+      }catch(e){console.error('[Wayfinder] Migration push failed:',e);setSyncStatus('⚠️ Migration sync failed');}
     }
   }
-  console.group('[Wayfinder] Post-migration summary (cloud v4)');
-  D.trips.forEach(t=>{const pl=D.places.filter(p=>(p.tripIds||[]).includes(t.id)).length,jr=D.journal.filter(j=>j.tripId===t.id).length,st=(t.itinerary||[]).reduce((n,d)=>n+(d.stops||[]).length,0);console.log(`"${t.name}" | places:${pl} journal:${jr} days:${tripDays(t)} (itinerary:${(t.itinerary||[]).length}) stops:${st} | dests:[${(t.destinations||[]).join(',')}]`);});
-  console.groupEnd();
-  localStorage.setItem('wf_cloud_v4','1');
+  if(verbose){
+    console.group('[Wayfinder] Post-migration summary (cloud v4)');
+    D.trips.forEach(t=>{const pl=D.places.filter(p=>(p.tripIds||[]).includes(t.id)).length,jr=D.journal.filter(j=>j.tripId===t.id).length,st=(t.itinerary||[]).reduce((n,d)=>n+(d.stops||[]).length,0);console.log(`"${t.name}" | places:${pl} journal:${jr} days:${tripDays(t)} (itinerary:${(t.itinerary||[]).length}) stops:${st} | dests:[${(t.destinations||[]).join(',')}]`);});
+    console.groupEnd();
+  }
+  localStorage.setItem('wf_cloud_v4','1'); // suppresses audit logs on future runs, not the fixes
 }
 function scheduledSync(k,items){
   if(!currentUser)return;
