@@ -4537,20 +4537,29 @@ function campCard(c){
   const typeInfo=ADV_TYPES[c.campType]||{icon:'🏕️',label:c.campType||'Tent'};
   const dur=c.startDate&&c.endDate?Math.round((new Date(c.endDate)-new Date(c.startDate))/86400000)+1:0;
   const datesStr=c.startDate?fd(c.startDate)+(c.endDate&&c.endDate!==c.startDate?' — '+fd(c.endDate):''):'';
-  const stops=(c.stops||[]).length;
-  const thumb=c.thumb?`<img src="${c.thumb}" class="camp-thumb" onerror="this.style.display='none'">`:`<div class="camp-thumb">${typeInfo.icon}</div>`;
+  const stops=c.stops||[];
+  const stopCount=stops.length;
+  const bookedCount=stops.filter(s=>s.booked).length;
+  const totalMiles=stops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  const allBooked=stopCount>0&&bookedCount===stopCount;
+  const thumb=c.thumb?`<img src="${c.thumb}" class="camp-thumb" onerror="this.parentElement.querySelector('.camp-thumb-fallback').style.display='flex';this.style.display='none'">`:``;
   return`<div class="camp-card" onclick="openCampD('${c.id}')">
-    ${thumb}
+    ${c.thumb?`<div style="position:relative"><img src="${c.thumb}" class="camp-thumb" style="display:block" onerror="this.style.display='none'"/>
+      <div class="camp-thumb-fallback" style="display:none;width:100%;height:110px;background:linear-gradient(135deg,#2D4A35,#4A7259);align-items:center;justify-content:center;font-size:36px;color:rgba(255,255,255,.3)">${typeInfo.icon}</div>
+      <span style="position:absolute;top:7px;right:7px;font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;backdrop-filter:blur(4px);background:rgba(0,0,0,.45);color:#fff;letter-spacing:.3px">${typeInfo.icon} ${typeInfo.label}</span>
+      </div>`:`<div style="position:relative"><div class="camp-thumb" style="display:flex">${typeInfo.icon}</div>
+      <span style="position:absolute;top:7px;right:7px;font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(0,0,0,.35);color:#fff;letter-spacing:.3px">${typeInfo.icon} ${typeInfo.label}</span></div>`}
     <div class="camp-body">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:5px;margin-bottom:4px">
         <div class="camp-name">${c.name}</div>
         <span style="font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;flex-shrink:0;white-space:nowrap;${campStatusStyle(c.status)}">${c.status==='wishlist'?'♡ Wishlist':c.status==='planning'?'📋 Planning':'✅ Done'}</span>
       </div>
-      ${c.location?`<div class="camp-loc">📍 ${c.location}${c.state?', '+c.state:''}</div>`:''}
+      ${c.location||c.state?`<div class="camp-loc">📍 ${[c.location,c.state].filter(Boolean).join(', ')}</div>`:''}
       ${datesStr?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${datesStr}${dur>1?' · '+dur+'d':''}</div>`:''}
       <div style="margin-top:7px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
-        <span class="camp-type-badge">${typeInfo.icon} ${typeInfo.label}</span>
-        ${stops>1?`<span style="font-size:10px;color:var(--muted2)">${stops} stops</span>`:''}
+        ${stopCount?`<span style="font-size:10px;color:var(--muted2)">${stopCount} stop${stopCount!==1?'s':''}</span>`:''}
+        ${totalMiles>0?`<span style="font-size:10px;color:var(--muted2)">· ${totalMiles.toFixed(0)} mi</span>`:''}
+        ${allBooked?`<span style="font-size:9px;color:var(--green3);font-weight:700;background:rgba(74,114,89,.12);padding:1px 5px;border-radius:3px">✅ All Booked</span>`:bookedCount?`<span style="font-size:9px;color:var(--muted2);background:var(--card2);padding:1px 5px;border-radius:3px">${bookedCount}/${stopCount} booked</span>`:''}
         ${c.rating?`<span style="font-size:10px;color:var(--gold2)">★ ${c.rating}/5</span>`:''}
       </div>
     </div>
