@@ -105,6 +105,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
 /* ── PAGES ── */
 .page{display:none;padding:18px;animation:fi .22s ease}
 .page.on{display:block}
+#page-path.on{display:flex}
 @keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 
 /* ── CARDS ── */
@@ -470,7 +471,89 @@ input,textarea,select{font-family:inherit;font-weight:400}
   .dash-trips{gap:9px}
   .tc{min-width:220px}
   .tb-search{max-width:140px}
+  .pipe-col{width:230px;min-width:230px}
+  .path-detail{width:100vw;max-width:100vw}
+  .path-filter-bar{flex-wrap:wrap;gap:7px}
 }
+
+/* ── THE PATH — PIPELINE ── */
+#page-path{padding:0;overflow:hidden;display:flex;flex-direction:column;height:calc(100vh - 50px)}
+.path-filter-bar{display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--card);border-bottom:1px solid var(--bdr);flex-shrink:0;overflow-x:auto}
+.path-filter-bar::-webkit-scrollbar{height:0}
+.pipe-filter-label{font-size:10px;font-weight:600;color:var(--muted2);letter-spacing:1px;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
+.pipe-filter-btn{background:var(--card2);border:1px solid var(--bdr);border-radius:5px;padding:4px 10px;font-size:11px;color:var(--text2);cursor:pointer;transition:all .13s;white-space:nowrap;font-family:inherit}
+.pipe-filter-btn:hover{border-color:var(--bdr2);color:var(--text)}
+.pipe-filter-btn.on{background:rgba(74,114,89,.1);border-color:rgba(74,114,89,.3);color:var(--green3);font-weight:600}
+.pipe-filter-sep{width:1px;height:18px;background:var(--bdr2);flex-shrink:0;margin:0 2px}
+.path-board{display:flex;gap:10px;padding:12px 14px;overflow-x:auto;flex:1;align-items:flex-start}
+.path-board::-webkit-scrollbar{height:6px}
+.path-board::-webkit-scrollbar-thumb{background:var(--card3);border-radius:4px}
+.pipe-col{width:254px;min-width:254px;display:flex;flex-direction:column;max-height:100%;background:var(--bg2);border-radius:10px;border:1px solid var(--bdr);overflow:hidden;flex-shrink:0;transition:all .18s}
+.pipe-col.drag-target{border-color:var(--green);box-shadow:0 0 0 2px rgba(74,114,89,.22)}
+.pipe-col.pipe-col-collapsed{width:42px;min-width:42px}
+.pipe-col-bar{height:3px;flex-shrink:0}
+.pipe-col-head{padding:9px 11px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--bg2)}
+.pipe-col-collapsed .pipe-col-head{flex-direction:column;align-items:center;padding:12px 6px;gap:10px;height:auto}
+.pipe-col-label{display:flex;align-items:center;gap:6px;min-width:0}
+.pipe-col-collapsed .pipe-col-label{flex-direction:column;gap:8px}
+.pipe-col-icon{font-size:11px;flex-shrink:0}
+.pipe-col-name{font-size:11.5px;font-weight:600;color:var(--text);letter-spacing:-.1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pipe-col-collapsed .pipe-col-name{writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;color:var(--muted);letter-spacing:.6px;white-space:nowrap;overflow:visible;text-overflow:unset}
+.pipe-col-meta{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.pipe-col-collapsed .pipe-col-meta{flex-direction:column}
+.pipe-col-count{font-size:10px;font-weight:600;background:var(--card);border:1px solid var(--bdr);border-radius:100px;padding:1px 6px;color:var(--muted);min-width:20px;text-align:center}
+.pipe-col-toggle{background:none;border:none;font-size:10px;color:var(--muted2);cursor:pointer;padding:2px 4px;border-radius:4px;line-height:1;transition:color .12s}
+.pipe-col-toggle:hover{color:var(--text)}
+.pipe-col-body{overflow-y:auto;padding:7px;display:flex;flex-direction:column;gap:6px;flex:1}
+.pipe-col-body::-webkit-scrollbar{width:3px}
+.pipe-col-collapsed .pipe-col-body{display:none}
+.pipe-col-collapsed .pipe-add-row{display:none}
+.pipe-add-row{padding:0 7px 7px;flex-shrink:0}
+.pipe-col-collapsed .pipe-add-row{display:none}
+.pipe-add-btn{background:none;border:1px dashed var(--bdr2);border-radius:6px;padding:7px;width:100%;font-size:11px;color:var(--muted);cursor:pointer;transition:all .13s;display:flex;align-items:center;justify-content:center;gap:4px;font-family:inherit}
+.pipe-add-btn:hover{border-color:var(--green);color:var(--green3);background:rgba(74,114,89,.04)}
+.pipe-card{background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:10px 11px 9px;cursor:grab;transition:box-shadow .16s,transform .16s,border-color .16s;box-shadow:0 1px 4px rgba(50,35,15,.05);position:relative;border-left:3.5px solid var(--bdr2);user-select:none}
+.pipe-card:active{cursor:grabbing}
+.pipe-card:hover{box-shadow:0 3px 14px rgba(50,35,15,.11);border-color:var(--bdr2);transform:translateY(-1px)}
+.pipe-card.drag-lift{opacity:.38;transform:scale(.96) rotate(-1deg);box-shadow:none;pointer-events:none}
+.pipe-card-badge{display:flex;align-items:center;gap:4px;margin-bottom:6px}
+.pipe-card-type-icon{font-size:10px}
+.pipe-card-type-label{font-size:9px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--muted)}
+.pipe-card-title{font-size:12.5px;font-weight:600;color:var(--text);line-height:1.25;margin-bottom:4px;letter-spacing:-.1px}
+.pipe-card-meta{font-size:10.5px;color:var(--muted);margin-bottom:4px;line-height:1.4}
+.pipe-card-tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
+.pipe-card-tag{font-size:9.5px;font-weight:500;background:var(--bg2);border:1px solid var(--bdr);border-radius:3px;padding:1px 5px;color:var(--text2)}
+.pipe-card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:7px;padding-top:6px;border-top:1px solid var(--bdr)}
+.pipe-card-updated{font-size:9px;color:var(--muted2)}
+.pipe-card-actions{display:flex;gap:3px;opacity:0;transition:opacity .13s}
+.pipe-card:hover .pipe-card-actions{opacity:1}
+.pipe-card-btn{background:var(--card2);border:1px solid var(--bdr);border-radius:4px;padding:3px 7px;font-size:9.5px;color:var(--muted);cursor:pointer;transition:all .11s;line-height:1;font-family:inherit}
+.pipe-card-btn:hover{border-color:var(--green);color:var(--green3)}
+.pipe-card-btn.danger:hover{border-color:#c05050;color:#c05050}
+.pipe-progress{height:2.5px;background:var(--bg2);border-radius:2px;margin:4px 0 2px;overflow:hidden}
+.pipe-progress-fill{height:100%;border-radius:2px}
+.pipe-empty{text-align:center;padding:24px 14px;color:var(--muted2);font-size:11px;font-style:italic;line-height:1.6}
+.pipe-empty-icon{font-size:22px;margin-bottom:8px;display:block;opacity:.35}
+/* Detail panel */
+.path-detail{position:fixed;top:0;right:0;width:390px;max-width:92vw;height:100vh;background:var(--card);border-left:1px solid var(--bdr);box-shadow:-6px 0 36px rgba(50,35,15,.14);z-index:210;transform:translateX(105%);transition:transform .26s cubic-bezier(.4,0,.2,1);overflow:hidden;display:flex;flex-direction:column}
+.path-detail.on{transform:translateX(0)}
+.path-detail-head{padding:14px 16px 12px;border-bottom:1px solid var(--bdr);flex-shrink:0}
+.path-detail-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.path-detail-type{font-size:9.5px;font-weight:700;letter-spacing:.9px;text-transform:uppercase}
+.path-detail-close{background:var(--card2);border:1px solid var(--bdr);border-radius:6px;padding:4px 9px;font-size:11px;color:var(--text2);cursor:pointer;transition:all .12s;font-family:inherit;line-height:1.2}
+.path-detail-close:hover{border-color:var(--bdr2);color:var(--text)}
+.path-detail-title{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.3px;line-height:1.2}
+.path-detail-body{flex:1;overflow-y:auto;padding:16px}
+.path-detail-section{margin-bottom:14px}
+.path-detail-section-label{font-size:9.5px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+.path-detail-row{font-size:12.5px;color:var(--text2);padding:4px 0;border-bottom:1px solid var(--bdr);line-height:1.4}
+.path-detail-stat{background:var(--card2);border:1px solid var(--bdr);border-radius:7px;padding:10px 12px;flex:1;min-width:0}
+.path-detail-stat-n{font-size:22px;font-weight:700;color:var(--text);letter-spacing:-.5px;line-height:1}
+.path-detail-stat-l{font-size:10px;color:var(--muted);margin-top:2px}
+/* Move menu */
+#pipe-move-menu{position:fixed;z-index:500;background:var(--card);border:1px solid var(--bdr2);border-radius:8px;box-shadow:var(--shadowm);padding:5px;min-width:168px}
+.pipe-move-item{display:block;width:100%;text-align:left;background:none;border:none;padding:6px 10px;border-radius:5px;cursor:pointer;color:var(--text);font-family:inherit;font-size:11.5px;transition:background .1s}
+.pipe-move-item:hover,.pipe-move-item.active{background:var(--card2)}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" crossorigin=""/>
@@ -478,6 +561,18 @@ input,textarea,select{font-family:inherit;font-weight:400}
 </head>
 <body>
 <div id="sb-overlay" onclick="sbClose()"></div>
+
+<!-- THE PATH — DETAIL PANEL -->
+<div class="path-detail" id="path-detail">
+  <div class="path-detail-head">
+    <div class="path-detail-top">
+      <span class="path-detail-type" id="path-detail-type"></span>
+      <button class="path-detail-close" onclick="pipeCloseDetail()">✕ Close</button>
+    </div>
+    <div class="path-detail-title" id="path-detail-title"></div>
+  </div>
+  <div class="path-detail-body" id="path-detail-body"></div>
+</div>
 <div id="shell">
 
 <!-- ── SIDEBAR ── -->
@@ -514,6 +609,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
     <div class="sb-sec">Trips</div>
     <button class="ni" data-p="trips"><span class="ico">✈️</span>Trips<span class="nb" id="b-trips">0</span></button>
     <button class="ni" data-p="journal"><span class="ico">📓</span>Journal</button>
+    <button class="ni" data-p="path"><span class="ico"><svg width="15" height="12" viewBox="0 0 15 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="1.8" cy="6" r="1.4"/><line x1="3.2" y1="6" x2="5.4" y2="6"/><circle cx="6.8" cy="3" r="1.4"/><line x1="6.8" y1="4.4" x2="6.8" y2="7.6"/><circle cx="6.8" cy="9" r="1.4"/><line x1="8.2" y1="6" x2="10.4" y2="6"/><circle cx="11.8" cy="6" r="1.4" fill="currentColor" fill-opacity=".2"/><line x1="13.2" y1="6" x2="14.5" y2="6"/></svg></span>The Path</button>
     <div class="sb-sec">Life</div>
     <button class="ni" data-p="abroad"><span class="ico">🌍</span>Living Abroad</button>
     <div class="sb-sec">Account</div>
@@ -612,6 +708,17 @@ input,textarea,select{font-family:inherit;font-weight:400}
 
     <div class="page" id="page-journal"><div id="jlist"></div></div>
     <div class="page" id="page-abroad"><div id="abroad-in"></div></div>
+    <div class="page" id="page-path" style="padding:0;overflow:hidden;display:none;flex-direction:column;height:calc(100vh - 50px)">
+      <div class="path-filter-bar" id="path-filter-bar">
+        <span class="pipe-filter-label">Show</span>
+        <button class="pipe-filter-btn on" data-f="all" onclick="pipeSetFilter('all')">All <span id="pf-count-all">0</span></button>
+        <button class="pipe-filter-btn" data-f="trip" onclick="pipeSetFilter('trip')">✈️ Trips <span id="pf-count-trip">0</span></button>
+        <button class="pipe-filter-btn" data-f="abroad" onclick="pipeSetFilter('abroad')">🌍 Abroad <span id="pf-count-abroad">0</span></button>
+        <button class="pipe-filter-btn" data-f="wish" onclick="pipeSetFilter('wish')">★ Wishlist <span id="pf-count-wish">0</span></button>
+        <button class="pipe-filter-btn" data-f="custom" onclick="pipeSetFilter('custom')">📌 Projects <span id="pf-count-custom">0</span></button>
+      </div>
+      <div class="path-board" id="path-board"></div>
+    </div>
 
     <div class="page" id="page-settings">
       <div style="max-width:480px">
@@ -1291,8 +1398,8 @@ try { autoTripStatus(); } catch(e) {}
 // ══════════════════════════════════════════════
 // ROUTING
 // ══════════════════════════════════════════════
-const TITLES={home:'Dashboard',map:'World Map',places:'Places',wishlist:'Wishlist',planner:'AI Planner',trips:'Trips',journal:'Journal',abroad:'Living Abroad',settings:'Settings'};
-const ACTS={home:{l:'+ Add Place',f:'openPlace'},places:{l:'+ Add Place',f:'openPlace'},wishlist:{l:'+ Add to Wishlist',f:'openWish'},planner:{l:'',f:''},trips:{l:'+ New Trip',f:'openTrip'},journal:{l:'+ New Entry',f:'openJournal'},map:{l:'+ Add Place',f:'openPlace'},abroad:{l:'',f:''},settings:{l:'',f:''}};
+const TITLES={home:'Dashboard',map:'World Map',places:'Places',wishlist:'Wishlist',planner:'AI Planner',trips:'Trips',journal:'Journal',abroad:'Living Abroad',settings:'Settings',path:'The Path'};
+const ACTS={home:{l:'+ Add Place',f:'openPlace'},places:{l:'+ Add Place',f:'openPlace'},wishlist:{l:'+ Add to Wishlist',f:'openWish'},planner:{l:'',f:''},trips:{l:'+ New Trip',f:'openTrip'},journal:{l:'+ New Entry',f:'openJournal'},map:{l:'+ Add Place',f:'openPlace'},abroad:{l:'',f:''},settings:{l:'',f:''},path:{l:'',f:''}};
 let cur='home';
 function go(p){
   sbClose();
@@ -1308,7 +1415,7 @@ function go(p){
   if(p==='home')rHome();if(p==='places')rPlaces();if(p==='wishlist')rWish();
   if(p==='planner')rPlanner();
   if(p==='trips')rTrips();if(p==='journal')rJournal();if(p==='map')rMap();
-  if(p==='abroad')rAbroad();badges();
+  if(p==='abroad')rAbroad();if(p==='path')rPath();badges();
 }
 document.querySelectorAll('.ni').forEach(b=>b.addEventListener('click',()=>go(b.dataset.p)));
 function topAct(){const a=ACTS[cur];if(a?.f)window[a.f]?.()}
@@ -3702,6 +3809,329 @@ function rAbroad(){
   // Sync slider display values after render
   const wKeys=Object.keys(dfLabels);
   wKeys.forEach(k=>{const el=document.getElementById('df-wv-'+k);if(el)el.textContent=weights[k]||3;});
+}
+
+// ══════════════════════════════════════════════
+// THE PATH — PIPELINE
+// ══════════════════════════════════════════════
+const PIPE_COLS=[
+  {id:'dreaming',label:'Dreaming',icon:'✦',color:'#9B7420',empty:"Where will your path lead next?",emptyIcon:'✦'},
+  {id:'researching',label:'Researching',icon:'🔍',color:'#4A7EBA',empty:'No active research right now.',emptyIcon:'🔍'},
+  {id:'planning',label:'Planning',icon:'📋',color:'#6B9575',empty:'Nothing in the works yet.',emptyIcon:'📋'},
+  {id:'booked',label:'Booked',icon:'✈️',color:'#4A7259',empty:'Nothing confirmed yet — go book something!',emptyIcon:'✈️'},
+  {id:'in-progress',label:'In Progress',icon:'🌍',color:'#5A8A6C',empty:"You're not mid-trip right now.",emptyIcon:'🌍'},
+  {id:'completed',label:'Completed',icon:'✅',color:'#7D7168',empty:'Your adventures will live here.',emptyIcon:'✅'},
+  {id:'on-hold',label:'On Hold',icon:'⏸',color:'#A09080',empty:'Nothing paused.',emptyIcon:'⏸'},
+];
+const CARD_COLORS={trip:'#C17A4A',abroad:'#4A7259',wish:'#9B7420',custom:'#6B7A8D'};
+const CARD_ICONS={trip:'✈️',abroad:'🌍',wish:'★',custom:'📌'};
+const CARD_LABELS={trip:'Trip',abroad:'Living Abroad',wish:'Wishlist',custom:'Project'};
+
+let pipeFilter='all';
+let pipeDragId=null;
+let pipeCollapsed=new Set();
+
+function pipeStateLoad(){return JSON.parse(localStorage.getItem('wf_pipeline')||'{}')}
+function pipeStateSave(s){localStorage.setItem('wf_pipeline',JSON.stringify(s))}
+function pipeCustomLoad(){return JSON.parse(localStorage.getItem('wf_pipeline_custom')||'[]')}
+function pipeCustomSave(c){localStorage.setItem('wf_pipeline_custom',JSON.stringify(c))}
+
+function pipeAutoCol(card){
+  if(card.type==='wish')return'dreaming';
+  if(card.type==='abroad')return'researching';
+  if(card.type==='custom')return'dreaming';
+  if(card.type==='trip'){
+    const t=D.trips.find(x=>x.id===card.id);if(!t)return'planning';
+    const now=new Date();now.setHours(0,0,0,0);
+    const start=t.startDate?new Date(t.startDate):null;
+    const end=t.endDate?new Date(t.endDate):null;
+    if(t.status==='past'||(end&&end<now))return'completed';
+    if(start&&start<=now&&(!end||end>=now))return'in-progress';
+    return'planning';
+  }
+  return'dreaming';
+}
+
+function pipeGetCards(){
+  D=load();
+  const state=pipeStateLoad();
+  const cards=[];
+  D.trips.forEach(t=>{cards.push({id:t.id,type:'trip',title:t.name,data:t});});
+  D.wish.filter(w=>!w.graduated).forEach(w=>{cards.push({id:w.id,type:'wish',title:w.name,data:w});});
+  (D.abroad.countries||[]).forEach(c=>{cards.push({id:c.id,type:'abroad',title:c.name+(c.flag?' '+c.flag:''),data:c});});
+  pipeCustomLoad().forEach(c=>{cards.push({id:c.id,type:'custom',title:c.title,data:c});});
+  return cards.map(card=>({...card,col:state[card.id]||pipeAutoCol(card)}));
+}
+
+function pipeCardMeta(card){
+  const d=card.data;
+  if(card.type==='trip'){
+    const parts=[];
+    if(d.startDate&&d.endDate){
+      const days=Math.round((new Date(d.endDate)-new Date(d.startDate))/86400000)+1;
+      parts.push(fd(d.startDate)+' · '+days+'d');
+    }else if(d.startDate){parts.push('Starting '+fd(d.startDate));}
+    if((d.destinations||[]).length)parts.push(d.destinations.slice(0,3).join(', '));
+    return parts.join(' — ');
+  }
+  if(card.type==='wish'){const parts=[];if(d.season)parts.push(d.season);if(d.type)parts.push(d.type);return parts.join(' · ');}
+  if(card.type==='abroad'){const parts=[];if(d.visaStatus&&d.visaStatus!=='none')parts.push('Visa: '+d.visaStatus);if(d.monthlyBudget)parts.push('$'+d.monthlyBudget+'/mo');return parts.join(' · ');}
+  if(card.type==='custom'&&d.notes)return d.notes.slice(0,60)+(d.notes.length>60?'…':'');
+  return'';
+}
+
+function pipeCardProgress(card){
+  if(card.type!=='trip')return null;
+  const d=card.data;if(!d.startDate||!d.endDate)return null;
+  const now=new Date(),start=new Date(d.startDate),end=new Date(d.endDate);
+  if(now<start)return null;if(now>end)return 100;
+  return Math.round((now-start)/(end-start)*100);
+}
+
+function pipeMoveCard(cardId,toCol,silent){
+  const state=pipeStateLoad();
+  const cards=pipeGetCards();const card=cards.find(c=>c.id===cardId);if(!card)return;
+  const autoCol=pipeAutoCol(card);
+  if(toCol===autoCol)delete state[cardId];else state[cardId]=toCol;
+  pipeStateSave(state);
+  if(card.type==='trip'){
+    const t=D.trips.find(x=>x.id===cardId);
+    if(t){
+      if(toCol==='completed')t.status='past';
+      else if(toCol==='in-progress')t.status='active';
+      else if(toCol==='planning'||toCol==='booked')t.status='upcoming';
+      else if(toCol==='dreaming'||toCol==='researching')t.status='planning';
+      save('trips',D.trips);scheduledSync('trips',D.trips);
+    }
+  }
+  if(card.type==='abroad'){
+    const c=(D.abroad.countries||[]).find(x=>x.id===cardId);
+    if(c){
+      if(toCol==='completed')c.status='decided';
+      else if(toCol==='dreaming'||toCol==='on-hold')c.status='shortlist';
+      else c.status='researching';
+      saveAbroad();
+    }
+  }
+  if(!silent)rPath();
+}
+
+function pipeTimeAgo(ts){
+  if(!ts)return'';
+  const d=Math.floor((Date.now()-ts)/86400000);
+  if(d===0)return'today';if(d===1)return'yesterday';if(d<7)return d+'d ago';
+  if(d<30)return Math.floor(d/7)+'w ago';if(d<365)return Math.floor(d/30)+'mo ago';
+  return Math.floor(d/365)+'yr ago';
+}
+
+function rPipeCard(card){
+  const color=CARD_COLORS[card.type]||'#8A7D6E';
+  const icon=CARD_ICONS[card.type]||'📌';
+  const label=CARD_LABELS[card.type]||'Item';
+  const meta=pipeCardMeta(card);
+  const prog=pipeCardProgress(card);
+  const updated=pipeTimeAgo(card.data.addedAt);
+  let tags='';
+  if(card.type==='trip'&&(card.data.destinations||[]).length)
+    tags=card.data.destinations.slice(0,3).map(d=>`<span class="pipe-card-tag">${d}</span>`).join('');
+  else if(card.type==='wish'&&card.data.priority)
+    tags=`<span class="pipe-card-tag">${pi(card.data.priority)} ${card.data.priority}</span>`;
+  else if(card.type==='abroad'&&card.data.status)
+    tags=`<span class="pipe-card-tag">${card.data.status}</span>`;
+  const progressBar=prog!==null?`<div class="pipe-progress"><div class="pipe-progress-fill" style="width:${prog}%;background:${color}"></div></div>`:'';
+  return`<div class="pipe-card" data-id="${card.id}" data-col="${card.col}" style="border-left-color:${color}" draggable="true" onclick="pipeOpenDetail('${card.id}')" ondragstart="pipeDragStart(event,'${card.id}')" ondragend="pipeDragEnd(event)">
+    <div class="pipe-card-badge"><span class="pipe-card-type-icon">${icon}</span><span class="pipe-card-type-label">${label}</span></div>
+    <div class="pipe-card-title">${card.title}</div>
+    ${meta?`<div class="pipe-card-meta">${meta}</div>`:''}
+    ${progressBar}
+    ${tags?`<div class="pipe-card-tags">${tags}</div>`:''}
+    <div class="pipe-card-footer">
+      <span class="pipe-card-updated">${updated}</span>
+      <div class="pipe-card-actions">
+        <button class="pipe-card-btn" onclick="event.stopPropagation();pipeMoveMenu(event,'${card.id}')">Move ▾</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function rPath(){
+  const board=document.getElementById('path-board');if(!board)return;
+  D=load();
+  const allCards=pipeGetCards().filter(c=>pipeFilter==='all'||c.type===pipeFilter);
+  const byCol={};PIPE_COLS.forEach(col=>{byCol[col.id]=[];});
+  allCards.forEach(card=>{(byCol[card.col]||byCol['dreaming']).push(card);});
+  board.innerHTML=PIPE_COLS.map(col=>{
+    const cards=byCol[col.id]||[];
+    const isCollapsed=pipeCollapsed.has(col.id);
+    return`<div class="pipe-col${isCollapsed?' pipe-col-collapsed':''}" data-col="${col.id}" ondragover="pipeDragOver(event)" ondragleave="pipeDragLeave(event)" ondrop="pipeDrop(event,'${col.id}')">
+      <div class="pipe-col-bar" style="background:${col.color}"></div>
+      <div class="pipe-col-head">
+        <div class="pipe-col-label">
+          <span class="pipe-col-icon">${col.icon}</span>
+          <span class="pipe-col-name">${col.label}</span>
+        </div>
+        <div class="pipe-col-meta">
+          <span class="pipe-col-count">${cards.length}</span>
+          <button class="pipe-col-toggle" onclick="pipeToggleCol('${col.id}')" title="${isCollapsed?'Expand':'Collapse'}">${isCollapsed?'▸':'◂'}</button>
+        </div>
+      </div>
+      <div class="pipe-col-body">
+        ${cards.length?cards.map(c=>rPipeCard(c)).join(''):`<div class="pipe-empty"><span class="pipe-empty-icon">${col.emptyIcon}</span>${col.empty}</div>`}
+      </div>
+      <div class="pipe-add-row"><button class="pipe-add-btn" onclick="pipeAddCard('${col.id}')">+ Add</button></div>
+    </div>`;
+  }).join('');
+  // Update filter counts
+  const allCardsAll=pipeGetCards();
+  const counts={all:allCardsAll.length,trip:0,abroad:0,wish:0,custom:0};
+  allCardsAll.forEach(c=>{if(c.type in counts)counts[c.type]++;});
+  ['all','trip','abroad','wish','custom'].forEach(t=>{const el=document.getElementById('pf-count-'+t);if(el)el.textContent=counts[t];});
+}
+
+function pipeSetFilter(f){
+  pipeFilter=f;
+  document.querySelectorAll('.pipe-filter-btn').forEach(b=>b.classList.toggle('on',b.dataset.f===f));
+  rPath();
+}
+
+function pipeToggleCol(id){
+  if(pipeCollapsed.has(id))pipeCollapsed.delete(id);else pipeCollapsed.add(id);
+  rPath();
+}
+
+// ── Drag & Drop ──
+function pipeDragStart(e,cardId){
+  pipeDragId=cardId;
+  e.dataTransfer.effectAllowed='move';
+  setTimeout(()=>{const el=document.querySelector(`.pipe-card[data-id="${cardId}"]`);if(el)el.classList.add('drag-lift');},10);
+}
+function pipeDragEnd(){
+  document.querySelectorAll('.pipe-card.drag-lift').forEach(el=>el.classList.remove('drag-lift'));
+  document.querySelectorAll('.pipe-col.drag-target').forEach(el=>el.classList.remove('drag-target'));
+  pipeDragId=null;
+}
+function pipeDragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';e.currentTarget.classList.add('drag-target');}
+function pipeDragLeave(e){if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.classList.remove('drag-target');}
+function pipeDrop(e,toCol){
+  e.preventDefault();e.currentTarget.classList.remove('drag-target');
+  if(!pipeDragId)return;
+  const cards=pipeGetCards();const card=cards.find(c=>c.id===pipeDragId);
+  const fromCol=card?.col;
+  pipeDragId=null;
+  if(fromCol===toCol)return;
+  pipeMoveCard(card.id,toCol);
+  toast('↕ Moved to '+PIPE_COLS.find(c=>c.id===toCol)?.label);
+}
+
+// ── Move Menu ──
+function pipeMoveMenu(e,cardId){
+  e.stopPropagation();
+  const existing=document.getElementById('pipe-move-menu');if(existing)existing.remove();
+  const cards=pipeGetCards();const card=cards.find(c=>c.id===cardId);if(!card)return;
+  const menu=document.createElement('div');
+  menu.id='pipe-move-menu';
+  const rect=e.target.getBoundingClientRect();
+  const left=Math.min(rect.left,window.innerWidth-178);
+  const top=Math.min(rect.bottom+4,window.innerHeight-280);
+  menu.style.cssText=`position:fixed;left:${left}px;top:${top}px;z-index:500`;
+  menu.innerHTML=PIPE_COLS.map(col=>`<button class="pipe-move-item${card.col===col.id?' active':''}" onclick="pipeMoveCard('${cardId}','${col.id}');document.getElementById('pipe-move-menu').remove();toast('↕ ${col.label}')">${col.icon} ${col.label}${card.col===col.id?' ✓':''}</button>`).join('');
+  document.body.appendChild(menu);
+  setTimeout(()=>document.addEventListener('click',function h(){const m=document.getElementById('pipe-move-menu');if(m)m.remove();document.removeEventListener('click',h);},),30);
+}
+
+// ── Detail Panel ──
+function pipeOpenDetail(cardId){
+  const cards=pipeGetCards();const card=cards.find(c=>c.id===cardId);if(!card)return;
+  const panel=document.getElementById('path-detail');
+  const body=document.getElementById('path-detail-body');
+  const titleEl=document.getElementById('path-detail-title');
+  const typeEl=document.getElementById('path-detail-type');
+  titleEl.textContent=card.title;
+  typeEl.textContent=CARD_LABELS[card.type]||'';
+  typeEl.style.color=CARD_COLORS[card.type]||'var(--muted)';
+  const col=PIPE_COLS.find(c=>c.id===card.col);
+  if(card.type==='trip'){
+    const t=card.data;
+    const places=D.places.filter(p=>(p.tripIds||[]).includes(t.id));
+    const journal=D.journal.filter(j=>j.tripId===t.id);
+    const days=tripDays(t);
+    body.innerHTML=`
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <div class="path-detail-stat"><div class="path-detail-stat-n">${days||'—'}</div><div class="path-detail-stat-l">Days</div></div>
+        <div class="path-detail-stat"><div class="path-detail-stat-n">${places.length}</div><div class="path-detail-stat-l">Places</div></div>
+        <div class="path-detail-stat"><div class="path-detail-stat-n">${journal.length}</div><div class="path-detail-stat-l">Journal</div></div>
+      </div>
+      ${col?`<div style="margin-bottom:12px"><span style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:1px">Stage</span><div style="font-size:13px;color:var(--text);margin-top:3px">${col.icon} ${col.label}</div></div>`:''}
+      ${t.startDate||t.endDate?`<div class="path-detail-section"><div class="path-detail-section-label">Dates</div><div style="font-size:13px;color:var(--text)">${t.startDate?fd(t.startDate):'?'} → ${t.endDate?fd(t.endDate):'?'}</div></div>`:''}
+      ${(t.destinations||[]).length?`<div class="path-detail-section"><div class="path-detail-section-label">Destinations</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:2px">${t.destinations.map(d=>`<span class="pipe-card-tag">${d}</span>`).join('')}</div></div>`:''}
+      ${places.length?`<div class="path-detail-section"><div class="path-detail-section-label">Places (${places.length})</div>${places.slice(0,8).map(p=>`<div class="path-detail-row">${p.name}${p.country?' · <span style="color:var(--muted)">'+p.country+'</span>':''}</div>`).join('')}${places.length>8?`<div style="font-size:11px;color:var(--muted);margin-top:4px">+${places.length-8} more</div>`:''}</div>`:''}
+      ${journal.length?`<div class="path-detail-section"><div class="path-detail-section-label">Journal (${journal.length})</div>${journal.slice(0,4).map(j=>`<div class="path-detail-row">${j.title||'Entry'}${j.date?' · <span style="color:var(--muted)">'+fd(j.date)+'</span>':''}</div>`).join('')}</div>`:''}
+      ${t.notes?`<div class="path-detail-section"><div class="path-detail-section-label">Notes</div><div style="font-size:12px;color:var(--text2);line-height:1.6">${t.notes}</div></div>`:''}
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="tb-btn" style="flex:1;justify-content:center;font-size:11px" onclick="go('trips');openTripD('${t.id}');pipeCloseDetail()">Full Trip Detail →</button>
+      </div>`;
+  }else if(card.type==='wish'){
+    const w=card.data;
+    body.innerHTML=`
+      ${col?`<div style="margin-bottom:12px"><span style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:1px">Stage</span><div style="font-size:13px;color:var(--text);margin-top:3px">${col.icon} ${col.label}</div></div>`:''}
+      ${w.priority?`<div class="path-detail-section"><div class="path-detail-section-label">Priority</div><div style="font-size:13px;color:var(--text)">${pi(w.priority)} ${w.priority}</div></div>`:''}
+      ${w.type||w.season?`<div class="path-detail-section"><div style="display:flex;flex-wrap:wrap;gap:4px">${w.type?`<span class="pipe-card-tag">${w.type}</span>`:''}${w.season?`<span class="pipe-card-tag">${w.season}</span>`:''}</div></div>`:''}
+      ${w.notes?`<div class="path-detail-section"><div class="path-detail-section-label">Notes</div><div style="font-size:12px;color:var(--text2);line-height:1.6">${w.notes}</div></div>`:''}
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="tb-btn" style="flex:1;justify-content:center;font-size:11px" onclick="go('wishlist');pipeCloseDetail()">View Wishlist →</button>
+        <button class="tb-btn" style="background:var(--gold);flex:1;justify-content:center;font-size:11px" onclick="graduateWish('${w.id}');pipeCloseDetail()">Plan This Trip →</button>
+      </div>`;
+  }else if(card.type==='abroad'){
+    const c=card.data;
+    body.innerHTML=`
+      ${col?`<div style="margin-bottom:12px"><span style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:1px">Stage</span><div style="font-size:13px;color:var(--text);margin-top:3px">${col.icon} ${col.label}</div></div>`:''}
+      ${c.visaType||c.visaStatus?`<div class="path-detail-section"><div class="path-detail-section-label">Visa</div><div style="font-size:12px;color:var(--text2)">${[c.visaType,c.visaStatus].filter(Boolean).join(' · ')}</div></div>`:''}
+      ${c.monthlyBudget?`<div class="path-detail-section"><div class="path-detail-section-label">Monthly Budget</div><div style="font-size:16px;font-weight:600;color:var(--text)">$${c.monthlyBudget}/mo</div></div>`:''}
+      ${c.notes?`<div class="path-detail-section"><div class="path-detail-section-label">Notes</div><div style="font-size:12px;color:var(--text2);line-height:1.6">${c.notes}</div></div>`:''}
+      ${c.visaNotes?`<div class="path-detail-section"><div class="path-detail-section-label">Visa Research</div><div style="font-size:12px;color:var(--text2);line-height:1.6">${c.visaNotes}</div></div>`:''}
+      ${c.propertyNotes?`<div class="path-detail-section"><div class="path-detail-section-label">Property / Housing</div><div style="font-size:12px;color:var(--text2);line-height:1.6">${c.propertyNotes}</div></div>`:''}
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="tb-btn" style="flex:1;justify-content:center;font-size:11px" onclick="go('abroad');pipeCloseDetail()">Living Abroad →</button>
+      </div>`;
+  }else{
+    const c=card.data;
+    body.innerHTML=`
+      ${col?`<div style="margin-bottom:12px"><span style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:1px">Stage</span><div style="font-size:13px;color:var(--text);margin-top:3px">${col.icon} ${col.label}</div></div>`:''}
+      <div class="path-detail-section"><div class="path-detail-section-label">Notes</div>
+        <textarea style="width:100%;min-height:100px;background:var(--card2);border:1px solid var(--bdr);border-radius:6px;padding:8px;font-size:12px;color:var(--text);font-family:inherit;resize:vertical;outline:none" onchange="pipeUpdateCustom('${c.id}',this.value)">${c.notes||''}</textarea>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="tb-btn" style="background:rgba(180,60,60,.1);border:1px solid rgba(180,60,60,.2);color:#c05050;justify-content:center;font-size:11px;padding:7px 12px" onclick="if(confirm('Delete this project?')){pipeDelCustom('${c.id}');}">🗑 Delete</button>
+      </div>`;
+  }
+  panel.classList.add('on');
+}
+function pipeCloseDetail(){document.getElementById('path-detail').classList.remove('on');}
+
+// ── Add new card ──
+function pipeAddCard(col){
+  if(col==='dreaming'){openWish();}
+  else if(col==='researching'){openAbroadCountry(null);}
+  else if(col==='planning'||col==='booked'){openTrip();}
+  else{
+    const title=prompt('Project name:');
+    if(!title||!title.trim())return;
+    const c={id:uid(),title:title.trim(),notes:'',addedAt:Date.now()};
+    const state=pipeStateLoad();state[c.id]=col;pipeStateSave(state);
+    const customs=pipeCustomLoad();customs.push(c);pipeCustomSave(customs);
+    rPath();toast('📌 Added to '+PIPE_COLS.find(x=>x.id===col)?.label);
+  }
+}
+
+// ── Custom project helpers ──
+function pipeUpdateCustom(id,notes){
+  const customs=pipeCustomLoad();const c=customs.find(x=>x.id===id);
+  if(c){c.notes=notes;pipeCustomSave(customs);}
+}
+function pipeDelCustom(id){
+  pipeCustomSave(pipeCustomLoad().filter(c=>c.id!==id));
+  const state=pipeStateLoad();delete state[id];pipeStateSave(state);
+  pipeCloseDetail();rPath();toast('🗑️ Removed');
 }
 
 // ══════════════════════════════════════════════
