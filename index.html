@@ -477,7 +477,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
 }
 
 /* ── THE PATH — PIPELINE ── */
-#page-path{padding:0;overflow:hidden;display:flex;flex-direction:column;height:calc(100vh - 50px)}
+#page-path{padding:0;overflow:hidden;flex-direction:column;height:calc(100vh - 50px)}
 .path-filter-bar{display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--card);border-bottom:1px solid var(--bdr);flex-shrink:0;overflow-x:auto}
 .path-filter-bar::-webkit-scrollbar{height:0}
 .pipe-filter-label{font-size:10px;font-weight:600;color:var(--muted2);letter-spacing:1px;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
@@ -708,7 +708,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
 
     <div class="page" id="page-journal"><div id="jlist"></div></div>
     <div class="page" id="page-abroad"><div id="abroad-in"></div></div>
-    <div class="page" id="page-path" style="padding:0;overflow:hidden;display:none;flex-direction:column;height:calc(100vh - 50px)">
+    <div class="page" id="page-path">
       <div class="path-filter-bar" id="path-filter-bar">
         <span class="pipe-filter-label">Show</span>
         <button class="pipe-filter-btn on" data-f="all" onclick="pipeSetFilter('all')">All <span id="pf-count-all">0</span></button>
