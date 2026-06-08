@@ -2189,7 +2189,7 @@ function tripInsights(t,linkedPlaces,tripJournal,isDomestic,tripCountries,tripUS
       if(cnt>1)facts.push((isPast?`Visited`:`Lined up`)+` ${cnt} places in ${c}.`);
     });
     if(tripCountries.length>1)facts.push((isPast?`Crossed`:`Crossing`)+` ${tripCountries.length} countries: ${tripCountries.join(', ')}.`);
-    else if(tripCountries.length===1)facts.push(`Trip ${isPast?'was':'is'} in ${tripCountries[0]}.`);
+    else if(tripCountries.length===1){const sc=linkedPlaces.filter(p=>normCountry(p.country)===tripCountries[0]).length;if(sc<=1)facts.push(`Trip ${isPast?'was':'is'} in ${tripCountries[0]}.`);}
   }
   if(isDomestic&&tripUSStates.length){
     if(tripUSStates.length>1)facts.push((isPast?`Drove through`:`Spanning`)+` ${tripUSStates.length} states: ${tripUSStates.join(', ')}.`);
@@ -3535,7 +3535,7 @@ function rAbroad(){
 function setSetting(k,v){D.settings[k]=v;save('settings',D.settings);if(k==='name'){document.getElementById('pn').textContent=v||'You';document.getElementById('av').textContent=(v||'Y')[0].toUpperCase()}}
 function loadSettings(){const s=D.settings;document.getElementById('s-name').value=s.name||'';document.getElementById('s-partner').value=s.partner||'';document.getElementById('s-city').value=s.homeCity||'';document.getElementById('s-since').value=s.since||'';document.getElementById('s-apikey').value=s.apiKey||'';document.getElementById('s-google-client-id').value=s.googleClientId||'';document.getElementById('s-drive-folder').value=s.driveFolderId||'';document.getElementById('s-abroad-notes').value=s.abroadNotes||'';document.getElementById('pn').textContent=s.name||'You';document.getElementById('av').textContent=(s.name||'Y')[0].toUpperCase();const pl=document.getElementById('pl-partner');if(pl)pl.textContent=s.partner?'& '+s.partner:'';}
 function exportData(){const b=new Blob([JSON.stringify(load(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='wayfinder-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('📥 Exported!')}
-function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);Object.keys(K).forEach(k=>{if(d[k])localStorage.setItem(K[k],JSON.stringify(d[k]))});if(d.abroad)localStorage.setItem('wf_abroad',JSON.stringify(d.abroad));D=load();loadSettings();rHome();badges();toast('📤 Imported!')}catch{toast('⚠️ Invalid file')}};r.readAsText(f)}
+function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);Object.keys(K).forEach(k=>{if(d[k])localStorage.setItem(K[k],JSON.stringify(d[k]))});if(d.abroad)localStorage.setItem('wf_abroad',JSON.stringify(d.abroad));D=load();go('home');loadSettings();rHome();badges();toast('📤 Imported!')}catch{toast('⚠️ Invalid file')}};r.readAsText(f)}
 function clearAll(){if(!confirm('Clear ALL data? Cannot be undone.'))return;Object.values(K).forEach(k=>localStorage.removeItem(k));D=load();loadSettings();rHome();badges();toast('🗑️ Cleared')}
 function onSearch(q){if(cur==='places')rPlaces();else if(cur==='trips')rTrips();else if(cur==='journal')rJournal();else if(cur==='wishlist')rWish();}
 function sbOpen(){document.getElementById('sb').classList.add('sb-open');document.getElementById('sb-overlay').classList.add('sb-open');}
