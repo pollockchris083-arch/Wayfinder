@@ -4952,39 +4952,75 @@ function rAdvStopsTab(c){
 }
 
 // ── Tab: Daily Plans ─────────────────────────────────────
+const DAY_TYPES=[{v:'camp',l:'🏕️ Camp',c:'#4A7259'},{v:'drive',l:'🚗 Drive',c:'#6B7A8D'},{v:'adventure',l:'⛰️ Adventure',c:'#7A5C8A'},{v:'rest',l:'💤 Rest',c:'#8A7060'},{v:'town',l:'🏙️ Town',c:'#B8892A'},{v:'activity',l:'🎯 Activity',c:'#4A7EBA'}];
 function rAdvDailyTab(c){
-  const days=c.dailyPlans||[];
+  let days=c.dailyPlans||[];
+  // Auto-generate from date range if empty and dates are set
+  if(!days.length&&c.startDate&&c.endDate){
+    D=load();const camp=(D.camps||[]).find(x=>x.id===c.id);if(camp){
+      const plans=[];const start=new Date(c.startDate);const end=new Date(c.endDate);
+      let dayNum=1;
+      for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1),dayNum++){
+        plans.push({date:d.toISOString().split('T')[0],dayNum,dayType:'camp',activities:[],notes:''});
+      }
+      camp.dailyPlans=plans;localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+      days=plans;
+    }
+  }
   if(!days.length){
     return`<div class="empty" style="padding:30px 0">
       <div class="empty-icon">📅</div>
       <h3>No days planned yet</h3>
-      <p>Plan activities for each day of the adventure.</p>
+      <p>${c.startDate&&c.endDate?'Add dates to your trip to auto-generate a day-by-day plan.':'Plan activities for each day.'}</p>
       <button class="tb-btn" onclick="addAdvDay('${c.id}')">+ Add Day</button>
     </div>`;
   }
-  const html=days.map((day,di)=>`<div class="card" style="margin-bottom:10px">
+  const html=days.map((day,di)=>{
+    const dt=DAY_TYPES.find(x=>x.v===(day.dayType||'camp'))||DAY_TYPES[0];
+    return`<div class="card" style="margin-bottom:10px">
     <div class="ch">
       <div>
         <div style="font-size:12px;font-weight:600;color:var(--text)">Day ${di+1}${day.date?' — '+fd(day.date):''}</div>
-        ${day.location?`<div style="font-size:11px;color:var(--muted)">${day.location}</div>`:''}
+        ${day.location?`<div style="font-size:11px;color:var(--muted)">📍 ${day.location}</div>`:''}
       </div>
-      <button class="pbtn del" onclick="delAdvDay('${c.id}',${di})" style="font-size:10px">×</button>
+      <div style="display:flex;align-items:center;gap:6px">
+        <select style="font-size:11px;background:var(--card2);border:1px solid var(--bdr);border-radius:4px;padding:2px 5px;color:${dt.c};font-weight:600" onchange="setAdvDayType('${c.id}',${di},this.value)">
+          ${DAY_TYPES.map(t=>`<option value="${t.v}"${(day.dayType||'camp')===t.v?' selected':''}>${t.l}</option>`).join('')}
+        </select>
+        <button class="pbtn del" onclick="delAdvDay('${c.id}',${di})" style="font-size:10px">×</button>
+      </div>
     </div>
+    ${day.dayType==='drive'?`<div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
+      <div style="flex:1;min-width:80px"><label style="font-size:10px;color:var(--muted2)">Miles</label><input class="fi" style="margin-top:2px" type="number" value="${day.driveMiles||''}" placeholder="e.g. 180" onblur="setAdvDayField('${c.id}',${di},'driveMiles',this.value)"/></div>
+      <div style="flex:1;min-width:80px"><label style="font-size:10px;color:var(--muted2)">Depart</label><input class="fi" style="margin-top:2px" type="time" value="${day.departTime||''}" onblur="setAdvDayField('${c.id}',${di},'departTime',this.value)"/></div>
+      <div style="flex:1;min-width:80px"><label style="font-size:10px;color:var(--muted2)">Arrive</label><input class="fi" style="margin-top:2px" type="time" value="${day.arriveTime||''}" onblur="setAdvDayField('${c.id}',${di},'arriveTime',this.value)"/></div>
+    </div>`:''}
     <div style="margin-top:6px">
       ${(day.activities||[]).length?day.activities.map((act,ai)=>`<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--bdr)">
         <input type="checkbox" ${act.done?'checked':''} style="width:13px;height:13px;flex-shrink:0;margin-top:2px;accent-color:var(--green)" onchange="toggleAdvActivity('${c.id}',${di},${ai},this.checked)"/>
         <div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--text2);${act.done?'text-decoration:line-through;opacity:.5':''}">${act.name}</div></div>
         ${act.link?`<a href="${act.link}" target="_blank" style="font-size:11px;color:var(--green3);text-decoration:none;flex-shrink:0">↗</a>`:''}
-      </div>`).join(''):`<div style="font-size:11px;color:var(--muted2);padding:6px 0">No activities yet</div>`}
-      <button style="background:none;border:none;color:var(--green3);font-size:11px;cursor:pointer;padding:6px 0;display:block;width:100%;text-align:left" onclick="addAdvActivity('${c.id}',${di})">+ Activity</button>
+      </div>`).join(''):`<div style="font-size:11px;color:var(--muted2);padding:4px 0">No activities yet</div>`}
+      <button style="background:none;border:none;color:var(--green3);font-size:11px;cursor:pointer;padding:5px 0;display:block;width:100%;text-align:left" onclick="addAdvActivity('${c.id}',${di})">+ Activity</button>
     </div>
-  </div>`).join('');
+    <textarea class="ft" style="margin-top:6px;min-height:40px;font-size:11px" placeholder="Notes for this day…" onblur="setAdvDayField('${c.id}',${di},'notes',this.value)">${day.notes||''}</textarea>
+  </div>`;
+  }).join('');
   return html+`<button class="tb-btn" style="width:100%;justify-content:center" onclick="addAdvDay('${c.id}')">+ Add Day</button>`;
+}
+function setAdvDayType(cid,di,val){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c||!c.dailyPlans||!c.dailyPlans[di])return;
+  c.dailyPlans[di].dayType=val;localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  window._campDTab='daily';openCampD(cid);
+}
+function setAdvDayField(cid,di,field,value){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c||!c.dailyPlans||!c.dailyPlans[di])return;
+  c.dailyPlans[di][field]=value;localStorage.setItem('wf_camps',JSON.stringify(D.camps));
 }
 function addAdvDay(cid){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   if(!c.dailyPlans)c.dailyPlans=[];
-  c.dailyPlans.push({date:'',location:'',activities:[]});
+  c.dailyPlans.push({date:'',dayType:'camp',activities:[],notes:''});
   localStorage.setItem('wf_camps',JSON.stringify(D.camps));
   window._campDTab='daily';openCampD(cid);
 }
