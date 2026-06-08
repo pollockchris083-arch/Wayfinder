@@ -141,18 +141,53 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .dv{background:var(--green2)}.dw{background:var(--gold2)}.dp{background:#4A7EBA}.ds{background:var(--muted2)}
 
 /* ── PLACE CARDS ── */
-.pc{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:13px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
-.pc:hover{border-color:var(--bdr2);box-shadow:var(--shadowm);transform:translateY(-1px)}
+/* Grid container */
+.places-ga{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+/* Collapsed card */
+.pc{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);transition:all .15s;box-shadow:var(--shadow);overflow:hidden}
+.pc:hover{border-color:var(--bdr2);box-shadow:var(--shadowm)}
+.pc-h{display:flex;align-items:flex-start;gap:9px;padding:11px 12px;cursor:pointer;user-select:none}
+.pc-ci{font-size:18px;line-height:1;flex-shrink:0;margin-top:1px}
+.pc-mi{flex:1;min-width:0}
+.pc-nm{font-size:13px;font-weight:600;color:var(--text);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-lc{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-tr{font-size:10px;color:var(--muted2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-ri{display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;gap:3px}
+.pc-cv{font-size:9px;color:var(--muted2);transition:transform .2s;flex-shrink:0;margin-top:2px;align-self:flex-start}
+.pc.expanded .pc-cv{transform:rotate(180deg)}
+/* Expanded card body */
+.pc-bd{display:none;padding:0 12px 11px;border-top:1px solid var(--bdr)}
+.pc.expanded .pc-bd{display:block}
+.pc-nt{font-size:11px;color:var(--text2);line-height:1.55;padding-top:9px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.pc-dt{font-size:10px;color:var(--muted);margin-top:6px}
+.pc-tg{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
+.pact{display:flex;gap:5px;margin-top:9px;padding-top:8px;border-top:1px solid var(--bdr)}
+.pbtn{background:var(--card2);border:1px solid var(--bdr);border-radius:5px;padding:4px 8px;font-size:10px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s}
+.pbtn:hover{border-color:var(--green);color:var(--green3)}
+.pbtn.del:hover{border-color:#c05050;color:#c05050}
+/* List view */
+.places-list{display:flex;flex-direction:column;gap:0}
+.pc-lr{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:5px;cursor:pointer;transition:all .15s}
+.pc-lr:hover{border-color:var(--bdr2);background:var(--card2)}
+.pc-lci{font-size:16px;flex-shrink:0;line-height:1}
+.pc-lnm{font-size:13px;font-weight:600;color:var(--text);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-llc{font-size:11px;color:var(--muted);flex-shrink:0;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-lac{display:flex;gap:5px;flex-shrink:0}
+/* Form cat/stat buttons */
+.pc-cat-btn,.pc-stat-btn{background:var(--card2);border:1px solid var(--bdr);border-radius:20px;padding:5px 11px;font-size:12px;cursor:pointer;color:var(--text2);font-family:inherit;transition:all .15s;white-space:nowrap}
+.pc-cat-btn.on{background:rgba(77,171,120,.15);border-color:var(--green);color:var(--green3);font-weight:600}
+.pc-stat-btn.on{background:rgba(77,171,120,.15);border-color:var(--green);color:var(--green3);font-weight:600}
+/* FAB */
+#places-fab{display:none;position:fixed;bottom:calc(60px + env(safe-area-inset-bottom,0px) + 16px);right:16px;width:52px;height:52px;border-radius:50%;background:var(--green);color:#fff;border:none;font-size:26px;font-weight:300;cursor:pointer;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.4);z-index:30;line-height:1}
+/* Scrollbar hide for filter rows */
+#pl-cat-row::-webkit-scrollbar,#pl-stat-row::-webkit-scrollbar{display:none}
+/* Legacy classes used by grouped/trip views */
 .pch{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:7px}
 .pname{font-size:13px;font-weight:600;color:var(--text);line-height:1.2}
 .ploc{font-size:11px;color:var(--muted);margin-top:1px}
 .pst{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)}
 .ptags{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
 .pnote{font-size:11px;color:var(--text2);line-height:1.5;margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.pact{display:flex;gap:5px;margin-top:9px;padding-top:8px;border-top:1px solid var(--bdr)}
-.pbtn{background:var(--card2);border:1px solid var(--bdr);border-radius:5px;padding:4px 8px;font-size:10px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s}
-.pbtn:hover{border-color:var(--green);color:var(--green3)}
-.pbtn.del:hover{border-color:#c05050;color:#c05050}
 
 /* ── TRIP CARDS ── */
 .tc{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
@@ -587,9 +622,18 @@ input,textarea,select{font-family:inherit;font-weight:400}
   /* ── AI Planner: 2-col grid on mobile ── */
   .pl-wf-grid{grid-template-columns:repeat(2,1fr)!important}
 
+  /* ── Places page ── */
+  .places-ga{grid-template-columns:1fr!important}
+  #places-fab{display:flex!important}
+  #places-hdr .tb-btn{display:none}
+  #places-filter-bar{top:0;position:sticky}
+
   /* ── Filter chip buttons ── */
   .fb{flex-wrap:wrap}
   .fc{min-height:32px}
+}
+@media (min-width:700px) and (max-width:1099px){
+  .places-ga{grid-template-columns:repeat(2,1fr)}
 }
 
 /* ── THE PATH — PIPELINE ── */
@@ -768,36 +812,55 @@ input,textarea,select{font-family:inherit;font-weight:400}
     <div class="page" id="page-map"><div id="map-in"></div></div>
 
     <div class="page" id="page-places">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:13px;flex-wrap:wrap">
-        <div class="fb" id="pfb" style="margin-bottom:0;flex-wrap:wrap">
-          <button class="fc on" onclick="fPlace(this,'all')">All</button>
-          <button class="fc" onclick="fPlace(this,'visited')">✅ Visited</button>
-          <button class="fc" onclick="fPlace(this,'want')">⭐ Want to Go</button>
-          <button class="fc" onclick="fPlace(this,'planned')">📅 Planned</button>
-          <button class="fc" onclick="fPlace(this,'saved')">🔖 Saved</button>
-          <button class="fc" onclick="fPlace(this,'hiking')">🥾 Hiking</button>
-          <button class="fc" onclick="fPlace(this,'camp')">⛺ Camp</button>
-          <button class="fc" onclick="fPlace(this,'food')">🍽️ Food</button>
-          <button class="fc" onclick="fPlace(this,'road-trip')">🚗 Road Trip</button>
-          <button class="fc" onclick="fPlace(this,'international')">🌍 Intl</button>
+      <div id="places-hdr" style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h2 style="font-size:18px;font-weight:700;color:var(--text);margin:0;display:flex;align-items:center;gap:8px">Places<span id="pl-count-badge" style="font-size:12px;font-weight:500;padding:1px 8px;background:var(--card2);border:1px solid var(--bdr);border-radius:100px;color:var(--muted)">0</span></h2>
+          <div id="pl-summary" style="font-size:11px;color:var(--muted);margin-top:3px"></div>
         </div>
-        <div style="display:flex;gap:7px;align-items:center;flex-shrink:0">
-          <select class="fs" id="psort" style="font-size:11px;padding:5px 10px;height:auto;width:auto" onchange="rPlaces()">
-            <option value="recent">Most Recent</option>
-            <option value="visited">Visit Date</option>
-            <option value="az">A–Z</option>
-            <option value="rating">Top Rated</option>
-            <option value="country">By Country</option>
-          </select>
-          <div class="fb" style="margin-bottom:0">
-            <button class="fc on" id="pv-grid" onclick="setPlaceView('grid')">⊞ Grid</button>
-            <button class="fc" id="pv-group" onclick="setPlaceView('group')">≡ Region</button>
-            <button class="fc" id="pv-trip" onclick="setPlaceView('trip')">✈️ Trip</button>
+        <button class="tb-btn" onclick="openPlace()" style="background:var(--green)">+ Add Place</button>
+      </div>
+      <div style="position:relative;margin-bottom:8px">
+        <input class="fi" id="places-search" placeholder="🔍  Search by name, city, country, notes, trip name…" oninput="plSearch=this.value;rPlaces()" autocomplete="off" style="padding-right:32px"/>
+        <button id="pl-srch-clear" onclick="document.getElementById('places-search').value='';plSearch='';rPlaces()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted2);display:none;padding:2px 4px;line-height:1">✕</button>
+      </div>
+      <div id="places-filter-bar" style="position:sticky;top:0;z-index:20;background:var(--bg);padding:0 0 8px;margin:0 0 4px">
+        <div id="pl-cat-row" class="fb" style="margin-bottom:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch">
+          <button class="fc on" onclick="fPlaceCat(this,'all')">All</button>
+          <button class="fc" onclick="fPlaceCat(this,'outdoors')">🥾 Outdoors</button>
+          <button class="fc" onclick="fPlaceCat(this,'food-drink')">🍽️ Food &amp; Drink</button>
+          <button class="fc" onclick="fPlaceCat(this,'culture')">🏛️ Culture</button>
+          <button class="fc" onclick="fPlaceCat(this,'stay')">🛏️ Stay</button>
+          <button class="fc" onclick="fPlaceCat(this,'shopping')">🛍️ Shopping</button>
+          <button class="fc" onclick="fPlaceCat(this,'transit')">🚗 Transit</button>
+          <button class="fc" onclick="fPlaceCat(this,'other')">📍 Other</button>
+        </div>
+        <div id="pl-stat-row" class="fb" style="margin-bottom:8px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch">
+          <button class="fc on" onclick="fPlaceStat(this,'all')">All Statuses</button>
+          <button class="fc" onclick="fPlaceStat(this,'visited')">✅ Visited</button>
+          <button class="fc" onclick="fPlaceStat(this,'want')">⭐ Want to Go</button>
+          <button class="fc" onclick="fPlaceStat(this,'planned')">📋 Planned</button>
+          <button class="fc" onclick="fPlaceStat(this,'saved')">💾 Saved</button>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <div id="pl-active-lbl" style="font-size:11px;color:var(--green3);font-weight:500;min-height:16px"></div>
+          <div style="display:flex;gap:5px;align-items:center;flex-shrink:0">
+            <select class="fs" id="psort" style="font-size:11px;padding:4px 8px;height:auto;width:auto" onchange="rPlaces()">
+              <option value="recent">Recent</option>
+              <option value="az">A–Z</option>
+              <option value="visited">Visit Date</option>
+              <option value="rating">Rating</option>
+              <option value="country">Country</option>
+            </select>
+            <button class="fc on" id="pv-grid" onclick="setPlaceView('grid')" title="Grid" style="padding:4px 9px">⊞</button>
+            <button class="fc" id="pv-list" onclick="setPlaceView('list')" title="List" style="padding:4px 9px">≡</button>
+            <button class="fc" id="pv-group" onclick="setPlaceView('group')" title="By Region" style="padding:4px 9px">🗂️</button>
+            <button class="fc" id="pv-trip" onclick="setPlaceView('trip')" title="By Trip" style="padding:4px 9px">✈️</button>
           </div>
         </div>
       </div>
-      <div id="places-grid" class="ga"></div>
+      <div id="places-grid"></div>
       <div class="td-view" id="place-dv"></div>
+      <button id="places-fab" onclick="openPlace()">+</button>
     </div>
 
     <div class="page" id="page-wishlist">
@@ -912,56 +975,62 @@ input,textarea,select{font-family:inherit;font-weight:400}
 
 <!-- PLACE -->
 <div class="mo" id="m-place">
-  <div class="modal">
+  <div class="modal" style="width:500px">
     <button class="mcl" onclick="closeM('m-place')">✕</button>
     <h2 id="pm-title">Add Place</h2>
-    <div class="fg"><label class="fl">Name *</label><input class="fi" id="p-name" placeholder="e.g. Zion National Park"/></div>
+    <div class="fg"><label class="fl">Place Name *</label><input class="fi" id="p-name" placeholder="e.g. Zion National Park, Trattoria Sostanza…"/></div>
+    <div class="fg" style="margin-bottom:10px">
+      <label class="fl">Category</label>
+      <div id="p-cat-btns" style="display:flex;flex-wrap:wrap;gap:6px">
+        <button type="button" class="pc-cat-btn on" data-cat="outdoors" onclick="pickPlaceCat(this)">🥾 Outdoors</button>
+        <button type="button" class="pc-cat-btn" data-cat="food-drink" onclick="pickPlaceCat(this)">🍽️ Food &amp; Drink</button>
+        <button type="button" class="pc-cat-btn" data-cat="culture" onclick="pickPlaceCat(this)">🏛️ Culture</button>
+        <button type="button" class="pc-cat-btn" data-cat="stay" onclick="pickPlaceCat(this)">🛏️ Stay</button>
+        <button type="button" class="pc-cat-btn" data-cat="shopping" onclick="pickPlaceCat(this)">🛍️ Shopping</button>
+        <button type="button" class="pc-cat-btn" data-cat="transit" onclick="pickPlaceCat(this)">🚗 Transit</button>
+        <button type="button" class="pc-cat-btn" data-cat="other" onclick="pickPlaceCat(this)">📍 Other</button>
+      </div>
+    </div>
+    <div class="fg" style="margin-bottom:10px">
+      <label class="fl">Status</label>
+      <div id="p-stat-btns" style="display:flex;flex-wrap:wrap;gap:6px">
+        <button type="button" class="pc-stat-btn" data-stat="visited" onclick="pickPlaceStat(this)">✅ Visited</button>
+        <button type="button" class="pc-stat-btn" data-stat="want" onclick="pickPlaceStat(this)">⭐ Want to Go</button>
+        <button type="button" class="pc-stat-btn on" data-stat="saved" onclick="pickPlaceStat(this)">💾 Saved</button>
+        <button type="button" class="pc-stat-btn" data-stat="planned" onclick="pickPlaceStat(this)">📋 Planned</button>
+      </div>
+    </div>
     <div class="fr">
       <div class="fg"><label class="fl">Country</label><input class="fi" id="p-country" placeholder="United States"/></div>
       <div class="fg"><label class="fl">State / Province</label><input class="fi" id="p-state" placeholder="Utah"/></div>
     </div>
-    <div class="fr">
-      <div class="fg"><label class="fl">City / Area <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(optional)</span></label><input class="fi" id="p-region" placeholder="e.g. Zion Canyon"/></div>
-      <div class="fg"><label class="fl">Category</label>
-        <select class="fs" id="p-cat">
-          <option value="nat-park">🏞️ National Park</option><option value="hiking">🥾 Hiking</option>
-          <option value="camp">⛺ Camping</option><option value="viewpoint">🌄 Viewpoint</option>
-          <option value="swim">💧 Swimming Hole</option><option value="food">🍽️ Food</option>
-          <option value="accommodation">🏨 Stay</option><option value="city">🏙️ City</option>
-          <option value="road-trip">🚗 Road Trip</option><option value="international">🌍 International</option>
-          <option value="hidden-gem">💎 Hidden Gem</option><option value="other">📍 Other</option>
-        </select>
+    <div class="fg"><label class="fl">City / Area <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(optional)</span></label><input class="fi" id="p-region" placeholder="e.g. Zion Canyon, Oltrarno District"/></div>
+    <button type="button" id="p-more-btn" onclick="togglePlaceMore()" style="background:none;border:none;color:var(--muted2);font-size:11px;cursor:pointer;padding:4px 0 8px;display:flex;align-items:center;gap:5px;font-family:inherit;width:100%">
+      <span id="p-more-arrow" style="font-size:9px;display:inline-block;transition:transform .15s">▶</span> More details (rating, notes, tags, trip)
+    </button>
+    <div id="p-more-fields" style="display:none">
+      <div class="fr">
+        <div class="fg"><label class="fl">Visit Date</label><input class="fi" id="p-visit-date" type="date"/></div>
+        <div class="fg"><label class="fl">Rating</label>
+          <select class="fs" id="p-rating">
+            <option value="">—</option><option value="5">⭐⭐⭐⭐⭐ Life-changing</option>
+            <option value="4">⭐⭐⭐⭐ Excellent</option><option value="3">⭐⭐⭐ Good</option>
+            <option value="2">⭐⭐ OK</option><option value="1">⭐ Skip it</option>
+          </select>
+        </div>
       </div>
-    </div>
-    <div class="fr">
-      <div class="fg"><label class="fl">Status</label>
-        <select class="fs" id="p-status">
-          <option value="saved">🔖 Saved</option><option value="want">⭐ Want to Go</option>
-          <option value="planned">📅 Planned</option><option value="visited">✅ Visited</option>
-        </select>
-      </div>
-      <div class="fg"><label class="fl">Found via</label>
-        <select class="fs" id="p-src">
-          <option value="">—</option><option value="youtube">▶️ YouTube</option>
-          <option value="instagram">📸 Instagram</option><option value="google">🔍 Google</option>
-          <option value="blog">📝 Blog</option><option value="friend">🗣️ Friend</option>
-          <option value="maps">🗺️ Maps</option><option value="alltrails">🥾 AllTrails</option>
-          <option value="own">✨ We found it</option>
-        </select>
-      </div>
-    </div>
-    <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="p-notes" placeholder="Why this place? Any tips or memories…"></textarea></div>
-    <div class="fr">
-      <div class="fg"><label class="fl">Tags (comma separated)</label><input class="fi" id="p-tags" placeholder="sierra, backpacking…" list="p-tags-list"/><datalist id="p-tags-list"></datalist></div>
-      <div class="fg"><label class="fl">Visit Date <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(optional)</span></label><input class="fi" id="p-visit-date" type="date"/></div>
-    </div>
-    <div class="fr">
-      <div class="fg"><label class="fl">Rating</label>
-        <select class="fs" id="p-rating">
-          <option value="">—</option><option value="5">⭐⭐⭐⭐⭐ Life-changing</option>
-          <option value="4">⭐⭐⭐⭐ Excellent</option><option value="3">⭐⭐⭐ Good</option>
-          <option value="2">⭐⭐ OK</option><option value="1">⭐ Skip it</option>
-        </select>
+      <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="p-notes" placeholder="Why this place? Tips, memories, what to do…"></textarea></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Tags (comma separated)</label><input class="fi" id="p-tags" placeholder="sierra, backpacking…" list="p-tags-list"/><datalist id="p-tags-list"></datalist></div>
+        <div class="fg"><label class="fl">Found via</label>
+          <select class="fs" id="p-src">
+            <option value="">—</option><option value="youtube">▶️ YouTube</option>
+            <option value="instagram">📸 Instagram</option><option value="google">🔍 Google</option>
+            <option value="blog">📝 Blog</option><option value="friend">🗣️ Friend</option>
+            <option value="maps">🗺️ Maps</option><option value="alltrails">🥾 AllTrails</option>
+            <option value="own">✨ We found it</option>
+          </select>
+        </div>
       </div>
       <div class="fg" style="margin-bottom:0"><label class="fl">Link to Trip <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(optional)</span></label>
         <select class="fs" id="p-trip"><option value="">— No trip —</option></select>
@@ -2890,7 +2959,39 @@ async function mapDrawRoute(tripId){
 // ══════════════════════════════════════════════
 // PLACES
 // ══════════════════════════════════════════════
-let pf='all',eid=null,pendVisitWishId=null;
+let pf='all',pCat='all',pStatus='all',plSearch='',eid=null,pendVisitWishId=null;
+function getMacroCategory(p){
+  const c=p.category||'other';
+  const map={'nat-park':'outdoors','hiking':'outdoors','camp':'outdoors','viewpoint':'outdoors','swim':'outdoors','food':'food-drink','accommodation':'stay','city':'culture','road-trip':'transit','international':'culture','hidden-gem':'other','other':'other','outdoors':'outdoors','food-drink':'food-drink','culture':'culture','stay':'stay','shopping':'shopping','transit':'transit'};
+  return map[c]||'other';
+}
+function pickPlaceCat(btn){
+  document.querySelectorAll('#p-cat-btns .pc-cat-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+function pickPlaceStat(btn){
+  document.querySelectorAll('#p-stat-btns .pc-stat-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+function togglePlaceMore(){
+  const f=document.getElementById('p-more-fields');
+  const a=document.getElementById('p-more-arrow');
+  const open=f.style.display==='block';
+  f.style.display=open?'none':'block';
+  if(a)a.style.transform=open?'':'rotate(90deg)';
+}
+function togglePCard(id){
+  const el=document.getElementById('pc-'+id);
+  if(el)el.classList.toggle('expanded');
+}
+function fPlaceCat(btn,cat){
+  document.querySelectorAll('#pl-cat-row .fc').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');pCat=cat;rPlaces();
+}
+function fPlaceStat(btn,stat){
+  document.querySelectorAll('#pl-stat-row .fc').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');pStatus=stat;rPlaces();
+}
 function openPlace(id){
   eid=id||null;const p=id?D.places.find(x=>x.id===id):null;
   document.getElementById('pm-title').textContent=p?'Edit Place':'Add Place';
@@ -2898,13 +2999,25 @@ function openPlace(id){
   document.getElementById('p-country').value=p?.country||'';
   document.getElementById('p-state').value=p?.usState||'';
   document.getElementById('p-region').value=p?.region||'';
-  document.getElementById('p-cat').value=p?.category||'other';
-  document.getElementById('p-status').value=p?.status||'saved';
+  // Set category button
+  const mac=p?getMacroCategory(p):'outdoors';
+  document.querySelectorAll('#p-cat-btns .pc-cat-btn').forEach(b=>{b.classList.toggle('on',b.dataset.cat===mac);});
+  // Set status button
+  const st=p?.status||'saved';
+  document.querySelectorAll('#p-stat-btns .pc-stat-btn').forEach(b=>{b.classList.toggle('on',b.dataset.stat===st);});
+  // Reset optional section
+  const mf=document.getElementById('p-more-fields');if(mf)mf.style.display='none';
+  const ma=document.getElementById('p-more-arrow');if(ma)ma.style.transform='';
+  // Fill optional fields
   document.getElementById('p-src').value=p?.source||'';
   document.getElementById('p-notes').value=p?.notes||'';
   document.getElementById('p-tags').value=(p?.tags||[]).join(', ');
   document.getElementById('p-rating').value=p?.rating||'';
   document.getElementById('p-visit-date').value=p?.visitDate||'';
+  // If editing with optional data, open the section
+  if(p&&(p.notes||p.rating||p.visitDate||(p.tags||[]).length||p.source||((p.tripIds||[]).length))){
+    if(mf)mf.style.display='block';if(ma)ma.style.transform='rotate(90deg)';
+  }
   const allTags=[...new Set(D.places.flatMap(x=>x.tags||[]))].sort();
   const dl=document.getElementById('p-tags-list');if(dl)dl.innerHTML=allTags.map(t=>`<option value="${t}">`).join('');
   const tsel=document.getElementById('p-trip');
@@ -2919,17 +3032,20 @@ function savePlace(){
   const usState=document.getElementById('p-state').value.trim();
   const regionRaw=document.getElementById('p-region').value.trim();
   const region=regionRaw||(usState&&country?usState+', '+country:usState||country||'');
+  const catBtn=document.querySelector('#p-cat-btns .pc-cat-btn.on');
+  const statBtn=document.querySelector('#p-stat-btns .pc-stat-btn.on');
   const existing=eid?D.places.find(x=>x.id===eid):null;
   const pl={
     id:eid||uid(),name:n,country,usState,region,
-    category:document.getElementById('p-cat').value,
-    status:document.getElementById('p-status').value,
+    category:catBtn?.dataset.cat||'other',
+    status:statBtn?.dataset.stat||'saved',
     source:document.getElementById('p-src').value,
     notes:document.getElementById('p-notes').value.trim(),
     tags:document.getElementById('p-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
     rating:document.getElementById('p-rating').value,
     visitDate:document.getElementById('p-visit-date').value,
-    tripIds:(()=>{const sel=document.getElementById('p-trip').value;const base=existing?.tripIds||[];return sel&&!base.includes(sel)?[...base,sel]:base;})(),journalIds:existing?.journalIds||[],photos:existing?.photos||[],
+    tripIds:(()=>{const sel=document.getElementById('p-trip').value;const base=existing?.tripIds||[];return sel&&!base.includes(sel)?[...base,sel]:base;})(),
+    journalIds:existing?.journalIds||[],photos:existing?.photos||[],
     addedAt:existing?.addedAt||Date.now()
   };
   if(eid){const i=D.places.findIndex(x=>x.id===eid);D.places[i]=pl}else D.places.push(pl);
@@ -3000,36 +3116,108 @@ function openPlaceD(id){
   </div>`;
 }
 function rPlaces(){
-  apid=null;document.getElementById('places-grid').style.display='';const pdv=document.getElementById('place-dv');if(pdv)pdv.classList.remove('on');
-  // Sync filter bar and view buttons .on class to current state
-  document.querySelectorAll('#pfb .fc').forEach(b=>{const v=b.getAttribute('onclick')?.match(/'([^']+)'\)/)?.[1];if(v)b.classList.toggle('on',v===pf);});
-  document.getElementById('pv-grid')?.classList.toggle('on',placeView==='grid');
-  document.getElementById('pv-group')?.classList.toggle('on',placeView==='group');
-  document.getElementById('pv-trip')?.classList.toggle('on',placeView==='trip');
-  D=load();const q=document.getElementById('srch').value.toLowerCase();
-  const sortMode=document.getElementById('psort')?.value||'recent';
-  let list=D.places.filter(p=>{const mf=pf==='all'||p.status===pf||p.category===pf||(p.tags||[]).includes(pf);const ms=!q||p.name.toLowerCase().includes(q)||(p.region||'').toLowerCase().includes(q)||(p.country||'').toLowerCase().includes(q)||(p.usState||'').toLowerCase().includes(q)||(p.notes||'').toLowerCase().includes(q)||(p.tags||[]).some(t=>t.toLowerCase().includes(q));return mf&&ms}).sort((a,b)=>{if(sortMode==='az')return a.name.localeCompare(b.name);if(sortMode==='rating')return(parseInt(b.rating)||0)-(parseInt(a.rating)||0)||b.addedAt-a.addedAt;if(sortMode==='country')return(normCountry(a.country)||'zzz').localeCompare(normCountry(b.country)||'zzz')||a.name.localeCompare(b.name);if(sortMode==='visited'){const va=a.visitDate||'';const vb=b.visitDate||'';if(!va&&!vb)return b.addedAt-a.addedAt;if(!va)return 1;if(!vb)return -1;return vb.localeCompare(va);}return b.addedAt-a.addedAt;});
+  apid=null;
   const g=document.getElementById('places-grid');
+  g.style.display='';
+  const pdv=document.getElementById('place-dv');if(pdv)pdv.classList.remove('on');
+  D=load();
+  const sortMode=document.getElementById('psort')?.value||'recent';
+  const q=(plSearch||'').toLowerCase().trim();
+  // Show/hide search clear button
+  const clr=document.getElementById('pl-srch-clear');if(clr)clr.style.display=q?'':'none';
+  // Trip name lookup for search
+  const tripById=Object.fromEntries((D.trips||[]).map(t=>[t.id,t.name]));
+  let list=D.places.filter(p=>{
+    const mc=getMacroCategory(p);
+    const mcat=pCat==='all'||mc===pCat;
+    const mstat=pStatus==='all'||p.status===pStatus;
+    const ms=!q||p.name.toLowerCase().includes(q)||(p.region||'').toLowerCase().includes(q)||(p.country||'').toLowerCase().includes(q)||(p.usState||'').toLowerCase().includes(q)||(p.notes||'').toLowerCase().includes(q)||(p.tags||[]).some(t=>t.toLowerCase().includes(q))||((p.tripIds||[]).some(id=>(tripById[id]||'').toLowerCase().includes(q)));
+    return mcat&&mstat&&ms;
+  }).sort((a,b)=>{
+    if(sortMode==='az')return a.name.localeCompare(b.name);
+    if(sortMode==='rating')return(parseInt(b.rating)||0)-(parseInt(a.rating)||0)||b.addedAt-a.addedAt;
+    if(sortMode==='country')return(normCountry(a.country)||'zzz').localeCompare(normCountry(b.country)||'zzz')||a.name.localeCompare(b.name);
+    if(sortMode==='visited'){const va=a.visitDate||'',vb=b.visitDate||'';if(!va&&!vb)return b.addedAt-a.addedAt;if(!va)return 1;if(!vb)return-1;return vb.localeCompare(va);}
+    return b.addedAt-a.addedAt;
+  });
+  // Active filter label
+  const lbl=document.getElementById('pl-active-lbl');
+  if(lbl){
+    const parts=[];
+    if(pCat!=='all')parts.push(ci(pCat)+' '+cl(pCat));
+    if(pStatus!=='all')parts.push(sl(pStatus));
+    if(q)parts.push(`"${q}"`);
+    lbl.textContent=parts.length?`${list.length} result${list.length!==1?'s':''} · ${parts.join(' + ')}`:'';
+  }
+  // Count badge + summary
+  const all=D.places||[];
+  const badge=document.getElementById('pl-count-badge');if(badge)badge.textContent=all.length;
+  const smry=document.getElementById('pl-summary');
+  if(smry){
+    const vis=all.filter(p=>p.status==='visited').length;
+    const wnt=all.filter(p=>p.status==='want').length;
+    smry.textContent=all.length?`${vis} visited · ${wnt} want to go`:'';
+  }
+  // View sync
+  ['grid','list','group','trip'].forEach(v=>{const el=document.getElementById('pv-'+v);if(el)el.classList.toggle('on',placeView===v);});
   if(placeView==='group'){g.className='';rPlacesGrouped(list);return;}
   if(placeView==='trip'){g.className='';rPlacesByTrip(list);return;}
-  g.className='ga';
-  if(!list.length){g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📍</div><h3>No places found</h3><p>Add places you've been or want to go.</p><button class="tb-btn" onclick="openPlace()">+ Add First Place</button></div>`;return}
+  const sc=(s)=>s==='visited'?'var(--green)':s==='want'?'var(--gold2)':s==='planned'?'#4A7EBA':'var(--muted2)';
+  const stars=(r)=>r?'⭐'.repeat(parseInt(r)):'';
+  if(!list.length){
+    g.className='';
+    g.innerHTML=`<div class="empty"><div class="empty-icon">📍</div><h3>No places${pCat!=='all'||pStatus!=='all'||q?' matching filters':''}</h3><p>${pCat!=='all'||pStatus!=='all'||q?'Try clearing some filters.':'Start tracking places you visit or want to go.'}</p>${!pCat&&!pStatus&&!q?`<button class="tb-btn" onclick="openPlace()">+ Add First Place</button>`:''}</div>`;
+    return;
+  }
+  if(placeView==='list'){
+    g.className='places-list';
+    g.innerHTML=list.map(p=>{
+      const loc=p.usState&&p.country?p.usState+', '+p.country:p.country||p.region||'';
+      const tripName=(p.tripIds||[]).map(id=>tripById[id]).filter(Boolean)[0]||'';
+      return`<div class="pc-lr" id="pcl-${p.id}">
+        <span class="pc-lci">${ci(getMacroCategory(p))}</span>
+        <div class="pc-lnm">${p.name}${tripName?`<span style="font-size:10px;color:var(--muted2);margin-left:6px">· ${tripName}</span>`:''}</div>
+        <div class="pc-llc">${loc}</div>
+        <span class="tag" style="background:${sc(p.status)}22;color:${sc(p.status)};flex-shrink:0">${sl(p.status)}</span>
+        ${p.rating?`<span style="font-size:10px;flex-shrink:0">${stars(p.rating)}</span>`:''}
+        <div class="pc-lac" onclick="event.stopPropagation()">
+          <button class="pbtn" onclick="openPlace('${p.id}')">✏️</button>
+          <button class="pbtn" onclick="openPlaceD('${p.id}')">↗</button>
+          <button class="pbtn del" onclick="delPlace('${p.id}')">🗑️</button>
+        </div>
+      </div>`;
+    }).join('');
+    return;
+  }
+  // Grid view (default)
+  g.className='places-ga';
   g.innerHTML=list.map(p=>{
     const loc=p.usState&&p.country?p.usState+', '+p.country:p.country||p.region||'';
-    const meta=[ci(p.category)+' '+cl(p.category),p.visitDate?fd(p.visitDate):'',p.source?p.source:'',p.rating?'⭐'.repeat(parseInt(p.rating)):''].filter(Boolean).join(' · ');
-    const links=[(p.tripIds||[]).length?`✈️ ${p.tripIds.length} trip${p.tripIds.length>1?'s':''}`:'',(p.journalIds||[]).length?`📓 ${p.journalIds.length}`:'',(p.tags||[]).slice(0,2).join(', ')].filter(Boolean).join(' · ');
-    return`<div class="pc" onclick="openPlaceD('${p.id}')">
-      <div class="pch">
-        <div><div class="pname">${p.name}</div>${loc?`<div class="ploc">${loc}</div>`:''}</div>
-        <div class="pst"><span class="sd ${p.status==='visited'?'dv':p.status==='want'?'dw':p.status==='planned'?'dp':'ds'}"></span>${sl(p.status)}</div>
+    const tripName=(p.tripIds||[]).map(id=>tripById[id]).filter(Boolean)[0]||'';
+    const mac=getMacroCategory(p);
+    return`<div class="pc" id="pc-${p.id}">
+      <div class="pc-h" onclick="togglePCard('${p.id}')">
+        <span class="pc-ci">${ci(mac)}</span>
+        <div class="pc-mi">
+          <div class="pc-nm">${p.name}</div>
+          ${loc?`<div class="pc-lc">${loc}</div>`:''}
+          ${tripName?`<div class="pc-tr">✈️ ${tripName}</div>`:''}
+        </div>
+        <div class="pc-ri">
+          <span class="tag" style="background:${sc(p.status)}22;color:${sc(p.status)}">${sl(p.status)}</span>
+          ${p.rating?`<span style="font-size:10px;line-height:1">${stars(p.rating)}</span>`:''}
+        </div>
+        <span class="pc-cv">▼</span>
       </div>
-      ${p.notes?`<div class="pnote">${p.notes.slice(0,80)}${p.notes.length>80?'…':''}</div>`:''}
-      <div style="font-size:10px;color:var(--muted);margin-top:6px">${meta}</div>
-      ${links?`<div style="font-size:10px;color:var(--muted2);margin-top:2px">${links}</div>`:''}
-      <div class="pact" onclick="event.stopPropagation()">
-        <button class="pbtn" onclick="openPlace('${p.id}')">✏️ Edit</button>
-        <button class="pbtn" onclick="cycleStatus('${p.id}')" title="Cycle status">🔄 ${sl(p.status)}</button>
-        <button class="pbtn del" onclick="delPlace('${p.id}')">🗑️</button>
+      <div class="pc-bd">
+        ${p.notes?`<div class="pc-nt">${p.notes}</div>`:''}
+        ${p.visitDate?`<div class="pc-dt">📅 ${fd(p.visitDate)}</div>`:''}
+        ${(p.tags||[]).length?`<div class="pc-tg">${p.tags.map(t=>`<span style="background:rgba(74,114,89,.08);color:var(--green3);border:1px solid rgba(74,114,89,.15);border-radius:4px;padding:2px 8px;font-size:10px">${t}</span>`).join('')}</div>`:''}
+        <div class="pact" onclick="event.stopPropagation()">
+          <button class="pbtn" onclick="openPlace('${p.id}')">✏️ Edit</button>
+          <button class="pbtn" onclick="openPlaceD('${p.id}')">↗ Detail</button>
+          <button class="pbtn del" onclick="delPlace('${p.id}')">🗑️</button>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -3037,9 +3225,6 @@ function rPlaces(){
 let placeView='grid';
 function setPlaceView(v){
   placeView=v;
-  document.getElementById('pv-grid').classList.toggle('on',v==='grid');
-  document.getElementById('pv-group').classList.toggle('on',v==='group');
-  const pvt=document.getElementById('pv-trip');if(pvt)pvt.classList.toggle('on',v==='trip');
   rPlaces();
 }
 function rPlacesGrouped(list){
@@ -7737,8 +7922,8 @@ const stc=s=>({saved:'te',want:'to',planned:'tb2',visited:'tg'}[s]||'te');
 const tsl=s=>({planning:'Planning',upcoming:'Upcoming',active:'Active!',past:'Completed'}[s]||s);
 const tsc=s=>({planning:'te',upcoming:'tb2',active:'tg',past:'tg'}[s]||'te');
 const pi=p=>({must:'🔥',soon:'📅',someday:'💭'}[p]||'⭐');
-const ci=c=>({'nat-park':'🏞️',hiking:'🥾',camp:'⛺',viewpoint:'🌄',swim:'💧',food:'🍽️',accommodation:'🏨',city:'🏙️','road-trip':'🚗',international:'🌍','hidden-gem':'💎',other:'📍'}[c]||'📍');
-const cl=c=>({'nat-park':'Nat Park',hiking:'Hiking',camp:'Camping',viewpoint:'Viewpoint',swim:'Swimming',food:'Food',accommodation:'Stay',city:'City','road-trip':'Road Trip',international:'International','hidden-gem':'Hidden Gem',other:'Place'}[c]||c);
+const ci=c=>({outdoors:'🥾','food-drink':'🍽️',culture:'🏛️',stay:'🛏️',shopping:'🛍️',transit:'🚗',other:'📍','nat-park':'🏞️',hiking:'🥾',camp:'⛺',viewpoint:'🌄',swim:'💧',food:'🍽️',accommodation:'🏨',city:'🏙️','road-trip':'🚗',international:'🌍','hidden-gem':'💎'}[c]||'📍');
+const cl=c=>({outdoors:'Outdoors','food-drink':'Food & Drink',culture:'Culture',stay:'Stay',shopping:'Shopping',transit:'Transit',other:'Other','nat-park':'Nat Park',hiking:'Hiking',camp:'Camping',viewpoint:'Viewpoint',swim:'Swimming',food:'Food',accommodation:'Stay',city:'City','road-trip':'Road Trip',international:'International','hidden-gem':'Hidden Gem'}[c]||c);
 const si=s=>({youtube:'▶️',instagram:'📸',google:'🔍',blog:'📝',friend:'🗣️',maps:'🗺️',alltrails:'🥾',own:'✨',import:'📄'}[s]||'🔖');
 
 // ══════════════════════════════════════════════
