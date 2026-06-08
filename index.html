@@ -961,6 +961,7 @@ function load(){return{places:JSON.parse(localStorage.getItem(K.places)||'[]'),t
 function save(k,d){localStorage.setItem(K[k],JSON.stringify(d));scheduledSync(k,d);}
 function saveAbroad(){localStorage.setItem('wf_abroad',JSON.stringify(D.abroad));}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
+function tripDays(t){return t.startDate&&t.endDate?Math.round((new Date(t.endDate)-new Date(t.startDate))/86400000)+1:(t.itinerary||[]).length||0;}
 let D=load();
 
 // ══════════════════════════════════════════════
@@ -1054,69 +1055,92 @@ async function cloudPushSettings(cfg){
 }
 
 async function migrateCloudData(){
-  if(localStorage.getItem('wf_cloud_v2'))return;
+  if(localStorage.getItem('wf_cloud_v3'))return;
   D=load();
-  // ── Audit snapshot (saved to localStorage for reference) ──
-  const snap={ts:D.trips.map(t=>({id:t.id,name:t.name,sd:t.startDate,ed:t.endDate,dests:t.destinations||[],status:t.status})),ps:D.places.map(p=>({id:p.id,name:p.name,tids:p.tripIds||[]})),js:D.journal.map(j=>({id:j.id,tid:j.tripId,date:j.date,title:j.title}))};
-  localStorage.setItem('wf_audit_v2',JSON.stringify(snap));
-  console.group('[Wayfinder] Pre-migration audit (cloud v2)');
-  snap.ts.forEach(t=>{const pl=snap.ps.filter(p=>p.tids.includes(t.id)).length,jr=snap.js.filter(j=>j.tid===t.id).length;console.log(`"${t.name}" [${t.id.slice(0,8)}] ${t.sd||'?'}→${t.ed||'?'} ${t.status} | dests:[${t.dests.join(',')}] | places:${pl} journal:${jr}`);});
+
+  // CANONICAL trip definitions — match by name keyword OR approximate date
+  const CANONICAL=[
+    {name:'Italy 2022',start:'2022-10-06',end:'2022-10-22',dests:['Italy'],status:'past',
+     test:t=>t.name==='Italy 2022'||t.name.toLowerCase().includes('italy 2022')||(t.startDate&&/^202[12]-10/.test(t.startDate)&&!t.name.toLowerCase().includes('balkan')&&!t.name.toLowerCase().includes('central'))},
+    {name:'Balkans & Alps 2023',start:'2023-10-18',end:'2023-11-04',dests:['Croatia','Slovenia','Austria','Montenegro','Bosnia'],status:'past',
+     test:t=>t.name.toLowerCase().includes('balkan')},
+    {name:'Central Europe 2024',start:'2024-10-16',end:'2024-10-31',dests:['Italy','Switzerland','Austria','Liechtenstein','Germany','Czech Republic'],status:'past',
+     test:t=>t.name.toLowerCase().includes('central')||(t.startDate&&/^202[34]-10/.test(t.startDate)&&!t.name.toLowerCase().includes('italy 20')&&!t.name.toLowerCase().includes('balkan'))},
+    {name:'Iceland 2025',start:'2025-09-11',end:'2025-09-26',dests:['Iceland'],status:'past',
+     test:t=>t.name.toLowerCase().includes('iceland')},
+  ];
+
+  // ── Audit snapshot ──
+  const snap={ts:D.trips.map(t=>({id:t.id,name:t.name,sd:t.startDate,ed:t.endDate,dests:t.destinations||[],status:t.status,itLen:(t.itinerary||[]).length})),ps:D.places.map(p=>({id:p.id,name:p.name,tids:p.tripIds||[]})),js:D.journal.map(j=>({id:j.id,tid:j.tripId,date:j.date,title:j.title}))};
+  localStorage.setItem('wf_audit_v3',JSON.stringify(snap));
+  console.group('[Wayfinder] Pre-migration audit (cloud v3)');
+  snap.ts.forEach(t=>{const pl=snap.ps.filter(p=>p.tids.includes(t.id)).length,jr=snap.js.filter(j=>j.tid===t.id).length;console.log(`"${t.name}" [${t.id.slice(0,8)}] ${t.sd||'?'}→${t.ed||'?'} | dests:[${t.dests.join(',')}] | places:${pl} journal:${jr} itinerary:${t.itLen}days`);});
   console.groupEnd();
 
   let changed=false;
 
-  // 1. Apply correct metadata for the 4 known international trips
-  const PATCHES=[
-    {y:'2022',m:'10',name:'Italy 2022',start:'2022-10-06',end:'2022-10-22',dests:['Italy'],status:'past'},
-    {y:'2023',m:'10',name:'Balkans & Alps 2023',start:'2023-10-18',end:'2023-11-04',dests:['Croatia','Slovenia','Austria','Montenegro','Bosnia'],status:'past'},
-    {y:'2024',m:'10',name:'Central Europe 2024',start:'2024-10-16',end:'2024-10-31',dests:['Italy','Switzerland','Austria','Liechtenstein','Germany','Czech Republic'],status:'past'},
-    {y:'2025',m:'09',name:'Iceland 2025',start:'2025-09-11',end:'2025-09-26',dests:['Iceland'],status:'past'},
-  ];
+  // Helper: build itinerary array from start→end, preserving any stops within range
+  function rebuildItinerary(existing,start,end){
+    const keepStops=new Map();
+    (existing||[]).forEach(day=>{if(day.date>=start&&day.date<=end&&(day.stops||[]).length)keepStops.set(day.date,day.stops);});
+    const days=[];const s=new Date(start),e=new Date(end);
+    for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1)){
+      const ds=d.toISOString().split('T')[0];
+      days.push({date:ds,stops:keepStops.get(ds)||[]});
+    }
+    return days;
+  }
+
+  // 1. Fix metadata + rebuild itinerary for known international trips
   D.trips.forEach(t=>{
-    if(!t.startDate)return;
-    const[yr,mo]=t.startDate.split('-');
-    const p=PATCHES.find(x=>x.y===yr&&x.m===mo);
-    if(p&&(t.name!==p.name||t.startDate!==p.start||t.endDate!==p.end)){
-      t.name=p.name;t.startDate=p.start;t.endDate=p.end;t.destinations=p.dests;t.status=p.status;changed=true;
+    const c=CANONICAL.find(x=>x.test(t));if(!c)return;
+    const needsFix=t.name!==c.name||t.startDate!==c.start||t.endDate!==c.end||JSON.stringify(t.destinations)!==JSON.stringify(c.dests);
+    if(needsFix){
+      const rebuilt=rebuildItinerary(t.itinerary,c.start,c.end);
+      t.name=c.name;t.startDate=c.start;t.endDate=c.end;t.destinations=c.dests;t.status=c.status;t.itinerary=rebuilt;
+      changed=true;
+      console.log(`[Wayfinder] Fixed "${c.name}": itinerary rebuilt to ${rebuilt.length} days`);
     }
   });
 
-  // 2. Merge duplicate trips (same name — e.g. two "Balkans & Alps 2023")
-  const groups={};D.trips.forEach(t=>{(groups[t.name]=groups[t.name]||[]).push(t);});
-  Object.values(groups).filter(g=>g.length>1).forEach(group=>{
-    group.sort((a,b)=>{
-      const ap=D.places.filter(p=>(p.tripIds||[]).includes(a.id)).length;
-      const bp=D.places.filter(p=>(p.tripIds||[]).includes(b.id)).length;
-      return bp-ap;
-    });
+  // 2. Add Central Europe 2024 if completely missing
+  if(!D.trips.some(t=>CANONICAL[2].test(t))){
+    const c=CANONICAL[2];
+    D.trips.push({id:uid(),name:c.name,startDate:c.start,endDate:c.end,destinations:c.dests,status:c.status,type:'leisure',itinerary:rebuildItinerary([],c.start,c.end),notes:'',budget:null,addedAt:Date.now()});
+    changed=true;
+    console.log('[Wayfinder] Created missing Central Europe 2024 trip');
+  }
+
+  // 3. Merge duplicate trips (same name)
+  const grps={};D.trips.forEach(t=>{(grps[t.name]=grps[t.name]||[]).push(t);});
+  Object.values(grps).filter(g=>g.length>1).forEach(group=>{
+    group.sort((a,b)=>D.places.filter(p=>(p.tripIds||[]).includes(b.id)).length-D.places.filter(p=>(p.tripIds||[]).includes(a.id)).length);
     const keep=group[0];
     group.slice(1).forEach(dup=>{
-      console.log(`[Wayfinder] Merging duplicate "${dup.name}" (${dup.id.slice(0,8)}) → ${keep.id.slice(0,8)}`);
+      console.log(`[Wayfinder] Merging "${dup.name}" (${dup.id.slice(0,8)}) → ${keep.id.slice(0,8)}`);
       D.places.forEach(p=>{if((p.tripIds||[]).includes(dup.id)){p.tripIds=[...new Set([...p.tripIds.filter(id=>id!==dup.id),keep.id])];changed=true;}});
       D.journal.forEach(j=>{if(j.tripId===dup.id){j.tripId=keep.id;changed=true;}});
       (dup.itinerary||[]).forEach(dupDay=>{
-        const keepDay=(keep.itinerary||[]).find(d=>d.date===dupDay.date);
-        if(keepDay){const ex=new Set(keepDay.stops.map(s=>s.name.toLowerCase()));(dupDay.stops||[]).forEach(s=>{if(!ex.has(s.name.toLowerCase())){keepDay.stops.push(s);changed=true;}});}
-        else if(keep.itinerary){keep.itinerary.push({...dupDay,stops:[...(dupDay.stops||[])]});changed=true;}
+        const kd=(keep.itinerary||[]).find(d=>d.date===dupDay.date);
+        if(kd){const ex=new Set(kd.stops.map(s=>s.name.toLowerCase()));(dupDay.stops||[]).forEach(s=>{if(!ex.has(s.name.toLowerCase())){kd.stops.push(s);changed=true;}});}
       });
     });
-    const removeIds=new Set(group.slice(1).map(d=>d.id));
-    D.trips=D.trips.filter(t=>!removeIds.has(t.id));
-    if(keep.itinerary)keep.itinerary.sort((a,b)=>a.date.localeCompare(b.date));
+    const rmIds=new Set(group.slice(1).map(d=>d.id));
+    D.trips=D.trips.filter(t=>!rmIds.has(t.id));
     changed=true;
   });
 
-  // 3. Remove California from destinations (home, not a travel destination)
+  // 4. Remove California from all destination arrays
   D.trips.forEach(t=>{
     if(Array.isArray(t.destinations)&&t.destinations.includes('California')){
       t.destinations=t.destinations.filter(d=>d!=='California');changed=true;
     }
   });
 
-  // 4. Populate itinerary from linked journal entries and visited places (adds only, never overwrites)
+  // 5. Populate itinerary from linked journal entries and visited places (adds only)
   let itinAdded=0;
   D.trips.filter(t=>t.status==='past'&&t.startDate&&t.endDate&&(t.itinerary||[]).length).forEach(t=>{
-    D.journal.filter(j=>j.tripId===t.id&&j.date&&j.title).forEach(j=>{
+    D.journal.filter(j=>j.tripId===t.id&&j.date&&j.title&&j.date>=t.startDate&&j.date<=t.endDate).forEach(j=>{
       const day=(t.itinerary||[]).find(d=>d.date===j.date);if(!day)return;
       const ex=new Set(day.stops.map(s=>s.name.toLowerCase()));
       if(!ex.has(j.title.toLowerCase())){day.stops.push({name:j.title,note:j.loc||'',placeId:j.placeId||''});itinAdded++;changed=true;}
@@ -1138,14 +1162,14 @@ async function migrateCloudData(){
       try{
         await Promise.all([cloudPush('places',D.places),cloudPush('trips',D.trips),cloudPush('journal',D.journal)]);
         setSyncStatus('☁️ Synced');
-        console.log('[Wayfinder] Cloud migration v2 pushed to Supabase');
-      }catch(e){console.error('[Wayfinder] Cloud migration v2 push failed:',e);setSyncStatus('⚠️ Migration sync failed');}
+        console.log('[Wayfinder] Cloud migration v3 pushed to Supabase');
+      }catch(e){console.error('[Wayfinder] Cloud migration v3 push failed:',e);setSyncStatus('⚠️ Migration sync failed');}
     }
-    console.group('[Wayfinder] Post-migration summary (cloud v2)');
-    D.trips.forEach(t=>{const pl=D.places.filter(p=>(p.tripIds||[]).includes(t.id)).length,jr=D.journal.filter(j=>j.tripId===t.id).length,st=(t.itinerary||[]).reduce((n,d)=>n+(d.stops||[]).length,0);console.log(`"${t.name}" | places:${pl} journal:${jr} days:${(t.itinerary||[]).length} stops:${st} | dests:[${(t.destinations||[]).join(',')}]`);});
-    console.groupEnd();
   }
-  localStorage.setItem('wf_cloud_v2','1');
+  console.group('[Wayfinder] Post-migration summary (cloud v3)');
+  D.trips.forEach(t=>{const pl=D.places.filter(p=>(p.tripIds||[]).includes(t.id)).length,jr=D.journal.filter(j=>j.tripId===t.id).length,st=(t.itinerary||[]).reduce((n,d)=>n+(d.stops||[]).length,0);console.log(`"${t.name}" | places:${pl} journal:${jr} days:${tripDays(t)} (itinerary:${(t.itinerary||[]).length}) stops:${st} | dests:[${(t.destinations||[]).join(',')}]`);});
+  console.groupEnd();
+  localStorage.setItem('wf_cloud_v3','1');
 }
 function scheduledSync(k,items){
   if(!currentUser)return;
@@ -2169,7 +2193,7 @@ function rTrips(){
     if(usStates.length)scopeParts.push(usStates.length===1?usStates[0]:'🇺🇸 '+usStates.length+' states');
     const scopeStr=scopeParts.join(' · ')||(t.destinations.slice(0,2).join(', ')+(t.destinations.length>2?` +${t.destinations.length-2}`:'')||'');
     const placesStat=linked.length?linked.length+' place'+(linked.length>1?'s':''):'';
-    const statParts=[t.itinerary.length?t.itinerary.length+' day'+(t.itinerary.length>1?'s':''):'',stops?stops+' stop'+(stops>1?'s':''):'',placesStat].filter(Boolean).join(' · ');
+    const td=tripDays(t);const statParts=[td?td+' day'+(td>1?'s':''):'',stops?stops+' stop'+(stops>1?'s':''):'',placesStat].filter(Boolean).join(' · ');
     const barColor=t.status==='active'?'linear-gradient(90deg,#3a9e5c,#5fc47a)':t.status==='upcoming'?'linear-gradient(90deg,#B8892A,var(--gold))':t.status==='planning'?'linear-gradient(90deg,#4A7EBA,#6BA3D6)':'linear-gradient(90deg,#8a7060,#b09880)';
     return`<div class="tc" onclick="openTripD('${t.id}')"><div class="tc-bar" style="background:${barColor}"></div><div class="tcb">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
@@ -2251,7 +2275,7 @@ function openTripD(id){
   const itinerarySection=`
   <div class="card">
     <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
-      <div><div class="ct">📅 Itinerary</div><div class="cs">${t.itinerary.length} days · ${totalStops} stops</div></div>
+      <div><div class="ct">📅 Itinerary</div><div class="cs">${tripDays(t)} days · ${totalStops} stops</div></div>
       <span class="coll-arrow">▾</span>
     </div>
     <div class="coll-body coll-open">
@@ -2320,7 +2344,7 @@ function openTripD(id){
   </div>
   <div class="g4" style="gap:10px;margin-bottom:13px">
     <div class="sc" style="--accent:var(--green2)"><div class="si">📍</div><div class="sn">${linkedPlaces.length||'—'}</div><div class="sl">Places</div></div>
-    <div class="sc" style="--accent:var(--gold)"><div class="si">📅</div><div class="sn">${t.itinerary.length||'—'}</div><div class="sl">Days</div></div>
+    <div class="sc" style="--accent:var(--gold)"><div class="si">📅</div><div class="sn">${tripDays(t)||'—'}</div><div class="sl">Days</div></div>
     <div class="sc" style="--accent:var(--sage)"><div class="si">${isDomestic?'🇺🇸':'🌍'}</div><div class="sn">${isDomestic?tripUSStates.length:tripCountries.length}</div><div class="sl">${isDomestic?'States':'Countries'}</div></div>
     <div class="sc" style="--accent:var(--earth2)"><div class="si">📓</div><div class="sn">${tripJournal.length}</div><div class="sl">Journal</div></div>
   </div>
@@ -2331,7 +2355,7 @@ function tripInsights(t,linkedPlaces,tripJournal,isDomestic,tripCountries,tripUS
   const isPast=t.status==='past';
   const facts=[];
   // Days total
-  if(t.itinerary.length) facts.push(isPast?`You traveled for ${t.itinerary.length} day${t.itinerary.length>1?'s':''}.`:`Itinerary spans ${t.itinerary.length} day${t.itinerary.length>1?'s':''}.`);
+  const td=tripDays(t);if(td) facts.push(isPast?`You traveled for ${td} day${td>1?'s':''}.`:`Itinerary spans ${td} day${td>1?'s':''}.`);
   // Places breakdown by location
   if(!isDomestic&&tripCountries.length){
     tripCountries.forEach(c=>{
@@ -2354,7 +2378,7 @@ function tripInsights(t,linkedPlaces,tripJournal,isDomestic,tripCountries,tripUS
   if(t.budget)facts.push(`Budget: $${t.budget.toLocaleString()}.`);
   // Total stops
   const stops=t.itinerary.reduce((s,d)=>s+(d.stops||[]).length,0);
-  if(stops>3)facts.push(`${isPast?'Itinerary covered':'Itinerary includes'} ${stops} stops across ${t.itinerary.length} days.`);
+  if(stops>3)facts.push(`${isPast?'Itinerary covered':'Itinerary includes'} ${stops} stops across ${tripDays(t)} days.`);
 
   if(!facts.length)return'';
   let aiSlot='';
