@@ -1777,7 +1777,9 @@ function rHome(){
   const destCountries=new Set();
   cleanTrips.filter(t=>t.status==='past').forEach(t=>(t.destinations||[]).forEach(d=>{const c=normCountry(d);if(c&&c!=='United States')destCountries.add(c);}));
   const allCountries=[...new Set([...placesCountries,...destCountries])].sort();
-  const usStates=[...new Set(vis.filter(p=>normCountry(p.country)==='United States').map(p=>p.usState).filter(Boolean))].sort();
+  // Include states from Adventures stops
+  const advStopStates=(D.camps||[]).filter(c=>c.recordType!=='spot').flatMap(c=>(c.stops||[]).map(s=>s.state).filter(Boolean));
+  const usStates=[...new Set([...vis.filter(p=>normCountry(p.country)==='United States').map(p=>p.usState).filter(Boolean),...(D.camps||[]).filter(c=>c.recordType!=='spot').map(c=>c.state).filter(Boolean),...advStopStates])].sort();
   const continents=[...new Set(allCountries.map(c=>Object.entries(CONTINENTS).find(([,v])=>v.includes(c))?.[0]).filter(Boolean))];
   const homeState=getHomeState();
 
@@ -1790,8 +1792,13 @@ function rHome(){
     const inAsia=destC.some(c=>['Japan','Thailand','Vietnam','Indonesia','Philippines','Singapore','Malaysia','Cambodia','Myanmar','Laos','South Korea','China','Taiwan','Hong Kong','India','Nepal','Sri Lanka'].includes(c));
     return(inAsia?12000:8500)+d*110;
   }
-  const totalMilesEst=pastTrips.filter(t=>t.startDate&&t.endDate).reduce((s,t)=>s+estMiles(t),0);
-  const totalTravelDays=pastTrips.filter(t=>t.startDate&&t.endDate).reduce((s,t)=>s+(tripDays(t)||0),0);
+  const tripMilesEst=pastTrips.filter(t=>t.startDate&&t.endDate).reduce((s,t)=>s+estMiles(t),0);
+  // Include confirmed adventure trip miles (from stop leg distances)
+  const advMiles=(D.camps||[]).filter(c=>c.recordType!=='spot'&&c.status==='completed').reduce((s,c)=>{return s+(c.stops||[]).reduce((sm,st)=>sm+(parseFloat(st.milesPrev)||0),0);},0);
+  const totalMilesEst=tripMilesEst+advMiles;
+  const tripTravelDays=pastTrips.filter(t=>t.startDate&&t.endDate).reduce((s,t)=>s+(tripDays(t)||0),0);
+  const advDays=(D.camps||[]).filter(c=>c.recordType!=='spot'&&c.status==='completed'&&c.startDate&&c.endDate).reduce((s,c)=>s+(Math.round((new Date(c.endDate)-new Date(c.startDate))/86400000)+1),0);
+  const totalTravelDays=tripTravelDays+advDays;
 
   // First and most recent trip per country/state
   const countryLastVisit={};const countryFirstVisit={};const stateFirstVisit={};
