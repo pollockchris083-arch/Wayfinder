@@ -321,6 +321,8 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .btn-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:var(--card);border:1.5px solid var(--bdr2);border-radius:9px;padding:12px 20px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;transition:all .18s;font-family:inherit}
 .btn-google:hover{border-color:var(--green);background:var(--card2);transform:translateY(-1px)}
 .auth-note{font-size:10px;color:var(--muted2);margin-top:14px;line-height:1.5}
+.ao-spinner{width:36px;height:36px;border:3px solid var(--bdr2);border-top-color:var(--green);border-radius:50%;animation:ao-spin .9s linear infinite}
+@keyframes ao-spin{to{transform:rotate(360deg)}}
 
 /* ── MAP PAGE ── */
 .rg-group{margin-bottom:14px}
@@ -792,7 +794,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
       <button id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode" style="background:none;border:none;cursor:pointer;font-size:16px;padding:4px 6px;border-radius:6px;transition:background .15s;line-height:1" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background='none'">🌙</button>
     </div>
     <div id="sync-bar" style="display:none;align-items:center;justify-content:space-between;padding:5px 6px;border-top:1px solid var(--bdr);margin-top:3px">
-      <span id="sync-status" style="font-size:10px;color:var(--muted)">☁️ Synced</span>
+      <span id="sync-status" style="font-size:10px;color:var(--muted);cursor:pointer;padding:2px 4px;border-radius:4px;transition:background .15s" onclick="manualCloudSync()" title="Tap to sync from cloud" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background='none'">☁️ Synced</span>
       <button onclick="signOut()" style="background:none;border:none;font-size:10px;color:var(--muted);cursor:pointer;padding:2px 6px;border-radius:4px;font-family:inherit;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Sign out</button>
     </div>
   </div>
@@ -951,9 +953,11 @@ input,textarea,select{font-family:inherit;font-weight:400}
             </div>
           </div>
         </div>
-        <div class="ss"><h3>Data</h3>
+        <div class="ss"><h3>Sync &amp; Data</h3>
           <div class="card">
-            <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">All data is saved locally in this browser.</p>
+            <button id="manual-sync-btn" class="btn-s" onclick="manualCloudSync()" style="width:100%;margin-bottom:12px;background:rgba(74,114,89,.1);border-color:rgba(74,114,89,.35);color:var(--green3);font-weight:600">🔄 Sync Data from Cloud</button>
+            <div id="manual-sync-result" style="font-size:11px;color:var(--muted);margin-bottom:12px;display:none;text-align:center;line-height:1.5"></div>
+            <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">Data is stored in this browser and backed up to the cloud. Use the sync button above if data appears missing after a fresh install.</p>
             <div style="display:flex;gap:8px">
               <button class="btn-s" onclick="exportData()" style="flex:1">📥 Export JSON</button>
               <button class="btn-s" onclick="document.getElementById('imp').click()" style="flex:1">📤 Import JSON</button>
@@ -1287,7 +1291,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
 
 <!-- ── AUTH OVERLAY ── -->
 <div id="auth-overlay">
-  <div class="auth-card">
+  <div id="ao-signin" class="auth-card">
     <svg width="44" height="44" viewBox="0 0 30 30" fill="none" style="margin:0 auto 14px;display:block">
       <circle cx="15" cy="15" r="13.5" stroke="#4A7259" stroke-width=".6" opacity=".45"/>
       <circle cx="15" cy="15" r="2.5" stroke="#4A7259" stroke-width="1" fill="none"/>
@@ -1311,6 +1315,13 @@ input,textarea,select{font-family:inherit;font-weight:400}
       Continue with Google
     </button>
     <div class="auth-note">Private &amp; secure. Only you can see your data.</div>
+  </div>
+  <div id="ao-loading" style="display:none;flex-direction:column;align-items:center;gap:18px;text-align:center;padding:32px">
+    <div class="ao-spinner"></div>
+    <div>
+      <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px">Loading your data…</div>
+      <div id="ao-load-detail" style="font-size:12px;color:var(--muted)">Connecting to cloud</div>
+    </div>
   </div>
 </div>
 
@@ -1503,17 +1514,36 @@ function signInGoogle(){
 async function signOut(){
   await SUPA.auth.signOut();
   currentUser=null;
-  document.getElementById('auth-overlay').style.display='flex';
+  const ao=document.getElementById('auth-overlay');
+  const sign=document.getElementById('ao-signin');
+  const load=document.getElementById('ao-loading');
+  if(ao)ao.style.display='flex';
+  if(sign)sign.style.display='flex';
+  if(load)load.style.display='none';
   document.getElementById('sync-bar').style.display='none';
 }
-function setSyncStatus(msg){const el=document.getElementById('sync-status');if(el)el.textContent=msg}
+function setSyncStatus(msg,color){const el=document.getElementById('sync-status');if(el){el.textContent=msg;el.style.color=color||'var(--muted)';}}
+function setAoDetail(msg){const el=document.getElementById('ao-load-detail');if(el)el.textContent=msg;}
+function showLoadingOverlay(){
+  const ao=document.getElementById('auth-overlay');
+  const sign=document.getElementById('ao-signin');
+  const load=document.getElementById('ao-loading');
+  if(ao)ao.style.display='flex';
+  if(sign)sign.style.display='none';
+  if(load)load.style.display='flex';
+}
+function hideAuthOverlay(){
+  const ao=document.getElementById('auth-overlay');
+  if(ao)ao.style.display='none';
+}
 function showSyncBar(){document.getElementById('sync-bar').style.display='flex'}
 function stripRow({user_id,created_at,updated_at,...rest}){const out={};Object.entries(rest).forEach(([k,v])=>{out[k.replace(/_([a-z])/g,(_,c)=>c.toUpperCase())]=v;});return out;}
 
 async function loadFromCloud(){
   if(!currentUser)return;
   const uid=currentUser.id;
-  setSyncStatus('⏳ Loading…');
+  setSyncStatus('⏳ Syncing…','var(--gold2)');
+  setAoDetail('Fetching your data from cloud…');
   try{
     const[p,t,w,j,s]=await Promise.all([
       SUPA.from('wf_places').select('*').eq('user_id',uid),
@@ -1525,7 +1555,8 @@ async function loadFromCloud(){
     const hasCloud=p.data?.length||t.data?.length||w.data?.length||j.data?.length;
     const hasLocal=D.places.length||D.trips.length||D.wish.length;
     if(!hasCloud&&hasLocal){
-      setSyncStatus('⬆️ Uploading…');
+      setSyncStatus('⬆️ Uploading…','var(--gold2)');
+      setAoDetail('First sign-in — uploading your local data…');
       await Promise.all([
         cloudPush('places',D.places),cloudPush('trips',D.trips),
         cloudPush('wish',D.wish),cloudPush('journal',D.journal),
@@ -1533,6 +1564,7 @@ async function loadFromCloud(){
       ]);
       toast('☁️ Data synced to your account!');
     } else {
+      setAoDetail(`Loading ${p.data?.length||0} places, ${t.data?.length||0} trips…`);
       // Fresh cloud load — clear migration flag so canonical fixes always re-validate
       localStorage.removeItem('wf_cloud_v4');
       if(p.data?.length)localStorage.setItem(K.places,JSON.stringify(p.data.map(stripRow)));
@@ -1542,14 +1574,36 @@ async function loadFromCloud(){
       if(s.data){const local=JSON.parse(localStorage.getItem(K.settings)||'{}');const merged={...stripRow(s.data),apiKey:local.apiKey,googleClientId:local.googleClientId,driveFolderId:local.driveFolderId,mapsApiKey:local.mapsApiKey,abroadNotes:local.abroadNotes};localStorage.setItem(K.settings,JSON.stringify(merged));}
       D=load();
     }
-    setSyncStatus('☁️ Synced');
+    setSyncStatus('☁️ Synced','var(--green3)');
     await migrateCloudData();
     pipeAutoAdvance();
     loadSettings();rHome();badges();
+    hideAuthOverlay();
   }catch(e){
     console.warn('Cloud load error:',e);
-    setSyncStatus('⚠️ Offline');
+    setSyncStatus('⚠️ Offline','#c05050');
+    setAoDetail('Could not reach cloud — using local data');
     loadSettings();rHome();badges();
+    hideAuthOverlay();
+  }
+}
+
+async function manualCloudSync(){
+  if(!currentUser){toast('⚠️ Sign in first to sync');go('settings');return;}
+  const btn=document.getElementById('manual-sync-btn');
+  const rslt=document.getElementById('manual-sync-result');
+  const orig=btn?.textContent;
+  if(btn){btn.textContent='⏳ Syncing…';btn.disabled=true;}
+  if(rslt){rslt.style.display='none';}
+  try{
+    await loadFromCloud();
+    const counts=`${D.places.length} places · ${D.trips.length} trips · ${D.wish.filter(w=>!w.graduated).length} wishlist`;
+    if(btn){btn.textContent='✅ Synced';btn.disabled=false;setTimeout(()=>{if(btn)btn.textContent=orig;},3000);}
+    if(rslt){rslt.textContent='✅ Synced — '+counts;rslt.style.display='block';rslt.style.color='var(--green3)';}
+  }catch(e){
+    if(btn){btn.textContent=orig;btn.disabled=false;}
+    if(rslt){rslt.textContent='⚠️ Sync failed — check your connection';rslt.style.display='block';rslt.style.color='#c05050';}
+    toast('⚠️ Sync failed');
   }
 }
 
@@ -1741,8 +1795,9 @@ function scheduledSync(k,items){
 SUPA.auth.onAuthStateChange(async(event,session)=>{
   if(session?.user){
     currentUser=session.user;
-    document.getElementById('auth-overlay').style.display='none';
     showSyncBar();
+    // Show loading overlay while fetching data — don't reveal empty app
+    showLoadingOverlay();
     // Update avatar with Google name
     const gname=session.user.user_metadata?.full_name||session.user.email||'';
     const first=gname.split(' ')[0]||'You';
@@ -1750,10 +1805,19 @@ SUPA.auth.onAuthStateChange(async(event,session)=>{
       document.getElementById('pn').textContent=first;
       document.getElementById('av').textContent=first[0].toUpperCase();
     }
-    if(event==='SIGNED_IN'||event==='INITIAL_SESSION')await loadFromCloud();
+    if(event==='SIGNED_IN'||event==='INITIAL_SESSION'){
+      await loadFromCloud(); // hides overlay on completion
+    } else {
+      hideAuthOverlay(); // token refresh etc — data already loaded
+    }
   }else{
     currentUser=null;
-    document.getElementById('auth-overlay').style.display='flex';
+    const ao=document.getElementById('auth-overlay');
+    const sign=document.getElementById('ao-signin');
+    const load=document.getElementById('ao-loading');
+    if(ao)ao.style.display='flex';
+    if(sign)sign.style.display='flex';
+    if(load)load.style.display='none';
     document.getElementById('sync-bar').style.display='none';
   }
 });
@@ -7963,11 +8027,14 @@ if(localStorage.getItem('wf_dark')==='1'){
 pipeAutoAdvance();
 loadSettings();rHome();badges();
 document.getElementById('tba').style.display='flex';
-// Hide auth overlay immediately if session already exists (avoids flash)
+// Show loading overlay immediately if a session exists, so user never sees empty data
 SUPA.auth.getSession().then(({data:{session}})=>{
   if(session){
-    document.getElementById('auth-overlay').style.display='none';
+    showLoadingOverlay();
     showSyncBar();
+    // Note: onAuthStateChange will fire INITIAL_SESSION and call loadFromCloud(),
+    // which hides the overlay once data is loaded. This getSession() call is
+    // only here to swap the overlay to loading state before that fires.
   }
 });
 </script>
