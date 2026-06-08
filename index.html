@@ -2087,9 +2087,20 @@ const GMAP_STYLES=[
   {elementType:'labels.text.fill',stylers:[{color:'#9e8a78'}]},
   {elementType:'labels.text.stroke',stylers:[{color:'#1a1f1a'}]},
   {featureType:'administrative.country',elementType:'geometry.stroke',stylers:[{color:'#4a4a3a'}]},
+  {featureType:'administrative.province',elementType:'geometry.stroke',stylers:[{color:'#333a32'}]},
   {featureType:'landscape',elementType:'geometry',stylers:[{color:'#252b24'}]},
   {featureType:'poi',stylers:[{visibility:'off'}]},
-  {featureType:'road',stylers:[{visibility:'off'}]},
+  // Roads: visible at zoom-in, dark with warm amber highlights
+  {featureType:'road',elementType:'geometry',stylers:[{color:'#2d3530'}]},
+  {featureType:'road',elementType:'geometry.stroke',stylers:[{color:'#1a201e'}]},
+  {featureType:'road',elementType:'labels.text.fill',stylers:[{color:'#8a9490'}]},
+  {featureType:'road',elementType:'labels.text.stroke',stylers:[{color:'#1a201e'}]},
+  {featureType:'road.highway',elementType:'geometry',stylers:[{color:'#5a4e38'}]},
+  {featureType:'road.highway',elementType:'geometry.stroke',stylers:[{color:'#1e1c14'}]},
+  {featureType:'road.highway',elementType:'labels.text.fill',stylers:[{color:'#d4a862'}]},
+  {featureType:'road.highway',elementType:'labels.text.stroke',stylers:[{color:'#1a1505'}]},
+  {featureType:'road.arterial',elementType:'geometry',stylers:[{color:'#2a3028'}]},
+  {featureType:'road.arterial',elementType:'labels.text.fill',stylers:[{color:'#6e7d76'}]},
   {featureType:'transit',stylers:[{visibility:'off'}]},
   {featureType:'water',elementType:'geometry',stylers:[{color:'#152520'}]},
   {featureType:'water',elementType:'labels.text.fill',stylers:[{color:'#4a7a6a'}]},
@@ -2351,7 +2362,7 @@ async function mapGeocode(item){
   if(cache[k])return cache[k];
   const q=item._wish?item.name:[item.name,item.usState,normCountry(item.country)||item.region].filter(Boolean).join(', ');
   try{
-    const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`,{headers:{'User-Agent':'Wayfinder/1.0','Accept-Language':'en'}});
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`);
     const d=await r.json();
     if(d[0]){const c={lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon)};cache[k]=c;localStorage.setItem('wf_geocache',JSON.stringify(cache));return c;}
   }catch(e){}
@@ -2392,7 +2403,7 @@ async function mapRenderHome(){
   let coords=cache[cacheKey];
   if(!coords){
     try{
-      const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(hc)}&format=json&limit=1`,{headers:{'User-Agent':'Wayfinder/1.0','Accept-Language':'en'}});
+      const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(hc)}&format=json&limit=1`);
       const d=await r.json();
       if(d[0]){coords={lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon)};cache[cacheKey]=coords;localStorage.setItem('wf_geocache',JSON.stringify(cache));}
     }catch(e){}
@@ -2405,6 +2416,38 @@ async function mapRenderHome(){
 }
 
 // ── Google Maps implementation ───────────────────
+function mapGeocodeG(item){
+  const k=mapCacheKey(item);
+  const cache=JSON.parse(localStorage.getItem('wf_geocache')||'{}');
+  if(cache[k])return Promise.resolve(cache[k]);
+  const q=item._wish?item.name:[item.name,item.usState,normCountry(item.country)||item.region].filter(Boolean).join(', ');
+  return new Promise(resolve=>{
+    if(!window.google?.maps?.Geocoder){resolve(null);return;}
+    new google.maps.Geocoder().geocode({address:q},(results,status)=>{
+      if(status==='OK'&&results[0]){
+        const loc=results[0].geometry.location;
+        const c={lat:loc.lat(),lng:loc.lng()};
+        const c2=JSON.parse(localStorage.getItem('wf_geocache')||'{}');c2[k]=c;
+        localStorage.setItem('wf_geocache',JSON.stringify(c2));resolve(c);
+      }else resolve(null);
+    });
+  });
+}
+function mapGeocodeGStr(q,cacheKey){
+  const cache=JSON.parse(localStorage.getItem('wf_geocache')||'{}');
+  if(cache[cacheKey])return Promise.resolve(cache[cacheKey]);
+  return new Promise(resolve=>{
+    if(!window.google?.maps?.Geocoder){resolve(null);return;}
+    new google.maps.Geocoder().geocode({address:q},(results,status)=>{
+      if(status==='OK'&&results[0]){
+        const loc=results[0].geometry.location;
+        const c={lat:loc.lat(),lng:loc.lng()};
+        const c2=JSON.parse(localStorage.getItem('wf_geocache')||'{}');c2[cacheKey]=c;
+        localStorage.setItem('wf_geocache',JSON.stringify(c2));resolve(c);
+      }else resolve(null);
+    });
+  });
+}
 async function mapInitGoogle(key){
   try{
     await loadGMapsAPI(key);
@@ -2547,11 +2590,10 @@ async function mapRenderPinsG(){
   const toGeo=[];
   items.forEach(item=>{const k=mapCacheKey(item);if(cache[k])mapAddPinG(item,cache[k]);else toGeo.push(item);});
   if(mapTripFilter!=='all')mapDrawRouteG(mapTripFilter);
-  for(let i=0;i<toGeo.length;i++){
-    const coords=await mapGeocode(toGeo[i]);
-    if(coords&&gMap)mapAddPinG(toGeo[i],coords);
-    if(i<toGeo.length-1)await new Promise(r=>setTimeout(r,1100));
-  }
+  await Promise.all(toGeo.map(async item=>{
+    const coords=await mapGeocodeG(item);
+    if(coords&&gMap)mapAddPinG(item,coords);
+  }));
   if(mapYearFilter!=='all'&&gMap&&gMapMarkers.length){
     const cache2=JSON.parse(localStorage.getItem('wf_geocache')||'{}');
     const pts=items.map(item=>{const k=mapCacheKey(item);return cache2[k]?cache2[k]:null;}).filter(Boolean);
@@ -2589,13 +2631,7 @@ async function mapRenderHomeG(){
   const cacheKey='home:'+hc;
   const cache=JSON.parse(localStorage.getItem('wf_geocache')||'{}');
   let coords=cache[cacheKey];
-  if(!coords){
-    try{
-      const r=await fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(hc)+'&format=json&limit=1',{headers:{'User-Agent':'Wayfinder/1.0','Accept-Language':'en'}});
-      const d=await r.json();
-      if(d[0]){coords={lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon)};cache[cacheKey]=coords;localStorage.setItem('wf_geocache',JSON.stringify(cache));}
-    }catch(e){}
-  }
+  if(!coords)coords=await mapGeocodeGStr(hc,cacheKey);
   if(!coords)return;
   const svg='<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#4A7259" stroke="white" stroke-width="2.5"/><text x="16" y="22" text-anchor="middle" font-size="14" font-family="Apple Color Emoji,Segoe UI Emoji,sans-serif">🏠</text></svg>';
   gMapHomeMarker=new google.maps.Marker({
@@ -5649,22 +5685,51 @@ async function advStopDoSearch(query){
       });
     }
   }catch(e){}
-  // Nominatim (OpenStreetMap) — always runs
-  try{
-    const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query+' campground')}&format=json&limit=7&addressdetails=1&extratags=1`,{headers:{'User-Agent':'Wayfinder/1.0','Accept-Language':'en'}});
-    const data=await r.json();
-    data.forEach(item=>{
-      const name=item.name||item.display_name.split(',')[0].trim();
-      const addr=item.address||{};
-      const sub=[addr.city||addr.town||addr.village||addr.hamlet,addr.state,addr.country_code?.toUpperCase()].filter(Boolean).join(', ');
-      const lat=parseFloat(item.lat),lng=parseFloat(item.lon);
-      if(results.some(rx=>rx.lat&&Math.abs(rx.lat-lat)<0.005))return; // dedup
-      const ext=item.extratags||{};
-      const rigM=ext['maxlength']||ext['hgv:maxlength']||'';
-      const maxRig=rigM?Math.round(parseFloat(rigM)/0.3048):null;
-      results.push({src:'osm',name,sub,lat,lng,website:ext.website||ext.url||'',maxRigLength:maxRig&&maxRig<200?maxRig:null,hookups:[]});
-    });
-  }catch(e){}
+  // Google Geocoding fallback — uses Maps API key if available
+  const mapsKey=(D.settings?.mapsApiKey||'').trim();
+  if(mapsKey){
+    try{
+      if(!_gMapsLoaded)await loadGMapsAPI(mapsKey);
+      const geocoder=new google.maps.Geocoder();
+      await new Promise(resolve=>{
+        geocoder.geocode({address:query+' campground'},(results,status)=>{
+          if(status==='OK'&&results){
+            results.slice(0,5).forEach(r=>{
+              const loc=r.geometry.location;
+              const lat=loc.lat(),lng=loc.lng();
+              if(window._advSearchResults?.some(rx=>rx.lat&&Math.abs(rx.lat-lat)<0.01)){}
+              else{
+                const comps=r.address_components||[];
+                const locality=comps.find(c=>c.types.includes('locality'))?.long_name||'';
+                const state=comps.find(c=>c.types.includes('administrative_area_level_1'))?.short_name||'';
+                const country=comps.find(c=>c.types.includes('country'))?.short_name||'';
+                const sub=[locality,state,country].filter(Boolean).join(', ');
+                const name=r.formatted_address.split(',')[0].trim();
+                if(!results.some(rx=>rx.lat&&Math.abs(rx.lat-lat)<0.005)){
+                  results.push({src:'google',name,sub,lat,lng,website:'',maxRigLength:null,hookups:[]});
+                }
+              }
+            });
+          }
+          resolve();
+        });
+      });
+    }catch(e){}
+  } else {
+    // Nominatim fallback when no Maps key
+    try{
+      const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query+' campground')}&format=json&limit=7&addressdetails=1`);
+      const data=await r.json();
+      data.forEach(item=>{
+        const name=item.name||item.display_name.split(',')[0].trim();
+        const addr=item.address||{};
+        const sub=[addr.city||addr.town||addr.village||addr.hamlet,addr.state,addr.country_code?.toUpperCase()].filter(Boolean).join(', ');
+        const lat=parseFloat(item.lat),lng=parseFloat(item.lon);
+        if(results.some(rx=>rx.lat&&Math.abs(rx.lat-lat)<0.005))return;
+        results.push({src:'osm',name,sub,lat,lng,website:'',maxRigLength:null,hookups:[]});
+      });
+    }catch(e){}
+  }
   advStopShowDropdown(results);
 }
 function advStopShowDropdown(results){
