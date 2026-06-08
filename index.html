@@ -1197,31 +1197,54 @@ input,textarea,select{font-family:inherit;font-weight:400}
 
 <!-- ADVENTURE STOP -->
 <div class="mo" id="m-adv-stop">
-  <div class="modal" style="width:460px;max-height:90vh;overflow-y:auto">
+  <div class="modal" style="width:480px;max-height:92vh;overflow-y:auto">
     <button class="mcl" onclick="closeM('m-adv-stop')">✕</button>
-    <h2 id="advstop-title">Add Stop</h2>
-    <div class="fg"><label class="fl">Location Name *</label><input class="fi" id="advstop-name" placeholder="e.g. Yosemite Valley Campground"/></div>
-    <div class="fr">
-      <div class="fg"><label class="fl">Arrival</label><input class="fi" type="date" id="advstop-arr"/></div>
-      <div class="fg"><label class="fl">Departure</label><input class="fi" type="date" id="advstop-dep"/></div>
+    <h2 id="advstop-title" style="margin-bottom:14px">Add Stop</h2>
+    <!-- Quick Fill -->
+    <div style="background:var(--card2);border:1px solid var(--bdr);border-radius:8px;padding:10px 12px;margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px">⚡ Quick Fill</div>
+      <div class="fg" style="margin-bottom:8px">
+        <label class="fl" style="font-size:11px">Paste Google Maps URL</label>
+        <input class="fi" id="advstop-paste" placeholder="Paste any Google Maps link → auto-fills GPS + name" oninput="advStopParsePaste(this.value)" style="font-size:11px"/>
+      </div>
+      <div class="fg" style="margin-bottom:0">
+        <label class="fl" style="font-size:11px">🔍 Search Campground</label>
+        <input class="fi" id="advstop-search" placeholder="Type name to search Recreation.gov + OpenStreetMap…" oninput="advStopSearchDebounce(this.value)" autocomplete="off" style="font-size:11px"/>
+        <div id="advstop-dropdown" style="display:none;background:var(--card);border:1px solid var(--bdr2);border-radius:0 0 8px 8px;max-height:200px;overflow-y:auto;margin-top:-1px"></div>
+      </div>
     </div>
+    <!-- Location Name -->
+    <div class="fg"><label class="fl">Location Name *</label><input class="fi" id="advstop-name" placeholder="Campground or location name" oninput="advStopUpdateProgress()"/></div>
+    <!-- Dates + Nights -->
     <div class="fr">
-      <div class="fg"><label class="fl">Miles from Prev</label><input class="fi" type="number" id="advstop-miles" placeholder="0"/></div>
-      <div class="fg"><label class="fl">Site / Spot #</label><input class="fi" id="advstop-site" placeholder="A23"/></div>
+      <div class="fg"><label class="fl">Arrival</label><input class="fi" type="date" id="advstop-arr" oninput="advStopCalcNights()"/></div>
+      <div class="fg"><label class="fl">Departure</label><input class="fi" type="date" id="advstop-dep" oninput="advStopCalcNights()"/></div>
     </div>
-    <div class="fr">
-      <div class="fg"><label class="fl">Confirmation #</label><input class="fi" id="advstop-conf" placeholder="RES-123456"/></div>
-      <div class="fg"><label class="fl">Cost / Night ($)</label><input class="fi" type="number" id="advstop-cost" placeholder="35"/></div>
+    <div id="advstop-nights-hint" style="font-size:11px;color:var(--muted2);margin:-4px 0 10px;min-height:15px"></div>
+    <!-- Booked toggle -->
+    <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;color:var(--text2);margin-bottom:10px">
+      <input type="checkbox" id="advstop-booked" style="width:15px;height:15px;accent-color:var(--green)" onchange="advStopToggleBooked(this.checked)"/>
+      <span>Booked ✅ — show reservation details</span>
+    </label>
+    <div id="advstop-booking-fields" style="display:none">
+      <div class="fr">
+        <div class="fg"><label class="fl">Confirmation #<span style="font-size:9px;color:var(--muted2);font-weight:400;margin-left:4px">from booking email</span></label><input class="fi" id="advstop-conf" placeholder="RES-123456"/></div>
+        <div class="fg"><label class="fl">Site / Spot #</label><input class="fi" id="advstop-site" placeholder="A23"/></div>
+      </div>
     </div>
-    <div class="fr">
-      <div class="fg"><label class="fl">Latitude</label><input class="fi" id="advstop-lat" placeholder="37.174"/></div>
-      <div class="fg"><label class="fl">Longitude</label><input class="fi" id="advstop-lng" placeholder="-119.542"/></div>
+    <!-- Cost with auto-total -->
+    <div class="fr" style="align-items:flex-end">
+      <div class="fg" style="flex:1"><label class="fl">Cost / Night ($)</label><input class="fi" type="number" id="advstop-cost" placeholder="35" oninput="advStopCalcNights()"/></div>
+      <div style="padding:0 0 13px 10px;flex-shrink:0;min-width:80px"><div id="advstop-cost-total" style="font-size:11px;color:var(--muted2)"></div></div>
     </div>
-    <div class="fg"><label class="fl">Google Maps Link</label><input class="fi" id="advstop-maps" type="url" placeholder="https://maps.google.com/…"/></div>
-    <div class="fg"><label class="fl">Campground Website</label><input class="fi" id="advstop-web" type="url" placeholder="https://…"/></div>
-    <div class="fg"><label class="fl">Max Rig Length (ft)</label><input class="fi" type="number" id="advstop-rig" placeholder="40"/></div>
-    <div class="fg"><label class="fl">Hookups Available</label>
-      <div id="advstop-hookups" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">
+    <!-- Miles from prev + drive estimate -->
+    <div class="fg" style="margin-bottom:4px"><label class="fl">Miles from Prev Stop</label><input class="fi" type="number" id="advstop-miles" placeholder="0"/></div>
+    <div id="advstop-miles-hint" style="font-size:11px;color:var(--muted2);margin:-4px 0 10px;min-height:14px"></div>
+    <!-- Hookups (contextual by trip type) -->
+    <div id="advstop-hookup-section">
+      <label class="fl" style="margin-bottom:6px">Hookups</label>
+      <div id="advstop-hookup-quick" style="display:flex;gap:5px;margin-bottom:6px;flex-wrap:wrap"></div>
+      <div id="advstop-hookups" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px">
         <button type="button" class="hookup-btn" data-hookup="Electric 20A" onclick="toggleHookupBtn(this)" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:all .15s">Electric 20A</button>
         <button type="button" class="hookup-btn" data-hookup="Electric 30A" onclick="toggleHookupBtn(this)" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:all .15s">Electric 30A</button>
         <button type="button" class="hookup-btn" data-hookup="Electric 50A" onclick="toggleHookupBtn(this)" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:all .15s">Electric 50A</button>
@@ -1233,10 +1256,33 @@ input,textarea,select{font-family:inherit;font-weight:400}
         <button type="button" class="hookup-btn" data-hookup="Pet Friendly" onclick="toggleHookupBtn(this)" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:all .15s">Pet Friendly</button>
       </div>
     </div>
-    <div class="fg" style="margin-bottom:12px"><label class="fl">Notes</label><input class="fi" id="advstop-notes" placeholder="Check-in instructions, hookup tips, site details…"/></div>
-    <div class="fa" style="justify-content:space-between">
-      <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;color:var(--text2)"><input type="checkbox" id="advstop-booked" style="width:15px;height:15px;accent-color:var(--green)"/> <span>Mark as Booked ✅</span></label>
-      <div style="display:flex;gap:8px"><button class="btn-s" onclick="closeM('m-adv-stop')">Cancel</button><button class="btn-p" onclick="saveAdvStop()">Save Stop</button></div>
+    <!-- Location Details (collapsible) -->
+    <div style="margin-bottom:12px">
+      <button type="button" onclick="advStopToggleLocDetails(this)" style="background:none;border:none;color:var(--muted2);font-size:11px;cursor:pointer;padding:5px 0;display:flex;align-items:center;gap:5px;font-family:inherit">
+        <span id="advstop-loc-arrow" style="font-size:9px">▶</span> Location Details (GPS, website, rig limit)
+      </button>
+      <div id="advstop-loc-details" style="display:none;margin-top:8px">
+        <div class="fr">
+          <div class="fg"><label class="fl">Latitude</label><input class="fi" id="advstop-lat" placeholder="37.174" oninput="advStopMaybeEstimateMiles()"/></div>
+          <div class="fg"><label class="fl">Longitude</label><input class="fi" id="advstop-lng" placeholder="-119.542" oninput="advStopMaybeEstimateMiles()"/></div>
+        </div>
+        <div id="advstop-rig-warn" style="font-size:11px;color:#c05050;margin:-4px 0 8px;min-height:14px"></div>
+        <div class="fg"><label class="fl">Google Maps Link</label><input class="fi" id="advstop-maps" type="url" placeholder="https://maps.google.com/…"/></div>
+        <div class="fg"><label class="fl">Campground Website</label><input class="fi" id="advstop-web" type="url" placeholder="https://…"/></div>
+        <div class="fg"><label class="fl">Max Rig Length (ft)</label><input class="fi" type="number" id="advstop-rig" placeholder="40" oninput="advStopCheckRigWarn()"/></div>
+      </div>
+    </div>
+    <!-- Notes -->
+    <div class="fg" style="margin-bottom:12px"><label class="fl">Notes</label><input class="fi" id="advstop-notes" placeholder="Check-in tips, gate codes, site details…"/></div>
+    <!-- Save as Spot -->
+    <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer;color:var(--text2);margin-bottom:14px">
+      <input type="checkbox" id="advstop-save-spot" style="width:14px;height:14px;accent-color:var(--green)"/>
+      <span>⭐ Also save to Spots Library for future trips</span>
+    </label>
+    <!-- Progress + Actions -->
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div id="advstop-progress" style="font-size:11px;color:var(--muted2)"></div>
+      <div style="display:flex;gap:8px;flex-shrink:0"><button class="btn-s" onclick="closeM('m-adv-stop')">Cancel</button><button class="btn-p" onclick="saveAdvStop()">Save Stop</button></div>
     </div>
   </div>
 </div>
@@ -4912,14 +4958,20 @@ function rAdvStopsTab(c){
     if(st.arrivalDate&&st.departureDate)return s+Math.max(0,Math.round((new Date(st.departureDate)-new Date(st.arrivalDate))/86400000));
     return s;
   },0);
+  const totalCampCost=stops.reduce((s,st)=>{
+    if(!st.costPerNight)return s;
+    const n=st.arrivalDate&&st.departureDate?Math.max(0,Math.round((new Date(st.departureDate)-new Date(st.arrivalDate))/86400000)):0;
+    return s+(parseFloat(st.costPerNight)||0)*n;
+  },0);
   let html='';
-  if(stops.length>1){
+  if(stops.length>0){
+    const summaryParts=[totalMiles>0?`🛣️ ${totalMiles.toFixed(0)} mi`:'',totalNights>0?`${totalNights} nights`:'',totalCampCost>0?`💰 $${totalCampCost.toFixed(0)} campsite fees`:''].filter(Boolean).join(' · ');
     html+=`<div style="background:var(--card2);border:1px solid var(--bdr);border-radius:var(--r);padding:10px 14px;margin-bottom:12px">
-      <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:5px">🗺️ Route</div>
-      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:12px">
+      <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:5px">🗺️ Route${stops.length>1?' ('+stops.length+' stops)':''}</div>
+      ${stops.length>1?`<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:12px;margin-bottom:6px">
         ${stops.map((st,i)=>`${i>0?'<span style="color:var(--muted)">→</span>':''}<span style="font-weight:500;color:var(--text2)">${st.name||'Stop '+(i+1)}</span>`).join('')}
-      </div>
-      <div style="margin-top:5px;font-size:11px;color:var(--muted)">${[totalMiles>0?totalMiles.toFixed(0)+' total miles':'',totalNights>0?totalNights+' nights':''].filter(Boolean).join(' · ')}</div>
+      </div>`:''}
+      ${summaryParts?`<div style="font-size:11px;color:var(--muted)">${summaryParts}</div>`:''}
     </div>`;
   }
   stops.forEach((stop,i)=>{
@@ -5188,17 +5240,46 @@ function saveAdvNotes(cid,text){
 }
 
 // ── Stop Modal ───────────────────────────────────────────
+function _advHookupState(btn,on){btn.dataset.active=on?'1':'';btn.style.background=on?'#4A7259':'var(--card2)';btn.style.color=on?'#fff':'var(--text2)';btn.style.borderColor=on?'#4A7259':'var(--bdr)';}
+function toggleHookupBtn(btn){const on=btn.dataset.active==='1';_advHookupState(btn,!on);}
+
+function haversineMiles(lat1,lon1,lat2,lon2){
+  const R=3959,r=x=>x*Math.PI/180,dLat=r(lat2-lat1),dLon=r(lon2-lon1);
+  const a=Math.sin(dLat/2)**2+Math.cos(r(lat1))*Math.cos(r(lat2))*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
 function openAdvStopModal(cid,idx){
   D=load();
   window._advStopEdit={cid,idx};
-  const stop=idx>=0?(((D.camps||[]).find(x=>x.id===cid)||{}).stops||[])[idx]||{}:{};
-  document.getElementById('advstop-title').textContent=idx<0?'Add Stop':'Edit Stop '+(idx+1);
+  const c=(D.camps||[]).find(x=>x.id===cid)||{};
+  const stops=c.stops||[];
+  const stop=idx>=0?(stops[idx]||{}):{};
+  const campType=c.campType||'tent';
+  window._advStopCampType=campType;
+  window._advStopRigLength=parseFloat((c.rig||{}).length)||0;
+  window._advStopTripDates={start:c.startDate||'',end:c.endDate||''};
+  // Previous stop coords for distance estimation
+  const prevStop=idx>0?stops[idx-1]:idx<0?stops[stops.length-1]:null;
+  window._advStopPrevCoords=(prevStop&&prevStop.lat&&prevStop.lng)?{lat:parseFloat(prevStop.lat),lng:parseFloat(prevStop.lng)}:null;
+
+  document.getElementById('advstop-title').textContent=idx<0?'Add Stop '+(stops.length+1):'Edit Stop '+(idx+1);
+  document.getElementById('advstop-paste').value='';
+  document.getElementById('advstop-search').value='';
+  document.getElementById('advstop-dropdown').style.display='none';
   document.getElementById('advstop-name').value=stop.name||'';
-  document.getElementById('advstop-arr').value=stop.arrivalDate||'';
+
+  // Smart date auto-fill for new stops
+  let autoArr='';
+  if(!stop.arrivalDate&&idx<0){
+    if(!stops.length&&c.startDate)autoArr=c.startDate;
+    else if(stops.length&&stops[stops.length-1].departureDate)autoArr=stops[stops.length-1].departureDate;
+  }
+  document.getElementById('advstop-arr').value=stop.arrivalDate||autoArr;
   document.getElementById('advstop-dep').value=stop.departureDate||'';
   document.getElementById('advstop-miles').value=stop.milesPrev||'';
-  document.getElementById('advstop-site').value=stop.siteNumber||'';
   document.getElementById('advstop-conf').value=stop.confirmation||'';
+  document.getElementById('advstop-site').value=stop.siteNumber||'';
   document.getElementById('advstop-cost').value=stop.costPerNight||'';
   document.getElementById('advstop-lat').value=stop.lat||'';
   document.getElementById('advstop-lng').value=stop.lng||'';
@@ -5206,24 +5287,204 @@ function openAdvStopModal(cid,idx){
   document.getElementById('advstop-web').value=stop.website||'';
   document.getElementById('advstop-rig').value=stop.maxRigLength||'';
   document.getElementById('advstop-notes').value=stop.notes||'';
-  document.getElementById('advstop-booked').checked=!!stop.booked;
+  const booked=!!stop.booked;
+  document.getElementById('advstop-booked').checked=booked;
+  document.getElementById('advstop-booking-fields').style.display=booked?'block':'none';
+  document.getElementById('advstop-save-spot').checked=false;
+
+  // Hookup button states
   const hookups=stop.hookups||[];
-  document.querySelectorAll('#advstop-hookups .hookup-btn').forEach(btn=>{
-    const on=hookups.includes(btn.dataset.hookup);
-    btn.dataset.active=on?'1':'';
-    btn.style.background=on?'#4A7259':'var(--card2)';
-    btn.style.color=on?'#fff':'var(--text2)';
-    btn.style.borderColor=on?'#4A7259':'var(--bdr)';
-  });
+  document.querySelectorAll('#advstop-hookups .hookup-btn').forEach(btn=>_advHookupState(btn,hookups.includes(btn.dataset.hookup)));
+
+  // Hookup section: hide for tent/backpacking
+  const showHookups=!['tent','backpacking'].includes(campType);
+  document.getElementById('advstop-hookup-section').style.display=showHookups?'block':'none';
+  // Quick-set buttons for RV/Van/Trailer/Overlanding
+  const qsEl=document.getElementById('advstop-hookup-quick');
+  if(qsEl){
+    qsEl.innerHTML=['rv','van','trailer','overlanding'].includes(campType)?
+      `<button type="button" onclick="advStopQuickHookups('full')" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid #4A7259;background:rgba(74,114,89,.12);color:var(--green3);cursor:pointer">⚡ Full Hookups</button>
+       <button type="button" onclick="advStopQuickHookups('dry')" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer">🌲 Dry Camping</button>`:'';
+  }
+
+  // Expand location details if stop already has coords
+  const hasCords=!!(stop.lat||stop.lng);
+  document.getElementById('advstop-loc-details').style.display=hasCords?'block':'none';
+  document.getElementById('advstop-loc-arrow').textContent=hasCords?'▼':'▶';
+
+  advStopCalcNights();
+  advStopMaybeEstimateMiles();
+  advStopCheckRigWarn();
+  advStopUpdateProgress();
   openM('m-adv-stop');
 }
-function toggleHookupBtn(btn){
-  const on=btn.dataset.active==='1';
-  btn.dataset.active=on?'':'1';
-  btn.style.background=on?'var(--card2)':'#4A7259';
-  btn.style.color=on?'var(--text2)':'#fff';
-  btn.style.borderColor=on?'var(--bdr)':'#4A7259';
+
+// ── Search ─────────────────────────────────────────────
+let _advSearchTimer=null;
+function advStopSearchDebounce(q){
+  clearTimeout(_advSearchTimer);
+  const dd=document.getElementById('advstop-dropdown');
+  if(q.length<2){if(dd)dd.style.display='none';return;}
+  _advSearchTimer=setTimeout(()=>advStopDoSearch(q),350);
 }
+async function advStopDoSearch(query){
+  const dd=document.getElementById('advstop-dropdown');if(!dd)return;
+  dd.innerHTML='<div style="padding:9px 14px;font-size:11px;color:var(--muted2)">Searching…</div>';
+  dd.style.display='block';
+  const results=[];
+  // Try Recreation.gov RIDB (graceful failure if blocked/requires key)
+  try{
+    const tp=new Promise((_,rej)=>setTimeout(()=>rej('timeout'),3500));
+    const fp=fetch(`https://ridb.recreation.gov/api/v1/facilities?query=${encodeURIComponent(query)}&limit=6`,{headers:{'Accept':'application/json'}});
+    const r=await Promise.race([fp,tp]);
+    if(r&&r.ok){
+      const data=await r.json();
+      (data.RECDATA||[]).forEach(f=>{
+        const lat=parseFloat(f.FacilityLatitude)||null;
+        const lng=parseFloat(f.FacilityLongitude)||null;
+        results.push({src:'ridb',name:f.FacilityName,sub:(f.AddressStateCode||'')+(f.FacilityTypeDescription?' · '+f.FacilityTypeDescription:''),lat,lng,website:f.FacilityReservationURL||'',maxRigLength:null,hookups:[]});
+      });
+    }
+  }catch(e){}
+  // Nominatim (OpenStreetMap) — always runs
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query+' campground')}&format=json&limit=7&addressdetails=1&extratags=1`,{headers:{'User-Agent':'Wayfinder/1.0','Accept-Language':'en'}});
+    const data=await r.json();
+    data.forEach(item=>{
+      const name=item.name||item.display_name.split(',')[0].trim();
+      const addr=item.address||{};
+      const sub=[addr.city||addr.town||addr.village||addr.hamlet,addr.state,addr.country_code?.toUpperCase()].filter(Boolean).join(', ');
+      const lat=parseFloat(item.lat),lng=parseFloat(item.lon);
+      if(results.some(rx=>rx.lat&&Math.abs(rx.lat-lat)<0.005))return; // dedup
+      const ext=item.extratags||{};
+      const rigM=ext['maxlength']||ext['hgv:maxlength']||'';
+      const maxRig=rigM?Math.round(parseFloat(rigM)/0.3048):null;
+      results.push({src:'osm',name,sub,lat,lng,website:ext.website||ext.url||'',maxRigLength:maxRig&&maxRig<200?maxRig:null,hookups:[]});
+    });
+  }catch(e){}
+  advStopShowDropdown(results);
+}
+function advStopShowDropdown(results){
+  const dd=document.getElementById('advstop-dropdown');if(!dd)return;
+  window._advSearchResults=results;
+  if(!results.length){
+    dd.innerHTML='<div style="padding:9px 14px;font-size:11px;color:var(--muted2)">No matches — fill in manually below</div>';
+    dd.style.display='block';return;
+  }
+  dd.innerHTML=results.map((r,i)=>`<div onclick="advStopSelectResult(${i})" style="padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--bdr);transition:background .1s" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background=''">
+    <div style="font-size:12px;font-weight:600;color:var(--text)">${r.name}</div>
+    <div style="font-size:10px;color:var(--muted2)">${r.sub||''}${r.src==='ridb'?' · 🏕️ Rec.gov':r.src==='osm'?' · 🗺️ OSM':''}</div>
+  </div>`).join('');
+  dd.style.display='block';
+  setTimeout(()=>document.addEventListener('click',_advDDClose,{once:true}),0);
+}
+function _advDDClose(e){const dd=document.getElementById('advstop-dropdown');if(dd&&!dd.contains(e.target)&&e.target.id!=='advstop-search')dd.style.display='none';}
+function advStopSelectResult(i){
+  const r=(window._advSearchResults||[])[i];if(!r)return;
+  document.getElementById('advstop-dropdown').style.display='none';
+  document.getElementById('advstop-name').value=r.name;
+  if(r.lat){document.getElementById('advstop-lat').value=r.lat.toFixed(6);document.getElementById('advstop-lng').value=r.lng.toFixed(6);}
+  if(r.lat&&r.lng)document.getElementById('advstop-maps').value=`https://maps.google.com/?q=${r.lat.toFixed(6)},${r.lng.toFixed(6)}`;
+  if(r.website)document.getElementById('advstop-web').value=r.website;
+  if(r.maxRigLength)document.getElementById('advstop-rig').value=r.maxRigLength;
+  if(r.lat||r.lng){document.getElementById('advstop-loc-details').style.display='block';document.getElementById('advstop-loc-arrow').textContent='▼';}
+  advStopMaybeEstimateMiles();advStopCheckRigWarn();advStopUpdateProgress();
+  toast('📍 Fields filled from search');
+}
+
+// ── Paste-to-fill ──────────────────────────────────────
+function advStopParsePaste(val){
+  if(!val||val.length<5)return;
+  let m;
+  // @lat,lng,zoom pattern (standard Google Maps URL)
+  m=val.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if(m){_advApplyCoords(m[1],m[2],val,val.match(/place\/([^/@]+)/)?.[1]);return;}
+  // ?q=lat,lng or &q=lat,lng
+  m=val.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if(m){_advApplyCoords(m[1],m[2],val,null);return;}
+  // !1d<lat>!2d<lng> (deep link format)
+  m=val.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+  if(m){_advApplyCoords(m[1],m[2],val,null);return;}
+  // Plain "lat, lng" paste
+  m=val.trim().match(/^(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)$/);
+  if(m&&Math.abs(parseFloat(m[1]))<=90&&Math.abs(parseFloat(m[2]))<=180){_advApplyCoords(m[1],m[2],`https://maps.google.com/?q=${m[1]},${m[2]}`,null);return;}
+}
+function _advApplyCoords(lat,lng,mapsUrl,rawName){
+  document.getElementById('advstop-lat').value=parseFloat(lat).toFixed(6);
+  document.getElementById('advstop-lng').value=parseFloat(lng).toFixed(6);
+  document.getElementById('advstop-maps').value=mapsUrl||`https://maps.google.com/?q=${lat},${lng}`;
+  if(rawName&&!document.getElementById('advstop-name').value){
+    document.getElementById('advstop-name').value=decodeURIComponent(rawName).replace(/\+/g,' ').replace(/\//g,'');
+  }
+  document.getElementById('advstop-loc-details').style.display='block';
+  document.getElementById('advstop-loc-arrow').textContent='▼';
+  advStopMaybeEstimateMiles();advStopUpdateProgress();
+  toast('📍 GPS extracted!');
+}
+
+// ── Date + cost helpers ────────────────────────────────
+function advStopCalcNights(){
+  const arr=document.getElementById('advstop-arr').value;
+  const dep=document.getElementById('advstop-dep').value;
+  const cost=parseFloat(document.getElementById('advstop-cost').value)||0;
+  const hint=document.getElementById('advstop-nights-hint');
+  const costH=document.getElementById('advstop-cost-total');
+  if(arr&&dep){
+    const nights=Math.round((new Date(dep)-new Date(arr))/86400000);
+    let msg=nights>0?`${nights} night${nights!==1?'s':''}`:nights===0?'Same day':'⚠️ Departure before arrival';
+    const td=window._advStopTripDates||{};
+    if(td.end&&nights>0&&new Date(dep)>new Date(td.end))msg+=' · ⚠️ Past trip end';
+    if(td.start&&new Date(arr)<new Date(td.start))msg+=' · ⚠️ Before trip start';
+    if(hint)hint.textContent=msg;
+    if(costH)costH.textContent=cost&&nights>0?`= $${(cost*nights).toFixed(0)} total`:'';
+  }else{if(hint)hint.textContent='';if(costH)costH.textContent='';}
+  advStopUpdateProgress();
+}
+function advStopToggleBooked(checked){
+  document.getElementById('advstop-booking-fields').style.display=checked?'block':'none';
+  advStopUpdateProgress();
+}
+function advStopToggleLocDetails(btn){
+  const det=document.getElementById('advstop-loc-details');const ar=document.getElementById('advstop-loc-arrow');
+  const open=det.style.display!=='none';det.style.display=open?'none':'block';if(ar)ar.textContent=open?'▶':'▼';
+}
+function advStopMaybeEstimateMiles(){
+  const lat=parseFloat(document.getElementById('advstop-lat')?.value);
+  const lng=parseFloat(document.getElementById('advstop-lng')?.value);
+  const prev=window._advStopPrevCoords;
+  const hintEl=document.getElementById('advstop-miles-hint');if(!hintEl)return;
+  if(!lat||!lng||!prev){hintEl.textContent='';return;}
+  const straight=haversineMiles(prev.lat,prev.lng,lat,lng);
+  if(straight<0.5){hintEl.textContent='Same area as previous stop';return;}
+  const road=straight*1.3;
+  const hrs=road/55;
+  const h=Math.floor(hrs);const m=Math.round((hrs-h)*60/5)*5;
+  hintEl.textContent=`~${road.toFixed(0)} mi road est. · ~${h?h+'h ':''}${m}min drive`;
+  const miEl=document.getElementById('advstop-miles');
+  if(miEl&&!miEl.value)miEl.value=road.toFixed(0);
+}
+function advStopCheckRigWarn(){
+  const warn=document.getElementById('advstop-rig-warn');if(!warn)return;
+  const max=parseFloat(document.getElementById('advstop-rig')?.value)||0;
+  const rig=parseFloat(window._advStopRigLength)||0;
+  warn.textContent=max&&rig&&max<rig?`⚠️ Your rig (${rig}ft) exceeds this campground's max (${max}ft)`:'';
+}
+function advStopQuickHookups(type){
+  const on=type==='full'?['Electric 50A','Water','Sewer']:[];
+  document.querySelectorAll('#advstop-hookups .hookup-btn').forEach(btn=>_advHookupState(btn,on.includes(btn.dataset.hookup)));
+}
+function advStopUpdateProgress(){
+  const el=document.getElementById('advstop-progress');if(!el)return;
+  let filled=0;
+  if(document.getElementById('advstop-name')?.value.trim())filled++;
+  if(document.getElementById('advstop-arr')?.value)filled++;
+  if(document.getElementById('advstop-dep')?.value)filled++;
+  const booked=document.getElementById('advstop-booked')?.checked;
+  if(!booked||document.getElementById('advstop-conf')?.value.trim())filled++;
+  if(!booked||document.getElementById('advstop-site')?.value.trim())filled++;
+  el.textContent=filled>=5?'✅ All key fields filled':`${filled}/5 key fields filled`;
+}
+
 function saveAdvStop(){
   const name=document.getElementById('advstop-name').value.trim();
   if(!name){toast('⚠️ Location name required');return;}
@@ -5252,6 +5513,13 @@ function saveAdvStop(){
   if(!c.stops)c.stops=[];
   if(idx>=0&&idx<c.stops.length){stop.id=c.stops[idx].id||stop.id;c.stops[idx]=stop;}
   else c.stops.push(stop);
+  // Save as Spot if checked
+  if(document.getElementById('advstop-save-spot')?.checked){
+    const spotExists=(D.camps||[]).some(x=>x.recordType==='spot'&&x.name.toLowerCase()===name.toLowerCase());
+    if(!spotExists){
+      D.camps.push({id:uid(),recordType:'spot',name,location:name,lat:stop.lat,lng:stop.lng,mapsUrl:stop.mapsUrl,website:stop.website,notes:stop.notes,hookups,maxRigLength:stop.maxRigLength,addedAt:Date.now(),visited:true});
+    }
+  }
   localStorage.setItem('wf_camps',JSON.stringify(D.camps));
   closeM('m-adv-stop');window._campDTab='stops';openCampD(cid);toast('📍 Stop saved!');
 }
