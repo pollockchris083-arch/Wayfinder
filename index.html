@@ -762,6 +762,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
         <button class="pipe-filter-btn" data-f="abroad" onclick="pipeSetFilter('abroad')">🌍 Abroad <span id="pf-count-abroad">0</span></button>
         <button class="pipe-filter-btn" data-f="wish" onclick="pipeSetFilter('wish')">★ Wishlist <span id="pf-count-wish">0</span></button>
         <button class="pipe-filter-btn" data-f="custom" onclick="pipeSetFilter('custom')">📌 Projects <span id="pf-count-custom">0</span></button>
+        <button class="pipe-filter-btn" data-f="adventure" onclick="pipeSetFilter('adventure')">🧭 Adventures <span id="pf-count-adventure">0</span></button>
       </div>
       <div class="path-board" id="path-board"></div>
     </div>
@@ -1747,7 +1748,7 @@ document.addEventListener('keydown',e=>{
 // ══════════════════════════════════════════════
 // BADGES
 // ══════════════════════════════════════════════
-function badges(){D=load();document.getElementById('b-places').textContent=D.places.length;document.getElementById('b-trips').textContent=D.trips.length;document.getElementById('b-wish').textContent=D.wish.filter(w=>!w.graduated).length;const bc=document.getElementById('b-camp');if(bc)bc.textContent=(D.camps||[]).length;const bw=document.getElementById('b-work');if(bw)bw.textContent=(D.work||[]).length;}
+function badges(){D=load();document.getElementById('b-places').textContent=D.places.length;document.getElementById('b-trips').textContent=D.trips.length;document.getElementById('b-wish').textContent=D.wish.filter(w=>!w.graduated).length;const bc=document.getElementById('b-camp');if(bc)bc.textContent=(D.camps||[]).filter(c=>c.recordType!=='spot').length||'';const bw=document.getElementById('b-work');if(bw)bw.textContent=(D.work||[]).length;}
 
 // ══════════════════════════════════════════════
 // HOME
@@ -1757,11 +1758,13 @@ function rHome(){
   const vis=D.places.filter(p=>p.status==='visited');
   const today=new Date();today.setHours(0,0,0,0);
 
-  // Trip categorization
-  const activeNow=D.trips.filter(t=>{if(!t.startDate||!t.endDate)return t.status==='active';const s=new Date(t.startDate),e=new Date(t.endDate);s.setHours(0,0,0,0);e.setHours(0,0,0,0);return s<=today&&e>=today;});
-  const upcoming=D.trips.filter(t=>{if(!t.startDate)return false;const s=new Date(t.startDate);s.setHours(0,0,0,0);return s>today&&t.status!=='past';}).sort((a,b)=>new Date(a.startDate)-new Date(b.startDate));
-  const planning=D.trips.filter(t=>t.status==='planning'||(t.status!=='past'&&!t.startDate));
-  const pastTrips=[...D.trips].filter(t=>t.status==='past').sort((a,b)=>new Date(b.startDate||0)-new Date(a.startDate||0));
+  // Trip categorization — exclude Adventures trips (also tracked in wf_camps)
+  const _campNamesHome=new Set((D.camps||[]).map(c=>c.name.toLowerCase().trim()));
+  const cleanTrips=D.trips.filter(t=>!_campNamesHome.has(t.name.toLowerCase().trim()));
+  const activeNow=cleanTrips.filter(t=>{if(!t.startDate||!t.endDate)return t.status==='active';const s=new Date(t.startDate),e=new Date(t.endDate);s.setHours(0,0,0,0);e.setHours(0,0,0,0);return s<=today&&e>=today;});
+  const upcoming=cleanTrips.filter(t=>{if(!t.startDate)return false;const s=new Date(t.startDate);s.setHours(0,0,0,0);return s>today&&t.status!=='past';}).sort((a,b)=>new Date(a.startDate)-new Date(b.startDate));
+  const planning=cleanTrips.filter(t=>t.status==='planning'||(t.status!=='past'&&!t.startDate));
+  const pastTrips=[...cleanTrips].filter(t=>t.status==='past').sort((a,b)=>new Date(b.startDate||0)-new Date(a.startDate||0));
   const _pipeStateHome=pipeStateLoad();
   function _tripStageId(t){return _pipeStateHome[t.id]||pipeAutoCol({id:t.id,type:'trip',data:t});}
   const CONFIRMED_STAGES=new Set(['booked','trip-prep','in-progress']);
@@ -1772,7 +1775,7 @@ function rHome(){
   // Geography — combine places + trip destinations for country count
   const placesCountries=[...new Set(vis.map(p=>normCountry(p.country)).filter(c=>c&&c!=='United States'))];
   const destCountries=new Set();
-  D.trips.filter(t=>t.status==='past').forEach(t=>(t.destinations||[]).forEach(d=>{const c=normCountry(d);if(c&&c!=='United States')destCountries.add(c);}));
+  cleanTrips.filter(t=>t.status==='past').forEach(t=>(t.destinations||[]).forEach(d=>{const c=normCountry(d);if(c&&c!=='United States')destCountries.add(c);}));
   const allCountries=[...new Set([...placesCountries,...destCountries])].sort();
   const usStates=[...new Set(vis.filter(p=>normCountry(p.country)==='United States').map(p=>p.usState).filter(Boolean))].sort();
   const continents=[...new Set(allCountries.map(c=>Object.entries(CONTINENTS).find(([,v])=>v.includes(c))?.[0]).filter(Boolean))];
@@ -1821,6 +1824,13 @@ function rHome(){
   activeNow.forEach(t=>{const st=tripStage(t);activeItems.push({icon:'🌍',label:t.name,sub:'Happening now',badge:st.label,bc:st.color,click:`go('trips');openTripD('${t.id}')`});});
   upcoming.slice(0,3).forEach(t=>{const d=Math.ceil((new Date(t.startDate)-today)/86400000);const st=tripStage(t);activeItems.push({icon:'✈️',label:t.name,sub:(d<=1?'Tomorrow':d+' days away')+(t.endDate?' · '+fd(t.startDate):''),badge:st.label,bc:st.color,click:`go('trips');openTripD('${t.id}')`});});
   if(!activeNow.length&&!upcoming.length)planning.slice(0,2).forEach(t=>{const st=tripStage(t);activeItems.push({icon:'📋',label:t.name,sub:'Planning · no dates yet',badge:st.label,bc:st.color,click:`go('trips');openTripD('${t.id}')`});});
+  // Add active Adventures to the dashboard active section
+  (D.camps||[]).filter(c=>c.recordType!=='spot'&&c.status!=='completed').slice(0,2).forEach(c=>{
+    const typeInfo=ADV_TYPES[c.campType]||{icon:'🧭',label:'Adventure'};
+    const st=_pipeState[c.id]||pipeAutoCol({id:c.id,type:'adventure',data:c});
+    const stageInfo=PIPE_COLS.find(x=>x.id===st)||PIPE_COLS[2];
+    activeItems.push({icon:'🧭',label:c.name,sub:typeInfo.icon+' '+typeInfo.label+(c.location?' · '+c.location:''),badge:stageInfo.label,bc:stageInfo.color,click:`go('camp');openCampD('${c.id}')`});
+  });
   const abroad=D.abroad||{countries:[]};
   const abroadActive=(abroad.countries||[]).filter(c=>c.status!=='eliminated');
   if(abroadActive.length)activeItems.push({icon:'🌏',label:'Living Abroad Research',sub:abroadActive.length+' '+(abroadActive.length===1?'country':'countries')+' in consideration',badge:'Researching',bc:'#4A7EBA',click:`go('abroad')`});
@@ -2683,11 +2693,19 @@ function fTrip(b,f){document.querySelectorAll('#trips-lv .fc').forEach(x=>x.clas
 function rTrips(){
   D=load();document.getElementById('trips-lv').style.display='block';document.getElementById('trip-dv').classList.remove('on');atid=null;
   document.querySelectorAll('#trips-lv .fc').forEach(b=>{const v=b.getAttribute('onclick')?.match(/'([^']+)'\)/)?.[1];if(v)b.classList.toggle('on',v===tf);});
+  // Exclude Adventure trips (tracked in wf_camps) from all type-filtered views
+  const _campNamesTrips=new Set((D.camps||[]).filter(c=>c.recordType!=='spot').map(c=>c.name.toLowerCase().trim()));
   const tq=(document.getElementById('srch')?.value||'').toLowerCase();
-  let list=D.trips.filter(t=>{const mf=tf==='all'||(tf==='upcoming'&&(t.status==='upcoming'||t.status==='active'))||(tf==='past'&&t.status==='past')||(tf==='planning'&&t.status==='planning');const mt=tripTypeFilter==='all'||inferTripCat(t)===tripTypeFilter;const ms=!tq||t.name.toLowerCase().includes(tq)||(t.destinations||[]).some(d=>(d||'').toLowerCase().includes(tq))||(t.notes||'').toLowerCase().includes(tq);return mf&&mt&&ms}).sort((a,b)=>{if(a.startDate&&b.startDate)return new Date(b.startDate)-new Date(a.startDate);return b.addedAt-a.addedAt});
+  let list=D.trips.filter(t=>{
+    if(_campNamesTrips.has(t.name.toLowerCase().trim()))return false;
+    const mf=tf==='all'||(tf==='upcoming'&&(t.status==='upcoming'||t.status==='active'))||(tf==='past'&&t.status==='past')||(tf==='planning'&&t.status==='planning');
+    const mt=tripTypeFilter==='all'||inferTripCat(t)===tripTypeFilter;
+    const ms=!tq||t.name.toLowerCase().includes(tq)||(t.destinations||[]).some(d=>(d||'').toLowerCase().includes(tq))||(t.notes||'').toLowerCase().includes(tq);
+    return mf&&mt&&ms;
+  }).sort((a,b)=>{if(a.startDate&&b.startDate)return new Date(b.startDate)-new Date(a.startDate);return b.addedAt-a.addedAt});
   const g=document.getElementById('trips-grid');
-  if(!list.length){const typeLabels={international:'international',domestic:'domestic',road_trip:'road trip'};const tLabel=tripTypeFilter!=='all'?' '+typeLabels[tripTypeFilter]:'';g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">✈️</div><h3>No${tLabel} trips yet</h3><p>Create a trip or import from a doc.</p><button class="tb-btn" onclick="openTrip()" style="margin-bottom:8px">+ New Trip</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;return}
-  g.innerHTML=list.map(t=>{
+  if(!list.length&&tripTypeFilter!=='all'){const typeLabels={international:'international',domestic:'domestic',road_trip:'road trip'};const tLabel=tripTypeFilter!=='all'?' '+typeLabels[tripTypeFilter]:'';g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">✈️</div><h3>No${tLabel} trips yet</h3><p>Create a trip or import from a doc.</p><button class="tb-btn" onclick="openTrip()" style="margin-bottom:8px">+ New Trip</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;return}
+  let html=list.map(t=>{
     const stops=t.itinerary.reduce((s,d)=>s+(d.stops||[]).length,0);
     const linked=D.places.filter(p=>(p.tripIds||[]).includes(t.id));
     const intlCountries=[...new Set(linked.filter(p=>p.country&&normCountry(p.country)!=='United States').map(p=>normCountry(p.country)))];
@@ -2712,6 +2730,26 @@ function rTrips(){
       </div>
     </div></div>`;
   }).join('');
+  // In 'all' type view, append Adventures section after main trips
+  if(tripTypeFilter==='all'){
+    const advTrips=(D.camps||[]).filter(c=>c.recordType!=='spot');
+    if(advTrips.length){
+      html+=`<div style="grid-column:1/-1;margin-top:20px;padding-top:16px;border-top:1px solid var(--bdr)"><div style="font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px">🧭 Adventures</div><div class="trips-grid" style="padding:0">${advTrips.map(c=>{
+        const typeInfo=ADV_TYPES[c.campType]||{icon:'🏕️',label:'Tent Camping'};
+        const dur=c.startDate&&c.endDate?Math.round((new Date(c.endDate)-new Date(c.startDate))/86400000)+1:0;
+        const stops=(c.stops||[]).length;
+        return`<div class="tc" onclick="go('camp');openCampD('${c.id}')"><div class="tc-bar" style="background:linear-gradient(90deg,#4A7259,#5A8A6C)"></div><div class="tcb">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px"><div class="tname" style="flex:1">${c.name}</div><span style="font-size:14px">${typeInfo.icon}</span></div>
+          <div class="tdates">${c.startDate?fd(c.startDate)+(c.endDate?' — '+fd(c.endDate):''):'Dates TBD'}</div>
+          ${c.location?`<div style="font-size:11px;color:var(--text2);margin-bottom:7px">📍 ${c.location}${c.state?', '+c.state:''}</div>`:''}
+          <div class="tfoot"><div class="tstat">${[dur?dur+'d':'',stops?stops+' stop'+(stops!==1?'s':''):'',typeInfo.label].filter(Boolean).join(' · ')}</div>
+          <div style="font-size:11px;color:var(--muted)">${c.status==='completed'?'Completed':c.status==='planning'?'Planning':'Wishlist'}</div></div>
+        </div></div>`;
+      }).join('')}</div></div>`;
+    }
+  }
+  if(!html){g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">✈️</div><h3>No trips yet</h3><p>Create a trip or import from a doc.</p><button class="tb-btn" onclick="openTrip()" style="margin-bottom:8px">+ New Trip</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;return}
+  g.innerHTML=html;
 }
 function openTripD(id){
   D=load();const t=D.trips.find(x=>x.id===id);if(!t)return;atid=id;
@@ -4543,10 +4581,20 @@ function rCamp(){
   let body='';
   if(tab==='planning'){
     const items=filterFn(planning);
-    body=items.length?`<div class="ga">${items.map(campCard).join('')}</div>`:`<div class="empty"><div class="empty-icon">🧭</div><h3>No adventures planned yet</h3><p>Add a wishlist trip or start planning one.</p><button class="tb-btn" onclick="openCamp()">+ Add Adventure</button></div>`;
+    if(!items.length&&planning.length&&tf!=='all'){
+      const typeLabel=(ADV_TYPES[tf]||{label:tf}).label;
+      body=`<div class="empty"><div class="empty-icon">🧭</div><h3>No ${typeLabel} trips in Planning</h3><p>${planning.length} adventure${planning.length!==1?'s':''} hidden by type filter.</p><button class="tb-btn" onclick="window._campTypeFilter='all';rCamp()">Show All Types</button></div>`;
+    } else {
+      body=items.length?`<div class="ga">${items.map(campCard).join('')}</div>`:`<div class="empty"><div class="empty-icon">🧭</div><h3>No adventures planned yet</h3><p>Add a wishlist trip or start planning one.</p><button class="tb-btn" onclick="openCamp()">+ Add Adventure</button></div>`;
+    }
   } else if(tab==='past'){
     const items=filterFn(past);
-    body=items.length?`<div class="ga">${items.map(campCard).join('')}</div>`:`<div class="empty"><div class="empty-icon">🌲</div><h3>No past adventures yet</h3><p>Log a completed outdoor trip.</p><button class="tb-btn" onclick="openCamp()">+ Log Trip</button></div>`;
+    if(!items.length&&past.length&&tf!=='all'){
+      const typeLabel=(ADV_TYPES[tf]||{label:tf}).label;
+      body=`<div class="empty"><div class="empty-icon">🌲</div><h3>No ${typeLabel} trips in Past</h3><p>${past.length} adventure${past.length!==1?'s':''} hidden by type filter.</p><button class="tb-btn" onclick="window._campTypeFilter='all';rCamp()">Show All Types</button></div>`;
+    } else {
+      body=items.length?`<div class="ga">${items.map(campCard).join('')}</div>`:`<div class="empty"><div class="empty-icon">🌲</div><h3>No past adventures yet</h3><p>Log a completed outdoor trip.</p><button class="tb-btn" onclick="openCamp()">+ Log Trip</button></div>`;
+    }
   } else {
     body=spots.length?`<div class="ga">${spots.map(campCard).join('')}</div>`:`<div class="empty"><div class="empty-icon">📍</div><h3>No saved spots yet</h3><p>Save campgrounds and locations for later.</p><button class="tb-btn" onclick="openCampSpot()">+ Add Spot</button></div>`;
   }
@@ -5172,9 +5220,9 @@ const PIPE_COLS=[
   {id:'completed',label:'Completed',icon:'✅',color:'#7D7168',empty:'Your adventures will live here.',emptyIcon:'✅'},
   {id:'on-hold',label:'On Hold',icon:'⏸',color:'#A09080',empty:'Nothing paused.',emptyIcon:'⏸'},
 ];
-const CARD_COLORS={trip:'#C17A4A',abroad:'#4A7259',wish:'#9B7420',custom:'#6B7A8D'};
-const CARD_ICONS={trip:'✈️',abroad:'🌍',wish:'★',custom:'📌'};
-const CARD_LABELS={trip:'Trip',abroad:'Living Abroad',wish:'Wishlist',custom:'Project'};
+const CARD_COLORS={trip:'#C17A4A',abroad:'#4A7259',wish:'#9B7420',custom:'#6B7A8D',adventure:'#5A7A4A'};
+const CARD_ICONS={trip:'✈️',abroad:'🌍',wish:'★',custom:'📌',adventure:'🧭'};
+const CARD_LABELS={trip:'Trip',abroad:'Living Abroad',wish:'Wishlist',custom:'Project',adventure:'Adventure'};
 
 let pipeFilter='all';
 let pipeDragId=null;
@@ -5198,6 +5246,16 @@ function pipeAutoCol(card){
     if(start&&start<=now&&(!end||end>=now))return'in-progress';
     return'planning-booking';
   }
+  if(card.type==='adventure'){
+    const c=card.data||(D.camps||[]).find(x=>x.id===card.id);if(!c)return'planning-booking';
+    const now=new Date();now.setHours(0,0,0,0);
+    const start=c.startDate?new Date(c.startDate):null;
+    const end=c.endDate?new Date(c.endDate):null;
+    if(c.status==='completed'||(end&&end<now))return'completed';
+    if(start&&start<=now&&(!end||end>=now))return'in-progress';
+    if(c.status==='wishlist')return'dreaming';
+    return'planning-booking';
+  }
   return'dreaming';
 }
 
@@ -5213,6 +5271,16 @@ function pipeAutoAdvance(){
     if(today>=start&&(!end||today<=end)&&cur!=='in-progress'&&cur!=='completed'){state[t.id]='in-progress';changed=true;}
     if(end&&today>end&&cur!=='completed'){state[t.id]='completed';changed=true;}
   });
+  // Auto-advance adventure trips
+  (D.camps||[]).filter(c=>c.recordType!=='spot').forEach(c=>{
+    if(!c.startDate)return;
+    const start=new Date(c.startDate);const end=c.endDate?new Date(c.endDate):null;
+    start.setHours(0,0,0,0);if(end)end.setHours(0,0,0,0);
+    const cur=state[c.id]||pipeAutoCol({id:c.id,type:'adventure',data:c});
+    if(cur==='dreaming'||cur==='researching')return;
+    if(today>=start&&(!end||today<=end)&&cur!=='in-progress'&&cur!=='completed'){state[c.id]='in-progress';changed=true;}
+    if(end&&today>end&&cur!=='completed'){state[c.id]='completed';changed=true;}
+  });
   if(changed){pipeStateSave(state);setTimeout(()=>toast('📍 Path updated'),300);}
 }
 
@@ -5224,6 +5292,7 @@ function pipeGetCards(){
   D.wish.filter(w=>!w.graduated).forEach(w=>{cards.push({id:w.id,type:'wish',title:w.name,data:w});});
   (D.abroad.countries||[]).forEach(c=>{cards.push({id:c.id,type:'abroad',title:c.name+(c.flag?' '+c.flag:''),data:c});});
   pipeCustomLoad().forEach(c=>{cards.push({id:c.id,type:'custom',title:c.title,data:c});});
+  (D.camps||[]).filter(c=>c.recordType!=='spot').forEach(c=>{cards.push({id:c.id,type:'adventure',title:c.name,data:c});});
   return cards.map(card=>({...card,col:state[card.id]||pipeAutoCol(card)}));
 }
 
@@ -5241,10 +5310,26 @@ function pipeCardMeta(card){
   if(card.type==='wish'){const parts=[];if(d.season)parts.push(d.season);if(d.type)parts.push(d.type);return parts.join(' · ');}
   if(card.type==='abroad'){const parts=[];if(d.visaStatus&&d.visaStatus!=='none')parts.push('Visa: '+d.visaStatus);if(d.monthlyBudget)parts.push('$'+d.monthlyBudget+'/mo');return parts.join(' · ');}
   if(card.type==='custom'&&d.notes)return d.notes.slice(0,60)+(d.notes.length>60?'…':'');
+  if(card.type==='adventure'){
+    const parts=[];
+    if(d.startDate&&d.endDate){const days=Math.round((new Date(d.endDate)-new Date(d.startDate))/86400000)+1;parts.push(fd(d.startDate)+' · '+days+'d');}
+    else if(d.startDate){parts.push('From '+fd(d.startDate));}
+    if(d.location)parts.push(d.location+(d.state?', '+d.state:''));
+    else parts.push((ADV_TYPES[d.campType]||{label:'Adventure'}).label);
+    return parts.join(' — ');
+  }
   return'';
 }
 
 function pipeCardProgress(card){
+  if(card.type==='adventure'){
+    const c=card.data;const col=card.col;
+    if(col==='planning-booking'){const stops=c.stops||[];return stops.length?Math.round(stops.filter(s=>s.booked).length/stops.length*100):null;}
+    if(col==='trip-prep'){const items=c.checklist||[];return items.length?Math.round(items.filter(x=>x.done).length/items.length*100):null;}
+    if(col==='in-progress'){if(!c.startDate||!c.endDate)return null;const now=new Date(),s=new Date(c.startDate),e=new Date(c.endDate);if(now<s)return null;if(now>e)return 100;return Math.round((now-s)/(e-s)*100);}
+    if(col==='completed')return 100;
+    return null;
+  }
   if(card.type!=='trip')return null;
   const d=card.data;const col=card.col;
   if(col==='in-progress'){
@@ -5291,6 +5376,15 @@ function pipeMoveCard(cardId,toCol,silent){
       else if(toCol==='dreaming'||toCol==='on-hold')c.status='shortlist';
       else c.status='researching';
       saveAbroad();
+    }
+  }
+  if(card.type==='adventure'){
+    const c=(D.camps||[]).find(x=>x.id===cardId);
+    if(c){
+      if(toCol==='completed')c.status='completed';
+      else if(['in-progress','booked','trip-prep','planning-booking'].includes(toCol))c.status='planning';
+      else c.status='wishlist';
+      localStorage.setItem('wf_camps',JSON.stringify(D.camps));
     }
   }
   if(!silent)rPath();
@@ -5363,9 +5457,9 @@ function rPath(){
   }).join('');
   // Update filter counts
   const allCardsAll=pipeGetCards();
-  const counts={all:allCardsAll.length,trip:0,abroad:0,wish:0,custom:0};
+  const counts={all:allCardsAll.length,trip:0,abroad:0,wish:0,custom:0,adventure:0};
   allCardsAll.forEach(c=>{if(c.type in counts)counts[c.type]++;});
-  ['all','trip','abroad','wish','custom'].forEach(t=>{const el=document.getElementById('pf-count-'+t);if(el)el.textContent=counts[t];});
+  ['all','trip','abroad','wish','custom','adventure'].forEach(t=>{const el=document.getElementById('pf-count-'+t);if(el)el.textContent=counts[t]||0;});
 }
 
 function pipeSetFilter(f){
@@ -5472,6 +5566,25 @@ function pipeOpenDetail(cardId){
       ${c.propertyNotes?`<div class="path-detail-section"><div class="path-detail-section-label">Property / Housing</div><div style="font-size:12px;color:var(--text2);line-height:1.6">${c.propertyNotes}</div></div>`:''}
       <div style="display:flex;gap:8px;margin-top:16px">
         <button class="tb-btn" style="flex:1;justify-content:center;font-size:11px" onclick="go('abroad');pipeCloseDetail()">Living Abroad →</button>
+      </div>`;
+  }else if(card.type==='adventure'){
+    const c=card.data;
+    const stops=c.stops||[];
+    const bookedStops=stops.filter(s=>s.booked).length;
+    const typeInfo=ADV_TYPES[c.campType]||{icon:'🧭',label:'Adventure'};
+    body.innerHTML=`
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <div class="path-detail-stat"><div class="path-detail-stat-n">${c.startDate&&c.endDate?Math.round((new Date(c.endDate)-new Date(c.startDate))/86400000)+1:'—'}</div><div class="path-detail-stat-l">Days</div></div>
+        <div class="path-detail-stat"><div class="path-detail-stat-n">${stops.length}</div><div class="path-detail-stat-l">Stops</div></div>
+        <div class="path-detail-stat"><div class="path-detail-stat-n">${bookedStops}</div><div class="path-detail-stat-l">Booked</div></div>
+      </div>
+      ${col?`<div style="margin-bottom:12px"><span style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:1px">Stage</span><div style="font-size:13px;color:var(--text);margin-top:3px">${col.icon} ${col.label}</div></div>`:''}
+      <div class="path-detail-section"><div class="path-detail-section-label">Type</div><div style="font-size:13px;color:var(--text)">${typeInfo.icon} ${typeInfo.label}</div></div>
+      ${c.startDate||c.endDate?`<div class="path-detail-section"><div class="path-detail-section-label">Dates</div><div style="font-size:13px;color:var(--text)">${c.startDate?fd(c.startDate):'?'} → ${c.endDate?fd(c.endDate):'?'}</div></div>`:''}
+      ${c.location?`<div class="path-detail-section"><div class="path-detail-section-label">Location</div><div style="font-size:13px;color:var(--text)">📍 ${c.location}${c.state?', '+c.state:''}</div></div>`:''}
+      ${c.notes?`<div class="path-detail-section"><div class="path-detail-section-label">Notes</div><div style="font-size:12px;color:var(--text2);line-height:1.6">${c.notes}</div></div>`:''}
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="tb-btn" style="flex:1;justify-content:center;font-size:11px" onclick="go('camp');openCampD('${c.id}');pipeCloseDetail()">Full Adventure Detail →</button>
       </div>`;
   }else{
     const c=card.data;
