@@ -984,7 +984,7 @@ async function signOut(){
 }
 function setSyncStatus(msg){const el=document.getElementById('sync-status');if(el)el.textContent=msg}
 function showSyncBar(){document.getElementById('sync-bar').style.display='flex'}
-function stripRow({user_id,created_at,updated_at,...rest}){return rest}
+function stripRow({user_id,created_at,updated_at,...rest}){const out={};Object.entries(rest).forEach(([k,v])=>{out[k.replace(/_([a-z])/g,(_,c)=>c.toUpperCase())]=v;});return out;}
 
 async function loadFromCloud(){
   if(!currentUser)return;
@@ -1013,7 +1013,7 @@ async function loadFromCloud(){
       if(t.data?.length)localStorage.setItem(K.trips,JSON.stringify(t.data.map(stripRow)));
       if(w.data?.length)localStorage.setItem(K.wish,JSON.stringify(w.data.map(stripRow)));
       if(j.data?.length)localStorage.setItem(K.journal,JSON.stringify(j.data.map(stripRow)));
-      if(s.data)localStorage.setItem(K.settings,JSON.stringify(stripRow(s.data)));
+      if(s.data){const local=JSON.parse(localStorage.getItem(K.settings)||'{}');const merged={...stripRow(s.data),apiKey:local.apiKey,googleClientId:local.googleClientId,driveFolderId:local.driveFolderId,abroadNotes:local.abroadNotes};localStorage.setItem(K.settings,JSON.stringify(merged));}
       D=load();
     }
     setSyncStatus('☁️ Synced');
@@ -1028,7 +1028,7 @@ async function loadFromCloud(){
 
 async function cloudPush(collection,items){
   if(!currentUser||!items)return;
-  const rows=items.map(item=>({...item,user_id:currentUser.id}));
+  const rows=items.map(item=>{const row={user_id:currentUser.id};Object.entries(item).forEach(([k,v])=>{row[k==='visitDate'?k:k.replace(/[A-Z]/g,c=>'_'+c.toLowerCase())]=v;});return row;});
   const{error:delErr}=await SUPA.from('wf_'+collection).delete().eq('user_id',currentUser.id);
   if(delErr)throw new Error('[Sync] delete '+collection+': '+delErr.message);
   if(rows.length){
@@ -1043,11 +1043,10 @@ async function cloudPushSettings(cfg){
   if(!currentUser)return;
   // Strip credentials — these are local-only; the Supabase schema has no column for them
   // and API keys must never be stored server-side
-  const{apiKey,googleClientId,driveFolderId,...syncable}=cfg;
-  const{error}=await SUPA.from('wf_settings').upsert(
-    {user_id:currentUser.id,...syncable,updated_at:new Date().toISOString()},
-    {onConflict:'user_id'}
-  );
+  const{apiKey,googleClientId,driveFolderId,abroadNotes,...syncable}=cfg;
+  const sRow={user_id:currentUser.id,updated_at:new Date().toISOString()};
+  Object.entries(syncable).forEach(([k,v])=>{sRow[k.replace(/[A-Z]/g,c=>'_'+c.toLowerCase())]=v;});
+  const{error}=await SUPA.from('wf_settings').upsert(sRow,{onConflict:'user_id'});
   if(error){
     console.error('[Sync] settings upsert error | code:',error.code,'| msg:',error.message,'| hint:',error.hint);
     throw new Error('[Sync] settings: '+error.message);
@@ -1055,7 +1054,7 @@ async function cloudPushSettings(cfg){
 }
 
 async function migrateCloudData(){
-  if(localStorage.getItem('wf_cloud_v3'))return;
+  if(localStorage.getItem('wf_cloud_v4'))return;
   D=load();
 
   // CANONICAL trip definitions — match by name keyword OR approximate date
@@ -1072,8 +1071,8 @@ async function migrateCloudData(){
 
   // ── Audit snapshot ──
   const snap={ts:D.trips.map(t=>({id:t.id,name:t.name,sd:t.startDate,ed:t.endDate,dests:t.destinations||[],status:t.status,itLen:(t.itinerary||[]).length})),ps:D.places.map(p=>({id:p.id,name:p.name,tids:p.tripIds||[]})),js:D.journal.map(j=>({id:j.id,tid:j.tripId,date:j.date,title:j.title}))};
-  localStorage.setItem('wf_audit_v3',JSON.stringify(snap));
-  console.group('[Wayfinder] Pre-migration audit (cloud v3)');
+  localStorage.setItem('wf_audit_v4',JSON.stringify(snap));
+  console.group('[Wayfinder] Pre-migration audit (cloud v4)');
   snap.ts.forEach(t=>{const pl=snap.ps.filter(p=>p.tids.includes(t.id)).length,jr=snap.js.filter(j=>j.tid===t.id).length;console.log(`"${t.name}" [${t.id.slice(0,8)}] ${t.sd||'?'}→${t.ed||'?'} | dests:[${t.dests.join(',')}] | places:${pl} journal:${jr} itinerary:${t.itLen}days`);});
   console.groupEnd();
 
@@ -1166,10 +1165,10 @@ async function migrateCloudData(){
       }catch(e){console.error('[Wayfinder] Cloud migration v3 push failed:',e);setSyncStatus('⚠️ Migration sync failed');}
     }
   }
-  console.group('[Wayfinder] Post-migration summary (cloud v3)');
+  console.group('[Wayfinder] Post-migration summary (cloud v4)');
   D.trips.forEach(t=>{const pl=D.places.filter(p=>(p.tripIds||[]).includes(t.id)).length,jr=D.journal.filter(j=>j.tripId===t.id).length,st=(t.itinerary||[]).reduce((n,d)=>n+(d.stops||[]).length,0);console.log(`"${t.name}" | places:${pl} journal:${jr} days:${tripDays(t)} (itinerary:${(t.itinerary||[]).length}) stops:${st} | dests:[${(t.destinations||[]).join(',')}]`);});
   console.groupEnd();
-  localStorage.setItem('wf_cloud_v3','1');
+  localStorage.setItem('wf_cloud_v4','1');
 }
 function scheduledSync(k,items){
   if(!currentUser)return;
