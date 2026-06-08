@@ -1411,6 +1411,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
     <!-- Miles from prev + drive estimate -->
     <div class="fg" style="margin-bottom:4px"><label class="fl">Miles from Prev Stop</label><input class="fi" type="number" id="advstop-miles" placeholder="0"/></div>
     <div id="advstop-miles-hint" style="font-size:11px;color:var(--muted2);margin:-4px 0 10px;min-height:14px"></div>
+    <input type="hidden" id="advstop-drive-secs"/>
     <!-- Hookups (contextual by trip type) -->
     <div id="advstop-hookup-section">
       <label class="fl" style="margin-bottom:6px">Hookups</label>
@@ -5572,6 +5573,7 @@ function openCampD(id){
   const dur=c.startDate&&c.endDate?Math.round((new Date(c.endDate)-new Date(c.startDate))/86400000)+1:0;
   const stops=c.stops||[];
   const totalMiles=stops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  const totalDriveSecs=stops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0);
   let tabBody='';
   if(tab==='overview') tabBody=rAdvOverviewTab(c);
   else if(tab==='stops') tabBody=rAdvStopsTab(c);
@@ -5594,7 +5596,7 @@ function openCampD(id){
           </div>
           <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:12px">
             ${c.startDate?`<span style="font-size:11px;color:var(--muted2)">📅 ${fd(c.startDate)}${c.endDate&&c.endDate!==c.startDate?' — '+fd(c.endDate):''}${dur?' · '+dur+'d':''}</span>`:''}
-            ${totalMiles>0?`<span style="font-size:11px;color:var(--muted2)">🛣️ ${totalMiles.toFixed(0)} mi · ${stops.length} stop${stops.length!==1?'s':''}</span>`:''}
+            ${totalMiles>0?`<span style="font-size:11px;color:var(--muted2)">🛣️ ${totalMiles.toFixed(0)} mi${totalDriveSecs?' · '+fDrive(totalDriveSecs)+' total drive':''} · ${stops.length} stop${stops.length!==1?'s':''}</span>`:''}
           </div>
         </div>
         <div style="display:flex;gap:5px;flex-shrink:0">
@@ -5786,6 +5788,7 @@ function delAdvExpense(cid,idx){
 function rAdvStopsTab(c){
   const stops=c.stops||[];
   const totalMiles=stops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  const totalDriveSecs=stops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0);
   const totalNights=stops.reduce((s,st)=>{
     if(st.arrivalDate&&st.departureDate)return s+Math.max(0,Math.round((new Date(st.departureDate)-new Date(st.arrivalDate))/86400000));
     return s;
@@ -5795,11 +5798,16 @@ function rAdvStopsTab(c){
     const n=st.arrivalDate&&st.departureDate?Math.max(0,Math.round((new Date(st.departureDate)-new Date(st.arrivalDate))/86400000)):0;
     return s+(parseFloat(st.costPerNight)||0)*n;
   },0);
+  const hasAnyCoords=stops.some(s=>s.lat&&s.lng);
   let html='';
   if(stops.length>0){
-    const summaryParts=[totalMiles>0?`🛣️ ${totalMiles.toFixed(0)} mi`:'',totalNights>0?`${totalNights} nights`:'',totalCampCost>0?`💰 $${totalCampCost.toFixed(0)} campsite fees`:''].filter(Boolean).join(' · ');
+    const miLabel=totalMiles>0?(totalDriveSecs?`🛣️ ${totalMiles.toFixed(0)} mi · ${fDrive(totalDriveSecs)} total drive`:`🛣️ ${totalMiles.toFixed(0)} mi`):'';
+    const summaryParts=[miLabel,totalNights>0?`${totalNights} nights`:'',totalCampCost>0?`💰 $${totalCampCost.toFixed(0)} campsite fees`:''].filter(Boolean).join(' · ');
     html+=`<div style="background:var(--card2);border:1px solid var(--bdr);border-radius:var(--r);padding:10px 14px;margin-bottom:12px">
-      <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:5px">🗺️ Route${stops.length>1?' ('+stops.length+' stops)':''}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+        <div style="font-size:11px;font-weight:600;color:var(--text)">🗺️ Route${stops.length>1?' ('+stops.length+' stops)':''}</div>
+        ${hasAnyCoords?`<button id="adv-recalc-btn" class="pbtn" onclick="recalcAdvTripDriving('${c.id}')" style="font-size:10px;padding:3px 8px">🔄 Recalc distances</button>`:''}
+      </div>
       ${stops.length>1?`<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:12px;margin-bottom:6px">
         ${stops.map((st,i)=>`${i>0?'<span style="color:var(--muted)">→</span>':''}<span style="font-weight:500;color:var(--text2)">${st.name||'Stop '+(i+1)}</span>`).join('')}
       </div>`:''}
@@ -5825,7 +5833,7 @@ function rAdvStopsTab(c){
         </div>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
-        ${stop.milesPrev?`<span style="font-size:11px;color:var(--muted2)">🛣️ ${stop.milesPrev} mi from prev</span>`:''}
+        ${stop.milesPrev?`<span style="font-size:11px;color:var(--muted2)">🛣️ ${stop.milesEst?'~':''}${stop.milesPrev} mi${stop.driveSecs?` · ${fDrive(stop.driveSecs)} drive`:''}${stop.milesEst?' (est.)':''} from prev</span>`:''}
         ${stop.siteNumber?`<span style="font-size:11px;color:var(--muted2)">🏕️ Site ${stop.siteNumber}</span>`:''}
         ${stop.confirmation?`<span style="font-size:11px;color:var(--muted2)">📋 ${stop.confirmation}</span>`:''}
         ${stop.costPerNight?`<span style="font-size:11px;color:var(--muted2)">💰 $${stop.costPerNight}/night${costTotal}</span>`:''}
@@ -6080,6 +6088,52 @@ function haversineMiles(lat1,lon1,lat2,lon2){
   const a=Math.sin(dLat/2)**2+Math.cos(r(lat1))*Math.cos(r(lat2))*Math.sin(dLon/2)**2;
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
+async function getRouteDrivingInfo(lat1,lng1,lat2,lng2,mapsKey){
+  const resp=await fetch('https://routes.googleapis.com/directions/v2:computeRoutes',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-Goog-Api-Key':mapsKey,'X-Goog-FieldMask':'routes.distanceMeters,routes.duration'},
+    body:JSON.stringify({
+      origin:{location:{latLng:{latitude:lat1,longitude:lng1}}},
+      destination:{location:{latLng:{latitude:lat2,longitude:lng2}}},
+      travelMode:'DRIVE',routingPreference:'TRAFFIC_UNAWARE',
+    }),
+  });
+  if(!resp.ok)throw new Error('Routes API '+resp.status);
+  const data=await resp.json();
+  const route=data.routes?.[0];
+  if(!route)throw new Error('No route found');
+  return{miles:route.distanceMeters/1609.34,secs:parseInt(route.duration)||0};
+}
+function fDrive(secs){
+  if(!secs)return'';
+  const h=Math.floor(secs/3600);
+  const m=Math.round((secs%3600)/60/5)*5;
+  return h?`${h}h ${m}min`:`${m}min`;
+}
+async function recalcAdvTripDriving(cid){
+  D=load();
+  const c=(D.camps||[]).find(x=>x.id===cid);
+  if(!c||!c.stops?.length){toast('No stops to recalculate');return;}
+  const mapsKey=(D.settings?.mapsApiKey||'').trim();
+  if(!mapsKey){toast('⚠️ Add Google Maps API key in Settings first');go('settings');return;}
+  const btn=document.getElementById('adv-recalc-btn');
+  if(btn){btn.textContent='⏳ Calculating…';btn.disabled=true;}
+  let updated=0;
+  for(let i=1;i<c.stops.length;i++){
+    const prev=c.stops[i-1],cur=c.stops[i];
+    if(!prev.lat||!prev.lng||!cur.lat||!cur.lng)continue;
+    try{
+      const r=await getRouteDrivingInfo(parseFloat(prev.lat),parseFloat(prev.lng),parseFloat(cur.lat),parseFloat(cur.lng),mapsKey);
+      c.stops[i].milesPrev=r.miles.toFixed(0);
+      c.stops[i].driveSecs=r.secs;
+      c.stops[i].milesEst=false;
+      updated++;
+    }catch(e){console.warn(`[route] stop ${i} failed:`,e.message);}
+  }
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  window._campDTab='stops';openCampD(cid);
+  toast(updated>0?`✅ Updated ${updated} driving distance${updated!==1?'s':''}!`:'⚠️ No GPS-coord pairs found');
+}
 
 function openAdvStopModal(cid,idx){
   D=load();
@@ -6144,6 +6198,9 @@ function openAdvStopModal(cid,idx){
   document.getElementById('advstop-loc-details').style.display=hasCords?'block':'none';
   document.getElementById('advstop-loc-arrow').textContent=hasCords?'▼':'▶';
 
+  // Seed drive info from existing stop (overwritten if coords change)
+  window._advCalcDrive=stop.driveSecs?{miles:parseFloat(stop.milesPrev)||0,secs:stop.driveSecs,isEst:stop.milesEst||false}:null;
+  document.getElementById('advstop-drive-secs').value=stop.driveSecs||'';
   advStopCalcNights();
   advStopMaybeEstimateMiles();
   advStopCheckRigWarn();
@@ -6152,7 +6209,7 @@ function openAdvStopModal(cid,idx){
 }
 
 // ── Search ─────────────────────────────────────────────
-let _advSearchTimer=null;
+let _advSearchTimer=null,_advMilesApiTimer=null;
 function advStopSearchDebounce(q){
   clearTimeout(_advSearchTimer);
   const dd=document.getElementById('advstop-dropdown');
@@ -6309,20 +6366,41 @@ function advStopToggleLocDetails(btn){
   const det=document.getElementById('advstop-loc-details');const ar=document.getElementById('advstop-loc-arrow');
   const open=det.style.display!=='none';det.style.display=open?'none':'block';if(ar)ar.textContent=open?'▶':'▼';
 }
-function advStopMaybeEstimateMiles(){
+async function advStopMaybeEstimateMiles(){
   const lat=parseFloat(document.getElementById('advstop-lat')?.value);
   const lng=parseFloat(document.getElementById('advstop-lng')?.value);
   const prev=window._advStopPrevCoords;
   const hintEl=document.getElementById('advstop-miles-hint');if(!hintEl)return;
-  if(!lat||!lng||!prev){hintEl.textContent='';return;}
+  if(!lat||!lng||!prev){hintEl.textContent='';window._advCalcDrive=null;return;}
   const straight=haversineMiles(prev.lat,prev.lng,lat,lng);
-  if(straight<0.5){hintEl.textContent='Same area as previous stop';return;}
-  const road=straight*1.3;
-  const hrs=road/55;
-  const h=Math.floor(hrs);const m=Math.round((hrs-h)*60/5)*5;
-  hintEl.textContent=`~${road.toFixed(0)} mi road est. · ~${h?h+'h ':''}${m}min drive`;
+  if(straight<0.5){hintEl.textContent='Same area as previous stop';window._advCalcDrive=null;return;}
+  // Fallback: straight-line × 1.3 road factor
+  const fbMi=straight*1.3,fbSecs=Math.round(fbMi/55*3600);
+  window._advCalcDrive={miles:fbMi,secs:fbSecs,isEst:true};
+  hintEl.textContent=`~${fbMi.toFixed(0)} mi (est.) · ~${fDrive(fbSecs)} drive`;
   const miEl=document.getElementById('advstop-miles');
-  if(miEl&&!miEl.value)miEl.value=road.toFixed(0);
+  if(miEl&&!miEl.value)miEl.value=fbMi.toFixed(0);
+  const mapsKey=(D.settings?.mapsApiKey||'').trim();
+  if(!mapsKey)return;
+  // Call Google Routes API for accurate driving distance
+  hintEl.textContent=`🔄 Calculating driving distance…`;
+  clearTimeout(_advMilesApiTimer);
+  const snapLat=lat,snapLng=lng,snapPrev={...prev};
+  _advMilesApiTimer=setTimeout(async()=>{
+    try{
+      const r=await getRouteDrivingInfo(snapPrev.lat,snapPrev.lng,snapLat,snapLng,mapsKey);
+      const curLat=parseFloat(document.getElementById('advstop-lat')?.value);
+      const curLng=parseFloat(document.getElementById('advstop-lng')?.value);
+      if(Math.abs(curLat-snapLat)>0.0001||Math.abs(curLng-snapLng)>0.0001)return;
+      window._advCalcDrive={miles:r.miles,secs:r.secs,isEst:false};
+      hintEl.textContent=`${r.miles.toFixed(0)} mi · ${fDrive(r.secs)} drive`;
+      if(miEl)miEl.value=r.miles.toFixed(0);
+      document.getElementById('advstop-drive-secs').value=r.secs;
+    }catch(e){
+      hintEl.textContent=`~${fbMi.toFixed(0)} mi (est.) · ~${fDrive(fbSecs)} drive`;
+      window._advCalcDrive={miles:fbMi,secs:fbSecs,isEst:true};
+    }
+  },500);
 }
 function advStopCheckRigWarn(){
   const warn=document.getElementById('advstop-rig-warn');if(!warn)return;
@@ -6351,11 +6429,14 @@ function saveAdvStop(){
   if(!name){toast('⚠️ Location name required');return;}
   const hookups=[];
   document.querySelectorAll('#advstop-hookups .hookup-btn').forEach(btn=>{if(btn.dataset.active==='1')hookups.push(btn.dataset.hookup);});
+  const _cd=window._advCalcDrive;
   const stop={
     id:uid(),name,
     arrivalDate:document.getElementById('advstop-arr').value,
     departureDate:document.getElementById('advstop-dep').value,
     milesPrev:document.getElementById('advstop-miles').value,
+    ...(_cd&&!_cd.isEst?{driveSecs:_cd.secs,milesEst:false}:{}),
+    ...(_cd?.isEst?{milesEst:true}:{}),
     siteNumber:document.getElementById('advstop-site').value.trim(),
     confirmation:document.getElementById('advstop-conf').value.trim(),
     costPerNight:document.getElementById('advstop-cost').value,
