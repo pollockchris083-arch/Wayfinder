@@ -99,6 +99,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .tb-btn.gold{background:var(--gold)}
 .tb-btn.gold:hover{background:var(--gold2)}
 #content{flex:1;overflow-y:auto;overflow-x:hidden}
+#content:has(#page-path.on){overflow:hidden}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:var(--card3);border-radius:4px}
 
@@ -477,7 +478,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
 }
 
 /* ── THE PATH — PIPELINE ── */
-#page-path{padding:0;overflow:hidden;flex-direction:column;height:calc(100vh - 50px)}
+#page-path{padding:0;overflow:hidden;flex-direction:column;height:100%}
 .path-filter-bar{display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--card);border-bottom:1px solid var(--bdr);flex-shrink:0;overflow-x:auto}
 .path-filter-bar::-webkit-scrollbar{height:0}
 .pipe-filter-label{font-size:10px;font-weight:600;color:var(--muted2);letter-spacing:1px;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
