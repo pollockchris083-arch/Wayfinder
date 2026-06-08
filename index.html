@@ -2260,7 +2260,7 @@ function saveTrip(){
   if(t.startDate&&t.endDate){const s=new Date(t.startDate),e=new Date(t.endDate);for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1))t.itinerary.push({date:d.toISOString().split('T')[0],stops:[]});}
   D.trips.push(t);save('trips',D.trips);
   if(pendGraduateWishId){const w=D.wish.find(x=>x.id===pendGraduateWishId);if(w){w.tripId=t.id;w.graduated=true;save('wish',D.wish);}pendGraduateWishId=null;}
-  closeM('m-trip');toast('✈️ Trip created!');rTrips();badges();
+  closeM('m-trip');toast('✈️ Trip created!');if(cur==='path')rPath();else rTrips();badges();
 }
 function delTrip(id){
   const t=D.trips.find(x=>x.id===id);if(!t)return;
@@ -2700,7 +2700,7 @@ let wf='all';
 let weid=null;
 function openWish(){weid=null;['w-name','w-notes'].forEach(id=>document.getElementById(id).value='');document.getElementById('w-type').value='international';document.getElementById('w-pri').value='must';document.getElementById('w-season').value='';document.getElementById('wm-title').textContent='Add to Wishlist';document.getElementById('wm-save').textContent='Add to Wishlist';openM('m-wish')}
 function openWishEdit(id){D=load();const w=D.wish.find(x=>x.id===id);if(!w)return;weid=id;document.getElementById('w-name').value=w.name||'';document.getElementById('w-type').value=w.type||'international';document.getElementById('w-pri').value=w.priority||'must';document.getElementById('w-season').value=w.season||'';document.getElementById('w-notes').value=w.notes||'';document.getElementById('wm-title').textContent='Edit Wish';document.getElementById('wm-save').textContent='Save Changes';openM('m-wish');}
-function saveWish(){const n=document.getElementById('w-name').value.trim();if(!n){toast('⚠️ Name required');return}if(weid){const w=D.wish.find(x=>x.id===weid);if(w){w.name=n;w.type=document.getElementById('w-type').value;w.priority=document.getElementById('w-pri').value;w.season=document.getElementById('w-season').value;w.notes=document.getElementById('w-notes').value.trim();save('wish',D.wish);weid=null;closeM('m-wish');toast('✅ Updated!');rWish();badges();}return;}D.wish.push({id:uid(),name:n,type:document.getElementById('w-type').value,priority:document.getElementById('w-pri').value,season:document.getElementById('w-season').value,notes:document.getElementById('w-notes').value.trim(),addedAt:Date.now()});save('wish',D.wish);closeM('m-wish');toast('♡ Added!');rWish();badges()}
+function saveWish(){const n=document.getElementById('w-name').value.trim();if(!n){toast('⚠️ Name required');return}if(weid){const w=D.wish.find(x=>x.id===weid);if(w){w.name=n;w.type=document.getElementById('w-type').value;w.priority=document.getElementById('w-pri').value;w.season=document.getElementById('w-season').value;w.notes=document.getElementById('w-notes').value.trim();save('wish',D.wish);weid=null;closeM('m-wish');toast('✅ Updated!');if(cur==='path')rPath();else rWish();badges();}return;}D.wish.push({id:uid(),name:n,type:document.getElementById('w-type').value,priority:document.getElementById('w-pri').value,season:document.getElementById('w-season').value,notes:document.getElementById('w-notes').value.trim(),addedAt:Date.now()});save('wish',D.wish);closeM('m-wish');toast('♡ Added!');if(cur==='path')rPath();else rWish();badges()}
 function delWish(id){D.wish=D.wish.filter(w=>w.id!==id);save('wish',D.wish);toast('🗑️ Removed');rWish();badges()}
 let pendGraduateWishId=null;
 function graduateWish(id){
@@ -3004,7 +3004,7 @@ function saveAbroadCountry(){
   closeM('m-abroad-country');
   toast(abroadEid?'✅ Updated':'🌍 Country added!');
   abroadEid=null;
-  rAbroad();
+  if(cur==='path')rPath();else rAbroad();
 }
 function delAbroadCountry(id){
   if(!confirm('Remove this country from your research?'))return;
