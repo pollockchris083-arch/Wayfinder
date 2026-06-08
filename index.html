@@ -1272,7 +1272,7 @@ function rHome(){
   const recentPlaces=[...D.places].sort((a,b)=>b.addedAt-a.addedAt).slice(0,4);
   const actItems=[
     ...[...D.places].sort((a,b)=>b.addedAt-a.addedAt).slice(0,6).map(p=>({icon:ci(p.category),title:p.name,sub:(p.usState&&p.country?p.usState+', '+p.country:p.country||p.region||'—'),badge:sl(p.status),time:p.addedAt,click:`go('places');setTimeout(()=>openPlaceD('${p.id}'),10)`})),
-    ...[...D.journal].sort((a,b)=>b.addedAt-a.addedAt).slice(0,4).map(j=>({icon:'📓',title:j.title||'Journal Entry',sub:j.loc||fd(j.date)||'',badge:'Journal',time:j.addedAt,click:`go('journal')`})),
+    ...[...D.journal].sort((a,b)=>b.addedAt-a.addedAt).slice(0,4).map(j=>({icon:'📓',title:j.title||'Journal Entry',sub:j.loc||fd(j.date)||'',badge:'Journal',time:j.addedAt,click:j.tripId?`go('journal');jf='${j.tripId}';setTimeout(rJournal,10)`:`go('journal')`})),
     ...[...D.trips].sort((a,b)=>b.addedAt-a.addedAt).slice(0,3).map(t=>({icon:'✈️',title:t.name,sub:t.startDate?fd(t.startDate):'Planning',badge:tsl(t.status),time:t.addedAt,click:`go('trips');openTripD('${t.id}')`})),
   ].sort((a,b)=>b.time-a.time).slice(0,7);
 
@@ -1382,7 +1382,7 @@ function rHome(){
   ${(todayMemories.length||todayTrips.length)?`<div class="card" style="margin-top:13px;background:linear-gradient(135deg,rgba(155,116,32,.05),rgba(74,114,89,.04));border-color:rgba(155,116,32,.2)">
     <div class="ch"><div><div class="ct">🕰️ This Day in Travel</div><div class="cs">On this date in past years</div></div></div>
     ${todayTrips.map(t=>`<div class="ai" style="cursor:pointer" onclick="go('trips');openTripD('${t.id}')"><div class="ai-icon">✈️</div><div style="flex:1"><div class="ai-text"><strong>${t.name}</strong></div><div class="ai-time">You were here in ${t.startDate.slice(0,4)}</div></div><span style="font-size:9px;color:var(--gold2);font-weight:600;border:1px solid var(--gold2);border-radius:3px;padding:1px 5px;flex-shrink:0">${thisYear-parseInt(t.startDate.slice(0,4))}yr ago</span></div>`).join('')}
-    ${todayMemories.map(j=>`<div class="ai" style="cursor:pointer" onclick="go('journal')"><div class="ai-icon">📓</div><div style="flex:1"><div class="ai-text"><strong>${j.title||'Journal Entry'}</strong></div><div class="ai-time">${j.date.slice(0,4)} · ${j.loc||''}</div></div><span style="font-size:9px;color:var(--muted);font-weight:600;border:1px solid var(--bdr2);border-radius:3px;padding:1px 5px;flex-shrink:0">${thisYear-parseInt(j.date.slice(0,4))}yr ago</span></div>`).join('')}
+    ${todayMemories.map(j=>`<div class="ai" style="cursor:pointer" onclick="${j.tripId?`go('journal');jf='${j.tripId}';setTimeout(rJournal,10)`:`go('journal')`}"><div class="ai-icon">📓</div><div style="flex:1"><div class="ai-text"><strong>${j.title||'Journal Entry'}</strong></div><div class="ai-time">${j.date.slice(0,4)} · ${j.loc||''}</div></div><span style="font-size:9px;color:var(--muted);font-weight:600;border:1px solid var(--bdr2);border-radius:3px;padding:1px 5px;flex-shrink:0">${thisYear-parseInt(j.date.slice(0,4))}yr ago</span></div>`).join('')}
   </div>`:''}
   `;
 }
@@ -2555,8 +2555,8 @@ function rJournal(){
 
   let html=tripFilter;
   if(jf!=='all'){
-    // Single trip view - just list entries
-    html+=entries.map(e=>journalCard(e,true)).join('');
+    // Single trip view - just list entries (trip name already in filter context)
+    html+=entries.map(e=>journalCard(e,false)).join('');
   } else {
     // All view - group by trip, then ungrouped
     Object.entries(grouped).forEach(([tid,grpEntries])=>{
