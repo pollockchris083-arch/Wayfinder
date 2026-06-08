@@ -2054,7 +2054,8 @@ function openTripD(id){
   // Group linked places by geography
   const placesByRegion={};
   linkedPlaces.forEach(p=>{
-    const key=isDomestic?(p.usState||'Other'):(normCountry(p.country)||'Other');
+    const isUS=normCountry(p.country)==='United States';
+    const key=isDomestic?(p.usState||'Other'):isUS?(p.usState?p.usState+', USA':'United States'):(normCountry(p.country)||'Other');
     if(!placesByRegion[key])placesByRegion[key]=[];
     placesByRegion[key].push(p);
   });
