@@ -814,11 +814,11 @@ input,textarea,select{font-family:inherit;font-weight:400}
 <div class="mo" id="m-stop">
   <div class="modal">
     <button class="mcl" onclick="closeM('m-stop')">✕</button>
-    <h2>Add Stop</h2>
+    <h2 id="stop-modal-title">Add Stop</h2>
     <div class="fg"><label class="fl">Link to Saved Place <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(optional)</span></label><select class="fs" id="st-place"><option value="">— New stop, no place link —</option></select></div>
     <div class="fg"><label class="fl">Stop / Activity *</label><input class="fi" id="st-name" placeholder="e.g. Angels Landing hike"/></div>
     <div class="fg" style="margin-bottom:0"><label class="fl">Notes</label><input class="fi" id="st-note" placeholder="Timing, reservations, tips…"/></div>
-    <div class="fa"><button class="btn-s" onclick="closeM('m-stop')">Cancel</button><button class="btn-p" onclick="saveStop()">Add Stop</button></div>
+    <div class="fa"><button class="btn-s" onclick="closeM('m-stop')">Cancel</button><button class="btn-p" id="stop-modal-save" onclick="saveStop()">Add Stop</button></div>
   </div>
 </div>
 
@@ -2108,7 +2108,10 @@ function openTripD(id){
         <div style="margin-bottom:10px">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--card2);border-radius:6px;margin-bottom:4px">
             <div style="font-size:12px;font-weight:600;color:var(--text)">Day ${di+1}</div>
-            <div style="font-size:11px;color:var(--muted)">${fd(day.date)}</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="font-size:11px;color:var(--muted)">${fd(day.date)}</div>
+              <button onclick="delDay('${t.id}',${di})" title="Remove this day" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:1px 3px;line-height:1;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
+            </div>
           </div>
           ${(day.stops||[]).length?(day.stops||[]).map((s,si)=>{
             const lp=s.placeId?D.places.find(x=>x.id===s.placeId):null;
@@ -2118,7 +2121,10 @@ function openTripD(id){
                 <div class="stopname">${s.name}${lp?` <span style="font-size:9px;color:var(--green3);margin-left:3px">↗</span>`:''}</div>
                 ${s.note?`<div class="stopnote">${s.note}</div>`:''}
               </div>
-              <button onclick="event.stopPropagation();delStop('${t.id}',${di},${si})" title="Remove stop" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:2px 4px;border-radius:4px;line-height:1;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
+              <div style="display:flex;gap:2px;flex-shrink:0">
+                <button onclick="event.stopPropagation();openStopEdit('${t.id}',${di},${si})" title="Edit stop" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:2px 4px;border-radius:4px;line-height:1;transition:color .15s" onmouseover="this.style.color='var(--green3)'" onmouseout="this.style.color='var(--muted2)'">✏️</button>
+                <button onclick="event.stopPropagation();delStop('${t.id}',${di},${si})" title="Remove stop" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:2px 4px;border-radius:4px;line-height:1;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
+              </div>
             </div>`;
           }).join(''):`<div style="font-size:11px;color:var(--muted2);padding:5px 0">No stops yet</div>`}
           <button class="add-stop" onclick="openStop('${t.id}',${di})">+ Add Stop</button>
@@ -2343,7 +2349,9 @@ function saveLinkPlace(){
   closeM('m-link-place');toast('📍 Place linked!');openTripD(tid);
 }
 function openStop(tid,di){
-  pendStop={tid,di};
+  pendStop={tid,di,si:null};
+  document.getElementById('stop-modal-title').textContent='Add Stop';
+  document.getElementById('stop-modal-save').textContent='Add Stop';
   document.getElementById('st-name').value='';
   document.getElementById('st-note').value='';
   const sel=document.getElementById('st-place');
@@ -2357,18 +2365,48 @@ function openStop(tid,di){
   };
   openM('m-stop');
 }
+function openStopEdit(tid,di,si){
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  const s=t.itinerary[di]?.stops[si];if(!s)return;
+  pendStop={tid,di,si};
+  document.getElementById('stop-modal-title').textContent='Edit Stop';
+  document.getElementById('stop-modal-save').textContent='Save Changes';
+  document.getElementById('st-name').value=s.name||'';
+  document.getElementById('st-note').value=s.note||'';
+  const sel=document.getElementById('st-place');
+  sel.innerHTML='<option value="">— New stop, no place link —</option>'+
+    [...D.places].sort((a,b)=>a.name.localeCompare(b.name))
+      .map(p=>`<option value="${p.id}">${ci(p.category)} ${p.name}${p.region?' — '+p.region:''}</option>`).join('');
+  sel.value=s.placeId||'';
+  sel.onchange=()=>{
+    const p=D.places.find(x=>x.id===sel.value);
+    if(p&&!document.getElementById('st-name').value) document.getElementById('st-name').value=p.name;
+  };
+  openM('m-stop');
+}
 function saveStop(){
   const n=document.getElementById('st-name').value.trim();
   if(!n||!pendStop)return;
   const t=D.trips.find(x=>x.id===pendStop.tid);
   if(!t)return;
   const placeId=document.getElementById('st-place').value;
-  t.itinerary[pendStop.di].stops.push({name:n,note:document.getElementById('st-note').value.trim(),placeId});
+  const stopData={name:n,note:document.getElementById('st-note').value.trim(),placeId};
+  if(pendStop.si!=null){
+    t.itinerary[pendStop.di].stops[pendStop.si]=stopData;
+  } else {
+    t.itinerary[pendStop.di].stops.push(stopData);
+  }
   if(placeId){
     const pl=D.places.find(x=>x.id===placeId);
-    if(pl&&!pl.tripIds.includes(pendStop.tid)){pl.tripIds.push(pendStop.tid);save('places',D.places);}
+    if(pl&&!(pl.tripIds||[]).includes(pendStop.tid)){pl.tripIds=[...(pl.tripIds||[]),pendStop.tid];save('places',D.places);}
   }
-  save('trips',D.trips);closeM('m-stop');toast('✅ Stop added');openTripD(pendStop.tid);
+  save('trips',D.trips);closeM('m-stop');toast(pendStop.si!=null?'✅ Stop updated':'✅ Stop added');openTripD(pendStop.tid);
+}
+function delDay(tid,di){
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  if(t.itinerary[di]?.stops?.length&&!confirm('Remove this day and its stops?'))return;
+  t.itinerary.splice(di,1);
+  save('trips',D.trips);toast('🗑️ Day removed');openTripD(tid);
 }
 
 // ══════════════════════════════════════════════
