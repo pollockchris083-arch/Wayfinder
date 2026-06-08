@@ -486,10 +486,10 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .pipe-filter-btn:hover{border-color:var(--bdr2);color:var(--text)}
 .pipe-filter-btn.on{background:rgba(74,114,89,.1);border-color:rgba(74,114,89,.3);color:var(--green3);font-weight:600}
 .pipe-filter-sep{width:1px;height:18px;background:var(--bdr2);flex-shrink:0;margin:0 2px}
-.path-board{display:flex;gap:10px;padding:12px 14px;overflow-x:auto;flex:1;align-items:flex-start}
+.path-board{display:flex;gap:10px;padding:12px 14px;overflow-x:auto;flex:1;align-items:stretch}
 .path-board::-webkit-scrollbar{height:6px}
 .path-board::-webkit-scrollbar-thumb{background:var(--card3);border-radius:4px}
-.pipe-col{width:254px;min-width:254px;display:flex;flex-direction:column;max-height:100%;background:var(--bg2);border-radius:10px;border:1px solid var(--bdr);overflow:hidden;flex-shrink:0;transition:all .18s}
+.pipe-col{width:254px;min-width:254px;display:flex;flex-direction:column;background:var(--bg2);border-radius:10px;border:1px solid var(--bdr);overflow:hidden;flex-shrink:0;transition:all .18s}
 .pipe-col.drag-target{border-color:var(--green);box-shadow:0 0 0 2px rgba(74,114,89,.22)}
 .pipe-col.pipe-col-collapsed{width:42px;min-width:42px}
 .pipe-col-bar{height:3px;flex-shrink:0}
@@ -1404,7 +1404,7 @@ const ACTS={home:{l:'+ Add Place',f:'openPlace'},places:{l:'+ Add Place',f:'open
 let cur='home';
 function go(p){
   sbClose();
-  if(p!==cur){const s=document.getElementById('srch');if(s)s.value='';}
+  if(p!==cur){const s=document.getElementById('srch');if(s)s.value='';pipeCloseDetail();}
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
   document.querySelectorAll('.ni').forEach(x=>x.classList.remove('on'));
   document.getElementById('page-'+p).classList.add('on');
@@ -4107,7 +4107,7 @@ function pipeOpenDetail(cardId){
   }
   panel.classList.add('on');
 }
-function pipeCloseDetail(){document.getElementById('path-detail').classList.remove('on');}
+function pipeCloseDetail(){const el=document.getElementById('path-detail');if(el)el.classList.remove('on');}
 
 // ── Add new card ──
 function pipeAddCard(col){
