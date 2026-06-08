@@ -4673,14 +4673,16 @@ function openCampD(id){
   D=load();
   const c=(D.camps||[]).find(x=>x.id===id);if(!c)return;
   window._campDid=id;
-  const tab=window._campDTab||'stops';
+  const tab=window._campDTab||'overview';
   const typeInfo=ADV_TYPES[c.campType]||{icon:'🏕️',label:'Tent Camping'};
   const dur=c.startDate&&c.endDate?Math.round((new Date(c.endDate)-new Date(c.startDate))/86400000)+1:0;
   const stops=c.stops||[];
   const totalMiles=stops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
   let tabBody='';
-  if(tab==='stops') tabBody=rAdvStopsTab(c);
+  if(tab==='overview') tabBody=rAdvOverviewTab(c);
+  else if(tab==='stops') tabBody=rAdvStopsTab(c);
   else if(tab==='daily') tabBody=rAdvDailyTab(c);
+  else if(tab==='budget') tabBody=rAdvBudgetTab(c);
   else if(tab==='gear') tabBody=rAdvGearTab(c);
   else if(tab==='links') tabBody=rAdvLinksTab(c);
   else tabBody=rAdvSummaryTab(c);
@@ -4706,15 +4708,184 @@ function openCampD(id){
           <button class="pbtn del" onclick="delCamp('${c.id}')">🗑️</button>
         </div>
       </div>
-      <div class="fb" style="margin-bottom:14px;flex-wrap:wrap;gap:4px">
+      <div class="fb" style="margin-bottom:14px;flex-wrap:wrap;gap:4px;overflow-x:auto">
+        <button class="fc ${tab==='overview'?'on':''}" onclick="window._campDTab='overview';openCampD('${c.id}')">📋 Overview</button>
         <button class="fc ${tab==='stops'?'on':''}" onclick="window._campDTab='stops';openCampD('${c.id}')">📍 Stops${stops.length?' ('+stops.length+')':''}</button>
         <button class="fc ${tab==='daily'?'on':''}" onclick="window._campDTab='daily';openCampD('${c.id}')">📅 Plans</button>
+        <button class="fc ${tab==='budget'?'on':''}" onclick="window._campDTab='budget';openCampD('${c.id}')">💰 Budget</button>
         <button class="fc ${tab==='gear'?'on':''}" onclick="window._campDTab='gear';openCampD('${c.id}')">🎒 Gear</button>
         <button class="fc ${tab==='links'?'on':''}" onclick="window._campDTab='links';openCampD('${c.id}')">🔗 Links</button>
-        <button class="fc ${tab==='summary'?'on':''}" onclick="window._campDTab='summary';openCampD('${c.id}')">📓 Summary</button>
+        <button class="fc ${tab==='summary'?'on':''}" onclick="window._campDTab='summary';openCampD('${c.id}')">📓 Memoirs</button>
       </div>
       ${tabBody}
     </div>`;
+}
+
+// ── Tab: Overview ───────────────────────────────────────
+function rAdvOverviewTab(c){
+  const travelers=c.travelers||[];
+  const showRig=['rv','van','trailer','overlanding'].includes(c.campType);
+  const rig=c.rig||{};
+  const RIG_TYPES=['Class A','Class B','Class C','Travel Trailer','5th Wheel','Van','Truck Camper','Pop-up'];
+  return`
+  <div class="card" style="margin-bottom:12px">
+    <div class="ch"><div class="ct">📝 Notes / Description</div></div>
+    <textarea class="ft" style="margin-top:8px;min-height:80px" placeholder="What's the plan? Goals, vibes, why this trip…" onblur="saveAdvField('${c.id}','notes',this.value)">${c.notes||''}</textarea>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="ch"><div class="ct">👥 Who's Going</div><button class="pbtn" onclick="addAdvTraveler('${c.id}')">+ Add</button></div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+      ${travelers.length?travelers.map((t,i)=>`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--bdr);border-radius:20px;padding:4px 10px;font-size:12px;color:var(--text)">${t}<button onclick="removeAdvTraveler('${c.id}',${i})" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:0;line-height:1;margin-left:2px">×</button></span>`).join(''):`<span style="font-size:12px;color:var(--muted2)">No travelers added yet</span>`}
+    </div>
+  </div>
+  ${showRig?`
+  <div class="card" style="margin-bottom:12px">
+    <div class="ch"><div class="ct">🚐 Rig Info</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Rig Name</label>
+        <input class="fi" style="margin-top:3px" value="${rig.name||''}" placeholder="e.g. Big Red" onblur="saveAdvRig('${c.id}','name',this.value)"/></div>
+      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Type</label>
+        <select class="fi" style="margin-top:3px" onchange="saveAdvRig('${c.id}','type',this.value)">
+          <option value="">— Select —</option>
+          ${RIG_TYPES.map(t=>`<option${rig.type===t?' selected':''}>${t}</option>`).join('')}
+        </select></div>
+      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Length (ft)</label>
+        <input class="fi" style="margin-top:3px" type="number" value="${rig.length||''}" placeholder="e.g. 25" onblur="saveAdvRig('${c.id}','length',this.value)"/></div>
+      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Height (ft)</label>
+        <input class="fi" style="margin-top:3px" type="number" value="${rig.height||''}" placeholder="e.g. 11.5" onblur="saveAdvRig('${c.id}','height',this.value)"/></div>
+      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Tow Vehicle</label>
+        <input class="fi" style="margin-top:3px" value="${rig.towVehicle||''}" placeholder="e.g. F-250" onblur="saveAdvRig('${c.id}','towVehicle',this.value)"/></div>
+      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">MPG (fuel calc)</label>
+        <input class="fi" style="margin-top:3px" type="number" value="${rig.mpg||''}" placeholder="e.g. 10" onblur="saveAdvRig('${c.id}','mpg',this.value)"/></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+      ${[['slides','Slide-outs'],['generator','Generator'],['solar','Solar'],['awning','Awning']].map(([k,l])=>`
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:var(--text2)">
+          <input type="checkbox" ${rig[k]?'checked':''} style="accent-color:var(--green);width:14px;height:14px" onchange="saveAdvRig('${c.id}','${k}',this.checked)"/>${l}
+        </label>`).join('')}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
+      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Fresh Water (gal)</label>
+        <input class="fi" style="margin-top:3px" type="number" value="${rig.freshWater||''}" onblur="saveAdvRig('${c.id}','freshWater',this.value)"/></div>
+      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Grey Tank (gal)</label>
+        <input class="fi" style="margin-top:3px" type="number" value="${rig.greyTank||''}" onblur="saveAdvRig('${c.id}','greyTank',this.value)"/></div>
+      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Black Tank (gal)</label>
+        <input class="fi" style="margin-top:3px" type="number" value="${rig.blackTank||''}" onblur="saveAdvRig('${c.id}','blackTank',this.value)"/></div>
+    </div>
+  </div>`:''}`;
+}
+function saveAdvField(cid,field,value){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  c[field]=value;localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+}
+function saveAdvRig(cid,field,value){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  if(!c.rig)c.rig={};c.rig[field]=value;
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+}
+function addAdvTraveler(cid){
+  const name=prompt('Traveler name:');if(!name||!name.trim())return;
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  if(!c.travelers)c.travelers=[];
+  c.travelers.push(name.trim());
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  window._campDTab='overview';openCampD(cid);
+}
+function removeAdvTraveler(cid,idx){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  (c.travelers||[]).splice(idx,1);
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  window._campDTab='overview';openCampD(cid);
+}
+
+// ── Tab: Budget & Expenses ────────────────────────────
+function rAdvBudgetTab(c){
+  const budget=parseFloat(c.tripBudget)||0;
+  const expenses=c.expenses||[];
+  const totalSpent=expenses.reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+  const pct=budget?Math.min(100,Math.round(totalSpent/budget*100)):0;
+  const CATS=['Fuel','Camping Fees','Food & Groceries','Dining Out','Activities','Gear','Propane','Park Passes','Dump Fees','Misc'];
+  const byCategory={};CATS.forEach(k=>{byCategory[k]=0;});
+  expenses.forEach(e=>{if(byCategory[e.category]!==undefined)byCategory[e.category]+=(parseFloat(e.amount)||0);else byCategory['Misc']+=(parseFloat(e.amount)||0);});
+  const stops=c.stops||[];
+  const rig=c.rig||{};
+  const totalMiles=stops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  return`
+  <div class="card" style="margin-bottom:12px">
+    <div class="ch"><div class="ct">💰 Trip Budget</div></div>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:10px">
+      <div style="flex:1"><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Total Budget ($)</label>
+        <input class="fi" style="margin-top:3px" type="number" value="${c.tripBudget||''}" placeholder="e.g. 2500" onblur="saveAdvField('${c.id}','tripBudget',this.value)"/></div>
+      <div style="text-align:right"><div style="font-size:20px;font-weight:700;color:${pct>90?'#c05050':pct>70?'#B8892A':'var(--green3)'}">$${totalSpent.toFixed(0)}</div><div style="font-size:11px;color:var(--muted2)">of $${budget||'—'}</div></div>
+    </div>
+    ${budget?`<div style="margin-top:10px;background:var(--card2);border-radius:4px;height:8px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct>90?'#c05050':pct>70?'#B8892A':'var(--green3)'};border-radius:4px;transition:width .3s"></div></div>
+    <div style="font-size:11px;color:var(--muted2);margin-top:4px">${pct}% spent · $${Math.max(0,budget-totalSpent).toFixed(0)} remaining</div>`:''}
+  </div>
+  ${rig.mpg&&totalMiles?`
+  <div class="card" style="margin-bottom:12px">
+    <div class="ch"><div class="ct">⛽ Fuel Calculator</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Gas Price ($/gal)</label>
+        <input class="fi" style="margin-top:3px" type="number" step="0.01" id="fuel-price-${c.id}" value="${c.fuelPrice||''}" placeholder="e.g. 4.25" oninput="updateFuelCalc('${c.id}')"/></div>
+      <div style="padding-top:14px"><div style="font-size:11px;color:var(--muted2)">Route miles: ${totalMiles.toFixed(0)}</div>
+        <div style="font-size:11px;color:var(--muted2)">Rig MPG: ${rig.mpg}</div>
+        <div id="fuel-est-${c.id}" style="font-size:14px;font-weight:600;color:var(--green3);margin-top:4px">${c.fuelPrice&&rig.mpg?'~$'+(totalMiles/rig.mpg*c.fuelPrice).toFixed(0)+' est. fuel':''}</div>
+      </div>
+    </div>
+  </div>`:''}
+  <div class="card" style="margin-bottom:12px">
+    <div class="ch"><div class="ct">📊 By Category</div></div>
+    <div style="margin-top:10px">
+      ${CATS.filter(k=>byCategory[k]>0).map(k=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bdr2)">
+          <span style="font-size:12px;color:var(--text2)">${k}</span>
+          <span style="font-size:13px;font-weight:600;color:var(--text)">$${byCategory[k].toFixed(0)}</span>
+        </div>`).join('')||'<div style="font-size:12px;color:var(--muted2);text-align:center;padding:10px 0">No expenses yet</div>'}
+    </div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">🧾 Expenses (${expenses.length})</div><button class="pbtn" onclick="openAdvExpense('${c.id}')">+ Add</button></div>
+    ${expenses.length?`<div style="margin-top:8px">${expenses.slice().reverse().map((e,ri)=>{const i=expenses.length-1-ri;return`<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--bdr2);gap:8px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:var(--text)">${e.description||e.category}</div>
+        <div style="font-size:11px;color:var(--muted2)">${e.category}${e.date?' · '+fd(e.date):''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+        <span style="font-size:13px;font-weight:700;color:var(--text)">$${parseFloat(e.amount||0).toFixed(2)}</span>
+        <button onclick="delAdvExpense('${c.id}',${i})" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:0" title="Delete">×</button>
+      </div>
+    </div>`;}).join('')}</div>`:`<div style="font-size:12px;color:var(--muted2);text-align:center;padding:12px 0">No expenses logged yet</div>`}
+  </div>`;
+}
+function updateFuelCalc(cid){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  const priceEl=document.getElementById('fuel-price-'+cid);const estEl=document.getElementById('fuel-est-'+cid);
+  if(!priceEl||!estEl)return;
+  const price=parseFloat(priceEl.value)||0;
+  const mpg=parseFloat((c.rig||{}).mpg)||0;
+  const miles=(c.stops||[]).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  c.fuelPrice=price||undefined;
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  estEl.textContent=price&&mpg&&miles?'~$'+(miles/mpg*price).toFixed(0)+' est. fuel':'';
+}
+function openAdvExpense(cid){
+  const CATS=['Fuel','Camping Fees','Food & Groceries','Dining Out','Activities','Gear','Propane','Park Passes','Dump Fees','Misc'];
+  const cat=prompt('Category:\n'+CATS.join(', '));if(!cat)return;
+  const desc=prompt('Description (optional):');
+  const amt=prompt('Amount ($):');if(!amt||isNaN(parseFloat(amt)))return;
+  const dateStr=prompt('Date (YYYY-MM-DD, or leave blank):');
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  if(!c.expenses)c.expenses=[];
+  const matched=CATS.find(k=>k.toLowerCase()===cat.toLowerCase().trim())||'Misc';
+  c.expenses.push({id:uid(),category:matched,description:desc||'',amount:parseFloat(amt),date:dateStr||''});
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  window._campDTab='budget';openCampD(cid);toast('💰 Expense added');
+}
+function delAdvExpense(cid,idx){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  (c.expenses||[]).splice(idx,1);
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  window._campDTab='budget';openCampD(cid);
 }
 
 // ── Tab: Stops & Route ──────────────────────────────────
