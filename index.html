@@ -1699,7 +1699,10 @@ function rHome(){
   const upcoming=D.trips.filter(t=>{if(!t.startDate)return false;const s=new Date(t.startDate);s.setHours(0,0,0,0);return s>today&&t.status!=='past';}).sort((a,b)=>new Date(a.startDate)-new Date(b.startDate));
   const planning=D.trips.filter(t=>t.status==='planning'||(t.status!=='past'&&!t.startDate));
   const pastTrips=[...D.trips].filter(t=>t.status==='past').sort((a,b)=>new Date(b.startDate||0)-new Date(a.startDate||0));
-  const upcomingCount=[...new Set([...activeNow,...upcoming,...planning].map(t=>t.id))].length;
+  const _pipeStateHome=pipeStateLoad();
+  function _tripStageId(t){return _pipeStateHome[t.id]||pipeAutoCol({id:t.id,type:'trip',data:t});}
+  const CONFIRMED_STAGES=new Set(['booked','trip-prep','in-progress']);
+  const upcomingCount=[...new Set([...activeNow,...upcoming.filter(t=>{const s=_tripStageId(t);return CONFIRMED_STAGES.has(s)||t.startDate;})].map(t=>t.id))].length;
   const nextTrip=activeNow[0]||upcoming[0];
   const daysUntil=nextTrip&&nextTrip.status!=='active'&&nextTrip.startDate?Math.ceil((new Date(nextTrip.startDate)-today)/86400000):null;
 
