@@ -649,7 +649,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
       <button class="ni ni-sub" data-p="trips-intl" data-tf="international" onclick="goTrips('international')"><span class="ico">🌍</span>International</button>
       <button class="ni ni-sub" data-p="trips-dom" data-tf="domestic" onclick="goTrips('domestic')"><span class="ico">🇺🇸</span>Domestic</button>
       <button class="ni ni-sub" data-p="trips-road" data-tf="road_trip" onclick="goTrips('road_trip')"><span class="ico">🚗</span>Road Trips</button>
-      <button class="ni ni-sub" data-p="camp" onclick="go('camp')"><span class="ico">⛺</span>Camp<span class="nb" id="b-camp">0</span></button>
+      <button class="ni ni-sub" data-p="camp" onclick="go('camp')"><span class="ico">🧭</span>Adventures<span class="nb" id="b-camp">0</span></button>
       <button class="ni ni-sub" data-p="work" onclick="go('work')"><span class="ico">💼</span>Work<span class="nb" id="b-work">0</span></button>
     </div>
     <div class="sb-sec">Memoirs</div>
@@ -1159,43 +1159,84 @@ input,textarea,select{font-family:inherit;font-weight:400}
   </div>
 </div>
 
-<!-- CAMP -->
+<!-- ADVENTURES -->
 <div class="mo" id="m-camp">
-  <div class="modal">
+  <div class="modal" style="width:460px">
     <button class="mcl" onclick="closeM('m-camp')">✕</button>
-    <h2 id="cm-title">Add Camp Trip</h2>
+    <h2 id="cm-title">Add Adventure</h2>
     <div class="fr">
       <div class="fg"><label class="fl">Record Type</label><select class="fs" id="c-rtype"><option value="trip">🏕️ Trip (dated)</option><option value="spot">📍 Saved Spot</option></select></div>
-      <div class="fg"><label class="fl">Status</label><select class="fs" id="c-status"><option value="wishlist">♡ Wishlist</option><option value="planning">📋 Planning</option><option value="completed">✅ Completed</option></select></div>
+      <div class="fg"><label class="fl">Status</label><select class="fs" id="c-status"><option value="planning">📋 Planning</option><option value="wishlist">♡ Wishlist</option><option value="completed">✅ Completed</option></select></div>
     </div>
-    <div class="fg"><label class="fl">Name *</label><input class="fi" id="c-name" placeholder="Big Basin Redwoods Weekend"/></div>
+    <div class="fg"><label class="fl">Name *</label><input class="fi" id="c-name" placeholder="e.g. Sierras Loop, Big Basin Weekend"/></div>
+    <div class="fg"><label class="fl">Adventure Type</label><select class="fs" id="c-camptype">
+      <option value="tent">🏕️ Tent Camping</option>
+      <option value="backpacking">🎒 Backpacking</option>
+      <option value="rv">🚐 RV Trip</option>
+      <option value="van">🚌 Van Life</option>
+      <option value="trailer">🚛 Trailer Trip</option>
+      <option value="glamping">⛺ Glamping</option>
+      <option value="car">🚗 Car Camping</option>
+      <option value="dispersed">🌲 Dispersed / Boondocking</option>
+      <option value="overlanding">🏔️ Overlanding</option>
+    </select></div>
     <div class="fr">
       <div class="fg"><label class="fl">Start Date</label><input class="fi" id="c-start" type="date"/></div>
       <div class="fg"><label class="fl">End Date</label><input class="fi" id="c-end" type="date"/></div>
     </div>
     <div class="fr">
-      <div class="fg"><label class="fl">Location Name</label><input class="fi" id="c-loc" placeholder="Big Basin State Park"/></div>
+      <div class="fg" style="flex:2"><label class="fl">Primary Location</label><input class="fi" id="c-loc" placeholder="e.g. Ansel Adams Wilderness"/></div>
       <div class="fg"><label class="fl">State</label><input class="fi" id="c-state" placeholder="CA"/></div>
     </div>
-    <div class="fr">
-      <div class="fg"><label class="fl">Camp Type</label><select class="fs" id="c-camptype"><option value="tent">⛺ Tent</option><option value="dispersed">🌲 Dispersed</option><option value="rv">🚐 RV / Van</option><option value="cabin">🏠 Cabin</option><option value="backpacking">🎒 Backpacking</option></select></div>
-      <div class="fg"><label class="fl">Rating (1–5)</label><select class="fs" id="c-rating"><option value="">—</option><option value="5">⭐⭐⭐⭐⭐</option><option value="4">⭐⭐⭐⭐</option><option value="3">⭐⭐⭐</option><option value="2">⭐⭐</option><option value="1">⭐</option></select></div>
-    </div>
-    <div class="fr">
-      <div class="fg"><label class="fl">Latitude</label><input class="fi" id="c-lat" placeholder="37.1735"/></div>
-      <div class="fg"><label class="fl">Longitude</label><input class="fi" id="c-lng" placeholder="-122.2218"/></div>
-    </div>
-    <div class="fg"><label class="fl">Google Maps Link</label><input class="fi" id="c-maps" type="url" placeholder="https://maps.google.com/…"/></div>
-    <div class="fr">
-      <div class="fg"><label class="fl">Website</label><input class="fi" id="c-web" type="url" placeholder="https://…"/></div>
-      <div class="fg"><label class="fl">YouTube</label><input class="fi" id="c-yt" type="url" placeholder="https://youtube.com/…"/></div>
-    </div>
-    <div class="fr">
-      <div class="fg"><label class="fl">Instagram</label><input class="fi" id="c-ig" placeholder="@account or URL"/></div>
-      <div class="fg"><label class="fl">Thumbnail URL</label><input class="fi" id="c-thumb" type="url" placeholder="https://…/photo.jpg"/></div>
-    </div>
-    <div class="fg" style="margin-bottom:0"><label class="fl">Notes</label><textarea class="ft" id="c-notes" placeholder="Campsite tips, what to bring, memories…"></textarea></div>
+    <div class="fg"><label class="fl">Thumbnail URL</label><input class="fi" id="c-thumb" type="url" placeholder="https://…/photo.jpg"/></div>
+    <div class="fg" style="margin-bottom:0"><label class="fl">Notes</label><textarea class="ft" id="c-notes" placeholder="Trip overview, goals, packing reminders…" style="min-height:65px"></textarea></div>
     <div class="fa"><button class="btn-s" onclick="closeM('m-camp')">Cancel</button><button class="btn-p" id="cm-save" onclick="saveCamp()">Save</button></div>
+  </div>
+</div>
+
+<!-- ADVENTURE STOP -->
+<div class="mo" id="m-adv-stop">
+  <div class="modal" style="width:460px;max-height:90vh;overflow-y:auto">
+    <button class="mcl" onclick="closeM('m-adv-stop')">✕</button>
+    <h2 id="advstop-title">Add Stop</h2>
+    <div class="fg"><label class="fl">Location Name *</label><input class="fi" id="advstop-name" placeholder="e.g. Yosemite Valley Campground"/></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Arrival</label><input class="fi" type="date" id="advstop-arr"/></div>
+      <div class="fg"><label class="fl">Departure</label><input class="fi" type="date" id="advstop-dep"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Miles from Prev</label><input class="fi" type="number" id="advstop-miles" placeholder="0"/></div>
+      <div class="fg"><label class="fl">Site / Spot #</label><input class="fi" id="advstop-site" placeholder="A23"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Confirmation #</label><input class="fi" id="advstop-conf" placeholder="RES-123456"/></div>
+      <div class="fg"><label class="fl">Cost / Night ($)</label><input class="fi" type="number" id="advstop-cost" placeholder="35"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Latitude</label><input class="fi" id="advstop-lat" placeholder="37.174"/></div>
+      <div class="fg"><label class="fl">Longitude</label><input class="fi" id="advstop-lng" placeholder="-119.542"/></div>
+    </div>
+    <div class="fg"><label class="fl">Google Maps Link</label><input class="fi" id="advstop-maps" type="url" placeholder="https://maps.google.com/…"/></div>
+    <div class="fg"><label class="fl">Campground Website</label><input class="fi" id="advstop-web" type="url" placeholder="https://…"/></div>
+    <div class="fg"><label class="fl">Max Rig Length (ft)</label><input class="fi" type="number" id="advstop-rig" placeholder="40"/></div>
+    <div class="fg"><label class="fl">Hookups Available</label>
+      <div id="advstop-hookups" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">
+        <button type="button" class="hookup-btn" data-hookup="Electric 20A" onclick="toggleHookupBtn(this)" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:all .15s">Electric 20A</button>
+        <button type="button" class="hookup-btn" data-hookup="Electric 30A" onclick="toggleHookupBtn(this)" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:all .15s">Electric 30A</button>
+        <button type="button" class="hookup-btn" data-hookup="Electric 50A" onclick="toggleHookupBtn(this)" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:all .15s">Electric 50A</button>
+        <button type="button" class="hookup-btn" data-hookup="Water" onclick="toggleHookupBtn(this)" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:all .15s">Water</button>
+        <button type="button" class="hookup-btn" data-hookup="Sewer" onclick="toggleHookupBtn(this)" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:all .15s">Sewer</button>
+        <button type="button" class="hookup-btn" data-hookup="WiFi" onclick="toggleHookupBtn(this)" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:all .15s">WiFi</button>
+        <button type="button" class="hookup-btn" data-hookup="Pull-through" onclick="toggleHookupBtn(this)" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:all .15s">Pull-through</button>
+        <button type="button" class="hookup-btn" data-hookup="Back-in" onclick="toggleHookupBtn(this)" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:all .15s">Back-in</button>
+        <button type="button" class="hookup-btn" data-hookup="Pet Friendly" onclick="toggleHookupBtn(this)" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:all .15s">Pet Friendly</button>
+      </div>
+    </div>
+    <div class="fg" style="margin-bottom:12px"><label class="fl">Notes</label><input class="fi" id="advstop-notes" placeholder="Check-in instructions, hookup tips, site details…"/></div>
+    <div class="fa" style="justify-content:space-between">
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;color:var(--text2)"><input type="checkbox" id="advstop-booked" style="width:15px;height:15px;accent-color:var(--green)"/> <span>Mark as Booked ✅</span></label>
+      <div style="display:flex;gap:8px"><button class="btn-s" onclick="closeM('m-adv-stop')">Cancel</button><button class="btn-p" onclick="saveAdvStop()">Save Stop</button></div>
+    </div>
   </div>
 </div>
 
@@ -1622,8 +1663,8 @@ window.wfAuditLinks=function(){
 // ══════════════════════════════════════════════
 // ROUTING
 // ══════════════════════════════════════════════
-const TITLES={home:'Dashboard',map:'World Map',places:'Places',wishlist:'Wishlist',planner:'AI Planner',trips:'Trips',journal:'Memoirs',abroad:'Living Abroad',settings:'Settings',path:'The Path',camp:'Camp Trips',work:'Work Trips'};
-const ACTS={home:{l:'+ Add Place',f:'openPlace'},places:{l:'+ Add Place',f:'openPlace'},wishlist:{l:'+ Add to Wishlist',f:'openWish'},planner:{l:'',f:''},trips:{l:'+ New Trip',f:'openTrip'},journal:{l:'+ New Memoir',f:'openJournal'},map:{l:'+ Add Place',f:'openPlace'},abroad:{l:'',f:''},settings:{l:'',f:''},path:{l:'',f:''},camp:{l:'+ Add Camp',f:'openCamp'},work:{l:'+ New Work Trip',f:'openWork'}};
+const TITLES={home:'Dashboard',map:'World Map',places:'Places',wishlist:'Wishlist',planner:'AI Planner',trips:'Trips',journal:'Memoirs',abroad:'Living Abroad',settings:'Settings',path:'The Path',camp:'Adventures',work:'Work Trips'};
+const ACTS={home:{l:'+ Add Place',f:'openPlace'},places:{l:'+ Add Place',f:'openPlace'},wishlist:{l:'+ Add to Wishlist',f:'openWish'},planner:{l:'',f:''},trips:{l:'+ New Trip',f:'openTrip'},journal:{l:'+ New Memoir',f:'openJournal'},map:{l:'+ Add Place',f:'openPlace'},abroad:{l:'',f:''},settings:{l:'',f:''},path:{l:'',f:''},camp:{l:'+ Add Adventure',f:'openCamp'},work:{l:'+ New Work Trip',f:'openWork'}};
 let cur='home';
 let tripTypeFilter='all';
 function go(p){
@@ -4418,158 +4459,536 @@ function rAbroad(){
 }
 
 // ══════════════════════════════════════════════
-// CAMP TRIPS
+// ADVENTURES
 // ══════════════════════════════════════════════
-const CAMP_TYPE_ICONS={tent:'⛺',dispersed:'🌲',rv:'🚐',cabin:'🏠',backpacking:'🎒'};
+const ADV_TYPES={
+  tent:{icon:'🏕️',label:'Tent Camping'},
+  backpacking:{icon:'🎒',label:'Backpacking'},
+  rv:{icon:'🚐',label:'RV Trip'},
+  van:{icon:'🚌',label:'Van Life'},
+  trailer:{icon:'🚛',label:'Trailer Trip'},
+  glamping:{icon:'⛺',label:'Glamping'},
+  car:{icon:'🚗',label:'Car Camping'},
+  dispersed:{icon:'🌲',label:'Dispersed/Boondocking'},
+  overlanding:{icon:'🏔️',label:'Overlanding'},
+};
+const CAMP_TYPE_ICONS=Object.fromEntries(Object.entries(ADV_TYPES).map(([k,v])=>[k,v.icon]));
+CAMP_TYPE_ICONS.cabin='🏠';
+
+const ADV_GEAR={
+  tent:['Tent + poles + stakes','Sleeping bag','Sleeping pad','Headlamp + batteries','Camp chairs','Camp table','Cooking gear + stove','Food + cooler','Fire starter','First aid kit','Insect repellent','Sunscreen','Water filter/purifier'],
+  backpacking:['Backpack','Tent or tarp','Sleeping bag','Sleeping pad','Headlamp + spare batteries','Navigation (map + compass)','First aid kit','Water filter + purification tabs','Stove + fuel + pot','Food + bear canister','Rain gear','Layering system','Trekking poles','Emergency bivy'],
+  rv:['Vehicle inspection','Fresh water tank filled','Dump kit','Leveling blocks','Power cord','Water pressure regulator','Sewer hose','Propane full','Surge protector','Tire pressure check'],
+  van:['Water tank filled','Solar charged','House batteries functional','Bedding set up','Kitchen supplies','Offline maps downloaded','Portable toilet/privacy'],
+  trailer:['Hitch + ball + chains','Brake controller set','Leveling equipment','Fresh water filled','LP gas full','Awning straps','Pre-trip inspection'],
+  glamping:['Reservation confirmed','Clothes for weather','Activities planned','Snacks + drinks'],
+  car:['Tent + stakes','Sleeping bags','Camp chairs + table','Cooler + food','Camp stove + fuel','Lantern','Fire starters','Bug spray + sunscreen'],
+  dispersed:['Water supply (3+ gallons)','Water filter','Shovel + WAG bags','Offline maps','Extra fuel','Recovery straps','Extended first aid','Permit if required'],
+  overlanding:['Recovery gear (hi-lift, boards, straps)','Navigation + offline maps','Fuel (jerry cans)','Water for extended stay','First aid + trauma kit','Satellite communicator','Tire repair + compressor','Vehicle tools','Food for extra days'],
+};
+
 let ceid=null;
-function campStatusStyle(s){const c={wishlist:'var(--gold)',planning:'#4A7EBA',completed:'var(--green)'}[s]||'var(--muted)';return`background:${c}18;color:${c};border:1px solid ${c}30`;}
+let _advStopEdit=null;
+
+function campStatusStyle(s){
+  const c={wishlist:'var(--gold)',planning:'#4A7EBA',completed:'var(--green)'}[s]||'var(--muted)';
+  return`background:${c}18;color:${c};border:1px solid ${c}30`;
+}
+
 function campCard(c){
-  const icon=CAMP_TYPE_ICONS[c.campType]||'⛺';
+  const typeInfo=ADV_TYPES[c.campType]||{icon:'🏕️',label:c.campType||'Tent'};
   const dur=c.startDate&&c.endDate?Math.round((new Date(c.endDate)-new Date(c.startDate))/86400000)+1:0;
   const datesStr=c.startDate?fd(c.startDate)+(c.endDate&&c.endDate!==c.startDate?' — '+fd(c.endDate):''):'';
-  const thumb=c.thumb?`<img src="${c.thumb}" class="camp-thumb" onerror="this.style.display='none'">`:`<div class="camp-thumb">${icon}</div>`;
+  const stops=(c.stops||[]).length;
+  const thumb=c.thumb?`<img src="${c.thumb}" class="camp-thumb" onerror="this.style.display='none'">`:`<div class="camp-thumb">${typeInfo.icon}</div>`;
   return`<div class="camp-card" onclick="openCampD('${c.id}')">
     ${thumb}
     <div class="camp-body">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:5px;margin-bottom:4px">
         <div class="camp-name">${c.name}</div>
-        <span style="font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;flex-shrink:0;white-space:nowrap;${campStatusStyle(c.status)}">${c.status==='wishlist'?'♡':c.status==='planning'?'📋':'✅'} ${c.status.charAt(0).toUpperCase()+c.status.slice(1)}</span>
+        <span style="font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;flex-shrink:0;white-space:nowrap;${campStatusStyle(c.status)}">${c.status==='wishlist'?'♡ Wishlist':c.status==='planning'?'📋 Planning':'✅ Done'}</span>
       </div>
       ${c.location?`<div class="camp-loc">📍 ${c.location}${c.state?', '+c.state:''}</div>`:''}
       ${datesStr?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${datesStr}${dur>1?' · '+dur+'d':''}</div>`:''}
       <div style="margin-top:7px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
-        <span class="camp-type-badge">${icon} ${c.campType||'tent'}</span>
+        <span class="camp-type-badge">${typeInfo.icon} ${typeInfo.label}</span>
+        ${stops>1?`<span style="font-size:10px;color:var(--muted2)">${stops} stops</span>`:''}
         ${c.rating?`<span style="font-size:10px;color:var(--gold2)">★ ${c.rating}/5</span>`:''}
-        ${c.mapsUrl?`<a href="${c.mapsUrl}" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--green3);text-decoration:none">🗺️ Map</a>`:''}
       </div>
     </div>
   </div>`;
 }
+
 function rCamp(){
   D=load();
   const camps=D.camps||[];
   const tab=window._campTab||'planning';
-  const planning=camps.filter(c=>c.recordType!=='spot'&&(c.status==='planning'||c.status==='wishlist'));
-  const past=camps.filter(c=>c.recordType!=='spot'&&c.status==='completed');
+  const tf=window._campTypeFilter||'all';
+  const allTrips=camps.filter(c=>c.recordType!=='spot');
+  const planning=allTrips.filter(c=>c.status==='planning'||c.status==='wishlist');
+  const past=allTrips.filter(c=>c.status==='completed');
   const spots=camps.filter(c=>c.recordType==='spot');
-  const tabs=`<div class="fb" style="margin-bottom:13px">
-    <button class="fc ${tab==='planning'?'on':''}" onclick="_campTab='planning';rCamp()">📋 Planning (${planning.length})</button>
-    <button class="fc ${tab==='past'?'on':''}" onclick="_campTab='past';rCamp()">✅ Past (${past.length})</button>
-    <button class="fc ${tab==='spots'?'on':''}" onclick="_campTab='spots';rCamp()">📍 Saved Spots (${spots.length})</button>
+  const filterFn=arr=>tf==='all'?arr:arr.filter(c=>(c.campType||'tent')===tf);
+
+  const tabBar=`<div class="fb" style="margin-bottom:10px">
+    <button class="fc ${tab==='planning'?'on':''}" onclick="window._campTab='planning';rCamp()">📋 Planning (${planning.length})</button>
+    <button class="fc ${tab==='past'?'on':''}" onclick="window._campTab='past';rCamp()">✅ Past (${past.length})</button>
+    <button class="fc ${tab==='spots'?'on':''}" onclick="window._campTab='spots';rCamp()">📍 Spots (${spots.length})</button>
   </div>`;
+
+  const typeBar=tab!=='spots'?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:13px">
+    ${[['all','All'],['tent','🏕️ Tent'],['backpacking','🎒 Pack'],['rv','🚐 RV'],['van','🚌 Van'],['trailer','🚛 Trailer'],['car','🚗 Car'],['dispersed','🌲 Dispersed'],['overlanding','🏔️ Overland'],['glamping','⛺ Glamp']].map(([v,l])=>`<button class="fc${tf===v?' on':''}" style="font-size:10px;padding:3px 9px" onclick="window._campTypeFilter='${v}';rCamp()">${l}</button>`).join('')}
+  </div>`:'';;
+
   let body='';
   if(tab==='planning'){
-    body=planning.length?`<div class="ga">${planning.map(campCard).join('')}</div>`:`<div class="empty"><div class="empty-icon">⛺</div><h3>No camps planned yet</h3><p>Add a wishlist or planning camp trip.</p><button class="tb-btn" onclick="openCamp()">+ Add Camp</button></div>`;
-  }else if(tab==='past'){
-    body=past.length?`<div class="ga">${past.map(campCard).join('')}</div>`:`<div class="empty"><div class="empty-icon">🌲</div><h3>No past camp trips</h3><p>Log a completed camping experience.</p><button class="tb-btn" onclick="openCamp()">+ Log Trip</button></div>`;
-  }else{
-    body=spots.length?`<div class="ga">${spots.map(campCard).join('')}</div>`:`<div class="empty"><div class="empty-icon">📍</div><h3>No saved spots yet</h3><p>Save campsites and locations for later.</p><button class="tb-btn" onclick="openCampSpot()">+ Add Spot</button></div>`;
+    const items=filterFn(planning);
+    body=items.length?`<div class="ga">${items.map(campCard).join('')}</div>`:`<div class="empty"><div class="empty-icon">🧭</div><h3>No adventures planned yet</h3><p>Add a wishlist trip or start planning one.</p><button class="tb-btn" onclick="openCamp()">+ Add Adventure</button></div>`;
+  } else if(tab==='past'){
+    const items=filterFn(past);
+    body=items.length?`<div class="ga">${items.map(campCard).join('')}</div>`:`<div class="empty"><div class="empty-icon">🌲</div><h3>No past adventures yet</h3><p>Log a completed outdoor trip.</p><button class="tb-btn" onclick="openCamp()">+ Log Trip</button></div>`;
+  } else {
+    body=spots.length?`<div class="ga">${spots.map(campCard).join('')}</div>`:`<div class="empty"><div class="empty-icon">📍</div><h3>No saved spots yet</h3><p>Save campgrounds and locations for later.</p><button class="tb-btn" onclick="openCampSpot()">+ Add Spot</button></div>`;
   }
-  document.getElementById('camp-in').innerHTML=tabs+body;
+  document.getElementById('camp-in').innerHTML=tabBar+typeBar+body;
 }
+
 function openCamp(rtype){
   D=load();ceid=null;
-  document.getElementById('cm-title').textContent='Add Camp Trip';
+  document.getElementById('cm-title').textContent='Add Adventure';
   document.getElementById('cm-save').textContent='Save';
-  ['c-name','c-loc','c-state','c-lat','c-lng','c-maps','c-web','c-yt','c-ig','c-thumb','c-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['c-name','c-loc','c-state','c-thumb','c-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   ['c-start','c-end'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('c-rating').value='';
-  document.getElementById('c-status').value='wishlist';
+  document.getElementById('c-status').value='planning';
   document.getElementById('c-rtype').value=rtype||'trip';
   document.getElementById('c-camptype').value='tent';
   openM('m-camp');
 }
 function openCampSpot(){openCamp('spot');}
+
 function openCampEdit(id){
   D=load();ceid=id;
   const c=(D.camps||[]).find(x=>x.id===id);if(!c)return;
-  document.getElementById('cm-title').textContent='Edit Camp';
+  document.getElementById('cm-title').textContent='Edit Adventure';
   document.getElementById('cm-save').textContent='Update';
   document.getElementById('c-name').value=c.name||'';
   document.getElementById('c-rtype').value=c.recordType||'trip';
-  document.getElementById('c-status').value=c.status||'wishlist';
+  document.getElementById('c-status').value=c.status||'planning';
   document.getElementById('c-start').value=c.startDate||'';
   document.getElementById('c-end').value=c.endDate||'';
   document.getElementById('c-loc').value=c.location||'';
   document.getElementById('c-state').value=c.state||'';
   document.getElementById('c-camptype').value=c.campType||'tent';
-  document.getElementById('c-lat').value=c.lat||'';
-  document.getElementById('c-lng').value=c.lng||'';
-  document.getElementById('c-maps').value=c.mapsUrl||'';
-  document.getElementById('c-web').value=c.website||'';
-  document.getElementById('c-yt').value=c.youtube||'';
-  document.getElementById('c-ig').value=c.instagram||'';
   document.getElementById('c-thumb').value=c.thumb||'';
-  document.getElementById('c-rating').value=c.rating||'';
   document.getElementById('c-notes').value=c.notes||'';
   openM('m-camp');
 }
+
 function saveCamp(){
   const name=document.getElementById('c-name').value.trim();
   if(!name){toast('⚠️ Name required');return;}
   D=load();if(!D.camps)D.camps=[];
-  const data={name,recordType:document.getElementById('c-rtype').value,status:document.getElementById('c-status').value,startDate:document.getElementById('c-start').value,endDate:document.getElementById('c-end').value,location:document.getElementById('c-loc').value.trim(),state:document.getElementById('c-state').value.trim(),campType:document.getElementById('c-camptype').value,lat:document.getElementById('c-lat').value.trim(),lng:document.getElementById('c-lng').value.trim(),mapsUrl:document.getElementById('c-maps').value.trim(),website:document.getElementById('c-web').value.trim(),youtube:document.getElementById('c-yt').value.trim(),instagram:document.getElementById('c-ig').value.trim(),thumb:document.getElementById('c-thumb').value.trim(),rating:document.getElementById('c-rating').value,notes:document.getElementById('c-notes').value.trim()};
-  if(ceid){const i=D.camps.findIndex(x=>x.id===ceid);if(i>=0){D.camps[i]={...D.camps[i],...data};toast('✅ Updated!');}}
-  else{D.camps.push({id:uid(),...data,checklist:[],addedAt:Date.now()});toast('⛺ Camp saved!');}
+  const rtype=document.getElementById('c-rtype').value;
+  const status=document.getElementById('c-status').value;
+  const data={name,recordType:rtype,status,
+    startDate:document.getElementById('c-start').value,
+    endDate:document.getElementById('c-end').value,
+    location:document.getElementById('c-loc').value.trim(),
+    state:document.getElementById('c-state').value.trim(),
+    campType:document.getElementById('c-camptype').value,
+    thumb:document.getElementById('c-thumb').value.trim(),
+    notes:document.getElementById('c-notes').value.trim()};
+  if(ceid){
+    const i=D.camps.findIndex(x=>x.id===ceid);
+    if(i>=0){D.camps[i]={...D.camps[i],...data};toast('✅ Updated!');}
+  } else {
+    D.camps.push({id:uid(),...data,stops:[],checklist:[],links:[],addedAt:Date.now()});
+    toast('🧭 Adventure saved!');
+  }
   localStorage.setItem('wf_camps',JSON.stringify(D.camps));
-  ceid=null;closeM('m-camp');rCamp();badges();
+  ceid=null;closeM('m-camp');
+  if(rtype==='spot') window._campTab='spots';
+  else if(status==='completed') window._campTab='past';
+  else window._campTab='planning';
+  rCamp();badges();
 }
+
 function delCamp(id){
-  if(!confirm('Delete this camp entry?'))return;
+  if(!confirm('Delete this adventure?'))return;
   D=load();D.camps=(D.camps||[]).filter(c=>c.id!==id);
   localStorage.setItem('wf_camps',JSON.stringify(D.camps));
   toast('🗑️ Deleted');rCamp();badges();
 }
+
+// ── Trip Detail ─────────────────────────────────────────
 function openCampD(id){
   D=load();
   const c=(D.camps||[]).find(x=>x.id===id);if(!c)return;
-  const icon=CAMP_TYPE_ICONS[c.campType]||'⛺';
+  window._campDid=id;
+  const tab=window._campDTab||'stops';
+  const typeInfo=ADV_TYPES[c.campType]||{icon:'🏕️',label:'Tent Camping'};
   const dur=c.startDate&&c.endDate?Math.round((new Date(c.endDate)-new Date(c.startDate))/86400000)+1:0;
-  const links=[[c.mapsUrl,'🗺️ Maps'],[c.website,'🌐 Website'],[c.youtube,'▶️ YouTube'],[c.instagram,'📸 Instagram']].filter(l=>l[0]);
+  const stops=c.stops||[];
+  const totalMiles=stops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  let tabBody='';
+  if(tab==='stops') tabBody=rAdvStopsTab(c);
+  else if(tab==='daily') tabBody=rAdvDailyTab(c);
+  else if(tab==='gear') tabBody=rAdvGearTab(c);
+  else if(tab==='links') tabBody=rAdvLinksTab(c);
+  else tabBody=rAdvSummaryTab(c);
   document.getElementById('camp-in').innerHTML=`
-    <button class="td-back" onclick="rCamp()">← Back</button>
-    <div style="margin-top:13px">
-      ${c.thumb?`<img src="${c.thumb}" style="width:100%;max-height:220px;object-fit:cover;border-radius:var(--r);margin-bottom:13px" onerror="this.style.display='none'"/>`:''}
+    <button class="td-back" onclick="rCamp()">← Adventures</button>
+    <div style="margin-top:10px">
+      ${c.thumb?`<img src="${c.thumb}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r);margin-bottom:12px" onerror="this.style.display='none'"/>`:''}
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px">
-        <div>
-          <h2 style="font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.3px;line-height:1.2">${c.name}</h2>
-          ${c.location?`<div style="font-size:12px;color:var(--muted);margin-top:3px">📍 ${c.location}${c.state?', '+c.state:''}</div>`:''}
+        <div style="flex:1;min-width:0">
+          <h2 style="font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.3px;line-height:1.2;margin-bottom:6px">${c.name}</h2>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+            <span class="camp-type-badge">${typeInfo.icon} ${typeInfo.label}</span>
+            <span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;${campStatusStyle(c.status)}">${c.status==='wishlist'?'♡ Wishlist':c.status==='planning'?'📋 Planning':'✅ Completed'}</span>
+            ${c.location?`<span style="font-size:11px;color:var(--muted)">📍 ${c.location}${c.state?', '+c.state:''}</span>`:''}
+          </div>
+          <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:12px">
+            ${c.startDate?`<span style="font-size:11px;color:var(--muted2)">📅 ${fd(c.startDate)}${c.endDate&&c.endDate!==c.startDate?' — '+fd(c.endDate):''}${dur?' · '+dur+'d':''}</span>`:''}
+            ${totalMiles>0?`<span style="font-size:11px;color:var(--muted2)">🛣️ ${totalMiles.toFixed(0)} mi · ${stops.length} stop${stops.length!==1?'s':''}</span>`:''}
+          </div>
         </div>
         <div style="display:flex;gap:5px;flex-shrink:0">
-          <button class="pbtn" onclick="openCampEdit('${c.id}')">✏️ Edit</button>
+          <button class="pbtn" onclick="openCampEdit('${c.id}')">✏️</button>
           <button class="pbtn del" onclick="delCamp('${c.id}')">🗑️</button>
         </div>
       </div>
-      <div class="g3" style="gap:10px;margin-bottom:13px">
-        <div class="sc" style="--accent:var(--green2)"><div class="si">${icon}</div><div class="sn" style="font-size:16px">${c.campType||'tent'}</div><div class="sl">Camp Type</div></div>
-        <div class="sc" style="--accent:var(--gold)"><div class="si">📅</div><div class="sn">${dur||'—'}</div><div class="sl">Days</div></div>
-        <div class="sc" style="--accent:var(--earth)"><div class="si">⭐</div><div class="sn">${c.rating||'—'}</div><div class="sl">Rating</div></div>
+      <div class="fb" style="margin-bottom:14px;flex-wrap:wrap;gap:4px">
+        <button class="fc ${tab==='stops'?'on':''}" onclick="window._campDTab='stops';openCampD('${c.id}')">📍 Stops${stops.length?' ('+stops.length+')':''}</button>
+        <button class="fc ${tab==='daily'?'on':''}" onclick="window._campDTab='daily';openCampD('${c.id}')">📅 Plans</button>
+        <button class="fc ${tab==='gear'?'on':''}" onclick="window._campDTab='gear';openCampD('${c.id}')">🎒 Gear</button>
+        <button class="fc ${tab==='links'?'on':''}" onclick="window._campDTab='links';openCampD('${c.id}')">🔗 Links</button>
+        <button class="fc ${tab==='summary'?'on':''}" onclick="window._campDTab='summary';openCampD('${c.id}')">📓 Summary</button>
       </div>
-      ${c.startDate?`<div class="card" style="margin-bottom:13px"><div class="ct">📅 Dates</div><div style="margin-top:8px;font-size:13px;color:var(--text2)">${fd(c.startDate)}${c.endDate&&c.endDate!==c.startDate?' — '+fd(c.endDate):''}${dur>1?' · '+dur+' days':''}</div></div>`:''}
-      ${c.lat&&c.lng?`<div class="card" style="margin-bottom:13px"><div class="ch"><div class="ct">📍 GPS</div>${c.mapsUrl?`<a href="${c.mapsUrl}" target="_blank" class="pbtn" style="text-decoration:none">Open Maps →</a>`:''}</div><div style="font-family:monospace;font-size:12px;color:var(--text2);margin-top:4px">${c.lat}, ${c.lng}</div></div>`:c.mapsUrl?`<div class="card" style="margin-bottom:13px"><a href="${c.mapsUrl}" target="_blank" style="font-size:12px;color:var(--green3);text-decoration:none;font-weight:500">🗺️ Open in Google Maps →</a></div>`:''}
-      ${links.length?`<div class="card" style="margin-bottom:13px"><div class="ct">Links</div><div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px">${links.map(([url,lbl])=>`<a href="${url}" target="_blank" class="pbtn" style="text-decoration:none">${lbl}</a>`).join('')}</div></div>`:''}
-      ${c.notes?`<div class="card" style="margin-bottom:13px"><div class="ct">Notes</div><div style="margin-top:8px;font-size:12px;color:var(--text2);line-height:1.7;white-space:pre-wrap">${c.notes}</div></div>`:''}
-      <div class="card">
-        <div class="ch"><div class="ct">Gear Checklist</div><button class="pbtn" onclick="addCampCheckItem('${c.id}')">+ Item</button></div>
-        ${(c.checklist&&c.checklist.length)?(c.checklist.map((item,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bdr)"><input type="checkbox" ${item.done?'checked':''} onchange="toggleCampCheck('${c.id}',${i})" style="accent-color:var(--green);flex-shrink:0"/><span style="font-size:12px;color:var(--text2);flex:1;${item.done?'text-decoration:line-through;opacity:.5':''}">${item.text}</span><button onclick="delCampCheckItem('${c.id}',${i})" style="background:none;border:none;font-size:11px;color:var(--muted2);cursor:pointer;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button></div>`).join('')):`<div style="font-size:12px;color:var(--muted2);padding:10px 0;text-align:center">No items — build your packing list</div>`}
-      </div>
+      ${tabBody}
     </div>`;
+}
+
+// ── Tab: Stops & Route ──────────────────────────────────
+function rAdvStopsTab(c){
+  const stops=c.stops||[];
+  const totalMiles=stops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  const totalNights=stops.reduce((s,st)=>{
+    if(st.arrivalDate&&st.departureDate)return s+Math.max(0,Math.round((new Date(st.departureDate)-new Date(st.arrivalDate))/86400000));
+    return s;
+  },0);
+  let html='';
+  if(stops.length>1){
+    html+=`<div style="background:var(--card2);border:1px solid var(--bdr);border-radius:var(--r);padding:10px 14px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:5px">🗺️ Route</div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:12px">
+        ${stops.map((st,i)=>`${i>0?'<span style="color:var(--muted)">→</span>':''}<span style="font-weight:500;color:var(--text2)">${st.name||'Stop '+(i+1)}</span>`).join('')}
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--muted)">${[totalMiles>0?totalMiles.toFixed(0)+' total miles':'',totalNights>0?totalNights+' nights':''].filter(Boolean).join(' · ')}</div>
+    </div>`;
+  }
+  stops.forEach((stop,i)=>{
+    const dur=stop.arrivalDate&&stop.departureDate?Math.max(0,Math.round((new Date(stop.departureDate)-new Date(stop.arrivalDate))/86400000)):0;
+    const nights=dur?dur+' night'+(dur!==1?'s':''):'';
+    const costTotal=stop.costPerNight&&dur?` · $${(parseFloat(stop.costPerNight)*dur).toFixed(0)} total`:'';
+    const hookups=stop.hookups||[];
+    const HI={'Electric 20A':'🔌','Electric 30A':'🔌','Electric 50A':'⚡','Water':'💧','Sewer':'🚿','WiFi':'📶','Pull-through':'↔️','Back-in':'↩️','Pet Friendly':'🐕'};
+    html+=`<div class="card" style="margin-bottom:10px">
+      <div class="ch">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text)">Stop ${i+1}${stop.name?' — '+stop.name:''}</div>
+          ${stop.arrivalDate?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${fd(stop.arrivalDate)}${stop.departureDate?' — '+fd(stop.departureDate):''}${nights?' · '+nights:''}</div>`:''}
+        </div>
+        <div style="display:flex;gap:4px;align-items:center;flex-shrink:0">
+          ${stop.booked?'<span style="font-size:9px;color:var(--green3);font-weight:600;background:rgba(74,114,89,.1);padding:2px 6px;border-radius:4px">✅ Booked</span>':''}
+          <button class="pbtn" onclick="openAdvStopModal('${c.id}',${i})">✏️</button>
+          <button class="pbtn del" onclick="delAdvStop('${c.id}',${i})" style="font-size:11px">×</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
+        ${stop.milesPrev?`<span style="font-size:11px;color:var(--muted2)">🛣️ ${stop.milesPrev} mi from prev</span>`:''}
+        ${stop.siteNumber?`<span style="font-size:11px;color:var(--muted2)">🏕️ Site ${stop.siteNumber}</span>`:''}
+        ${stop.confirmation?`<span style="font-size:11px;color:var(--muted2)">📋 ${stop.confirmation}</span>`:''}
+        ${stop.costPerNight?`<span style="font-size:11px;color:var(--muted2)">💰 $${stop.costPerNight}/night${costTotal}</span>`:''}
+        ${stop.maxRigLength?`<span style="font-size:11px;color:var(--muted2)">📏 Max ${stop.maxRigLength}ft</span>`:''}
+      </div>
+      ${hookups.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:7px">${hookups.map(h=>`<span style="font-size:10px;background:rgba(74,114,89,.1);color:var(--green3);border:1px solid rgba(74,114,89,.2);border-radius:100px;padding:2px 8px">${HI[h]||''} ${h}</span>`).join('')}</div>`:''}
+      ${(stop.lat&&stop.lng)||stop.mapsUrl?`<div style="margin-top:7px;display:flex;align-items:center;gap:8px">
+        ${stop.lat&&stop.lng?`<span style="font-family:monospace;font-size:11px;color:var(--muted2)">${stop.lat}, ${stop.lng}</span>`:''}
+        ${stop.mapsUrl?`<a href="${stop.mapsUrl}" target="_blank" class="pbtn" style="text-decoration:none;font-size:10px">🗺️ Map</a>`:''}
+        ${stop.website?`<a href="${stop.website}" target="_blank" class="pbtn" style="text-decoration:none;font-size:10px">🌐 Site</a>`:''}
+      </div>`:''}
+      ${stop.notes?`<div style="margin-top:8px;font-size:11px;color:var(--text2);line-height:1.6;background:var(--card2);padding:8px 10px;border-radius:6px">${stop.notes}</div>`:''}
+    </div>`;
+  });
+  if(!stops.length&&(c.lat&&c.lng||c.mapsUrl)){
+    html+=`<div class="card" style="margin-bottom:10px;border-color:var(--gold);border-style:dashed">
+      <div style="font-size:11px;color:var(--muted2);margin-bottom:6px">📍 Legacy location — add as a stop to use the new system</div>
+      ${c.lat&&c.lng?`<div style="font-family:monospace;font-size:12px;color:var(--text2)">${c.lat}, ${c.lng}</div>`:''}
+      ${c.mapsUrl?`<a href="${c.mapsUrl}" target="_blank" style="font-size:11px;color:var(--green3);text-decoration:none;margin-top:4px;display:block">🗺️ Open Maps</a>`:''}
+    </div>`;
+  }
+  html+=`<button class="tb-btn" style="width:100%;justify-content:center" onclick="openAdvStopModal('${c.id}',-1)">+ Add Stop</button>`;
+  return html;
+}
+
+// ── Tab: Daily Plans ─────────────────────────────────────
+function rAdvDailyTab(c){
+  const days=c.dailyPlans||[];
+  if(!days.length){
+    return`<div class="empty" style="padding:30px 0">
+      <div class="empty-icon">📅</div>
+      <h3>No days planned yet</h3>
+      <p>Plan activities for each day of the adventure.</p>
+      <button class="tb-btn" onclick="addAdvDay('${c.id}')">+ Add Day</button>
+    </div>`;
+  }
+  const html=days.map((day,di)=>`<div class="card" style="margin-bottom:10px">
+    <div class="ch">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--text)">Day ${di+1}${day.date?' — '+fd(day.date):''}</div>
+        ${day.location?`<div style="font-size:11px;color:var(--muted)">${day.location}</div>`:''}
+      </div>
+      <button class="pbtn del" onclick="delAdvDay('${c.id}',${di})" style="font-size:10px">×</button>
+    </div>
+    <div style="margin-top:6px">
+      ${(day.activities||[]).length?day.activities.map((act,ai)=>`<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--bdr)">
+        <input type="checkbox" ${act.done?'checked':''} style="width:13px;height:13px;flex-shrink:0;margin-top:2px;accent-color:var(--green)" onchange="toggleAdvActivity('${c.id}',${di},${ai},this.checked)"/>
+        <div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--text2);${act.done?'text-decoration:line-through;opacity:.5':''}">${act.name}</div></div>
+        ${act.link?`<a href="${act.link}" target="_blank" style="font-size:11px;color:var(--green3);text-decoration:none;flex-shrink:0">↗</a>`:''}
+      </div>`).join(''):`<div style="font-size:11px;color:var(--muted2);padding:6px 0">No activities yet</div>`}
+      <button style="background:none;border:none;color:var(--green3);font-size:11px;cursor:pointer;padding:6px 0;display:block;width:100%;text-align:left" onclick="addAdvActivity('${c.id}',${di})">+ Activity</button>
+    </div>
+  </div>`).join('');
+  return html+`<button class="tb-btn" style="width:100%;justify-content:center" onclick="addAdvDay('${c.id}')">+ Add Day</button>`;
+}
+function addAdvDay(cid){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  if(!c.dailyPlans)c.dailyPlans=[];
+  c.dailyPlans.push({date:'',location:'',activities:[]});
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  window._campDTab='daily';openCampD(cid);
+}
+function delAdvDay(cid,di){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  c.dailyPlans=(c.dailyPlans||[]).filter((_,i)=>i!==di);
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  window._campDTab='daily';openCampD(cid);
+}
+function addAdvActivity(cid,di){
+  const text=prompt('Activity name:');if(!text||!text.trim())return;
+  const link=prompt('Link (optional, Enter to skip):');
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c||!c.dailyPlans||!c.dailyPlans[di])return;
+  c.dailyPlans[di].activities=c.dailyPlans[di].activities||[];
+  c.dailyPlans[di].activities.push({name:text.trim(),link:(link||'').trim(),done:false});
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  window._campDTab='daily';openCampD(cid);
+}
+function toggleAdvActivity(cid,di,ai,val){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  if(c.dailyPlans&&c.dailyPlans[di]&&c.dailyPlans[di].activities[ai])
+    c.dailyPlans[di].activities[ai].done=val;
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+}
+
+// ── Tab: Gear & Packing ──────────────────────────────────
+function rAdvGearTab(c){
+  const items=c.checklist||[];
+  const done=items.filter(x=>x.done).length;
+  const pct=items.length?Math.round(done/items.length*100):0;
+  const hasTmpl=!!(ADV_GEAR[c.campType||'tent']);
+  return`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div>
+      <div style="font-size:13px;font-weight:600;color:var(--text)">${done}/${items.length} packed${pct===100&&items.length?' ✅':''}</div>
+      ${items.length?`<div style="background:var(--bdr2);border-radius:4px;height:5px;width:120px;overflow:hidden;margin-top:5px"><div style="height:100%;width:${pct}%;background:var(--green);border-radius:4px;transition:width .3s"></div></div>`:''}</div>
+    <div style="display:flex;gap:6px">
+      ${hasTmpl&&!items.length?`<button class="pbtn" onclick="loadAdvGearTemplate('${c.id}')">Load Template</button>`:''}
+      <button class="pbtn" onclick="addAdvGearItem('${c.id}')">+ Item</button>
+    </div>
+  </div>
+  ${items.length?items.map((item,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bdr)">
+    <input type="checkbox" ${item.done?'checked':''} onchange="toggleCampCheck('${c.id}',${i})" style="accent-color:var(--green);flex-shrink:0;cursor:pointer"/>
+    <span style="font-size:12px;color:var(--text2);flex:1;${item.done?'text-decoration:line-through;opacity:.5':''}">${item.text}</span>
+    <button onclick="delCampCheckItem('${c.id}',${i})" style="background:none;border:none;font-size:12px;color:var(--bdr2);cursor:pointer;padding:2px 5px" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--bdr2)'">×</button>
+  </div>`).join(''):(hasTmpl?`<div style="font-size:12px;color:var(--muted2);padding:16px 0;text-align:center">No gear list yet — <span style="color:var(--green3);cursor:pointer" onclick="loadAdvGearTemplate('${c.id}')">load template for ${(ADV_TYPES[c.campType||'tent']||{label:'this type'}).label}</span></div>`:`<div style="font-size:12px;color:var(--muted2);padding:16px 0;text-align:center">No items yet — build your packing list</div>`)}`;
+}
+function loadAdvGearTemplate(cid){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  const tmpl=ADV_GEAR[c.campType||'tent']||ADV_GEAR.tent;
+  c.checklist=[...(c.checklist||[]),...tmpl.map(text=>({text,done:false}))];
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  window._campDTab='gear';openCampD(cid);
+}
+function addAdvGearItem(cid){
+  const text=prompt('Gear item:');if(!text||!text.trim())return;
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  c.checklist=c.checklist||[];c.checklist.push({text:text.trim(),done:false});
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  window._campDTab='gear';openCampD(cid);
 }
 function toggleCampCheck(id,idx){
   D=load();const c=(D.camps||[]).find(x=>x.id===id);if(!c||!c.checklist)return;
   c.checklist[idx].done=!c.checklist[idx].done;
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));openCampD(id);
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
 }
-function addCampCheckItem(id){
-  const text=prompt('Checklist item:');if(!text)return;
-  D=load();const c=(D.camps||[]).find(x=>x.id===id);if(!c)return;
-  c.checklist=c.checklist||[];c.checklist.push({text,done:false});
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));openCampD(id);
-}
+function addCampCheckItem(id){addAdvGearItem(id);}
 function delCampCheckItem(id,idx){
   D=load();const c=(D.camps||[]).find(x=>x.id===id);if(!c)return;
   c.checklist=(c.checklist||[]).filter((_,i)=>i!==idx);
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));openCampD(id);
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  window._campDTab='gear';openCampD(id);
+}
+
+// ── Tab: Links & Resources ───────────────────────────────
+function rAdvLinksTab(c){
+  const links=c.links||[];
+  const legacyLinks=[];
+  if(c.website&&!links.find(l=>l.url===c.website))legacyLinks.push({url:c.website,title:'Website',type:'web'});
+  if(c.youtube&&!links.find(l=>l.url===c.youtube))legacyLinks.push({url:c.youtube,title:'YouTube',type:'youtube'});
+  if(c.instagram&&!links.find(l=>l.url===c.instagram))legacyLinks.push({url:c.instagram,title:'Instagram',type:'instagram'});
+  const allLinks=[...links,...legacyLinks];
+  return`<div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+    <button class="pbtn" onclick="addAdvLink('${c.id}')">+ Add Link</button>
+  </div>
+  ${allLinks.length?allLinks.map((lk,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bdr)">
+    <span style="font-size:18px;flex-shrink:0">${lk.type==='youtube'?'▶️':lk.type==='instagram'?'📸':'🔗'}</span>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:12px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lk.title||lk.url}</div>
+      ${lk.title?`<div style="font-size:10px;color:var(--muted2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lk.url}</div>`:''}
+    </div>
+    <div style="display:flex;gap:4px;flex-shrink:0">
+      <a href="${lk.url}" target="_blank" class="pbtn" style="text-decoration:none;font-size:10px">Open →</a>
+      ${i<links.length?`<button onclick="delAdvLink('${c.id}',${i})" class="pbtn del" style="font-size:10px;padding:3px 7px">×</button>`:''}
+    </div>
+  </div>`).join(''):`<div style="font-size:12px;color:var(--muted2);padding:20px 0;text-align:center">No links yet — add YouTube videos, websites, or Instagram</div>`}`;
+}
+function addAdvLink(cid){
+  const url=(prompt('URL (YouTube, Instagram, or website):')||'').trim();if(!url)return;
+  const title=(prompt('Label (optional):')||'').trim();
+  const type=url.includes('youtube')||url.includes('youtu.be')?'youtube':url.includes('instagram')?'instagram':'web';
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  if(!c.links)c.links=[];c.links.push({url,title,type});
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  window._campDTab='links';openCampD(cid);
+}
+function delAdvLink(cid,i){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  c.links=(c.links||[]).filter((_,j)=>j!==i);
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  window._campDTab='links';openCampD(cid);
+}
+
+// ── Tab: Summary / Memoirs ───────────────────────────────
+function rAdvSummaryTab(c){
+  const linked=(D.journal||[]).filter(j=>j.tripId===c.id);
+  return`<div class="card" style="margin-bottom:12px">
+    <div class="ch"><div class="ct">⭐ Rating</div></div>
+    <div style="display:flex;gap:6px;margin-top:8px;align-items:center">
+      ${[1,2,3,4,5].map(n=>`<span onclick="setAdvRating('${c.id}',${n})" style="font-size:24px;cursor:pointer;opacity:${(c.rating||0)>=n?1:.25};transition:opacity .15s;line-height:1">⭐</span>`).join('')}
+      ${c.rating?`<span style="font-size:13px;color:var(--text2);margin-left:4px">${c.rating}/5</span>`:''}
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;cursor:pointer;color:var(--text2)">
+      <input type="checkbox" ${c.wouldReturn?'checked':''} style="accent-color:var(--green);width:15px;height:15px" onchange="setAdvReturn('${c.id}',this.checked)"/>
+      <span>Would return ❤️</span>
+    </label>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="ch"><div class="ct">📝 Trip Notes</div></div>
+    <textarea class="ft" style="margin-top:8px;min-height:90px" placeholder="Highlights, what went well, what to change…" onblur="saveAdvNotes('${c.id}',this.value)">${c.summaryNotes||''}</textarea>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">📓 Memoirs (${linked.length})</div><button class="pbtn" onclick="openJournal()">+ Write</button></div>
+    ${linked.length?linked.map(j=>journalCard(j,false)).join(''):`<div style="font-size:12px;color:var(--muted2);padding:12px 0;text-align:center">No memoirs yet</div>`}
+  </div>`;
+}
+function setAdvRating(cid,n){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  c.rating=(c.rating===n?0:n);
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  window._campDTab='summary';openCampD(cid);
+}
+function setAdvReturn(cid,val){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  c.wouldReturn=val;localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+}
+function saveAdvNotes(cid,text){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  c.summaryNotes=text;localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+}
+
+// ── Stop Modal ───────────────────────────────────────────
+function openAdvStopModal(cid,idx){
+  D=load();
+  window._advStopEdit={cid,idx};
+  const stop=idx>=0?(((D.camps||[]).find(x=>x.id===cid)||{}).stops||[])[idx]||{}:{};
+  document.getElementById('advstop-title').textContent=idx<0?'Add Stop':'Edit Stop '+(idx+1);
+  document.getElementById('advstop-name').value=stop.name||'';
+  document.getElementById('advstop-arr').value=stop.arrivalDate||'';
+  document.getElementById('advstop-dep').value=stop.departureDate||'';
+  document.getElementById('advstop-miles').value=stop.milesPrev||'';
+  document.getElementById('advstop-site').value=stop.siteNumber||'';
+  document.getElementById('advstop-conf').value=stop.confirmation||'';
+  document.getElementById('advstop-cost').value=stop.costPerNight||'';
+  document.getElementById('advstop-lat').value=stop.lat||'';
+  document.getElementById('advstop-lng').value=stop.lng||'';
+  document.getElementById('advstop-maps').value=stop.mapsUrl||'';
+  document.getElementById('advstop-web').value=stop.website||'';
+  document.getElementById('advstop-rig').value=stop.maxRigLength||'';
+  document.getElementById('advstop-notes').value=stop.notes||'';
+  document.getElementById('advstop-booked').checked=!!stop.booked;
+  const hookups=stop.hookups||[];
+  document.querySelectorAll('#advstop-hookups .hookup-btn').forEach(btn=>{
+    const on=hookups.includes(btn.dataset.hookup);
+    btn.dataset.active=on?'1':'';
+    btn.style.background=on?'#4A7259':'var(--card2)';
+    btn.style.color=on?'#fff':'var(--text2)';
+    btn.style.borderColor=on?'#4A7259':'var(--bdr)';
+  });
+  openM('m-adv-stop');
+}
+function toggleHookupBtn(btn){
+  const on=btn.dataset.active==='1';
+  btn.dataset.active=on?'':'1';
+  btn.style.background=on?'var(--card2)':'#4A7259';
+  btn.style.color=on?'var(--text2)':'#fff';
+  btn.style.borderColor=on?'var(--bdr)':'#4A7259';
+}
+function saveAdvStop(){
+  const name=document.getElementById('advstop-name').value.trim();
+  if(!name){toast('⚠️ Location name required');return;}
+  const hookups=[];
+  document.querySelectorAll('#advstop-hookups .hookup-btn').forEach(btn=>{if(btn.dataset.active==='1')hookups.push(btn.dataset.hookup);});
+  const stop={
+    id:uid(),name,
+    arrivalDate:document.getElementById('advstop-arr').value,
+    departureDate:document.getElementById('advstop-dep').value,
+    milesPrev:document.getElementById('advstop-miles').value,
+    siteNumber:document.getElementById('advstop-site').value.trim(),
+    confirmation:document.getElementById('advstop-conf').value.trim(),
+    costPerNight:document.getElementById('advstop-cost').value,
+    lat:document.getElementById('advstop-lat').value.trim(),
+    lng:document.getElementById('advstop-lng').value.trim(),
+    mapsUrl:document.getElementById('advstop-maps').value.trim(),
+    website:document.getElementById('advstop-web').value.trim(),
+    maxRigLength:document.getElementById('advstop-rig').value,
+    notes:document.getElementById('advstop-notes').value.trim(),
+    booked:document.getElementById('advstop-booked').checked,
+    hookups,
+  };
+  D=load();
+  const {cid,idx}=window._advStopEdit||{};
+  const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  if(!c.stops)c.stops=[];
+  if(idx>=0&&idx<c.stops.length){stop.id=c.stops[idx].id||stop.id;c.stops[idx]=stop;}
+  else c.stops.push(stop);
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  closeM('m-adv-stop');window._campDTab='stops';openCampD(cid);toast('📍 Stop saved!');
+}
+function delAdvStop(cid,idx){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  c.stops=(c.stops||[]).filter((_,i)=>i!==idx);
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  window._campDTab='stops';openCampD(cid);toast('🗑️ Stop removed');
 }
 
 // ══════════════════════════════════════════════
