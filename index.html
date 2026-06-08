@@ -454,6 +454,25 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .hlt-val{font-size:13px;font-weight:600;color:var(--text);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hlt-lbl{font-size:10px;color:var(--muted);margin-top:2px;line-height:1.3}
 
+/* ── SUB-NAV (Trips) ── */
+.ni-sub{padding-left:22px;font-size:12px}
+.trips-subnav{overflow:hidden;max-height:300px;transition:max-height .25s ease}
+.trips-subnav.collapsed{max-height:0}
+.sb-sec-btn{cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;padding-right:9px}
+/* ── CAMP PAGE ── */
+.camp-card{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
+.camp-card:hover{border-color:var(--bdr2);box-shadow:var(--shadowm);transform:translateY(-1px)}
+.camp-thumb{width:100%;height:110px;object-fit:cover;background:linear-gradient(135deg,#2D4A35,#4A7259);display:flex;align-items:center;justify-content:center;font-size:36px;color:rgba(255,255,255,.3)}
+.camp-body{padding:11px}
+.camp-name{font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:3px;line-height:1.3}
+.camp-loc{font-size:11px;color:var(--muted)}
+.camp-type-badge{display:inline-flex;align-items:center;gap:3px;border-radius:4px;padding:2px 7px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;background:rgba(74,114,89,.12);color:var(--green3);border:1px solid rgba(74,114,89,.2)}
+/* ── WORK PAGE ── */
+.work-card{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:13px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow);margin-bottom:8px}
+.work-card:hover{border-color:var(--bdr2);box-shadow:var(--shadowm)}
+.expense-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bdr);font-size:12px}
+.expense-row:last-child{border-bottom:none}
+.expense-cat{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-radius:4px;background:rgba(74,126,186,.1);color:#4A7EBA;border:1px solid rgba(74,126,186,.2);white-space:nowrap;flex-shrink:0}
 /* ── MOBILE ── */
 #sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:90;-webkit-tap-highlight-color:transparent}
 #sb-menu{display:none;background:none;border:none;cursor:pointer;font-size:20px;color:var(--text);padding:5px 8px;border-radius:6px;line-height:1;flex-shrink:0;transition:background .15s}
@@ -608,8 +627,16 @@ input,textarea,select{font-family:inherit;font-weight:400}
     <button class="ni" data-p="places"><span class="ico">📍</span>Places<span class="nb" id="b-places">0</span></button>
     <button class="ni" data-p="wishlist"><span class="ico">♡</span>Wishlist<span class="nb" id="b-wish">0</span></button>
     <button class="ni" data-p="planner"><span class="ico">✦</span>AI Planner</button>
-    <div class="sb-sec">Trips</div>
-    <button class="ni" data-p="trips"><span class="ico">✈️</span>Trips<span class="nb" id="b-trips">0</span></button>
+    <div class="sb-sec sb-sec-btn" onclick="toggleTripsNav()">Trips <span id="trips-nav-arr" style="font-size:10px;transition:transform .2s;display:inline-block">▾</span></div>
+    <div id="trips-subnav" class="trips-subnav">
+      <button class="ni ni-sub" data-p="trips" data-tf="all" onclick="goTrips('all')"><span class="ico">✈️</span>All Trips<span class="nb" id="b-trips">0</span></button>
+      <button class="ni ni-sub" data-p="trips-intl" data-tf="international" onclick="goTrips('international')"><span class="ico">🌍</span>International</button>
+      <button class="ni ni-sub" data-p="trips-dom" data-tf="domestic" onclick="goTrips('domestic')"><span class="ico">🇺🇸</span>Domestic</button>
+      <button class="ni ni-sub" data-p="trips-road" data-tf="road_trip" onclick="goTrips('road_trip')"><span class="ico">🚗</span>Road Trips</button>
+      <button class="ni ni-sub" data-p="camp" onclick="go('camp')"><span class="ico">⛺</span>Camp<span class="nb" id="b-camp">0</span></button>
+      <button class="ni ni-sub" data-p="work" onclick="go('work')"><span class="ico">💼</span>Work<span class="nb" id="b-work">0</span></button>
+    </div>
+    <div class="sb-sec">Memoirs</div>
     <button class="ni" data-p="journal"><span class="ico">📓</span>Memoirs</button>
     <div class="sb-sec">Life</div>
     <button class="ni" data-p="abroad"><span class="ico">🌍</span>Living Abroad</button>
@@ -708,6 +735,8 @@ input,textarea,select{font-family:inherit;font-weight:400}
     </div>
 
     <div class="page" id="page-journal"><div id="jlist"></div></div>
+    <div class="page" id="page-camp"><div id="camp-in"></div></div>
+    <div class="page" id="page-work"><div id="work-in"></div></div>
     <div class="page" id="page-abroad"><div id="abroad-in"></div></div>
     <div class="page" id="page-path">
       <div class="path-filter-bar" id="path-filter-bar">
@@ -746,6 +775,14 @@ input,textarea,select{font-family:inherit;font-weight:400}
               <label class="fl">Travel Folder <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(Google Drive — optional)</span></label>
               <input class="fi" id="s-drive-folder" placeholder="https://drive.google.com/drive/folders/…" oninput="setSetting('driveFolderId',this.value)" autocomplete="off"/>
               <div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.6">Paste the URL of your <strong>09--TRAVEL & EXPERIENCES</strong> folder. The Drive picker will open there directly instead of My Drive root.</div>
+            </div>
+          </div>
+        </div>
+        <div class="ss"><h3>Work Trips</h3>
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div><div style="font-size:12px;font-weight:600;color:var(--text)">Include in app-wide stats</div><div style="font-size:10px;color:var(--muted);margin-top:2px">When ON, work trip countries count toward Dashboard totals and World Map</div></div>
+              <button id="s-work-stats-btn" onclick="setSetting('workIncludeInStats',!D.settings.workIncludeInStats);loadSettings();toast(D.settings.workIncludeInStats?'Work trips included in stats':'Work trips hidden from stats')" style="background:var(--card3);border:1px solid var(--bdr2);border-radius:100px;padding:4px 14px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .2s">OFF</button>
             </div>
           </div>
         </div>
@@ -1058,6 +1095,73 @@ input,textarea,select{font-family:inherit;font-weight:400}
   </div>
 </div>
 
+<!-- CAMP -->
+<div class="mo" id="m-camp">
+  <div class="modal">
+    <button class="mcl" onclick="closeM('m-camp')">✕</button>
+    <h2 id="cm-title">Add Camp Trip</h2>
+    <div class="fr">
+      <div class="fg"><label class="fl">Record Type</label><select class="fs" id="c-rtype"><option value="trip">🏕️ Trip (dated)</option><option value="spot">📍 Saved Spot</option></select></div>
+      <div class="fg"><label class="fl">Status</label><select class="fs" id="c-status"><option value="wishlist">♡ Wishlist</option><option value="planning">📋 Planning</option><option value="completed">✅ Completed</option></select></div>
+    </div>
+    <div class="fg"><label class="fl">Name *</label><input class="fi" id="c-name" placeholder="Big Basin Redwoods Weekend"/></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Start Date</label><input class="fi" id="c-start" type="date"/></div>
+      <div class="fg"><label class="fl">End Date</label><input class="fi" id="c-end" type="date"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Location Name</label><input class="fi" id="c-loc" placeholder="Big Basin State Park"/></div>
+      <div class="fg"><label class="fl">State</label><input class="fi" id="c-state" placeholder="CA"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Camp Type</label><select class="fs" id="c-camptype"><option value="tent">⛺ Tent</option><option value="dispersed">🌲 Dispersed</option><option value="rv">🚐 RV / Van</option><option value="cabin">🏠 Cabin</option><option value="backpacking">🎒 Backpacking</option></select></div>
+      <div class="fg"><label class="fl">Rating (1–5)</label><select class="fs" id="c-rating"><option value="">—</option><option value="5">⭐⭐⭐⭐⭐</option><option value="4">⭐⭐⭐⭐</option><option value="3">⭐⭐⭐</option><option value="2">⭐⭐</option><option value="1">⭐</option></select></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Latitude</label><input class="fi" id="c-lat" placeholder="37.1735"/></div>
+      <div class="fg"><label class="fl">Longitude</label><input class="fi" id="c-lng" placeholder="-122.2218"/></div>
+    </div>
+    <div class="fg"><label class="fl">Google Maps Link</label><input class="fi" id="c-maps" type="url" placeholder="https://maps.google.com/…"/></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Website</label><input class="fi" id="c-web" type="url" placeholder="https://…"/></div>
+      <div class="fg"><label class="fl">YouTube</label><input class="fi" id="c-yt" type="url" placeholder="https://youtube.com/…"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Instagram</label><input class="fi" id="c-ig" placeholder="@account or URL"/></div>
+      <div class="fg"><label class="fl">Thumbnail URL</label><input class="fi" id="c-thumb" type="url" placeholder="https://…/photo.jpg"/></div>
+    </div>
+    <div class="fg" style="margin-bottom:0"><label class="fl">Notes</label><textarea class="ft" id="c-notes" placeholder="Campsite tips, what to bring, memories…"></textarea></div>
+    <div class="fa"><button class="btn-s" onclick="closeM('m-camp')">Cancel</button><button class="btn-p" id="cm-save" onclick="saveCamp()">Save</button></div>
+  </div>
+</div>
+
+<!-- WORK -->
+<div class="mo" id="m-work">
+  <div class="modal">
+    <button class="mcl" onclick="closeM('m-work')">✕</button>
+    <h2 id="wk-title">New Work Trip</h2>
+    <div class="fg"><label class="fl">Trip Name *</label><input class="fi" id="wk-name" placeholder="Q2 Client Review — Chicago"/></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Client / Company</label><input class="fi" id="wk-client" placeholder="Acme Corp"/></div>
+      <div class="fg"><label class="fl">Destination City</label><input class="fi" id="wk-dest" placeholder="Chicago, IL"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Start Date</label><input class="fi" id="wk-start" type="date"/></div>
+      <div class="fg"><label class="fl">End Date</label><input class="fi" id="wk-end" type="date"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Transport</label><select class="fs" id="wk-transport"><option value="flight">✈️ Flight</option><option value="drive">🚗 Drive</option><option value="train">🚆 Train</option><option value="other">🚌 Other</option></select></div>
+      <div class="fg"><label class="fl">Status</label><select class="fs" id="wk-status"><option value="planning">✏️ Planning</option><option value="upcoming">📅 Upcoming</option><option value="past">✅ Past</option></select></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Hotel</label><input class="fi" id="wk-hotel" placeholder="Marriott Downtown"/></div>
+      <div class="fg"><label class="fl">Confirmation #</label><input class="fi" id="wk-conf" placeholder="ABC123"/></div>
+    </div>
+    <div class="fg" style="margin-bottom:0"><label class="fl">Notes / Purpose</label><textarea class="ft" id="wk-notes" placeholder="Client meeting, conference, training…"></textarea></div>
+    <div class="fa"><button class="btn-s" onclick="closeM('m-work')">Cancel</button><button class="btn-p" id="wk-save" onclick="saveWork()">Save Trip</button></div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -1065,7 +1169,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
 // DATA
 // ══════════════════════════════════════════════
 const K={places:'wf_places',trips:'wf_trips',wish:'wf_wishlist',journal:'wf_journal',settings:'wf_settings'};
-function load(){return{places:JSON.parse(localStorage.getItem(K.places)||'[]'),trips:JSON.parse(localStorage.getItem(K.trips)||'[]'),wish:JSON.parse(localStorage.getItem(K.wish)||'[]'),journal:JSON.parse(localStorage.getItem(K.journal)||'[]'),settings:JSON.parse(localStorage.getItem(K.settings)||'{"name":"Chris","partner":"Partner","homeCity":"","since":"2020"}'),abroad:JSON.parse(localStorage.getItem('wf_abroad')||'{"countries":[],"goals":[]}')}}
+function load(){return{places:JSON.parse(localStorage.getItem(K.places)||'[]'),trips:JSON.parse(localStorage.getItem(K.trips)||'[]'),wish:JSON.parse(localStorage.getItem(K.wish)||'[]'),journal:JSON.parse(localStorage.getItem(K.journal)||'[]'),settings:JSON.parse(localStorage.getItem(K.settings)||'{"name":"Chris","partner":"Partner","homeCity":"","since":"2020"}'),abroad:JSON.parse(localStorage.getItem('wf_abroad')||'{"countries":[],"goals":[]}'),camps:JSON.parse(localStorage.getItem('wf_camps')||'[]'),work:JSON.parse(localStorage.getItem('wf_work')||'[]')}}
 function save(k,d){localStorage.setItem(K[k],JSON.stringify(d));scheduledSync(k,d);}
 function saveAbroad(){localStorage.setItem('wf_abroad',JSON.stringify(D.abroad));}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
@@ -1447,12 +1551,14 @@ window.wfAuditLinks=function(){
 // ══════════════════════════════════════════════
 // ROUTING
 // ══════════════════════════════════════════════
-const TITLES={home:'Dashboard',map:'World Map',places:'Places',wishlist:'Wishlist',planner:'AI Planner',trips:'Trips',journal:'Memoirs',abroad:'Living Abroad',settings:'Settings',path:'The Path'};
-const ACTS={home:{l:'+ Add Place',f:'openPlace'},places:{l:'+ Add Place',f:'openPlace'},wishlist:{l:'+ Add to Wishlist',f:'openWish'},planner:{l:'',f:''},trips:{l:'+ New Trip',f:'openTrip'},journal:{l:'+ New Memoir',f:'openJournal'},map:{l:'+ Add Place',f:'openPlace'},abroad:{l:'',f:''},settings:{l:'',f:''},path:{l:'',f:''}};
+const TITLES={home:'Dashboard',map:'World Map',places:'Places',wishlist:'Wishlist',planner:'AI Planner',trips:'Trips',journal:'Memoirs',abroad:'Living Abroad',settings:'Settings',path:'The Path',camp:'Camp Trips',work:'Work Trips'};
+const ACTS={home:{l:'+ Add Place',f:'openPlace'},places:{l:'+ Add Place',f:'openPlace'},wishlist:{l:'+ Add to Wishlist',f:'openWish'},planner:{l:'',f:''},trips:{l:'+ New Trip',f:'openTrip'},journal:{l:'+ New Memoir',f:'openJournal'},map:{l:'+ Add Place',f:'openPlace'},abroad:{l:'',f:''},settings:{l:'',f:''},path:{l:'',f:''},camp:{l:'+ Add Camp',f:'openCamp'},work:{l:'+ New Work Trip',f:'openWork'}};
 let cur='home';
+let tripTypeFilter='all';
 function go(p){
   sbClose();
   if(p!==cur){const s=document.getElementById('srch');if(s)s.value='';pipeCloseDetail();}
+  if(p==='trips')tripTypeFilter='all';
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
   document.querySelectorAll('.ni').forEach(x=>x.classList.remove('on'));
   document.getElementById('page-'+p).classList.add('on');
@@ -1464,9 +1570,37 @@ function go(p){
   if(p==='home')rHome();if(p==='places')rPlaces();if(p==='wishlist')rWish();
   if(p==='planner')rPlanner();
   if(p==='trips')rTrips();if(p==='journal')rJournal();if(p==='map')rMap();
-  if(p==='abroad')rAbroad();if(p==='path')rPath();badges();
+  if(p==='abroad')rAbroad();if(p==='path')rPath();
+  if(p==='camp')rCamp();if(p==='work')rWork();
+  badges();
 }
-document.querySelectorAll('.ni').forEach(b=>b.addEventListener('click',()=>go(b.dataset.p)));
+function goTrips(type){
+  tripTypeFilter=type;
+  sbClose();
+  if('trips'!==cur){const s=document.getElementById('srch');if(s)s.value='';pipeCloseDetail();}
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.ni').forEach(x=>x.classList.remove('on'));
+  document.getElementById('page-trips').classList.add('on');
+  document.querySelector('[data-tf="'+type+'"]')?.classList.add('on');
+  const typeLabels={all:'Trips',international:'International Trips',domestic:'Domestic Trips',road_trip:'Road Trips'};
+  document.getElementById('tbt').textContent=typeLabels[type]||'Trips';
+  const a=ACTS['trips'],btn=document.getElementById('tba');
+  btn.textContent=a?.l||'';btn.style.display=a?.l?'flex':'none';
+  cur='trips';rTrips();badges();
+}
+function toggleTripsNav(){
+  const el=document.getElementById('trips-subnav');
+  const arr=document.getElementById('trips-nav-arr');
+  const col=el.classList.toggle('collapsed');
+  if(arr)arr.style.transform=col?'rotate(-90deg)':'rotate(0deg)';
+}
+function inferTripCat(t){
+  const dests=(t.destinations||[]).map(d=>normCountry(d)).filter(Boolean);
+  if(dests.some(d=>d&&d!=='United States'))return'international';
+  if((t.type||'').replace(/-/g,'_')==='road_trip'||(t.type||'')==='backpacking')return'road_trip';
+  return'domestic';
+}
+document.querySelectorAll('.ni:not(.ni-sub)').forEach(b=>b.addEventListener('click',()=>go(b.dataset.p)));
 function topAct(){const a=ACTS[cur];if(a?.f)window[a.f]?.()}
 
 // ══════════════════════════════════════════════
@@ -1501,7 +1635,7 @@ document.addEventListener('keydown',e=>{
 // ══════════════════════════════════════════════
 // BADGES
 // ══════════════════════════════════════════════
-function badges(){D=load();document.getElementById('b-places').textContent=D.places.length;document.getElementById('b-trips').textContent=D.trips.length;document.getElementById('b-wish').textContent=D.wish.filter(w=>!w.graduated).length}
+function badges(){D=load();document.getElementById('b-places').textContent=D.places.length;document.getElementById('b-trips').textContent=D.trips.length;document.getElementById('b-wish').textContent=D.wish.filter(w=>!w.graduated).length;const bc=document.getElementById('b-camp');if(bc)bc.textContent=(D.camps||[]).length;const bw=document.getElementById('b-work');if(bw)bw.textContent=(D.work||[]).length;}
 
 // ══════════════════════════════════════════════
 // HOME
@@ -2328,9 +2462,9 @@ function rTrips(){
   D=load();document.getElementById('trips-lv').style.display='block';document.getElementById('trip-dv').classList.remove('on');atid=null;
   document.querySelectorAll('#trips-lv .fc').forEach(b=>{const v=b.getAttribute('onclick')?.match(/'([^']+)'\)/)?.[1];if(v)b.classList.toggle('on',v===tf);});
   const tq=(document.getElementById('srch')?.value||'').toLowerCase();
-  let list=D.trips.filter(t=>{const mf=tf==='all'||(tf==='upcoming'&&(t.status==='upcoming'||t.status==='active'))||(tf==='past'&&t.status==='past')||(tf==='planning'&&t.status==='planning');const ms=!tq||t.name.toLowerCase().includes(tq)||(t.destinations||[]).some(d=>(d||'').toLowerCase().includes(tq))||(t.notes||'').toLowerCase().includes(tq);return mf&&ms}).sort((a,b)=>{if(a.startDate&&b.startDate)return new Date(b.startDate)-new Date(a.startDate);return b.addedAt-a.addedAt});
+  let list=D.trips.filter(t=>{const mf=tf==='all'||(tf==='upcoming'&&(t.status==='upcoming'||t.status==='active'))||(tf==='past'&&t.status==='past')||(tf==='planning'&&t.status==='planning');const mt=tripTypeFilter==='all'||inferTripCat(t)===tripTypeFilter;const ms=!tq||t.name.toLowerCase().includes(tq)||(t.destinations||[]).some(d=>(d||'').toLowerCase().includes(tq))||(t.notes||'').toLowerCase().includes(tq);return mf&&mt&&ms}).sort((a,b)=>{if(a.startDate&&b.startDate)return new Date(b.startDate)-new Date(a.startDate);return b.addedAt-a.addedAt});
   const g=document.getElementById('trips-grid');
-  if(!list.length){g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">✈️</div><h3>No trips yet</h3><p>Create a trip or import from a doc.</p><button class="tb-btn" onclick="openTrip()" style="margin-bottom:8px">+ New Trip</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;return}
+  if(!list.length){const typeLabels={international:'international',domestic:'domestic',road_trip:'road trip'};const tLabel=tripTypeFilter!=='all'?' '+typeLabels[tripTypeFilter]:'';g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">✈️</div><h3>No${tLabel} trips yet</h3><p>Create a trip or import from a doc.</p><button class="tb-btn" onclick="openTrip()" style="margin-bottom:8px">+ New Trip</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;return}
   g.innerHTML=list.map(t=>{
     const stops=t.itinerary.reduce((s,d)=>s+(d.stops||[]).length,0);
     const linked=D.places.filter(p=>(p.tripIds||[]).includes(t.id));
@@ -3854,6 +3988,329 @@ function rAbroad(){
 }
 
 // ══════════════════════════════════════════════
+// CAMP TRIPS
+// ══════════════════════════════════════════════
+const CAMP_TYPE_ICONS={tent:'⛺',dispersed:'🌲',rv:'🚐',cabin:'🏠',backpacking:'🎒'};
+let ceid=null;
+function campStatusStyle(s){const c={wishlist:'var(--gold)',planning:'#4A7EBA',completed:'var(--green)'}[s]||'var(--muted)';return`background:${c}18;color:${c};border:1px solid ${c}30`;}
+function campCard(c){
+  const icon=CAMP_TYPE_ICONS[c.campType]||'⛺';
+  const dur=c.startDate&&c.endDate?Math.round((new Date(c.endDate)-new Date(c.startDate))/86400000)+1:0;
+  const datesStr=c.startDate?fd(c.startDate)+(c.endDate&&c.endDate!==c.startDate?' — '+fd(c.endDate):''):'';
+  const thumb=c.thumb?`<img src="${c.thumb}" class="camp-thumb" onerror="this.style.display='none'">`:`<div class="camp-thumb">${icon}</div>`;
+  return`<div class="camp-card" onclick="openCampD('${c.id}')">
+    ${thumb}
+    <div class="camp-body">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:5px;margin-bottom:4px">
+        <div class="camp-name">${c.name}</div>
+        <span style="font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;flex-shrink:0;white-space:nowrap;${campStatusStyle(c.status)}">${c.status==='wishlist'?'♡':c.status==='planning'?'📋':'✅'} ${c.status.charAt(0).toUpperCase()+c.status.slice(1)}</span>
+      </div>
+      ${c.location?`<div class="camp-loc">📍 ${c.location}${c.state?', '+c.state:''}</div>`:''}
+      ${datesStr?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${datesStr}${dur>1?' · '+dur+'d':''}</div>`:''}
+      <div style="margin-top:7px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+        <span class="camp-type-badge">${icon} ${c.campType||'tent'}</span>
+        ${c.rating?`<span style="font-size:10px;color:var(--gold2)">★ ${c.rating}/5</span>`:''}
+        ${c.mapsUrl?`<a href="${c.mapsUrl}" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--green3);text-decoration:none">🗺️ Map</a>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+function rCamp(){
+  D=load();
+  const camps=D.camps||[];
+  const tab=window._campTab||'planning';
+  const planning=camps.filter(c=>c.recordType!=='spot'&&(c.status==='planning'||c.status==='wishlist'));
+  const past=camps.filter(c=>c.recordType!=='spot'&&c.status==='completed');
+  const spots=camps.filter(c=>c.recordType==='spot');
+  const tabs=`<div class="fb" style="margin-bottom:13px">
+    <button class="fc ${tab==='planning'?'on':''}" onclick="_campTab='planning';rCamp()">📋 Planning (${planning.length})</button>
+    <button class="fc ${tab==='past'?'on':''}" onclick="_campTab='past';rCamp()">✅ Past (${past.length})</button>
+    <button class="fc ${tab==='spots'?'on':''}" onclick="_campTab='spots';rCamp()">📍 Saved Spots (${spots.length})</button>
+  </div>`;
+  let body='';
+  if(tab==='planning'){
+    body=planning.length?`<div class="ga">${planning.map(campCard).join('')}</div>`:`<div class="empty"><div class="empty-icon">⛺</div><h3>No camps planned yet</h3><p>Add a wishlist or planning camp trip.</p><button class="tb-btn" onclick="openCamp()">+ Add Camp</button></div>`;
+  }else if(tab==='past'){
+    body=past.length?`<div class="ga">${past.map(campCard).join('')}</div>`:`<div class="empty"><div class="empty-icon">🌲</div><h3>No past camp trips</h3><p>Log a completed camping experience.</p><button class="tb-btn" onclick="openCamp()">+ Log Trip</button></div>`;
+  }else{
+    body=spots.length?`<div class="ga">${spots.map(campCard).join('')}</div>`:`<div class="empty"><div class="empty-icon">📍</div><h3>No saved spots yet</h3><p>Save campsites and locations for later.</p><button class="tb-btn" onclick="openCampSpot()">+ Add Spot</button></div>`;
+  }
+  document.getElementById('camp-in').innerHTML=tabs+body;
+}
+function openCamp(rtype){
+  D=load();ceid=null;
+  document.getElementById('cm-title').textContent='Add Camp Trip';
+  document.getElementById('cm-save').textContent='Save';
+  ['c-name','c-loc','c-state','c-lat','c-lng','c-maps','c-web','c-yt','c-ig','c-thumb','c-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['c-start','c-end'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('c-rating').value='';
+  document.getElementById('c-status').value='wishlist';
+  document.getElementById('c-rtype').value=rtype||'trip';
+  document.getElementById('c-camptype').value='tent';
+  openM('m-camp');
+}
+function openCampSpot(){openCamp('spot');}
+function openCampEdit(id){
+  D=load();ceid=id;
+  const c=(D.camps||[]).find(x=>x.id===id);if(!c)return;
+  document.getElementById('cm-title').textContent='Edit Camp';
+  document.getElementById('cm-save').textContent='Update';
+  document.getElementById('c-name').value=c.name||'';
+  document.getElementById('c-rtype').value=c.recordType||'trip';
+  document.getElementById('c-status').value=c.status||'wishlist';
+  document.getElementById('c-start').value=c.startDate||'';
+  document.getElementById('c-end').value=c.endDate||'';
+  document.getElementById('c-loc').value=c.location||'';
+  document.getElementById('c-state').value=c.state||'';
+  document.getElementById('c-camptype').value=c.campType||'tent';
+  document.getElementById('c-lat').value=c.lat||'';
+  document.getElementById('c-lng').value=c.lng||'';
+  document.getElementById('c-maps').value=c.mapsUrl||'';
+  document.getElementById('c-web').value=c.website||'';
+  document.getElementById('c-yt').value=c.youtube||'';
+  document.getElementById('c-ig').value=c.instagram||'';
+  document.getElementById('c-thumb').value=c.thumb||'';
+  document.getElementById('c-rating').value=c.rating||'';
+  document.getElementById('c-notes').value=c.notes||'';
+  openM('m-camp');
+}
+function saveCamp(){
+  const name=document.getElementById('c-name').value.trim();
+  if(!name){toast('⚠️ Name required');return;}
+  D=load();if(!D.camps)D.camps=[];
+  const data={name,recordType:document.getElementById('c-rtype').value,status:document.getElementById('c-status').value,startDate:document.getElementById('c-start').value,endDate:document.getElementById('c-end').value,location:document.getElementById('c-loc').value.trim(),state:document.getElementById('c-state').value.trim(),campType:document.getElementById('c-camptype').value,lat:document.getElementById('c-lat').value.trim(),lng:document.getElementById('c-lng').value.trim(),mapsUrl:document.getElementById('c-maps').value.trim(),website:document.getElementById('c-web').value.trim(),youtube:document.getElementById('c-yt').value.trim(),instagram:document.getElementById('c-ig').value.trim(),thumb:document.getElementById('c-thumb').value.trim(),rating:document.getElementById('c-rating').value,notes:document.getElementById('c-notes').value.trim()};
+  if(ceid){const i=D.camps.findIndex(x=>x.id===ceid);if(i>=0){D.camps[i]={...D.camps[i],...data};toast('✅ Updated!');}}
+  else{D.camps.push({id:uid(),...data,checklist:[],addedAt:Date.now()});toast('⛺ Camp saved!');}
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  ceid=null;closeM('m-camp');rCamp();badges();
+}
+function delCamp(id){
+  if(!confirm('Delete this camp entry?'))return;
+  D=load();D.camps=(D.camps||[]).filter(c=>c.id!==id);
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  toast('🗑️ Deleted');rCamp();badges();
+}
+function openCampD(id){
+  D=load();
+  const c=(D.camps||[]).find(x=>x.id===id);if(!c)return;
+  const icon=CAMP_TYPE_ICONS[c.campType]||'⛺';
+  const dur=c.startDate&&c.endDate?Math.round((new Date(c.endDate)-new Date(c.startDate))/86400000)+1:0;
+  const links=[[c.mapsUrl,'🗺️ Maps'],[c.website,'🌐 Website'],[c.youtube,'▶️ YouTube'],[c.instagram,'📸 Instagram']].filter(l=>l[0]);
+  document.getElementById('camp-in').innerHTML=`
+    <button class="td-back" onclick="rCamp()">← Back</button>
+    <div style="margin-top:13px">
+      ${c.thumb?`<img src="${c.thumb}" style="width:100%;max-height:220px;object-fit:cover;border-radius:var(--r);margin-bottom:13px" onerror="this.style.display='none'"/>`:''}
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px">
+        <div>
+          <h2 style="font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.3px;line-height:1.2">${c.name}</h2>
+          ${c.location?`<div style="font-size:12px;color:var(--muted);margin-top:3px">📍 ${c.location}${c.state?', '+c.state:''}</div>`:''}
+        </div>
+        <div style="display:flex;gap:5px;flex-shrink:0">
+          <button class="pbtn" onclick="openCampEdit('${c.id}')">✏️ Edit</button>
+          <button class="pbtn del" onclick="delCamp('${c.id}')">🗑️</button>
+        </div>
+      </div>
+      <div class="g3" style="gap:10px;margin-bottom:13px">
+        <div class="sc" style="--accent:var(--green2)"><div class="si">${icon}</div><div class="sn" style="font-size:16px">${c.campType||'tent'}</div><div class="sl">Camp Type</div></div>
+        <div class="sc" style="--accent:var(--gold)"><div class="si">📅</div><div class="sn">${dur||'—'}</div><div class="sl">Days</div></div>
+        <div class="sc" style="--accent:var(--earth)"><div class="si">⭐</div><div class="sn">${c.rating||'—'}</div><div class="sl">Rating</div></div>
+      </div>
+      ${c.startDate?`<div class="card" style="margin-bottom:13px"><div class="ct">📅 Dates</div><div style="margin-top:8px;font-size:13px;color:var(--text2)">${fd(c.startDate)}${c.endDate&&c.endDate!==c.startDate?' — '+fd(c.endDate):''}${dur>1?' · '+dur+' days':''}</div></div>`:''}
+      ${c.lat&&c.lng?`<div class="card" style="margin-bottom:13px"><div class="ch"><div class="ct">📍 GPS</div>${c.mapsUrl?`<a href="${c.mapsUrl}" target="_blank" class="pbtn" style="text-decoration:none">Open Maps →</a>`:''}</div><div style="font-family:monospace;font-size:12px;color:var(--text2);margin-top:4px">${c.lat}, ${c.lng}</div></div>`:c.mapsUrl?`<div class="card" style="margin-bottom:13px"><a href="${c.mapsUrl}" target="_blank" style="font-size:12px;color:var(--green3);text-decoration:none;font-weight:500">🗺️ Open in Google Maps →</a></div>`:''}
+      ${links.length?`<div class="card" style="margin-bottom:13px"><div class="ct">Links</div><div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px">${links.map(([url,lbl])=>`<a href="${url}" target="_blank" class="pbtn" style="text-decoration:none">${lbl}</a>`).join('')}</div></div>`:''}
+      ${c.notes?`<div class="card" style="margin-bottom:13px"><div class="ct">Notes</div><div style="margin-top:8px;font-size:12px;color:var(--text2);line-height:1.7;white-space:pre-wrap">${c.notes}</div></div>`:''}
+      <div class="card">
+        <div class="ch"><div class="ct">Gear Checklist</div><button class="pbtn" onclick="addCampCheckItem('${c.id}')">+ Item</button></div>
+        ${(c.checklist&&c.checklist.length)?(c.checklist.map((item,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bdr)"><input type="checkbox" ${item.done?'checked':''} onchange="toggleCampCheck('${c.id}',${i})" style="accent-color:var(--green);flex-shrink:0"/><span style="font-size:12px;color:var(--text2);flex:1;${item.done?'text-decoration:line-through;opacity:.5':''}">${item.text}</span><button onclick="delCampCheckItem('${c.id}',${i})" style="background:none;border:none;font-size:11px;color:var(--muted2);cursor:pointer;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button></div>`).join('')):`<div style="font-size:12px;color:var(--muted2);padding:10px 0;text-align:center">No items — build your packing list</div>`}
+      </div>
+    </div>`;
+}
+function toggleCampCheck(id,idx){
+  D=load();const c=(D.camps||[]).find(x=>x.id===id);if(!c||!c.checklist)return;
+  c.checklist[idx].done=!c.checklist[idx].done;
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));openCampD(id);
+}
+function addCampCheckItem(id){
+  const text=prompt('Checklist item:');if(!text)return;
+  D=load();const c=(D.camps||[]).find(x=>x.id===id);if(!c)return;
+  c.checklist=c.checklist||[];c.checklist.push({text,done:false});
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));openCampD(id);
+}
+function delCampCheckItem(id,idx){
+  D=load();const c=(D.camps||[]).find(x=>x.id===id);if(!c)return;
+  c.checklist=(c.checklist||[]).filter((_,i)=>i!==idx);
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));openCampD(id);
+}
+
+// ══════════════════════════════════════════════
+// WORK TRIPS
+// ══════════════════════════════════════════════
+let wkeid=null;
+const EXPENSE_CATS={flights:'Flights',hotel:'Hotel',meals:'Meals',transport:'Transport',mileage:'Mileage',other:'Other'};
+const IRS_RATE=0.67;
+function workCard(w){
+  const totalExp=(w.expenses||[]).reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+  const dur=w.startDate&&w.endDate?Math.round((new Date(w.endDate)-new Date(w.startDate))/86400000)+1:0;
+  const sc={planning:'#4A7EBA',upcoming:'var(--gold)',past:'var(--green)'}[w.status]||'var(--muted)';
+  return`<div class="work-card" onclick="openWorkD('${w.id}')">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${w.name}</div>
+        ${w.client?`<div style="font-size:11px;color:var(--muted);margin-top:1px">🏢 ${w.client}</div>`:''}
+      </div>
+      <span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:4px;background:${sc}18;color:${sc};border:1px solid ${sc}30;flex-shrink:0;white-space:nowrap">${w.status.charAt(0).toUpperCase()+w.status.slice(1)}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:7px;font-size:11px;color:var(--muted2)">
+      ${w.destination?`<span>📍 ${w.destination}</span>`:''}
+      ${w.startDate?`<span>📅 ${fd(w.startDate)}${dur>1?' · '+dur+'d':''}</span>`:''}
+      ${totalExp?`<span style="color:var(--earth);font-weight:500">$${totalExp.toFixed(0)}</span>`:''}
+    </div>
+  </div>`;
+}
+function rWork(){
+  D=load();
+  const work=D.work||[];
+  const tab=window._workTab||'upcoming';
+  const upcoming=work.filter(w=>w.status==='upcoming'||w.status==='planning').sort((a,b)=>new Date(a.startDate||0)-new Date(b.startDate||0));
+  const past=work.filter(w=>w.status==='past').sort((a,b)=>new Date(b.startDate||0)-new Date(a.startDate||0));
+  const allExp=work.flatMap(w=>w.expenses||[]);
+  const totalSpent=allExp.reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+  const includeInStats=D.settings.workIncludeInStats||false;
+  const toggle=`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:12px 16px;margin-bottom:13px;box-shadow:var(--shadow)">
+    <div><div style="font-size:12px;font-weight:600;color:var(--text)">Include in app-wide stats</div><div style="font-size:10px;color:var(--muted);margin-top:1px">Work trips count toward Dashboard, Map, and country totals</div></div>
+    <button onclick="setSetting('workIncludeInStats',!D.settings.workIncludeInStats);D=load();rWork();toast(D.settings.workIncludeInStats?'Work trips included in stats':'Work trips hidden from stats')" style="background:${includeInStats?'var(--green)':'var(--card3)'};border:1px solid var(--bdr2);border-radius:100px;padding:3px 12px;font-size:11px;font-weight:600;color:${includeInStats?'#fff':'var(--text2)'};cursor:pointer;transition:all .2s">${includeInStats?'ON':'OFF'}</button>
+  </div>`;
+  const tabs=`<div class="fb" style="margin-bottom:13px">
+    <button class="fc ${tab==='upcoming'?'on':''}" onclick="_workTab='upcoming';rWork()">📅 Upcoming (${upcoming.length})</button>
+    <button class="fc ${tab==='past'?'on':''}" onclick="_workTab='past';rWork()">✅ Past (${past.length})</button>
+    <button class="fc ${tab==='expenses'?'on':''}" onclick="_workTab='expenses';rWork()">💰 Expenses${totalSpent?' ($'+totalSpent.toFixed(0)+')':''}</button>
+  </div>`;
+  let body='';
+  if(tab==='upcoming'){
+    body=upcoming.length?upcoming.map(workCard).join(''):`<div class="empty"><div class="empty-icon">💼</div><h3>No upcoming work trips</h3><p>Log planned business travel here.</p><button class="tb-btn" onclick="openWork()">+ Add Trip</button></div>`;
+  }else if(tab==='past'){
+    body=past.length?past.map(workCard).join(''):`<div class="empty"><div class="empty-icon">✅</div><h3>No past work trips logged</h3><p>Track completed business travel and expenses.</p><button class="tb-btn" onclick="openWork()">+ Add Trip</button></div>`;
+  }else{
+    body=buildWorkExpenses(work);
+  }
+  document.getElementById('work-in').innerHTML=toggle+tabs+body;
+}
+function buildWorkExpenses(work){
+  const allExp=work.flatMap(w=>w.expenses||[]);
+  if(!allExp.length)return`<div class="empty"><div class="empty-icon">💰</div><h3>No expenses logged</h3><p>Open a past work trip to add expenses.</p></div>`;
+  const catTotals={};
+  const grand=allExp.reduce((s,e)=>{const cat=e.category||'other';catTotals[cat]=(catTotals[cat]||0)+(parseFloat(e.amount)||0);return s+(parseFloat(e.amount)||0);},0);
+  const summary=`<div class="card" style="margin-bottom:13px">
+    <div class="ch"><div><div class="ct">💰 All Expenses</div><div class="cs">${allExp.length} items</div></div><div style="font-size:20px;font-weight:700;color:var(--text)">$${grand.toFixed(2)}</div></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      ${Object.entries(catTotals).map(([cat,amt])=>`<div style="background:var(--card2);border:1px solid var(--bdr);border-radius:7px;padding:8px 10px"><div style="font-size:9px;font-weight:600;color:#4A7EBA;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">${EXPENSE_CATS[cat]||cat}</div><div style="font-size:14px;font-weight:700;color:var(--text)">$${amt.toFixed(0)}</div></div>`).join('')}
+    </div>
+  </div>`;
+  const byTrip=work.filter(w=>(w.expenses||[]).length).map(w=>{const tot=(w.expenses||[]).reduce((s,e)=>s+(parseFloat(e.amount)||0),0);return`<div class="card" style="margin-bottom:10px"><div class="ch"><div><div class="ct">${w.name}</div><div class="cs">${w.destination||''}${w.startDate?' · '+fd(w.startDate):''}</div></div><strong style="font-size:14px;color:var(--text)">$${tot.toFixed(2)}</strong></div>${(w.expenses||[]).map(e=>`<div class="expense-row"><span class="expense-cat">${EXPENSE_CATS[e.category]||e.category}</span><span style="flex:1;color:var(--text2)">${e.description||'—'}</span><span style="font-size:11px;color:var(--muted);white-space:nowrap">${e.date?fd(e.date):''}</span><span style="font-size:13px;font-weight:600;color:var(--text);min-width:60px;text-align:right">$${parseFloat(e.amount||0).toFixed(2)}</span></div>`).join('')}</div>`;}).join('');
+  return summary+(byTrip||'');
+}
+function openWork(){
+  D=load();wkeid=null;
+  document.getElementById('wk-title').textContent='New Work Trip';
+  document.getElementById('wk-save').textContent='Save Trip';
+  ['wk-name','wk-client','wk-dest','wk-hotel','wk-conf','wk-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['wk-start','wk-end'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('wk-status').value='planning';
+  document.getElementById('wk-transport').value='flight';
+  openM('m-work');
+}
+function openWorkEdit(id){
+  D=load();wkeid=id;
+  const w=(D.work||[]).find(x=>x.id===id);if(!w)return;
+  document.getElementById('wk-title').textContent='Edit Work Trip';
+  document.getElementById('wk-save').textContent='Update Trip';
+  document.getElementById('wk-name').value=w.name||'';
+  document.getElementById('wk-client').value=w.client||'';
+  document.getElementById('wk-dest').value=w.destination||'';
+  document.getElementById('wk-start').value=w.startDate||'';
+  document.getElementById('wk-end').value=w.endDate||'';
+  document.getElementById('wk-status').value=w.status||'planning';
+  document.getElementById('wk-transport').value=w.transport||'flight';
+  document.getElementById('wk-hotel').value=w.hotel||'';
+  document.getElementById('wk-conf').value=w.confirmation||'';
+  document.getElementById('wk-notes').value=w.notes||'';
+  openM('m-work');
+}
+function saveWork(){
+  const name=document.getElementById('wk-name').value.trim();
+  if(!name){toast('⚠️ Name required');return;}
+  D=load();if(!D.work)D.work=[];
+  const data={name,client:document.getElementById('wk-client').value.trim(),destination:document.getElementById('wk-dest').value.trim(),startDate:document.getElementById('wk-start').value,endDate:document.getElementById('wk-end').value,status:document.getElementById('wk-status').value,transport:document.getElementById('wk-transport').value,hotel:document.getElementById('wk-hotel').value.trim(),confirmation:document.getElementById('wk-conf').value.trim(),notes:document.getElementById('wk-notes').value.trim()};
+  if(wkeid){const i=D.work.findIndex(x=>x.id===wkeid);if(i>=0){D.work[i]={...D.work[i],...data};toast('✅ Updated!');}}
+  else{D.work.push({id:uid(),...data,expenses:[],addedAt:Date.now()});toast('💼 Trip saved!');}
+  localStorage.setItem('wf_work',JSON.stringify(D.work));
+  wkeid=null;closeM('m-work');rWork();badges();
+}
+function delWork(id){
+  if(!confirm('Delete this work trip? Expenses will also be deleted.'))return;
+  D=load();D.work=(D.work||[]).filter(w=>w.id!==id);
+  localStorage.setItem('wf_work',JSON.stringify(D.work));
+  toast('🗑️ Deleted');rWork();badges();
+}
+function openWorkD(id){
+  D=load();
+  const w=(D.work||[]).find(x=>x.id===id);if(!w)return;
+  const dur=w.startDate&&w.endDate?Math.round((new Date(w.endDate)-new Date(w.startDate))/86400000)+1:0;
+  const totalExp=(w.expenses||[]).reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+  const mileageAmt=(w.expenses||[]).filter(e=>e.category==='mileage').reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+  document.getElementById('work-in').innerHTML=`
+    <button class="td-back" onclick="rWork()">← Back</button>
+    <div style="margin-top:13px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px">
+        <div>
+          <h2 style="font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.3px">${w.name}</h2>
+          ${w.client?`<div style="font-size:12px;color:var(--muted);margin-top:3px">🏢 ${w.client}</div>`:''}
+        </div>
+        <div style="display:flex;gap:5px">
+          <button class="pbtn" onclick="openWorkEdit('${w.id}')">✏️ Edit</button>
+          <button class="pbtn del" onclick="delWork('${w.id}')">🗑️</button>
+        </div>
+      </div>
+      <div class="g4" style="gap:10px;margin-bottom:13px">
+        <div class="sc" style="--accent:#4A7EBA"><div class="si">📍</div><div class="sn" style="font-size:13px">${w.destination||'—'}</div><div class="sl">Destination</div></div>
+        <div class="sc" style="--accent:var(--green)"><div class="si">📅</div><div class="sn">${dur||'—'}</div><div class="sl">Days</div></div>
+        <div class="sc" style="--accent:var(--earth)"><div class="si">💰</div><div class="sn">$${totalExp.toFixed(0)}</div><div class="sl">Expenses</div></div>
+        <div class="sc" style="--accent:var(--gold)"><div class="si">✈️</div><div class="sn" style="font-size:13px">${w.transport||'—'}</div><div class="sl">Transport</div></div>
+      </div>
+      ${w.startDate?`<div class="card" style="margin-bottom:13px"><div class="ch"><div class="ct">Trip Details</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;margin-top:4px"><div><div style="color:var(--muted);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Dates</div><div style="color:var(--text2)">${fd(w.startDate)}${w.endDate&&w.endDate!==w.startDate?' — '+fd(w.endDate):''}</div></div>${w.hotel?`<div><div style="color:var(--muted);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Hotel</div><div style="color:var(--text2)">${w.hotel}${w.confirmation?' · '+w.confirmation:''}</div></div>`:''}</div></div>`:''}
+      ${w.notes?`<div class="card" style="margin-bottom:13px"><div class="ct">Notes</div><div style="margin-top:8px;font-size:12px;color:var(--text2);line-height:1.7;white-space:pre-wrap">${w.notes}</div></div>`:''}
+      <div class="card">
+        <div class="ch">
+          <div><div class="ct">💰 Expenses</div><div class="cs">Total: $${totalExp.toFixed(2)}</div></div>
+          <button class="pbtn" onclick="openAddExpense('${w.id}')">+ Add</button>
+        </div>
+        ${(w.expenses||[]).length?((w.expenses||[]).sort((a,b)=>new Date(a.date||0)-new Date(b.date||0)).map((e,i)=>`<div class="expense-row"><span class="expense-cat">${EXPENSE_CATS[e.category]||e.category}</span><span style="flex:1;color:var(--text2)">${e.description||'—'}</span><span style="font-size:11px;color:var(--muted);white-space:nowrap">${e.date?fd(e.date):''}</span><span style="font-size:13px;font-weight:600;color:var(--text);min-width:60px;text-align:right">$${parseFloat(e.amount||0).toFixed(2)}</span><button onclick="delExpense('${w.id}',${i})" style="background:none;border:none;font-size:13px;color:var(--muted2);cursor:pointer;padding:0 2px;transition:color .15s;flex-shrink:0" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button></div>`).join('')):`<div style="font-size:12px;color:var(--muted2);padding:10px 0;text-align:center">No expenses yet — tap + Add to log</div>`}
+        ${mileageAmt?`<div style="margin-top:8px;font-size:11px;color:var(--muted);padding:8px;background:var(--card2);border-radius:6px;line-height:1.5">IRS mileage rate (${IRS_RATE}/mi): ${mileageAmt} mi = <strong style="color:var(--text)">$${(mileageAmt*IRS_RATE).toFixed(2)} reimbursable</strong></div>`:''}
+      </div>
+    </div>`;
+}
+function openAddExpense(wid){
+  const cats=Object.keys(EXPENSE_CATS).join(' / ');
+  const cat=prompt('Category ('+cats+'):', 'meals');if(!cat)return;
+  const desc=prompt('Description (optional):');if(desc===null)return;
+  const amtStr=prompt('Amount ($):');if(!amtStr)return;
+  const amount=parseFloat(amtStr);if(isNaN(amount)||amount<0){toast('⚠️ Invalid amount');return;}
+  const date=prompt('Date (YYYY-MM-DD):',new Date().toISOString().slice(0,10))||'';
+  D=load();
+  const w=(D.work||[]).find(x=>x.id===wid);if(!w)return;
+  w.expenses=w.expenses||[];
+  w.expenses.push({id:uid(),category:cat.toLowerCase().trim(),description:desc.trim(),amount,date});
+  localStorage.setItem('wf_work',JSON.stringify(D.work));
+  toast('✅ Expense added');openWorkD(wid);
+}
+function delExpense(wid,idx){
+  D=load();const w=(D.work||[]).find(x=>x.id===wid);if(!w)return;
+  w.expenses=(w.expenses||[]).filter((_,i)=>i!==idx);
+  localStorage.setItem('wf_work',JSON.stringify(D.work));
+  toast('🗑️ Removed');openWorkD(wid);
+}
+
+// ══════════════════════════════════════════════
 // THE PATH — PIPELINE
 // ══════════════════════════════════════════════
 const PIPE_COLS=[
@@ -4180,7 +4637,7 @@ function pipeDelCustom(id){
 // SETTINGS
 // ══════════════════════════════════════════════
 function setSetting(k,v){D.settings[k]=v;save('settings',D.settings);if(k==='name'){document.getElementById('pn').textContent=v||'You';document.getElementById('av').textContent=(v||'Y')[0].toUpperCase()}}
-function loadSettings(){const s=D.settings;document.getElementById('s-name').value=s.name||'';document.getElementById('s-partner').value=s.partner||'';document.getElementById('s-city').value=s.homeCity||'';document.getElementById('s-since').value=s.since||'';document.getElementById('s-apikey').value=s.apiKey||'';document.getElementById('s-google-client-id').value=s.googleClientId||'';document.getElementById('s-drive-folder').value=s.driveFolderId||'';document.getElementById('s-abroad-notes').value=s.abroadNotes||'';document.getElementById('pn').textContent=s.name||'You';document.getElementById('av').textContent=(s.name||'Y')[0].toUpperCase();const pl=document.getElementById('pl-partner');if(pl)pl.textContent=s.partner?'& '+s.partner:'';}
+function loadSettings(){D=load();const s=D.settings;document.getElementById('s-name').value=s.name||'';document.getElementById('s-partner').value=s.partner||'';document.getElementById('s-city').value=s.homeCity||'';document.getElementById('s-since').value=s.since||'';document.getElementById('s-apikey').value=s.apiKey||'';document.getElementById('s-google-client-id').value=s.googleClientId||'';document.getElementById('s-drive-folder').value=s.driveFolderId||'';document.getElementById('s-abroad-notes').value=s.abroadNotes||'';document.getElementById('pn').textContent=s.name||'You';document.getElementById('av').textContent=(s.name||'Y')[0].toUpperCase();const pl=document.getElementById('pl-partner');if(pl)pl.textContent=s.partner?'& '+s.partner:'';const wbtn=document.getElementById('s-work-stats-btn');if(wbtn){wbtn.textContent=s.workIncludeInStats?'ON':'OFF';wbtn.style.background=s.workIncludeInStats?'var(--green)':'var(--card3)';wbtn.style.color=s.workIncludeInStats?'#fff':'var(--text2)';}}
 function exportData(){const b=new Blob([JSON.stringify(load(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='wayfinder-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('📥 Exported!')}
 function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);Object.keys(K).forEach(k=>{if(d[k])localStorage.setItem(K[k],JSON.stringify(d[k]))});if(d.abroad)localStorage.setItem('wf_abroad',JSON.stringify(d.abroad));D=load();go('home');loadSettings();rHome();badges();toast('📤 Imported!')}catch{toast('⚠️ Invalid file')}};r.readAsText(f)}
 function clearAll(){if(!confirm('Clear ALL data? Cannot be undone.'))return;Object.values(K).forEach(k=>localStorage.removeItem(k));D=load();loadSettings();rHome();badges();toast('🗑️ Cleared')}
