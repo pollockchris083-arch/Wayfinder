@@ -1541,8 +1541,8 @@ function showLoadingOverlay(){
   if(skip)skip.style.display='none';
   _aoSkipTimers.forEach(clearTimeout);
   _aoSkipTimers=[
-    setTimeout(()=>{const s=document.getElementById('ao-skip');if(s)s.style.display='block';},5000),
-    setTimeout(()=>skipCloudLoad(),10000),
+    setTimeout(()=>{const s=document.getElementById('ao-skip');if(s)s.style.display='block';},8000),
+    setTimeout(()=>skipCloudLoad(),20000),
   ];
 }
 function hideAuthOverlay(){
@@ -1566,6 +1566,16 @@ function stripRow({user_id,created_at,updated_at,...rest}){const out={};Object.e
 async function loadFromCloud(){
   if(!currentUser)return;
   const uid=currentUser.id;
+  const hasLocal=D.places.length||D.trips.length||D.wish.length;
+  if(hasLocal){
+    // Cache available — show app immediately, refresh from cloud in background
+    hideAuthOverlay();
+    return _bgSync(uid);
+  }
+  // No local cache (fresh device/browser) — must block until cloud responds
+  return _blockingSync(uid);
+}
+async function _blockingSync(uid){
   setSyncStatus('⏳ Syncing…','var(--gold2)');
   setAoDetail('Fetching your data from cloud…');
   try{
@@ -1576,30 +1586,14 @@ async function loadFromCloud(){
       SUPA.from('wf_journal').select('*').eq('user_id',uid),
       SUPA.from('wf_settings').select('*').eq('user_id',uid).maybeSingle(),
     ]);
-    const _timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Cloud load timed out')),10000));
+    const _timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Cloud load timed out')),20000));
     const[p,t,w,j,s]=await Promise.race([_fetch,_timeout]);
-    const hasCloud=p.data?.length||t.data?.length||w.data?.length||j.data?.length;
-    const hasLocal=D.places.length||D.trips.length||D.wish.length;
-    if(!hasCloud&&hasLocal){
-      setSyncStatus('⬆️ Uploading…','var(--gold2)');
-      setAoDetail('First sign-in — uploading your local data…');
-      await Promise.all([
-        cloudPush('places',D.places),cloudPush('trips',D.trips),
-        cloudPush('wish',D.wish),cloudPush('journal',D.journal),
-        cloudPushSettings(D.settings),
-      ]);
-      toast('☁️ Data synced to your account!');
-    } else {
-      setAoDetail(`Loading ${p.data?.length||0} places, ${t.data?.length||0} trips…`);
-      // Fresh cloud load — clear migration flag so canonical fixes always re-validate
-      localStorage.removeItem('wf_cloud_v4');
-      if(p.data?.length)localStorage.setItem(K.places,JSON.stringify(p.data.map(stripRow)));
-      if(t.data?.length)localStorage.setItem(K.trips,JSON.stringify(t.data.map(stripRow)));
-      if(w.data?.length)localStorage.setItem(K.wish,JSON.stringify(w.data.map(stripRow)));
-      if(j.data?.length)localStorage.setItem(K.journal,JSON.stringify(j.data.map(stripRow)));
-      if(s.data){const local=JSON.parse(localStorage.getItem(K.settings)||'{}');const merged={...stripRow(s.data),apiKey:local.apiKey,googleClientId:local.googleClientId,driveFolderId:local.driveFolderId,mapsApiKey:local.mapsApiKey,abroadNotes:local.abroadNotes};localStorage.setItem(K.settings,JSON.stringify(merged));}
-      D=load();
-    }
+    if(s.data){const local=JSON.parse(localStorage.getItem(K.settings)||'{}');const merged={...stripRow(s.data),apiKey:local.apiKey,googleClientId:local.googleClientId,driveFolderId:local.driveFolderId,mapsApiKey:local.mapsApiKey,abroadNotes:local.abroadNotes};localStorage.setItem(K.settings,JSON.stringify(merged));}
+    if(p.data?.length)localStorage.setItem(K.places,JSON.stringify(p.data.map(stripRow)));
+    if(t.data?.length)localStorage.setItem(K.trips,JSON.stringify(t.data.map(stripRow)));
+    if(w.data?.length)localStorage.setItem(K.wish,JSON.stringify(w.data.map(stripRow)));
+    if(j.data?.length)localStorage.setItem(K.journal,JSON.stringify(j.data.map(stripRow)));
+    D=load();
     setSyncStatus('☁️ Synced','var(--green3)');
     await migrateCloudData();
     try{migratePlaceCategories();}catch(e){}
@@ -1612,6 +1606,57 @@ async function loadFromCloud(){
     setAoDetail('Could not reach cloud — using local data');
     loadSettings();rHome();badges();
     hideAuthOverlay();
+  }
+}
+async function _bgSync(uid){
+  setSyncStatus('⏳ Syncing…','var(--gold2)');
+  try{
+    // Phase 1: settings + trips (small, fast)
+    let t0=Date.now();
+    const[s,t]=await Promise.all([
+      SUPA.from('wf_settings').select('*').eq('user_id',uid).maybeSingle(),
+      SUPA.from('wf_trips').select('*').eq('user_id',uid),
+    ]);
+    console.log(`[sync] settings+trips: ${Date.now()-t0}ms (trips:${t.data?.length||0})`);
+    // First sign-in on new device: cloud has no trips but local does → upload
+    if(!(t.data?.length)&&(D.trips.length||D.places.length)){
+      setSyncStatus('⬆️ Uploading…','var(--gold2)');
+      await Promise.all([
+        cloudPush('places',D.places),cloudPush('trips',D.trips),
+        cloudPush('wish',D.wish),cloudPush('journal',D.journal),
+        cloudPushSettings(D.settings),
+      ]);
+      setSyncStatus('☁️ Synced','var(--green3)');
+      toast('☁️ Data synced to your account!');
+      return;
+    }
+    if(s.data){const local=JSON.parse(localStorage.getItem(K.settings)||'{}');const merged={...stripRow(s.data),apiKey:local.apiKey,googleClientId:local.googleClientId,driveFolderId:local.driveFolderId,mapsApiKey:local.mapsApiKey,abroadNotes:local.abroadNotes};localStorage.setItem(K.settings,JSON.stringify(merged));}
+    if(t.data?.length)localStorage.setItem(K.trips,JSON.stringify(t.data.map(stripRow)));
+    D=load();loadSettings();rHome();
+    // Phase 2: wishlist + journal
+    t0=Date.now();
+    const[w,j]=await Promise.all([
+      SUPA.from('wf_wish').select('*').eq('user_id',uid),
+      SUPA.from('wf_journal').select('*').eq('user_id',uid),
+    ]);
+    console.log(`[sync] wish+journal: ${Date.now()-t0}ms (wish:${w.data?.length||0} journal:${j.data?.length||0})`);
+    if(w.data?.length)localStorage.setItem(K.wish,JSON.stringify(w.data.map(stripRow)));
+    if(j.data?.length)localStorage.setItem(K.journal,JSON.stringify(j.data.map(stripRow)));
+    D=load();
+    // Phase 3: places (heaviest — all records)
+    t0=Date.now();
+    const p=await SUPA.from('wf_places').select('*').eq('user_id',uid);
+    console.log(`[sync] places: ${Date.now()-t0}ms (${p.data?.length||0} records)`);
+    if(p.data?.length){localStorage.setItem(K.places,JSON.stringify(p.data.map(stripRow)));localStorage.removeItem('wf_cloud_v4');}
+    D=load();
+    await migrateCloudData();
+    try{migratePlaceCategories();}catch(e){}
+    pipeAutoAdvance();
+    badges();rHome();
+    setSyncStatus('☁️ Synced','var(--green3)');
+  }catch(e){
+    console.warn('[sync] background sync failed:',e);
+    setSyncStatus('⚠️ Offline','#c05050');
   }
 }
 
