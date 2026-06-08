@@ -1325,6 +1325,9 @@ input,textarea,select{font-family:inherit;font-weight:400}
       <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px">Loading your data…</div>
       <div id="ao-load-detail" style="font-size:12px;color:var(--muted)">Connecting to cloud</div>
     </div>
+    <div id="ao-skip" style="display:none;margin-top:4px">
+      <button onclick="skipCloudLoad()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;padding:4px 8px">Taking too long? Load without cloud sync</button>
+    </div>
   </div>
 </div>
 
@@ -1509,7 +1512,7 @@ const SUPA=supabase.createClient(
   'https://fkfwjbdnezvwtjzenxgo.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZrZndqYmRuZXp2d3RqemVueGdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2ODA0MjAsImV4cCI6MjA5NjI1NjQyMH0.mS66UY7MaaxKRBLkqrJicgnxlXwLgbawEmb5B-eF_bQ'
 );
-let currentUser=null, syncTimer=null;
+let currentUser=null, syncTimer=null, _aoSkipTimers=[];
 
 function signInGoogle(){
   SUPA.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.href.split('#')[0]}});
@@ -1534,10 +1537,28 @@ function showLoadingOverlay(){
   if(ao)ao.style.display='flex';
   if(sign)sign.style.display='none';
   if(load)load.style.display='flex';
+  const skip=document.getElementById('ao-skip');
+  if(skip)skip.style.display='none';
+  _aoSkipTimers.forEach(clearTimeout);
+  _aoSkipTimers=[
+    setTimeout(()=>{const s=document.getElementById('ao-skip');if(s)s.style.display='block';},5000),
+    setTimeout(()=>skipCloudLoad(),10000),
+  ];
 }
 function hideAuthOverlay(){
   const ao=document.getElementById('auth-overlay');
   if(ao)ao.style.display='none';
+  _aoSkipTimers.forEach(clearTimeout);
+  _aoSkipTimers=[];
+  const skip=document.getElementById('ao-skip');
+  if(skip)skip.style.display='none';
+}
+function skipCloudLoad(){
+  _aoSkipTimers.forEach(clearTimeout);
+  _aoSkipTimers=[];
+  loadSettings();rHome();badges();
+  hideAuthOverlay();
+  toast('⚠️ Cloud sync skipped — loaded local data');
 }
 function showSyncBar(){document.getElementById('sync-bar').style.display='flex'}
 function stripRow({user_id,created_at,updated_at,...rest}){const out={};Object.entries(rest).forEach(([k,v])=>{out[k.replace(/_([a-z])/g,(_,c)=>c.toUpperCase())]=v;});return out;}
@@ -1548,13 +1569,15 @@ async function loadFromCloud(){
   setSyncStatus('⏳ Syncing…','var(--gold2)');
   setAoDetail('Fetching your data from cloud…');
   try{
-    const[p,t,w,j,s]=await Promise.all([
+    const _fetch=Promise.all([
       SUPA.from('wf_places').select('*').eq('user_id',uid),
       SUPA.from('wf_trips').select('*').eq('user_id',uid),
       SUPA.from('wf_wish').select('*').eq('user_id',uid),
       SUPA.from('wf_journal').select('*').eq('user_id',uid),
       SUPA.from('wf_settings').select('*').eq('user_id',uid).maybeSingle(),
     ]);
+    const _timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Cloud load timed out')),10000));
+    const[p,t,w,j,s]=await Promise.race([_fetch,_timeout]);
     const hasCloud=p.data?.length||t.data?.length||w.data?.length||j.data?.length;
     const hasLocal=D.places.length||D.trips.length||D.wish.length;
     if(!hasCloud&&hasLocal){
