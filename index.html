@@ -782,6 +782,11 @@ input,textarea,select{font-family:inherit;font-weight:400}
               <div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.6">Get a free key at <a href="https://console.anthropic.com" target="_blank" style="color:var(--green)">console.anthropic.com</a>. Only needed when using Wayfinder outside of Cowork. Stored locally in your browser only.</div>
             </div>
             <div class="fg">
+              <label class="fl">Google Maps API Key <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(for World Map)</span></label>
+              <input class="fi" id="s-maps-api-key" type="password" placeholder="AIza…" oninput="setSetting('mapsApiKey',this.value)" autocomplete="off"/>
+              <div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.6"><a href="https://console.cloud.google.com" target="_blank" style="color:var(--green)">Google Cloud Console</a> → Enable <em>Maps JavaScript API</em> → Credentials → Create API Key → restrict to your site → paste here. Stored locally only.</div>
+            </div>
+            <div class="fg">
               <label class="fl">Google Client ID <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(for Google Drive import)</span></label>
               <input class="fi" id="s-google-client-id" placeholder="….apps.googleusercontent.com" oninput="setSetting('googleClientId',this.value)" autocomplete="off"/>
               <div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.6">
@@ -1385,7 +1390,7 @@ async function loadFromCloud(){
       if(t.data?.length)localStorage.setItem(K.trips,JSON.stringify(t.data.map(stripRow)));
       if(w.data?.length)localStorage.setItem(K.wish,JSON.stringify(w.data.map(stripRow)));
       if(j.data?.length)localStorage.setItem(K.journal,JSON.stringify(j.data.map(stripRow)));
-      if(s.data){const local=JSON.parse(localStorage.getItem(K.settings)||'{}');const merged={...stripRow(s.data),apiKey:local.apiKey,googleClientId:local.googleClientId,driveFolderId:local.driveFolderId,abroadNotes:local.abroadNotes};localStorage.setItem(K.settings,JSON.stringify(merged));}
+      if(s.data){const local=JSON.parse(localStorage.getItem(K.settings)||'{}');const merged={...stripRow(s.data),apiKey:local.apiKey,googleClientId:local.googleClientId,driveFolderId:local.driveFolderId,mapsApiKey:local.mapsApiKey,abroadNotes:local.abroadNotes};localStorage.setItem(K.settings,JSON.stringify(merged));}
       D=load();
     }
     setSyncStatus('☁️ Synced');
@@ -1416,7 +1421,7 @@ async function cloudPushSettings(cfg){
   if(!currentUser)return;
   // Strip credentials — these are local-only; the Supabase schema has no column for them
   // and API keys must never be stored server-side
-  const{apiKey,googleClientId,driveFolderId,abroadNotes,...syncable}=cfg;
+  const{apiKey,googleClientId,driveFolderId,mapsApiKey,abroadNotes,...syncable}=cfg;
   const sRow={user_id:currentUser.id,updated_at:new Date().toISOString()};
   Object.entries(syncable).forEach(([k,v])=>{sRow[k.replace(/[A-Z]/g,c=>'_'+c.toLowerCase())]=v;});
   const{error}=await SUPA.from('wf_settings').upsert(sRow,{onConflict:'user_id'});
@@ -1964,18 +1969,22 @@ function countryFlag(name){
   return F[name]||'🌍';
 }
 
-let dossierMap=null;
+let dossierMap=null,_dossierMapIsGoogle=false;
 function dossierOpen(type,name){
   D=load();
   document.getElementById('dossier-body').innerHTML=rDossier(type,name);
   document.getElementById('dossier-panel').classList.add('on');
   document.getElementById('dossier-overlay').classList.add('on');
-  setTimeout(()=>initDossierMap(type,name),80);
+  const mapsKey=(D.settings.mapsApiKey||'').trim();
+  setTimeout(()=>{
+    if(mapsKey){loadGMapsAPI(mapsKey).then(()=>initDossierMapG(type,name)).catch(()=>initDossierMap(type,name));}
+    else{initDossierMap(type,name);}
+  },80);
 }
 function dossierClose(){
   document.getElementById('dossier-panel').classList.remove('on');
   document.getElementById('dossier-overlay').classList.remove('on');
-  if(dossierMap){try{dossierMap.remove();}catch(e){}dossierMap=null;}
+  if(dossierMap){if(!_dossierMapIsGoogle){try{dossierMap.remove();}catch(e){}}dossierMap=null;_dossierMapIsGoogle=false;}
 }
 
 function rDossier(type,name){
@@ -2069,6 +2078,35 @@ let leafletMap=null,mapLayer_c=null,mapLayer_s=null,mapLayer_p=null,mapRouteLaye
 let mapFilter='all',mapViewMode='world',geoWorld=null,geoUSStates=null,mapLayer_home=null;
 let mapTripFilter='all',mapYearFilter='all';
 const MAP_COLORS={visited:'#4A7259',want:'#B8892A',planned:'#4A7EBA',saved:'#8A7D6E',wishlist:'#B05080'};
+// ── Google Maps state ───────────────────────────
+let gMap=null,gMapCountryData=null,gMapStateData=null;
+let gMapMarkers=[],gMapHomeMarker=null,gMapRoutePolyline=null;
+let _gMapsLoaded=false,_gMapsLoading=false,_gCountryDataLoaded=false,_gStateDataLoaded=false;
+const GMAP_STYLES=[
+  {elementType:'geometry',stylers:[{color:'#1e2320'}]},
+  {elementType:'labels.text.fill',stylers:[{color:'#9e8a78'}]},
+  {elementType:'labels.text.stroke',stylers:[{color:'#1a1f1a'}]},
+  {featureType:'administrative.country',elementType:'geometry.stroke',stylers:[{color:'#4a4a3a'}]},
+  {featureType:'landscape',elementType:'geometry',stylers:[{color:'#252b24'}]},
+  {featureType:'poi',stylers:[{visibility:'off'}]},
+  {featureType:'road',stylers:[{visibility:'off'}]},
+  {featureType:'transit',stylers:[{visibility:'off'}]},
+  {featureType:'water',elementType:'geometry',stylers:[{color:'#152520'}]},
+  {featureType:'water',elementType:'labels.text.fill',stylers:[{color:'#4a7a6a'}]},
+];
+function loadGMapsAPI(key){
+  return new Promise((res,rej)=>{
+    if(_gMapsLoaded){res();return;}
+    if(_gMapsLoading){const w=()=>{if(_gMapsLoaded)res();else setTimeout(w,60);};w();return;}
+    _gMapsLoading=true;
+    const cb='_wmcb'+Math.floor(Math.random()*1e9);
+    window[cb]=()=>{_gMapsLoaded=true;_gMapsLoading=false;res();delete window[cb];};
+    const s=document.createElement('script');
+    s.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(key)+'&callback='+cb+'&loading=async';
+    s.onerror=()=>{_gMapsLoading=false;rej(new Error('Google Maps load failed'));};
+    document.head.appendChild(s);
+  });
+}
 
 function rMap(){
   D=load();
@@ -2127,14 +2165,25 @@ function rMap(){
     </div>
     <div id="map-stats-row" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:6px"></div>
   `;
-  if(leafletMap){leafletMap.remove();leafletMap=null;mapLayer_c=null;mapLayer_s=null;mapLayer_p=null;mapRouteLayer=null;}
-  leafletMap=L.map('the-map',{center:[20,0],zoom:2});
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
-    attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
-    subdomains:'abcd',maxZoom:19
-  }).addTo(leafletMap);
-  mapRenderStats();
-  mapInit();
+  const mapsKey=(D.settings.mapsApiKey||'').trim();
+  if(mapsKey){
+    if(leafletMap){leafletMap.remove();leafletMap=null;mapLayer_c=null;mapLayer_s=null;mapLayer_p=null;mapRouteLayer=null;}
+    gMapMarkers.forEach(m=>m.setMap(null));gMapMarkers=[];
+    if(gMapHomeMarker){gMapHomeMarker.setMap(null);gMapHomeMarker=null;}
+    if(gMapRoutePolyline){gMapRoutePolyline.setMap(null);gMapRoutePolyline=null;}
+    gMap=null;gMapCountryData=null;gMapStateData=null;_gCountryDataLoaded=false;_gStateDataLoaded=false;
+    mapRenderStats();
+    mapInitGoogle(mapsKey);
+  } else {
+    if(leafletMap){leafletMap.remove();leafletMap=null;mapLayer_c=null;mapLayer_s=null;mapLayer_p=null;mapRouteLayer=null;}
+    leafletMap=L.map('the-map',{center:[20,0],zoom:2});
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+      attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains:'abcd',maxZoom:19
+    }).addTo(leafletMap);
+    mapRenderStats();
+    mapInit();
+  }
 }
 
 async function mapInit(){
@@ -2254,9 +2303,13 @@ function mapSetFilter(btn,f){
   mapTripFilter='all';mapYearFilter='all';
   const ts=document.getElementById('map-trip-sel');if(ts)ts.value='all';
   const ys=document.getElementById('map-year-sel');if(ys)ys.value='all';
-  mapUpdateClearBtn();mapRenderPins();mapRenderStats();
+  mapUpdateClearBtn();if(gMap)mapRenderPinsG();else mapRenderPins();mapRenderStats();
 }
-function mapSetView(btn,v){document.querySelectorAll('#map-vb .fc').forEach(x=>x.classList.remove('on'));btn.classList.add('on');mapViewMode=v;if(v==='world')leafletMap.setView([20,0],2);else leafletMap.setView([39.5,-98.35],4);mapRenderStates();}
+function mapSetView(btn,v){
+  document.querySelectorAll('#map-vb .fc').forEach(x=>x.classList.remove('on'));btn.classList.add('on');mapViewMode=v;
+  if(gMap){if(v==='world'){gMap.setCenter({lat:20,lng:0});gMap.setZoom(2);}else{gMap.setCenter({lat:39.5,lng:-98.35});gMap.setZoom(4);}mapRenderStatesG();}
+  else if(leafletMap){if(v==='world')leafletMap.setView([20,0],2);else leafletMap.setView([39.5,-98.35],4);mapRenderStates();}
+}
 async function mapRenderPins(){
   if(mapLayer_p){mapLayer_p.remove();mapLayer_p=null;}
   if(mapRouteLayer){mapRouteLayer.remove();mapRouteLayer=null;}
@@ -2350,6 +2403,256 @@ async function mapRenderHome(){
   mapLayer_home.bindPopup(`<div style="font-family:-apple-system,sans-serif"><div style="font-weight:600;font-size:13px;margin-bottom:3px">🏠 Home</div><div style="font-size:11px;color:#777">${hc}</div></div>`);
   mapLayer_home.addTo(leafletMap);
 }
+
+// ── Google Maps implementation ───────────────────
+async function mapInitGoogle(key){
+  try{
+    await loadGMapsAPI(key);
+    const el=document.getElementById('the-map');
+    if(!el)return;
+    gMap=new google.maps.Map(el,{
+      center:{lat:20,lng:0},zoom:2,
+      styles:GMAP_STYLES,
+      disableDefaultUI:true,
+      zoomControl:true,
+      gestureHandling:'greedy',
+    });
+    await Promise.all([mapLoadWorld(),mapLoadStates()]);
+    mapRenderCountriesG();
+    mapRenderStatesG();
+    await mapRenderPinsG();
+    mapRenderHomeG();
+  }catch(e){
+    console.error('Google Maps init error:',e);
+    const el=document.getElementById('the-map');
+    if(el)el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:13px;flex-direction:column;gap:8px"><div>⚠️ Google Maps failed to load</div><div style="font-size:11px">Check your Maps API key in Settings</div></div>';
+  }
+}
+function _gMapSvgIcon(emoji,color,size){
+  const s=size||30;
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+s+'" height="'+s+'" viewBox="0 0 '+s+' '+s+'"><circle cx="'+s/2+'" cy="'+s/2+'" r="'+(s/2-1.5)+'" fill="'+color+'" stroke="white" stroke-width="2.5"/><text x="'+s/2+'" y="'+(s/2+Math.ceil(s*.15))+'" text-anchor="middle" font-size="'+Math.floor(s*.45)+'" font-family="Apple Color Emoji,Segoe UI Emoji,sans-serif">'+emoji+'</text></svg>';
+  return{url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),scaledSize:new google.maps.Size(s,s),anchor:new google.maps.Point(s/2,s/2)};
+}
+function mapRenderCountriesG(){
+  if(!gMap||!geoWorld)return;
+  if(!gMapCountryData){gMapCountryData=new google.maps.Data({map:gMap});}
+  const countryData={};
+  D.places.forEach(p=>{const c=normCountry(p.country);if(!c)return;if(!countryData[c])countryData[c]={vis:0,want:0};if(p.status==='visited')countryData[c].vis++;else if(p.status==='want'||p.status==='planned')countryData[c].want++;});
+  const tripDestVisited=new Set();
+  D.trips.filter(t=>t.status==='past').forEach(t=>{(t.destinations||[]).forEach(dest=>{const c=normCountry(dest);if(c&&c!=='United States')tripDestVisited.add(c);});});
+  if(!_gCountryDataLoaded){
+    gMapCountryData.addGeoJson(geoWorld);
+    _gCountryDataLoaded=true;
+    gMapCountryData.addListener('click',ev=>{
+      const raw=ev.feature.getProperty('ADMIN')||'';const n=mapGeoToName(raw);
+      const ps=D.places.filter(p=>{const c=normCountry(p.country);return c===n||c===raw;});
+      const visPlaces=ps.filter(p=>p.status==='visited');
+      const destTrips=D.trips.filter(t=>(t.destinations||[]).some(dest=>{const c=normCountry(dest);return c===n||c===raw;}));
+      const allTripIds=new Set([...ps.flatMap(p=>p.tripIds||[]),...destTrips.map(t=>t.id)]);
+      const trips=D.trips.filter(t=>allTripIds.has(t.id));
+      const tripYears=trips.filter(t=>t.startDate).map(t=>new Date(t.startDate).getFullYear()).sort();
+      const journalCount=(D.journal||[]).filter(j=>ps.some(p=>p.id===j.placeId)).length;
+      if(!ps.length&&!trips.length)return;
+      const iw=new google.maps.InfoWindow({maxWidth:265});
+      iw.setContent('<div style="font-family:-apple-system,sans-serif;min-width:170px;max-width:240px">'
+        +'<div style="font-weight:700;font-size:14px;margin-bottom:4px">'+raw+'</div>'
+        +(tripYears.length?'<div style="font-size:10px;color:#999;margin-bottom:8px">First: '+tripYears[0]+(tripYears.length>1?' · Last: '+tripYears[tripYears.length-1]:'')+'</div>':'')
+        +(visPlaces.length?'<div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Places ('+visPlaces.length+')</div>'
+          +visPlaces.slice(0,6).map(p=>'<div style="font-size:11px;padding:1px 0">'+ci(p.category)+' '+p.name+'</div>').join('')
+          +(visPlaces.length>6?'<div style="font-size:10px;color:#aaa">+'+(visPlaces.length-6)+' more</div>':''):'')
+        +(trips.length?'<div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin:'+(visPlaces.length?'8':'0')+'px 0 5px">Trips ('+trips.length+')</div>'
+          +trips.slice(0,3).map(t=>'<div style="font-size:11px;padding:1px 0">✈️ '+t.name+(t.startDate?' ('+new Date(t.startDate).getFullYear()+')':'')+'</div>').join('')
+          +(trips.length>3?'<div style="font-size:10px;color:#aaa">+'+(trips.length-3)+' more</div>':''):'')
+        +(journalCount?'<div style="font-size:10px;color:#888;margin-top:6px;padding-top:6px;border-top:1px solid #eee">📓 '+journalCount+' '+(journalCount===1?'memoir':'memoirs')+'</div>':'')
+        +'</div>');
+      iw.setPosition(ev.latLng);iw.open(gMap);
+    });
+    gMapCountryData.addListener('mouseover',ev=>{gMap.getDiv().style.cursor='pointer';});
+    gMapCountryData.addListener('mouseout',()=>{gMap.getDiv().style.cursor='';});
+  }
+  const _cd=countryData,_tdv=tripDestVisited;
+  gMapCountryData.setStyle(f=>{
+    const raw=f.getProperty('ADMIN')||'';const n=mapGeoToName(raw);
+    const d=_cd[n]||_cd[raw]||{vis:0,want:0};
+    const isTripDest=_tdv.has(n)||_tdv.has(raw);
+    const isHome=n==='United States'||raw==='United States of America';
+    if(isHome)return{fillColor:'#4A7259',fillOpacity:0.1,strokeColor:'#4A7259',strokeWeight:0.8,strokeOpacity:0.4,zIndex:1};
+    if(d.vis>0){const h=d.vis<=1?'#EDBA9E':d.vis<=3?'#D9885D':d.vis<=7?'#C27D5C':'#A66040';return{fillColor:h,fillOpacity:0.72,strokeColor:'#9C5535',strokeWeight:1.2,strokeOpacity:0.8,zIndex:2};}
+    if(isTripDest)return{fillColor:'#EDBA9E',fillOpacity:0.55,strokeColor:'#9C5535',strokeWeight:1.1,strokeOpacity:0.7,zIndex:2};
+    if(d.want>0)return{fillColor:'#B8892A',fillOpacity:0.05,strokeColor:'#B8892A',strokeWeight:1.5,strokeOpacity:0.65,zIndex:1};
+    return{fillColor:'transparent',fillOpacity:0,strokeColor:'#555',strokeWeight:0.4,strokeOpacity:0.4,zIndex:0};
+  });
+}
+function mapRenderStatesG(){
+  if(!gMap||!geoUSStates)return;
+  if(!gMapStateData){gMapStateData=new google.maps.Data({map:gMap});}
+  const stateData={};
+  D.places.filter(p=>normCountry(p.country)==='United States').forEach(p=>{if(!p.usState)return;if(!stateData[p.usState])stateData[p.usState]={vis:0,want:0};if(p.status==='visited')stateData[p.usState].vis++;else stateData[p.usState].want++;});
+  const homeState=getHomeState();
+  if(!_gStateDataLoaded){
+    gMapStateData.addGeoJson(geoUSStates);
+    _gStateDataLoaded=true;
+    gMapStateData.addListener('click',ev=>{
+      const n=ev.feature.getProperty('name')||'';
+      const ps=D.places.filter(p=>p.usState===n&&normCountry(p.country)==='United States');
+      const visPlaces=ps.filter(p=>p.status==='visited');
+      if(!ps.length)return;
+      const tripIds=new Set(ps.flatMap(p=>p.tripIds||[]));
+      const trips=D.trips.filter(t=>tripIds.has(t.id));
+      const journalCount=(D.journal||[]).filter(j=>ps.some(p=>p.id===j.placeId)).length;
+      const isHome=homeState&&n===homeState;
+      const iw=new google.maps.InfoWindow({maxWidth:255});
+      iw.setContent('<div style="font-family:-apple-system,sans-serif;min-width:160px;max-width:225px">'
+        +'<div style="font-weight:700;font-size:14px;margin-bottom:6px">'+(isHome?'🏠 ':'')+n+'</div>'
+        +(visPlaces.length?'<div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Places ('+visPlaces.length+')</div>'
+          +visPlaces.slice(0,6).map(p=>'<div style="font-size:11px;padding:1px 0">'+ci(p.category)+' '+p.name+'</div>').join('')
+          +(visPlaces.length>6?'<div style="font-size:10px;color:#aaa">+'+(visPlaces.length-6)+' more</div>':''):'')
+        +(trips.length?'<div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin:'+(visPlaces.length?'8':'0')+'px 0 5px">Trips ('+trips.length+')</div>'
+          +trips.slice(0,4).map(t=>'<div style="font-size:11px;padding:1px 0">✈️ '+t.name+'</div>').join('')
+          +(trips.length>4?'<div style="font-size:10px;color:#aaa">+'+(trips.length-4)+' more</div>':''):'')
+        +(journalCount?'<div style="font-size:10px;color:#888;margin-top:6px">📓 '+journalCount+' '+(journalCount===1?'memoir':'memoirs')+'</div>':'')
+        +'</div>');
+      iw.setPosition(ev.latLng);iw.open(gMap);
+    });
+    gMapStateData.addListener('mouseover',()=>{gMap.getDiv().style.cursor='pointer';});
+    gMapStateData.addListener('mouseout',()=>{gMap.getDiv().style.cursor='';});
+  }
+  const _sd=stateData,_hs=homeState,_vm=mapViewMode;
+  gMapStateData.setStyle(f=>{
+    const n=f.getProperty('name')||'';
+    const d=_sd[n]||{vis:0,want:0};const isHome=_hs&&n===_hs;
+    if(d.vis>0){const op=_vm==='us'?0.75:0.5;const h=d.vis<=1?'#EDBA9E':d.vis<=3?'#D9885D':d.vis<=7?'#C27D5C':'#A66040';return{fillColor:h,fillOpacity:op,strokeColor:'#9C5535',strokeWeight:_vm==='us'?1.2:0.6,strokeOpacity:0.8,zIndex:3};}
+    if(isHome)return{fillColor:'#4A7259',fillOpacity:0.15,strokeColor:'#4A7259',strokeWeight:1.2,strokeOpacity:0.5,zIndex:2};
+    if(d.want>0)return{fillColor:'#B8892A',fillOpacity:0.05,strokeColor:'#B8892A',strokeWeight:1.2,strokeOpacity:0.6,zIndex:1};
+    return{fillColor:'transparent',fillOpacity:0,strokeColor:'#666',strokeWeight:0.4,strokeOpacity:_vm==='us'?0.5:0.15,zIndex:0};
+  });
+}
+async function mapRenderPinsG(){
+  gMapMarkers.forEach(m=>m.setMap(null));gMapMarkers=[];
+  if(gMapRoutePolyline){gMapRoutePolyline.setMap(null);gMapRoutePolyline=null;}
+  if(!gMap)return;
+  let items;
+  if(mapTripFilter!=='all'){
+    items=D.places.filter(p=>(p.tripIds||[]).includes(mapTripFilter));
+  } else if(mapFilter==='wishlist'){
+    items=D.wish.map(w=>({_wish:true,name:w.name,notes:w.notes||'',status:'wishlist',type:w.type,usState:'',country:'',region:'',rating:'',tripIds:[]}));
+  } else if(mapYearFilter!=='all'){
+    const yr=parseInt(mapYearFilter);
+    const tripIdsInYear=new Set(D.trips.filter(t=>t.startDate&&new Date(t.startDate).getFullYear()===yr).map(t=>t.id));
+    items=D.places.filter(p=>p.status==='visited'&&(p.tripIds||[]).some(tid=>tripIdsInYear.has(tid)));
+  } else {
+    items=(mapFilter==='all'?D.places:D.places.filter(p=>p.status===mapFilter));
+  }
+  const cache=JSON.parse(localStorage.getItem('wf_geocache')||'{}');
+  const toGeo=[];
+  items.forEach(item=>{const k=mapCacheKey(item);if(cache[k])mapAddPinG(item,cache[k]);else toGeo.push(item);});
+  if(mapTripFilter!=='all')mapDrawRouteG(mapTripFilter);
+  for(let i=0;i<toGeo.length;i++){
+    const coords=await mapGeocode(toGeo[i]);
+    if(coords&&gMap)mapAddPinG(toGeo[i],coords);
+    if(i<toGeo.length-1)await new Promise(r=>setTimeout(r,1100));
+  }
+  if(mapYearFilter!=='all'&&gMap&&gMapMarkers.length){
+    const cache2=JSON.parse(localStorage.getItem('wf_geocache')||'{}');
+    const pts=items.map(item=>{const k=mapCacheKey(item);return cache2[k]?cache2[k]:null;}).filter(Boolean);
+    if(pts.length===1)gMap.setCenter({lat:pts[0].lat,lng:pts[0].lng}),gMap.setZoom(7);
+    else if(pts.length>1){const b=new google.maps.LatLngBounds();pts.forEach(p=>b.extend({lat:p.lat,lng:p.lng}));gMap.fitBounds(b,50);}
+  }
+}
+function mapAddPinG(item,coords){
+  if(!gMap||!coords)return;
+  const color=MAP_COLORS[item.status]||MAP_COLORS.saved;
+  const catIcon=item._wish?'♡':ci(item.category)||'📍';
+  const size=item.status==='visited'?30:26;
+  const m=new google.maps.Marker({position:{lat:coords.lat,lng:coords.lng},map:gMap,icon:_gMapSvgIcon(catIcon,color,size),title:item.name,optimized:false});
+  const loc=[item.usState,normCountry(item.country)||item.region].filter(Boolean).join(', ');
+  const stars=item.rating?'⭐'.repeat(Math.min(parseInt(item.rating)||0,5)):'';
+  const tripNames=(item.tripIds||[]).map(tid=>{const t=D.trips.find(x=>x.id===tid);return t?t.name:null;}).filter(Boolean);
+  const journalCount=(D.journal||[]).filter(j=>j.placeId===item.id).length;
+  const html='<div style="min-width:155px;max-width:225px;font-family:-apple-system,sans-serif">'
+    +'<div style="font-weight:700;font-size:13px;margin-bottom:2px">'+item.name+'</div>'
+    +(loc?'<div style="font-size:11px;color:#777;margin-bottom:6px">'+loc+'</div>':'')
+    +'<span style="background:'+color+';color:#fff;font-size:9px;font-weight:600;padding:2px 8px;border-radius:100px">'+(item._wish?'♡ Wishlist':sl(item.status))+'</span>'
+    +(stars?'<div style="margin-top:5px;font-size:11px">'+stars+'</div>':'')
+    +(tripNames.length?'<div style="font-size:10px;color:#666;margin-top:6px;border-top:1px solid #eee;padding-top:5px">✈️ '+tripNames.slice(0,2).join(' · ')+(tripNames.length>2?' +'+(tripNames.length-2):'')+'</div>':'')
+    +(journalCount?'<div style="font-size:10px;color:#666;margin-top:3px">📓 '+journalCount+' '+(journalCount===1?'memoir':'memoirs')+'</div>':'')
+    +(item.notes?'<div style="font-size:11px;color:#666;border-top:1px solid #eee;padding-top:5px;margin-top:5px">'+item.notes.slice(0,100)+(item.notes.length>100?'…':'')+'</div>':'')
+    +'</div>';
+  const iw=new google.maps.InfoWindow({content:html,maxWidth:245});
+  m.addListener('click',()=>iw.open(gMap,m));
+  gMapMarkers.push(m);
+}
+async function mapRenderHomeG(){
+  if(gMapHomeMarker){gMapHomeMarker.setMap(null);gMapHomeMarker=null;}
+  if(!gMap)return;
+  const hc=(D.settings.homeCity||'').trim();if(!hc)return;
+  const cacheKey='home:'+hc;
+  const cache=JSON.parse(localStorage.getItem('wf_geocache')||'{}');
+  let coords=cache[cacheKey];
+  if(!coords){
+    try{
+      const r=await fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(hc)+'&format=json&limit=1',{headers:{'User-Agent':'Wayfinder/1.0','Accept-Language':'en'}});
+      const d=await r.json();
+      if(d[0]){coords={lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon)};cache[cacheKey]=coords;localStorage.setItem('wf_geocache',JSON.stringify(cache));}
+    }catch(e){}
+  }
+  if(!coords)return;
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#4A7259" stroke="white" stroke-width="2.5"/><text x="16" y="22" text-anchor="middle" font-size="14" font-family="Apple Color Emoji,Segoe UI Emoji,sans-serif">🏠</text></svg>';
+  gMapHomeMarker=new google.maps.Marker({
+    position:{lat:coords.lat,lng:coords.lng},map:gMap,
+    icon:{url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),scaledSize:new google.maps.Size(32,32),anchor:new google.maps.Point(16,16)},
+    title:'Home: '+hc,zIndex:1000
+  });
+  const iw=new google.maps.InfoWindow({content:'<div style="font-family:-apple-system,sans-serif"><div style="font-weight:600;font-size:13px;margin-bottom:3px">🏠 Home</div><div style="font-size:11px;color:#777">'+hc+'</div></div>'});
+  gMapHomeMarker.addListener('click',()=>iw.open(gMap,gMapHomeMarker));
+}
+function mapDrawRouteG(tripId){
+  if(gMapRoutePolyline){gMapRoutePolyline.setMap(null);gMapRoutePolyline=null;}
+  if(tripId==='all'||!gMap)return;
+  const places=D.places.filter(p=>(p.tripIds||[]).includes(tripId));
+  if(places.length<2)return;
+  const cache=JSON.parse(localStorage.getItem('wf_geocache')||'{}');
+  const coords=places.map(p=>{const k=mapCacheKey(p);return cache[k]?{lat:cache[k].lat,lng:cache[k].lng}:null;}).filter(Boolean);
+  if(coords.length<2)return;
+  gMapRoutePolyline=new google.maps.Polyline({
+    path:coords,map:gMap,
+    strokeColor:'#C27D5C',strokeWeight:2.5,strokeOpacity:0.72,geodesic:true,
+  });
+  const bounds=new google.maps.LatLngBounds();
+  coords.forEach(c=>bounds.extend(c));
+  gMap.fitBounds(bounds,{top:50,right:50,bottom:50,left:50});
+}
+function initDossierMapG(type,name){
+  const el=document.getElementById('dossier-map');if(!el)return;
+  if(dossierMap&&!_dossierMapIsGoogle){try{dossierMap.remove();}catch(e){}}
+  dossierMap=null;_dossierMapIsGoogle=false;
+  const places=D.places.filter(p=>type==='country'?normCountry(p.country)===name:(normCountry(p.country)==='United States'&&p.usState===name));
+  const cache=JSON.parse(localStorage.getItem('wf_geocache')||'{}');
+  const pins=[];
+  places.forEach(p=>{const k=mapCacheKey(p);if(cache[k])pins.push({p,coords:cache[k]});});
+  const center=pins.length===1?{lat:pins[0].coords.lat,lng:pins[0].coords.lng}:type==='state'?{lat:39.5,lng:-98.35}:{lat:20,lng:10};
+  const zoom=pins.length===1?8:type==='state'?4:2;
+  try{
+    dossierMap=new google.maps.Map(el,{center,zoom,styles:GMAP_STYLES,disableDefaultUI:true,gestureHandling:'none',zoomControl:false});
+    _dossierMapIsGoogle=true;
+    if(pins.length>1){
+      const bounds=new google.maps.LatLngBounds();
+      pins.forEach(({coords})=>bounds.extend({lat:coords.lat,lng:coords.lng}));
+      dossierMap.fitBounds(bounds,{top:28,right:28,bottom:28,left:28});
+    }
+    pins.forEach(({p,coords})=>{
+      const color=MAP_COLORS[p.status]||MAP_COLORS.saved;
+      const size=22;
+      const m=new google.maps.Marker({
+        position:{lat:coords.lat,lng:coords.lng},map:dossierMap,
+        icon:_gMapSvgIcon(ci(p.category)||'📍',color,size),title:p.name
+      });
+      const iw=new google.maps.InfoWindow({content:'<div style="font-size:12px;font-weight:600">'+p.name+'</div>'+(p.region?'<div style="font-size:10px;color:#777">'+p.region+'</div>':'')});
+      m.addListener('click',()=>iw.open(dossierMap,m));
+    });
+  }catch(e){console.warn('Dossier gMap error:',e);}
+}
+
 function mapRenderStats(){
   let vis,tripCount;
   const bonusCountries=new Set();
@@ -2398,12 +2701,12 @@ function mapRenderStats(){
 function mapSetTrip(tripId){
   mapTripFilter=tripId;
   if(tripId!=='all'){mapYearFilter='all';const ys=document.getElementById('map-year-sel');if(ys)ys.value='all';}
-  mapUpdateClearBtn();mapRenderPins();mapRenderStats();
+  mapUpdateClearBtn();if(gMap)mapRenderPinsG();else mapRenderPins();mapRenderStats();
 }
 function mapSetYear(year){
   mapYearFilter=year;
   if(year!=='all'){mapTripFilter='all';const ts=document.getElementById('map-trip-sel');if(ts)ts.value='all';}
-  mapUpdateClearBtn();mapRenderPins();mapRenderStats();
+  mapUpdateClearBtn();if(gMap)mapRenderPinsG();else mapRenderPins();mapRenderStats();
 }
 function mapUpdateClearBtn(){
   const btn=document.getElementById('map-clear-btn');
@@ -2416,7 +2719,7 @@ function mapClearFilters(){
   const fb=document.querySelector('#map-fb .fc');if(fb)fb.classList.add('on');
   const ts=document.getElementById('map-trip-sel');if(ts)ts.value='all';
   const ys=document.getElementById('map-year-sel');if(ys)ys.value='all';
-  mapUpdateClearBtn();mapRenderPins();mapRenderStats();
+  mapUpdateClearBtn();if(gMap)mapRenderPinsG();else mapRenderPins();mapRenderStats();
 }
 async function mapDrawRoute(tripId){
   if(mapRouteLayer){mapRouteLayer.remove();mapRouteLayer=null;}
@@ -6122,7 +6425,7 @@ function pipeDelCustom(id){
 // SETTINGS
 // ══════════════════════════════════════════════
 function setSetting(k,v){D.settings[k]=v;save('settings',D.settings);if(k==='name'){document.getElementById('pn').textContent=v||'You';document.getElementById('av').textContent=(v||'Y')[0].toUpperCase()}}
-function loadSettings(){D=load();const s=D.settings;document.getElementById('s-name').value=s.name||'';document.getElementById('s-partner').value=s.partner||'';document.getElementById('s-city').value=s.homeCity||'';document.getElementById('s-since').value=s.since||'';document.getElementById('s-apikey').value=s.apiKey||'';document.getElementById('s-google-client-id').value=s.googleClientId||'';document.getElementById('s-drive-folder').value=s.driveFolderId||'';document.getElementById('s-abroad-notes').value=s.abroadNotes||'';document.getElementById('pn').textContent=s.name||'You';document.getElementById('av').textContent=(s.name||'Y')[0].toUpperCase();const pl=document.getElementById('pl-partner');if(pl)pl.textContent=s.partner?'& '+s.partner:'';const wbtn=document.getElementById('s-work-stats-btn');if(wbtn){wbtn.textContent=s.workIncludeInStats?'ON':'OFF';wbtn.style.background=s.workIncludeInStats?'var(--green)':'var(--card3)';wbtn.style.color=s.workIncludeInStats?'#fff':'var(--text2)';}}
+function loadSettings(){D=load();const s=D.settings;document.getElementById('s-name').value=s.name||'';document.getElementById('s-partner').value=s.partner||'';document.getElementById('s-city').value=s.homeCity||'';document.getElementById('s-since').value=s.since||'';document.getElementById('s-apikey').value=s.apiKey||'';document.getElementById('s-maps-api-key').value=s.mapsApiKey||'';document.getElementById('s-google-client-id').value=s.googleClientId||'';document.getElementById('s-drive-folder').value=s.driveFolderId||'';document.getElementById('s-abroad-notes').value=s.abroadNotes||'';document.getElementById('pn').textContent=s.name||'You';document.getElementById('av').textContent=(s.name||'Y')[0].toUpperCase();const pl=document.getElementById('pl-partner');if(pl)pl.textContent=s.partner?'& '+s.partner:'';const wbtn=document.getElementById('s-work-stats-btn');if(wbtn){wbtn.textContent=s.workIncludeInStats?'ON':'OFF';wbtn.style.background=s.workIncludeInStats?'var(--green)':'var(--card3)';wbtn.style.color=s.workIncludeInStats?'#fff':'var(--text2)';}}
 function exportData(){const b=new Blob([JSON.stringify(load(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='wayfinder-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('📥 Exported!')}
 function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);Object.keys(K).forEach(k=>{if(d[k])localStorage.setItem(K[k],JSON.stringify(d[k]))});if(d.abroad)localStorage.setItem('wf_abroad',JSON.stringify(d.abroad));D=load();go('home');loadSettings();rHome();badges();toast('📤 Imported!')}catch{toast('⚠️ Invalid file')}};r.readAsText(f)}
 function clearAll(){if(!confirm('Clear ALL data? Cannot be undone.'))return;Object.values(K).forEach(k=>localStorage.removeItem(k));D=load();loadSettings();rHome();badges();toast('🗑️ Cleared')}
