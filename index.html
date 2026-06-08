@@ -979,6 +979,54 @@ input,textarea,select{font-family:inherit;font-weight:400}
   </div>
 </div>
 
+<!-- BOOKING ITEM MODAL -->
+<div class="mo" id="m-booking">
+  <div class="modal" style="width:420px">
+    <button class="mcl" onclick="closeM('m-booking')">✕</button>
+    <h2 id="bk-title">Add Booking</h2>
+    <div class="fg"><label class="fl">Name / Provider *</label><input class="fi" id="bk-name" placeholder="e.g. United Airlines, Marriott Rome"/></div>
+    <div class="fr">
+      <div class="fg" style="flex:1"><label class="fl">Date</label><input class="fi" type="date" id="bk-date"/></div>
+      <div class="fg" style="flex:1"><label class="fl">Confirmation #</label><input class="fi" id="bk-conf" placeholder="ABC123"/></div>
+    </div>
+    <div class="fg"><label class="fl">Link</label><input class="fi" id="bk-link" placeholder="Booking URL"/></div>
+    <div class="fg" style="margin-bottom:12px"><label class="fl">Notes</label><input class="fi" id="bk-notes" placeholder="Flight number, check-in time, etc."/></div>
+    <div class="fa" style="justify-content:space-between">
+      <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;color:var(--text2)">
+        <input type="checkbox" id="bk-booked" style="width:15px;height:15px;cursor:pointer"/> <span>Mark as Booked ✅</span>
+      </label>
+      <div style="display:flex;gap:8px">
+        <button class="btn-s" onclick="closeM('m-booking')">Cancel</button>
+        <button class="btn-p" onclick="saveBooking()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ACTIVITY MODAL -->
+<div class="mo" id="m-activity">
+  <div class="modal" style="width:440px">
+    <button class="mcl" onclick="closeM('m-activity')">✕</button>
+    <h2 id="act-modal-title">Add Activity</h2>
+    <div class="fg"><label class="fl">Activity / Tour *</label><input class="fi" id="act-name" placeholder="e.g. Thai cooking class, Temple tour"/></div>
+    <div class="fr">
+      <div class="fg" style="flex:1"><label class="fl">Date</label><input class="fi" type="date" id="act-date"/></div>
+      <div class="fg" style="width:105px;flex-shrink:0"><label class="fl">Time</label><input class="fi" type="time" id="act-time"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg" style="flex:1"><label class="fl">Location</label><input class="fi" id="act-loc" placeholder="City / venue"/></div>
+      <div class="fg" style="width:110px;flex-shrink:0"><label class="fl">Cost ($)</label><input class="fi" id="act-cost" type="number" min="0" placeholder="0"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg" style="flex:1"><label class="fl">Confirmation #</label><input class="fi" id="act-conf" placeholder="Optional"/></div>
+      <div class="fg" style="flex:1"><label class="fl">Status</label><select class="fs" id="act-status"><option value="idea">💡 Idea</option><option value="booked">✅ Booked</option><option value="completed">🏁 Completed</option></select></div>
+    </div>
+    <div class="fg"><label class="fl">Link</label><input class="fi" id="act-link" placeholder="Booking URL"/></div>
+    <div class="fg" style="margin-bottom:0"><label class="fl">Notes</label><input class="fi" id="act-notes" placeholder="Meeting point, what to bring, etc."/></div>
+    <div class="fa"><button class="btn-s" onclick="closeM('m-activity')">Cancel</button><button class="btn-p" onclick="saveActivity()">Save</button></div>
+  </div>
+</div>
+
 <!-- ABROAD COUNTRY -->
 <div class="mo" id="m-abroad-country">
   <div class="modal" style="width:500px">
@@ -1232,6 +1280,7 @@ async function loadFromCloud(){
     }
     setSyncStatus('☁️ Synced');
     await migrateCloudData();
+    pipeAutoAdvance();
     loadSettings();rHome();badges();
   }catch(e){
     console.warn('Cloud load error:',e);
@@ -2493,6 +2542,7 @@ function rTrips(){
 }
 function openTripD(id){
   D=load();const t=D.trips.find(x=>x.id===id);if(!t)return;atid=id;
+  const _ps=pipeStateLoad();const stageId=_ps[id]||pipeAutoCol({id,type:'trip',data:t});
   document.getElementById('trips-lv').style.display='none';
   const dv=document.getElementById('trip-dv');dv.classList.add('on');
   const linkedPlaces=D.places.filter(p=>(p.tripIds||[]).includes(t.id));
@@ -2631,6 +2681,9 @@ function openTripD(id){
     <div class="sc" style="--accent:var(--earth2)"><div class="si">📓</div><div class="sn">${tripJournal.length}</div><div class="sl">Memoirs</div></div>
   </div>
   ${tripInsights(t,linkedPlaces,tripJournal,isDomestic,tripCountries,tripUSStates)}
+  ${rTripBookings(t,stageId)}
+  ${rTripActivities(t,stageId)}
+  ${rTripPrep(t,stageId)}
   ${placesSection}${journalSection}${itinerarySection}`;
 }
 function tripInsights(t,linkedPlaces,tripJournal,isDomestic,tripCountries,tripUSStates){
@@ -2711,6 +2764,251 @@ Budget: ${t.budget?'$'+t.budget.toLocaleString():'not set'}`;
       e.httpStatus?`<div style="font-size:11px;color:var(--muted2)">AI insights unavailable (${e.message})</div>`:'';
   }
 }
+// ══════════════════════════════════════════════
+// TRIP DETAIL — BOOKINGS / ACTIVITIES / PREP
+// ══════════════════════════════════════════════
+const PREP_DEFAULTS=[
+  {cat:'Documents',items:['Passport valid 6+ months','Visa obtained','Travel insurance printed','Emergency contacts']},
+  {cat:'Health',items:['Vaccinations up to date','Prescriptions packed','First aid kit']},
+  {cat:'Money',items:['Bank notified of travel','Local currency obtained','Credit cards packed']},
+  {cat:'Gear',items:['Luggage packed','Adapters/converters','Phone charger + power bank']},
+  {cat:'Pre-book',items:['Airport transport arranged','Key activities reserved']},
+  {cat:'Notify',items:['Housesitter arranged','Mail held or forwarded']},
+  {cat:'Tech',items:['Offline maps downloaded','Backup photos/docs']},
+];
+
+function initPrepChecklist(t){
+  if((t.prepChecklist||[]).length)return;
+  t.prepChecklist=[];
+  PREP_DEFAULTS.forEach(g=>g.items.forEach(text=>t.prepChecklist.push({id:uid(),text,done:false,category:g.cat})));
+  save('trips',D.trips);scheduledSync('trips',D.trips);
+}
+
+function rTripBookings(t,stageId){
+  const EARLY=new Set(['dreaming','researching']);if(EARLY.has(stageId))return'';
+  const bk=t.bookings||{};
+  const cats=[{id:'flights',label:'Flights',icon:'✈️'},{id:'lodging',label:'Lodging',icon:'🏨'},{id:'rental',label:'Rental Car',icon:'🚗'},{id:'transport',label:'Inter-city Transport',icon:'🚂'}];
+  const totalItems=cats.reduce((n,c)=>n+(bk[c.id]||[]).length,0);
+  const totalBooked=cats.reduce((n,c)=>n+(bk[c.id]||[]).filter(x=>x.booked).length,0);
+  const allGated=(bk.flights||[]).some(f=>f.booked)&&(bk.lodging||[]).some(f=>f.booked);
+  return`<div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">🗂️ Essentials</div><div class="cs">${totalItems?totalBooked+'/'+totalItems+' booked':'Nothing added yet'}${allGated?' · ✅ Flights & lodging done':''}</div></div>
+      <span class="coll-arrow">▾</span>
+    </div>
+    <div class="coll-body coll-open">
+      ${cats.map(cat=>{
+        const items=bk[cat.id]||[];
+        return`<div style="margin-bottom:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;margin-bottom:4px">
+            <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px">${cat.icon} ${cat.label}</div>
+            <button class="pbtn" style="font-size:10px;padding:2px 8px" onclick="openBookingAdd('${t.id}','${cat.id}')">+ Add</button>
+          </div>
+          ${items.length?items.map(item=>`<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--bdr)">
+            <input type="checkbox" ${item.booked?'checked':''} style="width:14px;height:14px;flex-shrink:0;margin-top:2px;cursor:pointer" onchange="toggleBookingDone('${t.id}','${cat.id}','${item.id}',this.checked)" title="Mark as booked"/>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:6px">${item.name}${item.booked?'<span style="font-size:10px;color:var(--green3)">✅</span>':''}</div>
+              ${item.date||item.confirmation?`<div style="font-size:10px;color:var(--muted2);margin-top:1px">${[item.date?fd(item.date):'',item.confirmation?'Conf: '+item.confirmation:''].filter(Boolean).join(' · ')}</div>`:''}
+              ${item.notes?`<div style="font-size:10px;color:var(--muted2)">${item.notes}</div>`:''}
+            </div>
+            <div style="display:flex;gap:2px;flex-shrink:0">
+              ${item.link?`<a href="${item.link}" target="_blank" style="font-size:11px;color:var(--green3);text-decoration:none;padding:2px 4px" title="Open link">↗</a>`:''}
+              <button onclick="openBookingEdit('${t.id}','${cat.id}','${item.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted2);padding:2px 4px;border-radius:3px" onmouseover="this.style.color='var(--green3)'" onmouseout="this.style.color='var(--muted2)'">✏️</button>
+              <button onclick="delBooking('${t.id}','${cat.id}','${item.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted2);padding:2px 4px;border-radius:3px" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
+            </div>
+          </div>`).join(''):`<div style="font-size:11px;color:var(--muted2);padding:3px 0;font-style:italic">None added</div>`}
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+function rTripActivities(t,stageId){
+  const EARLY=new Set(['dreaming','researching']);if(EARLY.has(stageId))return'';
+  const acts=t.activities||[];
+  const byStatus={idea:acts.filter(a=>a.status==='idea'),booked:acts.filter(a=>a.status==='booked'),completed:acts.filter(a=>a.status==='completed')};
+  const sLabel={idea:'💡 Ideas',booked:'✅ Booked',completed:'🏁 Done'};
+  const sColor={idea:'var(--muted)',booked:'var(--green3)',completed:'var(--muted2)'};
+  return`<div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">🎯 Activities</div><div class="cs">${acts.length?acts.length+' total · '+byStatus.booked.length+' booked':'Nothing planned yet'}</div></div>
+      <div style="display:flex;align-items:center;gap:8px"><button class="pbtn" onclick="event.stopPropagation();openActivityAdd('${t.id}')">+ Add</button><span class="coll-arrow">▾</span></div>
+    </div>
+    <div class="coll-body coll-open">
+      ${acts.length?['booked','idea','completed'].filter(s=>byStatus[s].length).map(s=>`
+        <div style="margin-bottom:10px">
+          <div style="font-size:10px;font-weight:600;color:${sColor[s]};text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px">${sLabel[s]}</div>
+          ${byStatus[s].map(a=>`<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--bdr)">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:500;color:var(--text)">${a.name}</div>
+              ${a.date||a.location?`<div style="font-size:10px;color:var(--muted2);margin-top:1px">${[a.date?(fd(a.date)+(a.time?' · '+a.time:'')):'' , a.location].filter(Boolean).join(' · ')}</div>`:''}
+              ${a.cost?`<div style="font-size:10px;color:var(--muted2)">$${parseFloat(a.cost).toLocaleString()}</div>`:''}
+              ${a.notes?`<div style="font-size:10px;color:var(--muted2)">${a.notes.slice(0,80)}${a.notes.length>80?'…':''}</div>`:''}
+            </div>
+            <div style="display:flex;gap:2px;flex-shrink:0;align-items:flex-start">
+              ${a.link?`<a href="${a.link}" target="_blank" style="font-size:11px;color:var(--green3);text-decoration:none;padding:2px 4px">↗</a>`:''}
+              <button onclick="openActivityEdit('${t.id}','${a.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted2);padding:2px 4px;border-radius:3px" onmouseover="this.style.color='var(--green3)'" onmouseout="this.style.color='var(--muted2)'">✏️</button>
+              <button onclick="delActivity('${t.id}','${a.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted2);padding:2px 4px;border-radius:3px" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
+            </div>
+          </div>`).join('')}
+        </div>`).join(''):`<div style="font-size:12px;color:var(--muted2);padding:10px 0;text-align:center">No activities yet — add tours, restaurants, excursions</div>`}
+    </div>
+  </div>`;
+}
+
+function rTripPrep(t,stageId){
+  const PREP_STAGES=new Set(['trip-prep','in-progress','completed']);if(!PREP_STAGES.has(stageId))return'';
+  const items=t.prepChecklist||[];
+  const done=items.filter(x=>x.done).length;
+  const pct=items.length?Math.round(done/items.length*100):0;
+  const byCat={};items.forEach(item=>{if(!byCat[item.category])byCat[item.category]=[];byCat[item.category].push(item);});
+  const cats=PREP_DEFAULTS.map(g=>g.cat).filter(c=>byCat[c]);
+  Object.keys(byCat).forEach(c=>{if(!cats.includes(c))cats.push(c);});
+  return`<div class="card" style="margin-bottom:13px;border-top:3px solid #7A5C8A">
+    <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">🎒 Trip Prep</div><div class="cs">${done}/${items.length} done${pct===100?' · All clear! ✅':''}</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="background:var(--card2);border-radius:4px;height:6px;width:60px;overflow:hidden"><div style="height:100%;width:${pct}%;background:#7A5C8A;border-radius:4px"></div></div>
+        <span class="coll-arrow">▾</span>
+      </div>
+    </div>
+    <div class="coll-body coll-open">
+      ${cats.map(cat=>{
+        const catItems=byCat[cat]||[];
+        return`<div style="margin-bottom:10px">
+          <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px">${cat}</div>
+          ${catItems.map(item=>`<div style="display:flex;align-items:center;gap:8px;padding:3px 0">
+            <input type="checkbox" ${item.done?'checked':''} style="width:14px;height:14px;flex-shrink:0;cursor:pointer" onchange="togglePrepItem('${t.id}','${item.id}',this.checked)"/>
+            <span style="font-size:12px;color:var(--text2);flex:1${item.done?';text-decoration:line-through;color:var(--muted2)':''}">${item.text}</span>
+            <button onclick="delPrepItem('${t.id}','${item.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:transparent;padding:1px 4px;border-radius:3px;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='transparent'">×</button>
+          </div>`).join('')}
+        </div>`;
+      }).join('')}
+      <div style="display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--bdr)">
+        <input class="fi" id="prep-add-${t.id}" placeholder="Add custom item…" style="flex:1;font-size:11px;padding:5px 8px" onkeydown="if(event.key==='Enter'&&this.value.trim()){addPrepItem('${t.id}',this.value);this.value=''}"/>
+        <select class="fs" id="prep-cat-${t.id}" style="width:110px;font-size:11px;padding:5px 8px">${PREP_DEFAULTS.map(g=>`<option value="${g.cat}">${g.cat}</option>`).join('')}</select>
+        <button class="pbtn" style="font-size:11px;padding:4px 10px;white-space:nowrap" onclick="const v=document.getElementById('prep-add-${t.id}');addPrepItem('${t.id}',v.value);v.value=''">Add</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Booking CRUD ──────────────────────────────
+let _bkTid=null,_bkCat=null,_bkId=null;
+function openBookingAdd(tid,cat){
+  D=load();_bkTid=tid;_bkCat=cat;_bkId=null;
+  const lbl={flights:'Flight',lodging:'Lodging',rental:'Rental Car',transport:'Transport'};
+  document.getElementById('bk-title').textContent='Add '+lbl[cat];
+  ['bk-name','bk-date','bk-conf','bk-link','bk-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('bk-booked').checked=false;
+  openM('m-booking');
+}
+function openBookingEdit(tid,cat,bid){
+  D=load();_bkTid=tid;_bkCat=cat;_bkId=bid;
+  const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  const item=(((t.bookings||{})[cat])||[]).find(x=>x.id===bid);if(!item)return;
+  const lbl={flights:'Flight',lodging:'Lodging',rental:'Rental Car',transport:'Transport'};
+  document.getElementById('bk-title').textContent='Edit '+lbl[cat];
+  document.getElementById('bk-name').value=item.name||'';
+  document.getElementById('bk-date').value=item.date||'';
+  document.getElementById('bk-conf').value=item.confirmation||'';
+  document.getElementById('bk-link').value=item.link||'';
+  document.getElementById('bk-notes').value=item.notes||'';
+  document.getElementById('bk-booked').checked=!!item.booked;
+  openM('m-booking');
+}
+function saveBooking(){
+  const name=document.getElementById('bk-name').value.trim();if(!name){toast('⚠️ Name required');return;}
+  D=load();const t=D.trips.find(x=>x.id===_bkTid);if(!t)return;
+  if(!t.bookings)t.bookings={};if(!t.bookings[_bkCat])t.bookings[_bkCat]=[];
+  const item={id:_bkId||uid(),name,date:document.getElementById('bk-date').value,confirmation:document.getElementById('bk-conf').value.trim(),link:document.getElementById('bk-link').value.trim(),notes:document.getElementById('bk-notes').value.trim(),booked:document.getElementById('bk-booked').checked};
+  if(_bkId){const i=t.bookings[_bkCat].findIndex(x=>x.id===_bkId);if(i>=0)t.bookings[_bkCat][i]=item;}
+  else t.bookings[_bkCat].push(item);
+  save('trips',D.trips);scheduledSync('trips',D.trips);
+  closeM('m-booking');
+  if(item.booked)checkBookedAdvance(_bkTid);
+  else openTripD(_bkTid);
+}
+function delBooking(tid,cat,bid){
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  if(t.bookings&&t.bookings[cat])t.bookings[cat]=t.bookings[cat].filter(x=>x.id!==bid);
+  save('trips',D.trips);scheduledSync('trips',D.trips);toast('🗑️ Removed');openTripD(tid);
+}
+function toggleBookingDone(tid,cat,bid,val){
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  const item=(((t.bookings||{})[cat])||[]).find(x=>x.id===bid);if(!item)return;
+  item.booked=val;save('trips',D.trips);scheduledSync('trips',D.trips);
+  if(val)checkBookedAdvance(tid);else openTripD(tid);
+}
+function checkBookedAdvance(tid){
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  const bk=t.bookings||{};
+  if(!(bk.flights||[]).some(f=>f.booked)||(!(bk.lodging||[]).some(f=>f.booked)))return;
+  const state=pipeStateLoad();const cur=state[tid]||pipeAutoCol({id:tid,type:'trip',data:t});
+  if(['booked','trip-prep','in-progress','completed'].includes(cur)){openTripD(tid);return;}
+  if(confirm('✈️ Flights and lodging both booked! Move trip to "Booked" stage?')){
+    pipeMoveCard(tid,'booked',true);toast('✈️ Moved to Booked!');
+  }
+  openTripD(tid);
+}
+
+// ── Activity CRUD ─────────────────────────────
+let _actTid=null,_actId=null;
+function openActivityAdd(tid){
+  _actTid=tid;_actId=null;
+  document.getElementById('act-modal-title').textContent='Add Activity';
+  ['act-name','act-loc','act-conf','act-link','act-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('act-date').value='';document.getElementById('act-time').value='';
+  document.getElementById('act-cost').value='';document.getElementById('act-status').value='idea';
+  openM('m-activity');
+}
+function openActivityEdit(tid,aid){
+  D=load();_actTid=tid;_actId=aid;
+  const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  const a=(t.activities||[]).find(x=>x.id===aid);if(!a)return;
+  document.getElementById('act-modal-title').textContent='Edit Activity';
+  document.getElementById('act-name').value=a.name||'';
+  document.getElementById('act-date').value=a.date||'';document.getElementById('act-time').value=a.time||'';
+  document.getElementById('act-loc').value=a.location||'';document.getElementById('act-cost').value=a.cost||'';
+  document.getElementById('act-conf').value=a.confirmation||'';document.getElementById('act-link').value=a.link||'';
+  document.getElementById('act-notes').value=a.notes||'';document.getElementById('act-status').value=a.status||'idea';
+  openM('m-activity');
+}
+function saveActivity(){
+  const name=document.getElementById('act-name').value.trim();if(!name){toast('⚠️ Name required');return;}
+  D=load();const t=D.trips.find(x=>x.id===_actTid);if(!t)return;
+  if(!t.activities)t.activities=[];
+  const a={id:_actId||uid(),name,date:document.getElementById('act-date').value,time:document.getElementById('act-time').value,location:document.getElementById('act-loc').value.trim(),cost:document.getElementById('act-cost').value,confirmation:document.getElementById('act-conf').value.trim(),link:document.getElementById('act-link').value.trim(),notes:document.getElementById('act-notes').value.trim(),status:document.getElementById('act-status').value};
+  if(_actId){const i=t.activities.findIndex(x=>x.id===_actId);if(i>=0)t.activities[i]=a;}
+  else t.activities.push(a);
+  save('trips',D.trips);scheduledSync('trips',D.trips);closeM('m-activity');openTripD(_actTid);
+}
+function delActivity(tid,aid){
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  t.activities=(t.activities||[]).filter(x=>x.id!==aid);
+  save('trips',D.trips);scheduledSync('trips',D.trips);toast('🗑️ Removed');openTripD(tid);
+}
+
+// ── Prep Checklist CRUD ───────────────────────
+function togglePrepItem(tid,iid,val){
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  const item=(t.prepChecklist||[]).find(x=>x.id===iid);if(!item)return;
+  item.done=val;save('trips',D.trips);scheduledSync('trips',D.trips);
+}
+function addPrepItem(tid,text){
+  text=(text||'').trim();if(!text)return;
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  if(!t.prepChecklist)t.prepChecklist=[];
+  const cat=document.getElementById('prep-cat-'+tid)?.value||'Gear';
+  t.prepChecklist.push({id:uid(),text,done:false,category:cat});
+  save('trips',D.trips);scheduledSync('trips',D.trips);openTripD(tid);
+}
+function delPrepItem(tid,iid){
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  t.prepChecklist=(t.prepChecklist||[]).filter(x=>x.id!==iid);
+  save('trips',D.trips);scheduledSync('trips',D.trips);openTripD(tid);
+}
+
 function addItineraryDay(tid){
   D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
   const last=t.itinerary.length?t.itinerary[t.itinerary.length-1].date:'';
@@ -4316,8 +4614,9 @@ function delExpense(wid,idx){
 const PIPE_COLS=[
   {id:'dreaming',label:'Dreaming',icon:'✦',color:'#9B7420',empty:"Where will your path lead next?",emptyIcon:'✦'},
   {id:'researching',label:'Researching',icon:'🔍',color:'#4A7EBA',empty:'No active research right now.',emptyIcon:'🔍'},
-  {id:'planning',label:'Planning',icon:'📋',color:'#6B9575',empty:'Nothing in the works yet.',emptyIcon:'📋'},
+  {id:'planning-booking',label:'Planning & Booking',icon:'🗺️',color:'#6B9575',empty:'Nothing in the works yet.',emptyIcon:'🗺️'},
   {id:'booked',label:'Booked',icon:'✈️',color:'#4A7259',empty:'Nothing confirmed yet — go book something!',emptyIcon:'✈️'},
+  {id:'trip-prep',label:'Trip Prep',icon:'🎒',color:'#7A5C8A',empty:'Trip prep items will appear here.',emptyIcon:'🎒'},
   {id:'in-progress',label:'In Progress',icon:'🌍',color:'#5A8A6C',empty:"You're not mid-trip right now.",emptyIcon:'🌍'},
   {id:'completed',label:'Completed',icon:'✅',color:'#7D7168',empty:'Your adventures will live here.',emptyIcon:'✅'},
   {id:'on-hold',label:'On Hold',icon:'⏸',color:'#A09080',empty:'Nothing paused.',emptyIcon:'⏸'},
@@ -4340,15 +4639,30 @@ function pipeAutoCol(card){
   if(card.type==='abroad')return'researching';
   if(card.type==='custom')return'dreaming';
   if(card.type==='trip'){
-    const t=D.trips.find(x=>x.id===card.id);if(!t)return'planning';
+    const t=D.trips.find(x=>x.id===card.id);if(!t)return'planning-booking';
     const now=new Date();now.setHours(0,0,0,0);
     const start=t.startDate?new Date(t.startDate):null;
     const end=t.endDate?new Date(t.endDate):null;
     if(t.status==='past'||(end&&end<now))return'completed';
     if(start&&start<=now&&(!end||end>=now))return'in-progress';
-    return'planning';
+    return'planning-booking';
   }
   return'dreaming';
+}
+
+function pipeAutoAdvance(){
+  D=load();const state=pipeStateLoad();const today=new Date();today.setHours(0,0,0,0);
+  let changed=false;
+  D.trips.forEach(t=>{
+    if(!t.startDate)return;
+    const start=new Date(t.startDate);const end=t.endDate?new Date(t.endDate):null;
+    start.setHours(0,0,0,0);if(end)end.setHours(0,0,0,0);
+    const cur=state[t.id]||pipeAutoCol({id:t.id,type:'trip',data:t});
+    if(cur==='dreaming'||cur==='researching')return;
+    if(today>=start&&(!end||today<=end)&&cur!=='in-progress'&&cur!=='completed'){state[t.id]='in-progress';changed=true;}
+    if(end&&today>end&&cur!=='completed'){state[t.id]='completed';changed=true;}
+  });
+  if(changed){pipeStateSave(state);setTimeout(()=>toast('📍 Path updated'),300);}
 }
 
 function pipeGetCards(){
@@ -4381,10 +4695,25 @@ function pipeCardMeta(card){
 
 function pipeCardProgress(card){
   if(card.type!=='trip')return null;
-  const d=card.data;if(!d.startDate||!d.endDate)return null;
-  const now=new Date(),start=new Date(d.startDate),end=new Date(d.endDate);
-  if(now<start)return null;if(now>end)return 100;
-  return Math.round((now-start)/(end-start)*100);
+  const d=card.data;const col=card.col;
+  if(col==='in-progress'){
+    if(!d.startDate||!d.endDate)return null;
+    const now=new Date(),start=new Date(d.startDate),end=new Date(d.endDate);
+    if(now<start)return null;if(now>end)return 100;
+    return Math.round((now-start)/(end-start)*100);
+  }
+  if(col==='completed')return 100;
+  if(col==='planning-booking'){
+    const bk=d.bookings||{};
+    const total=['flights','lodging','rental','transport'].reduce((n,k)=>n+(bk[k]||[]).length,0);
+    const done=['flights','lodging','rental','transport'].reduce((n,k)=>n+(bk[k]||[]).filter(x=>x.booked).length,0);
+    return total?Math.round(done/total*100):null;
+  }
+  if(col==='trip-prep'){
+    const items=d.prepChecklist||[];
+    return items.length?Math.round(items.filter(x=>x.done).length/items.length*100):null;
+  }
+  return null;
 }
 
 function pipeMoveCard(cardId,toCol,silent){
@@ -4398,8 +4727,9 @@ function pipeMoveCard(cardId,toCol,silent){
     if(t){
       if(toCol==='completed')t.status='past';
       else if(toCol==='in-progress')t.status='active';
-      else if(toCol==='planning'||toCol==='booked')t.status='upcoming';
+      else if(toCol==='planning-booking'||toCol==='booked'||toCol==='trip-prep')t.status='upcoming';
       else if(toCol==='dreaming'||toCol==='researching')t.status='planning';
+      if(toCol==='trip-prep')initPrepChecklist(t);
       save('trips',D.trips);scheduledSync('trips',D.trips);
     }
   }
@@ -5805,6 +6135,7 @@ if(localStorage.getItem('wf_dark')==='1'){
   const btn=document.getElementById('dark-toggle');
   if(btn)btn.textContent='☀️';
 }
+pipeAutoAdvance();
 loadSettings();rHome();badges();
 document.getElementById('tba').style.display='flex';
 // Hide auth overlay immediately if session already exists (avoids flash)
