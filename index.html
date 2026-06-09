@@ -1502,7 +1502,10 @@ input,textarea,select{font-family:inherit;font-weight:400}
     </div>
     <div class="fg"><label class="fl">Thumbnail URL</label><input class="fi" id="c-thumb" type="url" placeholder="https://…/photo.jpg"/></div>
     <div class="fg" style="margin-bottom:0"><label class="fl">Notes</label><textarea class="ft" id="c-notes" placeholder="Trip overview, goals, packing reminders…" style="min-height:65px"></textarea></div>
-    <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;cursor:pointer;color:var(--text2)"><input type="checkbox" id="c-exclude-trips" style="accent-color:var(--green);width:14px;height:14px"/><span>Exclude from Trips view</span></label>
+    <div style="display:flex;gap:18px;margin-top:10px">
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;color:var(--text2)"><input type="checkbox" id="c-solo" style="accent-color:var(--green);width:14px;height:14px"/><span>🧍 Solo trip</span></label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;color:var(--text2)"><input type="checkbox" id="c-exclude-trips" style="accent-color:var(--green);width:14px;height:14px"/><span>Exclude from Trips view</span></label>
+    </div>
     <div class="fa"><button class="btn-s" onclick="closeM('m-camp')">Cancel</button><button class="btn-p" id="cm-save" onclick="saveCamp()">Save</button></div>
   </div>
 </div>
@@ -4130,7 +4133,7 @@ function rTrips(){
       const tIcon=_typeIcon(item);
       return`<div class="tc-hero tc-hero-active" onclick="${_openItem(item)}">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px">
-          <div style="min-width:0"><div style="font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.3px;margin-bottom:3px">${tIcon} ${item.name}</div>
+          <div style="min-width:0"><div style="font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.3px;margin-bottom:3px">${tIcon} ${item.name}${item.solo?' <span style="font-size:12px;opacity:.7">🧍</span>':''}</div>
           <div style="font-size:11px;color:var(--muted)">${item.startDate?fd(item.startDate)+(item.endDate?' — '+fd(item.endDate):''):'Active'}</div></div>
           <div style="text-align:right;flex-shrink:0">
             <div style="font-size:26px;font-weight:700;color:var(--green3);line-height:1">Day ${dayNum}</div>
@@ -4154,7 +4157,7 @@ function rTrips(){
       const tIcon=_typeIcon(item);
       return`<div class="tc-hero tc-hero-locked" onclick="${_openItem(item)}">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px">
-          <div style="min-width:0"><div style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.3px;margin-bottom:3px">${tIcon} ${item.name}</div>
+          <div style="min-width:0"><div style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.3px;margin-bottom:3px">${tIcon} ${item.name}${item.solo?' <span style="font-size:12px;opacity:.7">🧍</span>':''}</div>
           <div style="font-size:11px;color:var(--muted)">${item.startDate?fd(item.startDate)+(item.endDate?' — '+fd(item.endDate):''):'Dates TBD'}</div></div>
           ${daysUntil!==null?`<div style="text-align:right;flex-shrink:0">
             <div style="font-size:24px;font-weight:700;color:var(--gold);line-height:1">${daysUntil}</div>
@@ -6595,7 +6598,7 @@ function campCard(c){
       <span style="position:absolute;top:7px;right:7px;font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(0,0,0,.35);color:#fff;letter-spacing:.3px">${typeInfo.icon} ${typeInfo.label}</span></div>`}
     <div class="camp-body">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:5px;margin-bottom:4px">
-        <div class="camp-name">${c.name}</div>
+        <div class="camp-name">${c.name}${c.solo?' <span style="font-size:11px;opacity:.7">🧍</span>':''}</div>
         <span style="font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;flex-shrink:0;white-space:nowrap;${campStatusStyle(c.status)}">${{dream:'✦ Dream',research:'🔍 Research',planning:'📋 Planning',locked:'🔒 Locked',active:'🚀 Active',past:'✅ Done'}[c.status]||tsl(c.status)}</span>
       </div>
       ${c.location||c.state?`<div class="camp-loc">📍 ${[c.location,c.state].filter(Boolean).join(', ')}</div>`:''}
@@ -6664,6 +6667,7 @@ function openCamp(rtype){
   document.getElementById('c-rtype').value=rtype||'trip';
   document.getElementById('c-camptype').value='tent';
   document.getElementById('c-exclude-trips').checked=false;
+  document.getElementById('c-solo').checked=false;
   openM('m-camp');
 }
 function openCampSpot(){openCamp('spot');}
@@ -6684,6 +6688,7 @@ function openCampEdit(id){
   document.getElementById('c-thumb').value=c.thumb||'';
   document.getElementById('c-notes').value=c.notes||'';
   document.getElementById('c-exclude-trips').checked=!!c.excludeFromTrips;
+  document.getElementById('c-solo').checked=!!c.solo;
   openM('m-camp');
 }
 
@@ -6701,7 +6706,8 @@ function saveCamp(){
     campType:document.getElementById('c-camptype').value,
     thumb:document.getElementById('c-thumb').value.trim(),
     notes:document.getElementById('c-notes').value.trim(),
-    excludeFromTrips:document.getElementById('c-exclude-trips').checked};
+    excludeFromTrips:document.getElementById('c-exclude-trips').checked,
+    solo:document.getElementById('c-solo').checked||false};
   const pendingType=window._pendingTripType||null;
   const wasInTrips=!!window._campInTrips;
   window._pendingTripType=null;
@@ -6780,10 +6786,11 @@ function openCampD(id){
       ${c.thumb?`<img src="${c.thumb}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r);margin-bottom:12px" onerror="this.style.display='none'"/>`:''}
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px">
         <div style="flex:1;min-width:0">
-          <h2 style="font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.3px;line-height:1.2;margin-bottom:6px">${c.name}</h2>
+          <h2 style="font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.3px;line-height:1.2;margin-bottom:6px">${c.name}${c.solo?' <span style="font-size:14px;opacity:.75">🧍</span>':''}</h2>
           <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
             <span class="camp-type-badge">${typeInfo.icon} ${typeInfo.label}</span>
             <span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;${campStatusStyle(c.status)}">${{dream:'✦ Dreaming',research:'🔍 Researching',planning:'📋 Planning',locked:'🔒 Locked In',active:'🚀 Active',past:'✅ Completed'}[c.status]||tsl(c.status)}</span>
+            ${c.solo?`<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:rgba(74,114,89,.1);color:var(--green3);border:1px solid rgba(74,114,89,.2)">🧍 Solo</span>`:''}
             ${c.location?`<span style="font-size:11px;color:var(--muted)">📍 ${c.location}${c.state?', '+c.state:''}</span>`:''}
           </div>
           <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:12px">
