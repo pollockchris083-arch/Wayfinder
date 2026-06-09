@@ -1558,10 +1558,8 @@ input,textarea,select{font-family:inherit;font-weight:400}
   <div class="modal" style="width:460px">
     <button class="mcl" onclick="closeM('m-camp')">✕</button>
     <h2 id="cm-title">Add Adventure</h2>
-    <div class="fr">
-      <div class="fg"><label class="fl">Record Type</label><select class="fs" id="c-rtype"><option value="trip">🏕️ Trip (dated)</option><option value="spot">📍 Saved Spot</option></select></div>
-      <div class="fg"><label class="fl">Status</label><select class="fs" id="c-status"><option value="dream">✦ Dreaming</option><option value="research">🔍 Researching</option><option value="planning">✏️ Planning</option><option value="locked">🔒 Locked In</option><option value="active">🚀 Active</option><option value="past">✅ Past</option></select></div>
-    </div>
+    <input type="hidden" id="c-rtype" value="trip"/>
+    <div class="fg"><label class="fl">Status</label><select class="fs" id="c-status"><option value="dream">✦ Dreaming</option><option value="research">🔍 Researching</option><option value="planning">✏️ Planning</option><option value="locked">🔒 Locked In</option><option value="active">🚀 Active</option><option value="past">✅ Past</option></select></div>
     <div class="fg"><label class="fl">Name *</label><input class="fi" id="c-name" placeholder="e.g. Sierras Loop, Big Basin Weekend"/></div>
     <div class="fg"><label class="fl">Adventure Type</label><select class="fs" id="c-camptype">
       <optgroup label="Camping &amp; Outdoors">
@@ -2452,7 +2450,7 @@ window.wfAuditLinks=function(){
 // ══════════════════════════════════════════════
 // ROUTING
 // ══════════════════════════════════════════════
-const TITLES={home:'Dashboard',map:'World Map',places:'Places',wishlist:'Wishlist',planner:'AI Planner',trips:'Trips',journal:'Memoirs',abroad:'Living Abroad',settings:'Settings',path:'The Path',camp:'Adventures',work:'Work Trips',docs:'Documents'};
+const TITLES={home:'Dashboard',map:'World Map',places:'Places',wishlist:'Wishlist',planner:'AI Planner',trips:'Trips',journal:'Memoirs',abroad:'Living Abroad',settings:'Settings',path:'The Path',camp:'Saved Spots',work:'Work Trips',docs:'Documents'};
 const ACTS={home:{l:'+ Add Place',f:'openPlace'},places:{l:'+ Add Place',f:'openPlace'},wishlist:{l:'+ Add to Wishlist',f:'openWish'},planner:{l:'',f:''},trips:{l:'+ New Trip',f:'openNewTrip'},journal:{l:'+ New Memoir',f:'openJournal'},map:{l:'+ Add Place',f:'openPlace'},abroad:{l:'',f:''},settings:{l:'',f:''},path:{l:'',f:''},camp:{l:'+ Add Spot',f:'openCampSpot'},work:{l:'+ New Work Trip',f:'openWork'},docs:{l:'+ Add Document',f:'openDocModal'}};
 let cur='home';
 let tripTypeFilter='all';
@@ -2485,9 +2483,10 @@ function goTrips(type){
   document.getElementById('page-trips').classList.add('on');
   document.querySelector('[data-tf="'+type+'"]')?.classList.add('on');
   const typeLabels={all:'Trips',road_trip:'Road Trips',camping:'Camping',adventure:'Adventures',getaway:'Getaways',international:'International',event:'Events',solo:'Solo Trips'};
+  const btnLabels={all:'+ New Trip',road_trip:'+ Plan Road Trip',camping:'+ Plan Camping Trip',adventure:'+ Plan Adventure',getaway:'+ Plan Getaway',international:'+ Plan International Trip',event:'+ Plan Event',solo:'+ New Trip'};
   document.getElementById('tbt').textContent=typeLabels[type]||'Trips';
-  const a=ACTS['trips'],btn=document.getElementById('tba');
-  btn.textContent=a?.l||'';btn.style.display=a?.l?'flex':'none';
+  const btn=document.getElementById('tba');
+  btn.textContent=btnLabels[type]||'+ New Trip';btn.style.display='flex';
   cur='trips';rTrips();badges();
 }
 function toggleTripsNav(){
@@ -2503,7 +2502,14 @@ function inferTripCat(t){
   return'domestic';
 }
 document.querySelectorAll('.ni:not(.ni-sub)').forEach(b=>b.addEventListener('click',()=>go(b.dataset.p)));
-function topAct(){const a=ACTS[cur];if(a?.f)window[a.f]?.()}
+function topAct(){
+  if(cur==='trips'){
+    if(!tripTypeFilter||tripTypeFilter==='all'||tripTypeFilter==='solo'){openNewTrip();}
+    else{pickTripType(tripTypeFilter);}
+    return;
+  }
+  const a=ACTS[cur];if(a?.f)window[a.f]?.();
+}
 
 // ══════════════════════════════════════════════
 // TOAST
@@ -6874,42 +6880,10 @@ function campCard(c){
 function rCamp(){
   D=load();
   const camps=D.camps||[];
-  const tab=window._campTab||'planning';
-  const tf=window._campTypeFilter||'all';
-  const allTrips=camps.filter(c=>c.recordType!=='spot');
-  const planning=allTrips.filter(c=>c.status==='planning'||c.status==='dream'||c.status==='research'||c.status==='locked'||c.status==='active');
-  const past=allTrips.filter(c=>c.status==='past');
   const spots=camps.filter(c=>c.recordType==='spot');
-  const filterFn=arr=>tf==='all'?arr:arr.filter(c=>(c.campType||'tent')===tf);
-
-  const tabBar=`<div class="fb" style="margin-bottom:10px">
-    <button class="fc ${tab==='planning'?'on':''}" onclick="window._campTab='planning';rCamp()">📋 Planning (${planning.length})</button>
-    <button class="fc ${tab==='past'?'on':''}" onclick="window._campTab='past';rCamp()">✅ Past (${past.length})</button>
-    <button class="fc ${tab==='spots'?'on':''}" onclick="window._campTab='spots';rCamp()">📍 Spots (${spots.length})</button>
-  </div>`;
-
-  const typeBar=tab!=='spots'?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:13px">
-    ${[['all','All'],['tent','🏕️ Tent'],['backpacking','🎒 Pack'],['rv','🚐 RV'],['van','🚌 Van'],['trailer','🚛 Trailer'],['car','🚗 Car'],['dispersed','🌲 Dispersed'],['overlanding','🏔️ Overland'],['glamping','⛺ Glamp']].map(([v,l])=>`<button class="fc${tf===v?' on':''}" style="font-size:10px;padding:3px 9px" onclick="window._campTypeFilter='${v}';rCamp()">${l}</button>`).join('')}
-  </div>`:'';;
-
+  const tabBar='';const typeBar='';
   let body='';
-  if(tab==='planning'){
-    const items=filterFn(planning);
-    if(!items.length&&planning.length&&tf!=='all'){
-      const typeLabel=(ADV_TYPES[tf]||{label:tf}).label;
-      body=`<div class="empty"><div class="empty-icon">🧭</div><h3>No ${typeLabel} trips in Planning</h3><p>${planning.length} adventure${planning.length!==1?'s':''} hidden by type filter.</p><button class="tb-btn" onclick="window._campTypeFilter='all';rCamp()">Show All Types</button></div>`;
-    } else {
-      body=items.length?`<div class="ga">${items.map(campCard).join('')}</div>`:`<div class="empty"><div class="empty-icon">🧭</div><h3>No adventures planned yet</h3><p>Add a wishlist trip or start planning one.</p><button class="tb-btn" onclick="openCamp()">+ Add Adventure</button></div>`;
-    }
-  } else if(tab==='past'){
-    const items=filterFn(past);
-    if(!items.length&&past.length&&tf!=='all'){
-      const typeLabel=(ADV_TYPES[tf]||{label:tf}).label;
-      body=`<div class="empty"><div class="empty-icon">🌲</div><h3>No ${typeLabel} trips in Past</h3><p>${past.length} adventure${past.length!==1?'s':''} hidden by type filter.</p><button class="tb-btn" onclick="window._campTypeFilter='all';rCamp()">Show All Types</button></div>`;
-    } else {
-      body=items.length?`<div class="ga">${items.map(campCard).join('')}</div>`:`<div class="empty"><div class="empty-icon">🌲</div><h3>No past adventures yet</h3><p>Log a completed outdoor trip.</p><button class="tb-btn" onclick="openCamp()">+ Log Trip</button></div>`;
-    }
-  } else {
+  {
     // Saved Spots — category filter
     const sf=window._spotCatFilter||'all';
     const spotCatBar=`<div class="spot-cat-filter">
@@ -7047,7 +7021,7 @@ function openCampD(id){
   else tabBody=rAdvSummaryTab(c);
   const _inTrips=window._campInTrips;
   const _campContainer=_inTrips?document.getElementById('camp-dv-in-trips'):document.getElementById('camp-in');
-  const _backBtn=_inTrips?`<button class="td-back" onclick="closeCampDInTrips()">← Trips</button>`:`<button class="td-back" onclick="rCamp()">← Adventures</button>`;
+  const _backBtn=_inTrips?`<button class="td-back" onclick="closeCampDInTrips()">← Trips</button>`:`<button class="td-back" onclick="go('trips');rTrips()">← Trips</button>`;
   if(!_campContainer)return;
   _campContainer.innerHTML=`
     ${_backBtn}
