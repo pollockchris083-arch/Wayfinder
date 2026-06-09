@@ -1431,6 +1431,50 @@ input,textarea,select{font-family:inherit;font-weight:400}
   </div>
 </div>
 
+<!-- FUEL FILL-UP -->
+<div class="mo" id="m-fuel">
+  <div class="modal" style="width:440px">
+    <button class="mcl" onclick="closeM('m-fuel')">✕</button>
+    <h2 id="fuel-modal-title">Add Fill-up</h2>
+    <div class="fr">
+      <div class="fg"><label class="fl">Date</label><input class="fi" id="fuel-date" type="date"/></div>
+      <div class="fg" style="flex:2"><label class="fl">Station / Location</label><input class="fi" id="fuel-station" placeholder="e.g. Flying J Barstow, CA"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Gallons</label><input class="fi" id="fuel-gallons" type="number" step="0.1" placeholder="22.5" oninput="calcFuelTotal()"/></div>
+      <div class="fg"><label class="fl">Price / Gal ($)</label><input class="fi" id="fuel-ppg" type="number" step="0.001" placeholder="4.85" oninput="calcFuelTotal()"/></div>
+      <div class="fg"><label class="fl">Total Cost ($)</label><input class="fi" id="fuel-total" type="number" step="0.01" placeholder="109.12" oninput="calcFuelPPG()"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Odometer (mi)</label><input class="fi" id="fuel-odo" type="number" placeholder="142500"/></div>
+      <div class="fg" style="flex:2"><label class="fl">Notes</label><input class="fi" id="fuel-notes" placeholder="Top-off, before border, diesel, etc."/></div>
+    </div>
+    <div class="fa"><button class="btn-s" onclick="closeM('m-fuel')">Cancel</button><button class="btn-p" onclick="saveFuel()">Save</button></div>
+  </div>
+</div>
+
+<!-- BORDER CROSSING -->
+<div class="mo" id="m-crossing">
+  <div class="modal" style="width:460px">
+    <button class="mcl" onclick="closeM('m-crossing')">✕</button>
+    <h2 id="crossing-modal-title">Add Border Crossing</h2>
+    <div class="fr">
+      <div class="fg" style="flex:2"><label class="fl">Country *</label><input class="fi" id="cx-country" placeholder="e.g. Mexico, France, Canada"/></div>
+      <div class="fg"><label class="fl">Max Days Allowed</label><input class="fi" id="cx-maxdays" type="number" placeholder="180"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Entry Date</label><input class="fi" id="cx-entry" type="date"/></div>
+      <div class="fg"><label class="fl">Exit Date <span style="font-weight:400;color:var(--muted2)">(leave blank if still there)</span></label><input class="fi" id="cx-exit" type="date"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg" style="flex:2"><label class="fl">Visa / Permit Type</label><input class="fi" id="cx-visa" placeholder="e.g. Tourist 180-day, Working Holiday"/></div>
+      <div class="fg"><label class="fl">Port of Entry</label><input class="fi" id="cx-port" placeholder="San Ysidro"/></div>
+    </div>
+    <div class="fg" style="margin-bottom:0"><label class="fl">Notes</label><textarea class="ft" id="cx-notes" placeholder="Vehicle import permit (TIP), insurance provider, crossing fees, safety notes…" style="min-height:55px"></textarea></div>
+    <div class="fa"><button class="btn-s" onclick="closeM('m-crossing')">Cancel</button><button class="btn-p" onclick="saveCrossing()">Save</button></div>
+  </div>
+</div>
+
 <!-- ADVENTURE STOP -->
 <div class="mo" id="m-adv-stop">
   <div class="modal" style="width:480px;max-height:92vh;overflow-y:auto">
@@ -3920,6 +3964,8 @@ function openTripD(id){
   ${rTripActivities(t,stageId)}
   ${rTripPrep(t,stageId)}
   ${rTripStaysSection(t)}
+  ${rTripFuelSection(t)}
+  ${rTripCrossingsSection(t)}
   ${placesSection}${journalSection}${itinerarySection}`;
 }
 function tripInsights(t,linkedPlaces,tripJournal,isDomestic,tripCountries,tripUSStates){
@@ -5725,6 +5771,201 @@ function delStay(tid,sid){
   D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
   t.stays=(t.stays||[]).filter(x=>x.id!==sid);
   save('trips',D.trips);toast('🗑️ Stay removed');openTripD(tid);
+}
+// ── Fuel Log ─────────────────────────────────────────────
+const SCHENGEN=new Set(['Austria','Belgium','Czech Republic','Denmark','Estonia','Finland','France','Germany','Greece','Hungary','Iceland','Italy','Latvia','Liechtenstein','Lithuania','Luxembourg','Malta','Netherlands','Norway','Poland','Portugal','Slovakia','Slovenia','Spain','Sweden','Switzerland']);
+function calcFuelTotal(){
+  const g=parseFloat(document.getElementById('fuel-gallons').value)||0;
+  const p=parseFloat(document.getElementById('fuel-ppg').value)||0;
+  if(g&&p)document.getElementById('fuel-total').value=(g*p).toFixed(2);
+}
+function calcFuelPPG(){
+  const g=parseFloat(document.getElementById('fuel-gallons').value)||0;
+  const t=parseFloat(document.getElementById('fuel-total').value)||0;
+  if(g&&t)document.getElementById('fuel-ppg').value=(t/g).toFixed(3);
+}
+let _fuelTid=null,_fuelFid=null;
+function openFuelModal(tid,fid){
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  _fuelTid=tid;_fuelFid=fid||null;
+  const f=fid?(t.fuelLog||[]).find(x=>x.id===fid):null;
+  document.getElementById('fuel-modal-title').textContent=f?'Edit Fill-up':'Add Fill-up';
+  document.getElementById('fuel-date').value=f?.date||new Date().toISOString().split('T')[0];
+  document.getElementById('fuel-station').value=f?.station||'';
+  document.getElementById('fuel-gallons').value=f?.gallons||'';
+  document.getElementById('fuel-ppg').value=f?.ppg||'';
+  document.getElementById('fuel-total').value=f?.totalCost||'';
+  document.getElementById('fuel-odo').value=f?.odometer||'';
+  document.getElementById('fuel-notes').value=f?.notes||'';
+  openM('m-fuel');
+}
+function saveFuel(){
+  const gallons=document.getElementById('fuel-gallons').value;
+  const tot=document.getElementById('fuel-total').value;
+  if(!gallons&&!tot){toast('⚠️ Enter gallons or total cost');return;}
+  D=load();const t=D.trips.find(x=>x.id===_fuelTid);if(!t)return;
+  if(!t.fuelLog)t.fuelLog=[];
+  const ppgRaw=parseFloat(document.getElementById('fuel-ppg').value)||null;
+  const galRaw=parseFloat(gallons)||null;
+  const totRaw=parseFloat(tot)||(galRaw&&ppgRaw?+(galRaw*ppgRaw).toFixed(2):null);
+  const entry={
+    id:_fuelFid||uid(),
+    date:document.getElementById('fuel-date').value,
+    station:document.getElementById('fuel-station').value.trim(),
+    gallons:galRaw,ppg:ppgRaw,totalCost:totRaw,
+    odometer:parseFloat(document.getElementById('fuel-odo').value)||null,
+    notes:document.getElementById('fuel-notes').value.trim(),
+  };
+  if(_fuelFid){const i=t.fuelLog.findIndex(x=>x.id===_fuelFid);if(i>=0)t.fuelLog[i]=entry;else t.fuelLog.push(entry);}
+  else t.fuelLog.push(entry);
+  t.fuelLog.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  save('trips',D.trips);closeM('m-fuel');toast(_fuelFid?'✅ Updated':'⛽ Fill-up logged');openTripD(_fuelTid);
+}
+function delFuel(tid,fid){
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  t.fuelLog=(t.fuelLog||[]).filter(x=>x.id!==fid);
+  save('trips',D.trips);toast('🗑️ Removed');openTripD(tid);
+}
+function rTripFuelSection(t){
+  const log=t.fuelLog||[];
+  if(!log.length&&t.type!=='road-trip'&&!(t.type||'').includes('van')&&!(t.type||'').includes('rv'))return`
+  <div class="card" style="margin-bottom:13px">
+    <div class="ch"><div class="ct">⛽ Fuel Log</div><div class="cs">Track fill-ups, cost & MPG</div></div>
+    <div style="padding:10px 0 4px;display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:12px;color:var(--muted2)">No fill-ups yet — great for road trips, van life, RV families</div>
+      <button class="pbtn" onclick="openFuelModal('${t.id}')">+ Add Fill-up</button>
+    </div>
+  </div>`;
+  const totalGal=log.reduce((s,f)=>s+(parseFloat(f.gallons)||0),0);
+  const totalCost=log.reduce((s,f)=>s+(parseFloat(f.totalCost)||0),0);
+  const withOdo=log.filter(f=>f.odometer).sort((a,b)=>parseFloat(a.odometer)-parseFloat(b.odometer));
+  let avgMpg=0;
+  if(withOdo.length>=2){
+    const mi=parseFloat(withOdo[withOdo.length-1].odometer)-parseFloat(withOdo[0].odometer);
+    const gals=withOdo.slice(1).reduce((s,f)=>s+(parseFloat(f.gallons)||0),0);
+    if(gals>0)avgMpg=mi/gals;
+  }
+  return`
+  <div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">⛽ Fuel Log</div><div class="cs">${[log.length+' fill-up'+(log.length===1?'':'s'),totalGal>0?totalGal.toFixed(1)+' gal':'',totalCost>0?'$'+totalCost.toFixed(0):'',avgMpg>0?avgMpg.toFixed(1)+' mpg avg':''].filter(Boolean).join(' · ')}</div></div>
+      <div style="display:flex;align-items:center;gap:8px"><button class="pbtn" onclick="event.stopPropagation();openFuelModal('${t.id}')">+ Add</button><span class="coll-arrow">▾</span></div>
+    </div>
+    <div class="coll-body coll-open">
+      ${log.length?`
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0 12px">
+        <div style="text-align:center;padding:8px;background:var(--card2);border-radius:6px"><div style="font-size:16px;font-weight:700;color:var(--text)">$${totalCost.toFixed(0)}</div><div style="font-size:10px;color:var(--muted2)">Total Fuel</div></div>
+        <div style="text-align:center;padding:8px;background:var(--card2);border-radius:6px"><div style="font-size:16px;font-weight:700;color:var(--text)">${totalGal.toFixed(1)}</div><div style="font-size:10px;color:var(--muted2)">Gallons</div></div>
+        <div style="text-align:center;padding:8px;background:var(--card2);border-radius:6px"><div style="font-size:16px;font-weight:700;color:${avgMpg>0?'var(--green3)':'var(--muted)'}">${avgMpg>0?avgMpg.toFixed(1):'—'}</div><div style="font-size:10px;color:var(--muted2)">MPG Actual</div></div>
+      </div>
+      ${[...log].reverse().map(f=>{
+        const total=parseFloat(f.totalCost)||((parseFloat(f.gallons)||0)*(parseFloat(f.ppg)||0));
+        return`<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--bdr)">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+              <div style="font-size:12px;font-weight:600;color:var(--text)">${f.station||'Fill-up'}</div>
+              <div style="font-size:13px;font-weight:700;color:var(--text);flex-shrink:0">$${total.toFixed(2)}</div>
+            </div>
+            <div style="font-size:11px;color:var(--muted2)">${[f.date?fd(f.date):'',f.gallons?f.gallons+' gal':'',f.ppg?'@ $'+parseFloat(f.ppg).toFixed(2)+'/gal':'',f.odometer?'odo: '+parseInt(f.odometer).toLocaleString():'']. filter(Boolean).join(' · ')}</div>
+            ${f.notes?`<div style="font-size:11px;color:var(--muted2);margin-top:1px">${f.notes}</div>`:''}
+          </div>
+          <button onclick="delFuel('${t.id}','${f.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:2px 4px;flex-shrink:0" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
+        </div>`;
+      }).join('')}`:`<div style="font-size:12px;color:var(--muted2);padding:14px 0;text-align:center">No fill-ups logged yet</div>`}
+    </div>
+  </div>`;
+}
+// ── Border Crossings ──────────────────────────────────────
+function crossingDays(cx){
+  if(!cx.entryDate)return 0;
+  const exit=cx.exitDate?new Date(cx.exitDate+'T00:00:00'):new Date();
+  const entry=new Date(cx.entryDate+'T00:00:00');
+  return Math.max(0,Math.round((exit-entry)/86400000)+1);
+}
+let _cxTid=null,_cxId=null;
+function openCrossingModal(tid,cxid){
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  _cxTid=tid;_cxId=cxid||null;
+  const cx=cxid?(t.crossings||[]).find(x=>x.id===cxid):null;
+  document.getElementById('crossing-modal-title').textContent=cx?'Edit Crossing':'Add Border Crossing';
+  document.getElementById('cx-country').value=cx?.country||'';
+  document.getElementById('cx-entry').value=cx?.entryDate||t.startDate||'';
+  document.getElementById('cx-exit').value=cx?.exitDate||'';
+  document.getElementById('cx-visa').value=cx?.visaType||'';
+  document.getElementById('cx-maxdays').value=cx?.maxDays||'';
+  document.getElementById('cx-port').value=cx?.port||'';
+  document.getElementById('cx-notes').value=cx?.notes||'';
+  openM('m-crossing');
+}
+function saveCrossing(){
+  const country=document.getElementById('cx-country').value.trim();
+  if(!country){toast('⚠️ Country required');return;}
+  D=load();const t=D.trips.find(x=>x.id===_cxTid);if(!t)return;
+  if(!t.crossings)t.crossings=[];
+  const cx={
+    id:_cxId||uid(),country,
+    entryDate:document.getElementById('cx-entry').value,
+    exitDate:document.getElementById('cx-exit').value,
+    visaType:document.getElementById('cx-visa').value.trim(),
+    maxDays:parseInt(document.getElementById('cx-maxdays').value)||null,
+    port:document.getElementById('cx-port').value.trim(),
+    notes:document.getElementById('cx-notes').value.trim(),
+  };
+  if(_cxId){const i=t.crossings.findIndex(x=>x.id===_cxId);if(i>=0)t.crossings[i]=cx;else t.crossings.push(cx);}
+  else t.crossings.push(cx);
+  t.crossings.sort((a,b)=>(a.entryDate||'').localeCompare(b.entryDate||''));
+  save('trips',D.trips);closeM('m-crossing');toast(_cxId?'✅ Updated':'🛂 Crossing logged');openTripD(_cxTid);
+}
+function delCrossing(tid,cxid){
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  t.crossings=(t.crossings||[]).filter(x=>x.id!==cxid);
+  save('trips',D.trips);toast('🗑️ Removed');openTripD(tid);
+}
+function rTripCrossingsSection(t){
+  const crossings=t.crossings||[];
+  const isIntl=(t.destinations||[]).some(d=>normCountry(d)&&normCountry(d)!=='United States');
+  if(!crossings.length&&!isIntl)return'';
+  const schDays=crossings.filter(cx=>SCHENGEN.has(cx.country)).reduce((s,cx)=>s+crossingDays(cx),0);
+  const totalDays=crossings.reduce((s,cx)=>s+crossingDays(cx),0);
+  const summary=[crossings.length+' '+(crossings.length===1?'country':'countries'),totalDays?totalDays+' days abroad':'',schDays?'Schengen: '+schDays+'/90':''].filter(Boolean).join(' · ');
+  return`
+  <div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">🛂 Border Crossings</div><div class="cs">${crossings.length?summary:'Track visas, days, border details'}</div></div>
+      <div style="display:flex;align-items:center;gap:8px"><button class="pbtn" onclick="event.stopPropagation();openCrossingModal('${t.id}')">+ Add</button><span class="coll-arrow">▾</span></div>
+    </div>
+    <div class="coll-body coll-open">
+      ${schDays>0?`<div style="margin:8px 0 12px;padding:9px 12px;background:${schDays>=80?'rgba(192,80,80,.1)':schDays>=60?'rgba(184,137,42,.1)':'rgba(74,114,89,.08)'};border-radius:6px;border-left:3px solid ${schDays>=80?'#c05050':schDays>=60?'#B8892A':'var(--green)'}">
+        <div style="font-size:11px;font-weight:600;color:${schDays>=80?'#c05050':schDays>=60?'#B8892A':'var(--green3)'}">🇪🇺 Schengen: ${schDays} / 90 days used this trip</div>
+        <div style="font-size:10px;color:var(--muted2);margin-top:2px">${90-schDays} days remaining · Schengen rule: 90 days in any 180-day window</div>
+      </div>`:''}
+      ${crossings.length?crossings.map(cx=>{
+        const days=crossingDays(cx);
+        const isSch=SCHENGEN.has(cx.country);
+        const left=cx.maxDays?cx.maxDays-days:null;
+        const pct=cx.maxDays?Math.min(100,Math.round(days/cx.maxDays*100)):0;
+        const sc=left!==null?(left<14?'#c05050':left<30?'#B8892A':'var(--green3)'):'var(--muted)';
+        return`<div style="padding:10px 0;border-bottom:1px solid var(--bdr);display:flex;align-items:flex-start;gap:10px">
+          <div style="font-size:20px;flex-shrink:0;margin-top:2px">🏳️</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
+              <div style="font-size:13px;font-weight:600;color:var(--text)">${cx.country}${isSch?` <span style="font-size:9px;background:rgba(60,100,200,.1);color:#4A7EBA;border-radius:4px;padding:1px 5px;font-weight:600">Schengen</span>`:''}</div>
+              ${days?`<span style="font-size:11px;font-weight:600;color:${sc};flex-shrink:0">${days} day${days===1?'':'s'}${cx.maxDays?' / '+cx.maxDays:''}</span>`:''}
+            </div>
+            <div style="font-size:11px;color:var(--muted2);margin-top:2px">${cx.entryDate?fd(cx.entryDate):'?'}${cx.exitDate?' → '+fd(cx.exitDate):' → Present'}</div>
+            ${cx.visaType?`<div style="font-size:11px;color:var(--muted2)">📋 ${cx.visaType}</div>`:''}
+            ${cx.port?`<div style="font-size:11px;color:var(--muted2)">🚗 Entered via ${cx.port}</div>`:''}
+            ${cx.maxDays&&pct>50?`<div style="margin-top:6px;background:var(--card2);border-radius:4px;height:4px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${sc};border-radius:4px"></div></div><div style="font-size:10px;color:${sc};margin-top:2px">${left} day${left===1?'':'s'} remaining</div>`:''}
+            ${cx.notes?`<div style="font-size:11px;color:var(--text2);margin-top:4px;line-height:1.5">${cx.notes.slice(0,160)}${cx.notes.length>160?'…':''}</div>`:''}
+          </div>
+          <div style="display:flex;gap:3px;flex-shrink:0">
+            <button onclick="openCrossingModal('${t.id}','${cx.id}')" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:2px 4px;border-radius:4px" onmouseover="this.style.color='var(--green3)'" onmouseout="this.style.color='var(--muted2)'">✏️</button>
+            <button onclick="delCrossing('${t.id}','${cx.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:2px 4px;border-radius:4px" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
+          </div>
+        </div>`;
+      }).join(''):`<div style="font-size:12px;color:var(--muted2);padding:14px 0;text-align:center">Log each country: visa type, entry/exit dates, max days allowed</div>`}
+    </div>
+  </div>`;
 }
 
 const ADV_GEAR={
