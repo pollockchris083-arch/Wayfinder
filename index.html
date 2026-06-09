@@ -752,6 +752,11 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .stage-cta-btn:hover{background:rgba(74,114,89,.18)}
 .stage-cta-secondary{width:100%;margin-top:6px;padding:6px 10px;border-radius:8px;border:1px solid var(--bdr2);background:var(--card2);color:var(--text2);font-size:11px;cursor:pointer;transition:background .15s;font-family:inherit}
 .stage-cta-secondary:hover{background:var(--card3)}
+/* Day drag-and-drop */
+[data-drag-day]{transition:opacity .15s}
+[data-drag-day].day-drag-over{outline:2px dashed var(--green3);outline-offset:2px;border-radius:8px;background:rgba(74,114,89,.05)}
+.day-drag-handle{cursor:grab;color:var(--muted2);font-size:15px;user-select:none;padding:0 4px 0 0;flex-shrink:0;line-height:1;opacity:.5;transition:opacity .15s}
+.day-drag-handle:hover{opacity:1}
 /* Trips Page — Stage Sections */
 .ts{margin-bottom:20px}
 .ts-h{display:flex;align-items:center;gap:7px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bdr)}
@@ -4244,9 +4249,12 @@ function openTripD(id){
     </div>
     <div class="coll-body coll-open">
       ${t.itinerary.length?t.itinerary.map((day,di)=>`
-        <div style="margin-bottom:10px">
+        <div style="margin-bottom:10px" data-drag-day draggable="true" ondragstart="dayDragStart(event,'${t.id}',${di})" ondragover="dayDragOver(event)" ondragenter="dayDragEnter(event)" ondragleave="dayDragLeave(event)" ondragend="dayDragEnd(event)" ondrop="dayDrop(event,'${t.id}',${di})">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;background:var(--card2);border-radius:6px;margin-bottom:4px">
-            <div style="font-size:12px;font-weight:600;color:var(--text)">Day ${di+1}</div>
+            <div style="display:flex;align-items:center;gap:2px">
+              <span class="day-drag-handle" title="Drag to reorder">⠿</span>
+              <div style="font-size:12px;font-weight:600;color:var(--text)">Day ${di+1}</div>
+            </div>
             <div style="display:flex;align-items:center;gap:6px">
               <input type="date" value="${day.date}" onchange="setDayDate('${t.id}',${di},this.value)" title="Edit date" style="font-size:11px;color:var(--muted);background:transparent;border:none;border-bottom:1px dashed var(--bdr2);padding:1px 2px;cursor:pointer;width:108px;color-scheme:dark light"/>
               <button onclick="delDay('${t.id}',${di})" title="Remove this day" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:1px 3px;line-height:1;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
@@ -4851,6 +4859,42 @@ function saveStop(){
     }
     save('trips',D.trips);closeM('m-stop');toast(pendStop.si!=null?'✅ Stop updated':'✅ Stop added');openTripD(pendStop.tid);
   }
+}
+// ── Day drag-and-drop ─────────────────────────────────────────────
+let _dragDayIdx=null,_dragTripId=null;
+function dayDragStart(e,tid,di){
+  _dragDayIdx=di;_dragTripId=tid;
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain',di.toString());
+  setTimeout(()=>{if(e.target)e.target.style.opacity='.4';},0);
+}
+function dayDragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';}
+function dayDragEnter(e){
+  e.preventDefault();
+  if(_dragDayIdx!==null)e.currentTarget.classList.add('day-drag-over');
+}
+function dayDragLeave(e){
+  if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.classList.remove('day-drag-over');
+}
+function dayDragEnd(e){
+  e.target.style.opacity='';
+  document.querySelectorAll('.day-drag-over').forEach(el=>el.classList.remove('day-drag-over'));
+  _dragDayIdx=null;_dragTripId=null;
+}
+function dayDrop(e,tid,targetIdx){
+  e.preventDefault();
+  e.currentTarget.classList.remove('day-drag-over');
+  const srcIdx=_dragDayIdx;
+  _dragDayIdx=null;_dragTripId=null;
+  if(srcIdx===null||srcIdx===targetIdx)return;
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t||!t.itinerary)return;
+  const arr=t.itinerary;
+  const [moved]=arr.splice(srcIdx,1);
+  const insertAt=srcIdx<targetIdx?targetIdx-1:targetIdx;
+  arr.splice(insertAt,0,moved);
+  // Reassign dates sequentially from startDate
+  if(t.startDate){arr.forEach((day,i)=>{const d=new Date(t.startDate+'T12:00:00');d.setDate(d.getDate()+i);day.date=d.toISOString().split('T')[0];});}
+  save('trips',D.trips);openTripD(tid);toast('📅 Day order updated');
 }
 function delDay(tid,di){
   D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
@@ -6899,14 +6943,18 @@ function removeAdvTraveler(cid,idx){
 function rAdvBudgetTab(c){
   const budget=parseFloat(c.tripBudget)||0;
   const expenses=c.expenses||[];
-  const totalSpent=expenses.reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+  const expensesTotal=expenses.reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+  const stops=c.stops||[];
+  const rig=c.rig||{};
+  const totalMiles=stops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  const fuelEst=(rig.mpg&&totalMiles&&c.fuelPrice)?Math.round(totalMiles/parseFloat(rig.mpg)*parseFloat(c.fuelPrice)):0;
+  const includeFuel=!!c.includeFuelInBudget&&fuelEst>0;
+  const totalSpent=expensesTotal+(includeFuel?fuelEst:0);
   const pct=budget?Math.min(100,Math.round(totalSpent/budget*100)):0;
   const CATS=['Fuel','Camping Fees','Food & Groceries','Dining Out','Activities','Gear','Propane','Park Passes','Dump Fees','Misc'];
   const byCategory={};CATS.forEach(k=>{byCategory[k]=0;});
   expenses.forEach(e=>{if(byCategory[e.category]!==undefined)byCategory[e.category]+=(parseFloat(e.amount)||0);else byCategory['Misc']+=(parseFloat(e.amount)||0);});
-  const stops=c.stops||[];
-  const rig=c.rig||{};
-  const totalMiles=stops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  if(includeFuel)byCategory['Fuel']=(byCategory['Fuel']||0)+fuelEst;
   return`
   <div class="card" style="margin-bottom:12px">
     <div class="ch"><div class="ct">💰 Trip Budget</div></div>
@@ -6916,7 +6964,7 @@ function rAdvBudgetTab(c){
       <div style="text-align:right"><div style="font-size:20px;font-weight:700;color:${pct>90?'#c05050':pct>70?'#B8892A':'var(--green3)'}">$${totalSpent.toFixed(0)}</div><div style="font-size:11px;color:var(--muted2)">of $${budget||'—'}</div></div>
     </div>
     ${budget?`<div style="margin-top:10px;background:var(--card2);border-radius:4px;height:8px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct>90?'#c05050':pct>70?'#B8892A':'var(--green3)'};border-radius:4px;transition:width .3s"></div></div>
-    <div style="font-size:11px;color:var(--muted2);margin-top:4px">${pct}% spent · $${Math.max(0,budget-totalSpent).toFixed(0)} remaining</div>`:''}
+    <div style="font-size:11px;color:var(--muted2);margin-top:4px">${pct}% spent · $${Math.max(0,budget-totalSpent).toFixed(0)} remaining${includeFuel?' (incl. est. fuel)':''}</div>`:''}
   </div>
   ${rig.mpg&&totalMiles?`
   <div class="card" style="margin-bottom:12px">
@@ -6928,6 +6976,13 @@ function rAdvBudgetTab(c){
         <div style="font-size:11px;color:var(--muted2)">Rig MPG: ${rig.mpg}</div>
         <div id="fuel-est-${c.id}" style="font-size:14px;font-weight:600;color:var(--green3);margin-top:4px">${c.fuelPrice&&rig.mpg?'~$'+(totalMiles/rig.mpg*c.fuelPrice).toFixed(0)+' est. fuel':''}</div>
       </div>
+    </div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr2);display:flex;align-items:center;gap:8px">
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none">
+        <input type="checkbox" id="fuel-in-budget-${c.id}" ${c.includeFuelInBudget?'checked':''} style="width:15px;height:15px;cursor:pointer;accent-color:var(--green3)" onchange="toggleFuelInBudget('${c.id}',this.checked)">
+        <span style="font-size:12px;color:var(--text2)">Include fuel estimate in budget total</span>
+      </label>
+      ${c.includeFuelInBudget&&fuelEst?`<span style="font-size:11px;color:var(--green3);font-weight:600;margin-left:auto">+$${fuelEst}</span>`:''}
     </div>
   </div>`:''}
   <div class="card" style="margin-bottom:12px">
@@ -6964,6 +7019,14 @@ function updateFuelCalc(cid){
   c.fuelPrice=price||undefined;
   localStorage.setItem('wf_camps',JSON.stringify(D.camps));
   estEl.textContent=price&&mpg&&miles?'~$'+(miles/mpg*price).toFixed(0)+' est. fuel':'';
+  if(c.includeFuelInBudget){window._campDTab='budget';openCampD(cid);}
+}
+function toggleFuelInBudget(cid,val){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  c.includeFuelInBudget=val;
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  window._campDTab='budget';openCampD(cid);
+  toast(val?'⛽ Fuel added to budget':'⛽ Fuel removed from budget');
 }
 function openAdvExpense(cid){
   const CATS=['Fuel','Camping Fees','Food & Groceries','Dining Out','Activities','Gear','Propane','Park Passes','Dump Fees','Misc'];
