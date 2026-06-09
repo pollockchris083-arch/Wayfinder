@@ -1531,8 +1531,11 @@ input,textarea,select{font-family:inherit;font-weight:400}
       </select></div>
     </div>
     <div class="fg"><label class="fl">Best Seasons</label>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px" id="sp-seasons">
-        ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map(m=>`<label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="checkbox" value="${m}" style="accent-color:var(--green);width:12px;height:12px"/>${m}</label>`).join('')}
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px" id="sp-seasons">
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="Spring" style="accent-color:var(--green);width:13px;height:13px"/> 🌸 Spring</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="Summer" style="accent-color:var(--green);width:13px;height:13px"/> ☀️ Summer</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="Fall" style="accent-color:var(--green);width:13px;height:13px"/> 🍂 Fall</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="Winter" style="accent-color:var(--green);width:13px;height:13px"/> ❄️ Winter</label>
       </div>
     </div>
     <div class="fr">
@@ -6434,7 +6437,7 @@ function openSpotD(id){
           ${s.access?`<div><div style="font-size:10px;color:var(--muted);margin-bottom:2px">Access</div><div style="font-size:12px;color:var(--text2)">${ACCESS_LABELS[s.access]||s.access}</div></div>`:''}
           ${s.difficulty?`<div><div style="font-size:10px;color:var(--muted);margin-bottom:2px">Difficulty</div><div style="font-size:12px;color:var(--text2)">${DIFF_LABELS[s.difficulty]||s.difficulty}</div></div>`:''}
         </div>
-        ${seasons.length?`<div style="margin-top:10px"><div style="font-size:10px;color:var(--muted);margin-bottom:5px">Best Seasons</div><div>${allMonths.map(m=>`<span class="spot-season-chip${seasons.includes(m)?' best':''}">${m}</span>`).join('')}</div></div>`:''}
+        ${seasons.length?`<div style="margin-top:10px"><div style="font-size:10px;color:var(--muted);margin-bottom:5px">Best Seasons</div><div style="display:flex;gap:6px;flex-wrap:wrap">${[{v:'Spring',e:'🌸'},{v:'Summer',e:'☀️'},{v:'Fall',e:'🍂'},{v:'Winter',e:'❄️'}].map(({v,e})=>`<span style="font-size:11px;padding:3px 9px;border-radius:100px;${seasons.includes(v)?'background:rgba(74,114,89,.18);color:var(--green3);border:1px solid rgba(74,114,89,.3);font-weight:600':'background:var(--card2);color:var(--muted);border:1px solid var(--bdr2)'}">${e} ${v}</span>`).join('')}</div></div>`:''}
       </div>
 
       ${s.notes?`<div class="card" style="padding:12px;margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">📝 Notes</div><div style="font-size:12px;color:var(--text2);line-height:1.7;white-space:pre-wrap">${s.notes}</div></div>`:''}
