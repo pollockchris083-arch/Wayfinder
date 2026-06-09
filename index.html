@@ -3785,29 +3785,34 @@ function openTripD(id){
   <div class="card">
     <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
       <div><div class="ct">📅 Itinerary</div><div class="cs">${tripDays(t)} days · ${totalStops} stops</div></div>
-      <span class="coll-arrow">▾</span>
+      <div style="display:flex;align-items:center;gap:7px" onclick="event.stopPropagation()">
+        <button class="pbtn" onclick="syncItineraryFromPlaces('${t.id}')" title="Populate days from linked places that have visit dates">↻ From Places</button>
+        <span class="coll-arrow" onclick="this.closest('.coll-toggle').click()">▾</span>
+      </div>
     </div>
     <div class="coll-body coll-open">
       ${t.itinerary.length?t.itinerary.map((day,di)=>`
         <div style="margin-bottom:10px">
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--card2);border-radius:6px;margin-bottom:4px">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;background:var(--card2);border-radius:6px;margin-bottom:4px">
             <div style="font-size:12px;font-weight:600;color:var(--text)">Day ${di+1}</div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="font-size:11px;color:var(--muted)">${fd(day.date)}</div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="date" value="${day.date}" onchange="setDayDate('${t.id}',${di},this.value)" title="Edit date" style="font-size:11px;color:var(--muted);background:transparent;border:none;border-bottom:1px dashed var(--bdr2);padding:1px 2px;cursor:pointer;width:108px;color-scheme:dark light"/>
               <button onclick="delDay('${t.id}',${di})" title="Remove this day" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:1px 3px;line-height:1;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
             </div>
           </div>
           ${(day.stops||[]).length?(day.stops||[]).map((s,si)=>{
             const lp=s.placeId?D.places.find(x=>x.id===s.placeId):null;
+            const otherDays=t.itinerary.map((d2,di2)=>di2===di?null:`<option value="${di2}">Day ${di2+1} · ${fd(d2.date)}</option>`).filter(Boolean).join('');
             return`<div class="stop-row" ${lp?`style="cursor:pointer" onclick="go('places');setTimeout(()=>openPlaceD('${lp.id}'),10)"`:''}>
               <div class="stopnum">${si+1}</div>
               <div style="flex:1">
                 <div class="stopname">${s.name}${lp?` <span style="font-size:9px;color:var(--green3);margin-left:3px">↗</span>`:''}</div>
                 ${s.note?`<div class="stopnote">${s.note}</div>`:''}
               </div>
-              <div style="display:flex;gap:2px;flex-shrink:0">
-                <button onclick="event.stopPropagation();openStopEdit('${t.id}',${di},${si})" title="Edit stop" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:2px 4px;border-radius:4px;line-height:1;transition:color .15s" onmouseover="this.style.color='var(--green3)'" onmouseout="this.style.color='var(--muted2)'">✏️</button>
-                <button onclick="event.stopPropagation();delStop('${t.id}',${di},${si})" title="Remove stop" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:2px 4px;border-radius:4px;line-height:1;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
+              <div style="display:flex;gap:2px;flex-shrink:0" onclick="event.stopPropagation()">
+                <button onclick="openStopEdit('${t.id}',${di},${si})" title="Edit stop" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:2px 4px;border-radius:4px;line-height:1;transition:color .15s" onmouseover="this.style.color='var(--green3)'" onmouseout="this.style.color='var(--muted2)'">✏️</button>
+                ${otherDays?`<select title="Move to a different day" onchange="moveStop('${t.id}',${di},${si},parseInt(this.value));this.value=''" style="font-size:10px;padding:1px 2px;border:1px solid var(--bdr2);border-radius:4px;background:var(--card2);color:var(--text2);cursor:pointer;max-width:24px;text-align:center"><option value="">⇅</option>${otherDays}</select>`:''}
+                <button onclick="delStop('${t.id}',${di},${si})" title="Remove stop" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:2px 4px;border-radius:4px;line-height:1;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
               </div>
             </div>`;
           }).join(''):`<div style="font-size:11px;color:var(--muted2);padding:5px 0">No stops yet</div>`}
@@ -4332,7 +4337,12 @@ function saveStop(){
   }
   if(placeId){
     const pl=D.places.find(x=>x.id===placeId);
-    if(pl&&!(pl.tripIds||[]).includes(pendStop.tid)){pl.tripIds=[...(pl.tripIds||[]),pendStop.tid];save('places',D.places);}
+    if(pl){
+      if(!(pl.tripIds||[]).includes(pendStop.tid))pl.tripIds=[...(pl.tripIds||[]),pendStop.tid];
+      const dayDate=t.itinerary[pendStop.di]?.date;
+      if(dayDate&&!pl.visitDate)pl.visitDate=dayDate;
+      save('places',D.places);
+    }
   }
   save('trips',D.trips);closeM('m-stop');toast(pendStop.si!=null?'✅ Stop updated':'✅ Stop added');openTripD(pendStop.tid);
 }
@@ -4341,6 +4351,49 @@ function delDay(tid,di){
   if(t.itinerary[di]?.stops?.length&&!confirm('Remove this day and its stops?'))return;
   t.itinerary.splice(di,1);
   save('trips',D.trips);toast('🗑️ Day removed');openTripD(tid);
+}
+function setDayDate(tid,di,date){
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t||!date)return;
+  t.itinerary[di].date=date;
+  t.itinerary.sort((a,b)=>a.date.localeCompare(b.date));
+  save('trips',D.trips);toast('📅 Date updated');openTripD(tid);
+}
+function moveStop(tid,fromDi,si,toDi){
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  const stop=t.itinerary[fromDi]?.stops?.[si];if(!stop)return;
+  t.itinerary[fromDi].stops.splice(si,1);
+  if(!t.itinerary[toDi].stops)t.itinerary[toDi].stops=[];
+  t.itinerary[toDi].stops.push(stop);
+  // If stop is linked to a place, update that place's visitDate
+  if(stop.placeId){
+    const pl=D.places.find(x=>x.id===stop.placeId);
+    const newDate=t.itinerary[toDi].date;
+    if(pl&&newDate)pl.visitDate=newDate;
+    save('places',D.places);
+  }
+  save('trips',D.trips);toast('↕ Moved to Day '+(toDi+1));openTripD(tid);
+}
+function syncItineraryFromPlaces(tid){
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  const linked=D.places.filter(p=>(p.tripIds||[]).includes(tid)&&p.visitDate);
+  if(!linked.length){toast('No linked places have visit dates');return;}
+  let added=0;
+  linked.forEach(p=>{
+    let day=t.itinerary.find(d=>d.date===p.visitDate);
+    if(!day){
+      day={date:p.visitDate,stops:[]};
+      t.itinerary.push(day);
+      t.itinerary.sort((a,b)=>a.date.localeCompare(b.date));
+      day=t.itinerary.find(d=>d.date===p.visitDate);
+    }
+    if(!day.stops)day.stops=[];
+    if(!day.stops.some(s=>s.placeId===p.id||s.name.toLowerCase()===p.name.toLowerCase())){
+      day.stops.push({name:p.name,note:'',placeId:p.id});
+      added++;
+    }
+  });
+  if(!added){toast('All places already in itinerary');return;}
+  save('trips',D.trips);toast('✅ '+added+' stop'+(added!==1?'s':'')+' synced from places');openTripD(tid);
 }
 
 // ══════════════════════════════════════════════
