@@ -969,6 +969,18 @@ input,textarea,select{font-family:inherit;font-weight:400}
             </div>
           </div>
         </div>
+        <div class="ss"><h3>Trips View</h3>
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <div><div style="font-size:12px;font-weight:600;color:var(--text)">Show Adventures in All Trips</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Adventures appear in the All Trips view alongside regular trips</div></div>
+              <button id="s-adv-trips-btn" onclick="setSetting('tripsShowAdventures',D.settings.tripsShowAdventures===false?true:false);loadSettings();rTrips();toast(D.settings.tripsShowAdventures!==false?'Adventures shown in Trips':'Adventures hidden from Trips')" style="background:var(--green);border:1px solid var(--bdr2);border-radius:100px;padding:4px 14px;font-size:11px;font-weight:600;color:#fff;cursor:pointer;transition:all .2s">ON</button>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div><div style="font-size:12px;font-weight:600;color:var(--text)">Show Work Trips in All Trips</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Business travel appears alongside personal trips</div></div>
+              <button id="s-work-trips-btn" onclick="setSetting('tripsShowWork',!D.settings.tripsShowWork);loadSettings();rTrips();toast(D.settings.tripsShowWork?'Work trips shown in Trips':'Work trips hidden from Trips')" style="background:var(--card3);border:1px solid var(--bdr2);border-radius:100px;padding:4px 14px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .2s">OFF</button>
+            </div>
+          </div>
+        </div>
         <div class="ss"><h3>Sync &amp; Data</h3>
           <div class="card">
             <button id="manual-sync-btn" class="btn-s" onclick="manualCloudSync()" style="width:100%;margin-bottom:12px;background:rgba(74,114,89,.1);border-color:rgba(74,114,89,.35);color:var(--green3);font-weight:600">🔄 Sync Data from Cloud</button>
@@ -1375,6 +1387,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
     </div>
     <div class="fg"><label class="fl">Thumbnail URL</label><input class="fi" id="c-thumb" type="url" placeholder="https://…/photo.jpg"/></div>
     <div class="fg" style="margin-bottom:0"><label class="fl">Notes</label><textarea class="ft" id="c-notes" placeholder="Trip overview, goals, packing reminders…" style="min-height:65px"></textarea></div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;cursor:pointer;color:var(--text2)"><input type="checkbox" id="c-exclude-trips" style="accent-color:var(--green);width:14px;height:14px"/><span>Exclude from Trips view</span></label>
     <div class="fa"><button class="btn-s" onclick="closeM('m-camp')">Cancel</button><button class="btn-p" id="cm-save" onclick="saveCamp()">Save</button></div>
   </div>
 </div>
@@ -1671,6 +1684,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
       <div class="fg"><label class="fl">Confirmation #</label><input class="fi" id="wk-conf" placeholder="ABC123"/></div>
     </div>
     <div class="fg" style="margin-bottom:0"><label class="fl">Notes / Purpose</label><textarea class="ft" id="wk-notes" placeholder="Client meeting, conference, training…"></textarea></div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;cursor:pointer;color:var(--text2)"><input type="checkbox" id="wk-exclude-trips" style="accent-color:var(--green);width:14px;height:14px"/><span>Exclude from Trips view</span></label>
     <div class="fa"><button class="btn-s" onclick="closeM('m-work')">Cancel</button><button class="btn-p" id="wk-save" onclick="saveWork()">Save Trip</button></div>
   </div>
 </div>
@@ -3863,22 +3877,43 @@ function rTrips(){
       </div>
     </div></div>`;
   }).join('');
-  // In 'all' type view, append Adventures section after main trips
+  // In 'all' type view, append Adventures and/or Work Trips sections
   if(tripTypeFilter==='all'){
-    const advTrips=(D.camps||[]).filter(c=>c.recordType!=='spot');
-    if(advTrips.length){
-      html+=`<div style="grid-column:1/-1;margin-top:20px;padding-top:16px;border-top:1px solid var(--bdr)"><div style="font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px">🧭 Adventures</div><div class="trips-grid" style="padding:0">${advTrips.map(c=>{
-        const typeInfo=ADV_TYPES[c.campType]||{icon:'🏕️',label:'Tent Camping'};
-        const dur=c.startDate&&c.endDate?Math.round((new Date(c.endDate)-new Date(c.startDate))/86400000)+1:0;
-        const stops=(c.stops||[]).length;
-        return`<div class="tc" onclick="go('camp');openCampD('${c.id}')"><div class="tc-bar" style="background:linear-gradient(90deg,#4A7259,#5A8A6C)"></div><div class="tcb">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px"><div class="tname" style="flex:1">${c.name}</div><span style="font-size:14px">${typeInfo.icon}</span></div>
-          <div class="tdates">${c.startDate?fd(c.startDate)+(c.endDate?' — '+fd(c.endDate):''):'Dates TBD'}</div>
-          ${c.location?`<div style="font-size:11px;color:var(--text2);margin-bottom:7px">📍 ${c.location}${c.state?', '+c.state:''}</div>`:''}
-          <div class="tfoot"><div class="tstat">${[dur?dur+'d':'',stops?stops+' stop'+(stops!==1?'s':''):'',typeInfo.label].filter(Boolean).join(' · ')}</div>
-          <div style="font-size:11px;color:var(--muted)">${c.status==='completed'?'Completed':c.status==='planning'?'Planning':'Wishlist'}</div></div>
-        </div></div>`;
-      }).join('')}</div></div>`;
+    const showAdv=D.settings.tripsShowAdventures!==false;
+    const showWork=D.settings.tripsShowWork===true;
+    if(showAdv){
+      const advTrips=(D.camps||[]).filter(c=>c.recordType!=='spot'&&!c.excludeFromTrips);
+      if(advTrips.length){
+        html+=`<div style="grid-column:1/-1;margin-top:20px;padding-top:16px;border-top:1px solid var(--bdr)"><div style="font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px">🧭 Adventures</div><div class="trips-grid" style="padding:0">${advTrips.map(c=>{
+          const typeInfo=ADV_TYPES[c.campType]||{icon:'🏕️',label:'Tent Camping'};
+          const dur=c.startDate&&c.endDate?Math.round((new Date(c.endDate)-new Date(c.startDate))/86400000)+1:0;
+          const stops=(c.stops||[]).length;
+          return`<div class="tc" onclick="go('camp');openCampD('${c.id}')"><div class="tc-bar" style="background:linear-gradient(90deg,#4A7259,#5A8A6C)"></div><div class="tcb">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px"><div class="tname" style="flex:1">${c.name}</div><span style="font-size:14px">${typeInfo.icon}</span></div>
+            <div class="tdates">${c.startDate?fd(c.startDate)+(c.endDate?' — '+fd(c.endDate):''):'Dates TBD'}</div>
+            ${c.location?`<div style="font-size:11px;color:var(--text2);margin-bottom:7px">📍 ${c.location}${c.state?', '+c.state:''}</div>`:''}
+            <div class="tfoot"><div class="tstat">${[dur?dur+'d':'',stops?stops+' stop'+(stops!==1?'s':''):'',typeInfo.label].filter(Boolean).join(' · ')}</div>
+            <div style="font-size:11px;color:var(--muted)">${c.status==='completed'?'Completed':c.status==='planning'?'Planning':'Wishlist'}</div></div>
+          </div></div>`;
+        }).join('')}</div></div>`;
+      }
+    }
+    if(showWork){
+      const workTrips=(D.work||[]).filter(w=>!w.excludeFromTrips).sort((a,b)=>{if(a.startDate&&b.startDate)return new Date(b.startDate)-new Date(a.startDate);return b.addedAt-a.addedAt});
+      if(workTrips.length){
+        const TRANSPORT_ICONS={flight:'✈️',drive:'🚗',train:'🚆',other:'🚌'};
+        html+=`<div style="grid-column:1/-1;margin-top:20px;padding-top:16px;border-top:1px solid var(--bdr)"><div style="font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px">💼 Work Trips</div><div class="trips-grid" style="padding:0">${workTrips.map(w=>{
+          const dur=w.startDate&&w.endDate?Math.round((new Date(w.endDate)-new Date(w.startDate))/86400000)+1:0;
+          const icon=TRANSPORT_ICONS[w.transport]||'✈️';
+          return`<div class="tc" onclick="go('work');openWorkD('${w.id}')"><div class="tc-bar" style="background:linear-gradient(90deg,#3A5CA0,#5580D0)"></div><div class="tcb">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px"><div class="tname" style="flex:1">${w.name}</div><span style="font-size:14px">${icon}</span></div>
+            <div class="tdates">${w.startDate?fd(w.startDate)+(w.endDate?' — '+fd(w.endDate):''):'Dates TBD'}</div>
+            ${w.destination?`<div style="font-size:11px;color:var(--text2);margin-bottom:7px">📍 ${w.destination}</div>`:''}
+            <div class="tfoot"><div class="tstat">${[dur?dur+'d':'',w.client||''].filter(Boolean).join(' · ')}</div>
+            <div style="font-size:11px;color:var(--muted)">${w.status==='past'?'Past':w.status==='upcoming'?'Upcoming':'Planning'}</div></div>
+          </div></div>`;
+        }).join('')}</div></div>`;
+      }
     }
   }
   if(!html){g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">✈️</div><h3>No trips yet</h3><p>Create a trip or import from a doc.</p><button class="tb-btn" onclick="openTrip()" style="margin-bottom:8px">+ New Trip</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;return}
@@ -5783,10 +5818,14 @@ function rTripStaysSection(t){
     </div>
   </div>`;
 }
-let _stayTid=null,_staySid=null;
+let _stayTid=null,_staySid=null,_stayIsAdv=false;
+function _findTripLike(id){const t=D.trips.find(x=>x.id===id);if(t)return{obj:t,isAdv:false};const c=(D.camps||[]).find(x=>x.id===id);if(c)return{obj:c,isAdv:true};return null;}
+function _saveTripLike(isAdv,data){if(isAdv){localStorage.setItem('wf_camps',JSON.stringify(D.camps));}else{save('trips',D.trips);}}
+function _reopenTripLike(isAdv,id){if(isAdv){window._campDTab='overview';openCampD(id);}else{openTripD(id);}}
 function openStayModal(tid,sid){
   D=load();
-  const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  const found=_findTripLike(tid);if(!found)return;
+  const t=found.obj;_stayIsAdv=found.isAdv;
   _stayTid=tid;_staySid=sid||null;
   const s=sid?(t.stays||[]).find(x=>x.id===sid):null;
   document.getElementById('stay-modal-title').textContent=s?'Edit Stay':'Add Stay';
@@ -5812,7 +5851,8 @@ function saveStay(){
   const name=document.getElementById('stay-name').value.trim();
   if(!name){toast('⚠️ Add a name for this stay');return;}
   D=load();
-  const t=D.trips.find(x=>x.id===_stayTid);if(!t)return;
+  const found=_findTripLike(_stayTid);if(!found)return;
+  const t=found.obj;
   if(!t.stays)t.stays=[];
   const type=document.getElementById('stay-type').value;
   const isOutdoor=['camping','rvpark','dispersed','glamping'].includes(type);
@@ -5836,12 +5876,12 @@ function saveStay(){
   if(_staySid){const i=t.stays.findIndex(x=>x.id===_staySid);if(i>=0)t.stays[i]=stay;else t.stays.push(stay);}
   else t.stays.push(stay);
   t.stays.sort((a,b)=>(a.checkIn||'').localeCompare(b.checkIn||''));
-  save('trips',D.trips);closeM('m-stay');toast(_staySid?'✅ Stay updated':'✅ Stay added');openTripD(_stayTid);
+  _saveTripLike(_stayIsAdv,D);closeM('m-stay');toast(_staySid?'✅ Stay updated':'✅ Stay added');_reopenTripLike(_stayIsAdv,_stayTid);
 }
 function delStay(tid,sid){
-  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
-  t.stays=(t.stays||[]).filter(x=>x.id!==sid);
-  save('trips',D.trips);toast('🗑️ Stay removed');openTripD(tid);
+  D=load();const found=_findTripLike(tid);if(!found)return;
+  const t=found.obj;t.stays=(t.stays||[]).filter(x=>x.id!==sid);
+  _saveTripLike(found.isAdv,D);toast('🗑️ Stay removed');_reopenTripLike(found.isAdv,tid);
 }
 // ── Fuel Log ─────────────────────────────────────────────
 const SCHENGEN=new Set(['Austria','Belgium','Czech Republic','Denmark','Estonia','Finland','France','Germany','Greece','Hungary','Iceland','Italy','Latvia','Liechtenstein','Lithuania','Luxembourg','Malta','Netherlands','Norway','Poland','Portugal','Slovakia','Slovenia','Spain','Sweden','Switzerland']);
@@ -5855,9 +5895,10 @@ function calcFuelPPG(){
   const t=parseFloat(document.getElementById('fuel-total').value)||0;
   if(g&&t)document.getElementById('fuel-ppg').value=(t/g).toFixed(3);
 }
-let _fuelTid=null,_fuelFid=null;
+let _fuelTid=null,_fuelFid=null,_fuelIsAdv=false;
 function openFuelModal(tid,fid){
-  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  D=load();const found=_findTripLike(tid);if(!found)return;
+  const t=found.obj;_fuelIsAdv=found.isAdv;
   _fuelTid=tid;_fuelFid=fid||null;
   const f=fid?(t.fuelLog||[]).find(x=>x.id===fid):null;
   document.getElementById('fuel-modal-title').textContent=f?'Edit Fill-up':'Add Fill-up';
@@ -5874,8 +5915,8 @@ function saveFuel(){
   const gallons=document.getElementById('fuel-gallons').value;
   const tot=document.getElementById('fuel-total').value;
   if(!gallons&&!tot){toast('⚠️ Enter gallons or total cost');return;}
-  D=load();const t=D.trips.find(x=>x.id===_fuelTid);if(!t)return;
-  if(!t.fuelLog)t.fuelLog=[];
+  D=load();const found=_findTripLike(_fuelTid);if(!found)return;
+  const t=found.obj;if(!t.fuelLog)t.fuelLog=[];
   const ppgRaw=parseFloat(document.getElementById('fuel-ppg').value)||null;
   const galRaw=parseFloat(gallons)||null;
   const totRaw=parseFloat(tot)||(galRaw&&ppgRaw?+(galRaw*ppgRaw).toFixed(2):null);
@@ -5890,12 +5931,12 @@ function saveFuel(){
   if(_fuelFid){const i=t.fuelLog.findIndex(x=>x.id===_fuelFid);if(i>=0)t.fuelLog[i]=entry;else t.fuelLog.push(entry);}
   else t.fuelLog.push(entry);
   t.fuelLog.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  save('trips',D.trips);closeM('m-fuel');toast(_fuelFid?'✅ Updated':'⛽ Fill-up logged');openTripD(_fuelTid);
+  _saveTripLike(_fuelIsAdv,D);closeM('m-fuel');toast(_fuelFid?'✅ Updated':'⛽ Fill-up logged');_reopenTripLike(_fuelIsAdv,_fuelTid);
 }
 function delFuel(tid,fid){
-  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
-  t.fuelLog=(t.fuelLog||[]).filter(x=>x.id!==fid);
-  save('trips',D.trips);toast('🗑️ Removed');openTripD(tid);
+  D=load();const found=_findTripLike(tid);if(!found)return;
+  const t=found.obj;t.fuelLog=(t.fuelLog||[]).filter(x=>x.id!==fid);
+  _saveTripLike(found.isAdv,D);toast('🗑️ Removed');_reopenTripLike(found.isAdv,tid);
 }
 function rTripFuelSection(t){
   const log=t.fuelLog||[];
@@ -6145,6 +6186,7 @@ function openCamp(rtype){
   document.getElementById('c-status').value='planning';
   document.getElementById('c-rtype').value=rtype||'trip';
   document.getElementById('c-camptype').value='tent';
+  document.getElementById('c-exclude-trips').checked=false;
   openM('m-camp');
 }
 function openCampSpot(){openCamp('spot');}
@@ -6164,6 +6206,7 @@ function openCampEdit(id){
   document.getElementById('c-camptype').value=c.campType||'tent';
   document.getElementById('c-thumb').value=c.thumb||'';
   document.getElementById('c-notes').value=c.notes||'';
+  document.getElementById('c-exclude-trips').checked=!!c.excludeFromTrips;
   openM('m-camp');
 }
 
@@ -6180,7 +6223,8 @@ function saveCamp(){
     state:document.getElementById('c-state').value.trim(),
     campType:document.getElementById('c-camptype').value,
     thumb:document.getElementById('c-thumb').value.trim(),
-    notes:document.getElementById('c-notes').value.trim()};
+    notes:document.getElementById('c-notes').value.trim(),
+    excludeFromTrips:document.getElementById('c-exclude-trips').checked};
   if(ceid){
     const i=D.camps.findIndex(x=>x.id===ceid);
     if(i>=0){D.camps[i]={...D.camps[i],...data};toast('✅ Updated!');}
@@ -6522,7 +6566,9 @@ function rAdvOverviewTab(c){
       <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Black Tank (gal)</label>
         <input class="fi" style="margin-top:3px" type="number" value="${rig.blackTank||''}" onblur="saveAdvRig('${c.id}','blackTank',this.value)"/></div>
     </div>
-  </div>`:''}`;
+  </div>`:''}
+  ${rTripStaysSection(c)}
+  ${showRig?rTripFuelSection(c):''}`;
 }
 function saveAdvField(cid,field,value){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
@@ -7496,6 +7542,7 @@ function openWork(){
   ['wk-start','wk-end'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('wk-status').value='planning';
   document.getElementById('wk-transport').value='flight';
+  document.getElementById('wk-exclude-trips').checked=false;
   openM('m-work');
 }
 function openWorkEdit(id){
@@ -7513,13 +7560,14 @@ function openWorkEdit(id){
   document.getElementById('wk-hotel').value=w.hotel||'';
   document.getElementById('wk-conf').value=w.confirmation||'';
   document.getElementById('wk-notes').value=w.notes||'';
+  document.getElementById('wk-exclude-trips').checked=!!w.excludeFromTrips;
   openM('m-work');
 }
 function saveWork(){
   const name=document.getElementById('wk-name').value.trim();
   if(!name){toast('⚠️ Name required');return;}
   D=load();if(!D.work)D.work=[];
-  const data={name,client:document.getElementById('wk-client').value.trim(),destination:document.getElementById('wk-dest').value.trim(),startDate:document.getElementById('wk-start').value,endDate:document.getElementById('wk-end').value,status:document.getElementById('wk-status').value,transport:document.getElementById('wk-transport').value,hotel:document.getElementById('wk-hotel').value.trim(),confirmation:document.getElementById('wk-conf').value.trim(),notes:document.getElementById('wk-notes').value.trim()};
+  const data={name,client:document.getElementById('wk-client').value.trim(),destination:document.getElementById('wk-dest').value.trim(),startDate:document.getElementById('wk-start').value,endDate:document.getElementById('wk-end').value,status:document.getElementById('wk-status').value,transport:document.getElementById('wk-transport').value,hotel:document.getElementById('wk-hotel').value.trim(),confirmation:document.getElementById('wk-conf').value.trim(),notes:document.getElementById('wk-notes').value.trim(),excludeFromTrips:document.getElementById('wk-exclude-trips').checked};
   if(wkeid){const i=D.work.findIndex(x=>x.id===wkeid);if(i>=0){D.work[i]={...D.work[i],...data};toast('✅ Updated!');}}
   else{D.work.push({id:uid(),...data,expenses:[],addedAt:Date.now()});toast('💼 Trip saved!');}
   localStorage.setItem('wf_work',JSON.stringify(D.work));
@@ -8014,6 +8062,8 @@ function pipeDelCustom(id){
 // ══════════════════════════════════════════════
 function setSetting(k,v){D.settings[k]=v;save('settings',D.settings);if(k==='name'){document.getElementById('pn').textContent=v||'You';document.getElementById('av').textContent=(v||'Y')[0].toUpperCase()}}
 function loadSettings(){D=load();const s=D.settings;document.getElementById('s-name').value=s.name||'';document.getElementById('s-partner').value=s.partner||'';document.getElementById('s-city').value=s.homeCity||'';document.getElementById('s-since').value=s.since||'';document.getElementById('s-apikey').value=s.apiKey||'';document.getElementById('s-maps-api-key').value=s.mapsApiKey||'';document.getElementById('s-google-client-id').value=s.googleClientId||'';document.getElementById('s-drive-folder').value=s.driveFolderId||'';document.getElementById('s-abroad-notes').value=s.abroadNotes||'';document.getElementById('pn').textContent=s.name||'You';document.getElementById('av').textContent=(s.name||'Y')[0].toUpperCase();const pl=document.getElementById('pl-partner');if(pl)pl.textContent=s.partner?'& '+s.partner:'';const wbtn=document.getElementById('s-work-stats-btn');if(wbtn){wbtn.textContent=s.workIncludeInStats?'ON':'OFF';wbtn.style.background=s.workIncludeInStats?'var(--green)':'var(--card3)';wbtn.style.color=s.workIncludeInStats?'#fff':'var(--text2)';}
+const advTBtn=document.getElementById('s-adv-trips-btn');if(advTBtn){const on=s.tripsShowAdventures!==false;advTBtn.textContent=on?'ON':'OFF';advTBtn.style.background=on?'var(--green)':'var(--card3)';advTBtn.style.color=on?'#fff':'var(--text2)';}
+const wkTBtn=document.getElementById('s-work-trips-btn');if(wkTBtn){wkTBtn.textContent=s.tripsShowWork?'ON':'OFF';wkTBtn.style.background=s.tripsShowWork?'var(--green)':'var(--card3)';wkTBtn.style.color=s.tripsShowWork?'#fff':'var(--text2)';}
 // Pre-warm Google Maps + Places library so it's ready before any modal opens
 const mk=(s.mapsApiKey||'').trim();if(mk&&!_gMapsLoaded&&!_gMapsLoading)loadGMapsAPI(mk).catch(()=>{});}
 function exportData(){const b=new Blob([JSON.stringify(load(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='wayfinder-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('📥 Exported!')}
