@@ -794,6 +794,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
     <button class="ni" data-p="journal"><span class="ico">📓</span>Memoirs</button>
     <div class="sb-sec">Life</div>
     <button class="ni" data-p="abroad"><span class="ico">🌍</span>Living Abroad</button>
+    <button class="ni" data-p="docs"><span class="ico">📋</span>Documents<span class="nb" id="b-docs" style="display:none">!</span></button>
     <div class="sb-sec">Account</div>
     <button class="ni" data-p="settings"><span class="ico">⚙️</span>Settings</button>
   </nav>
@@ -913,6 +914,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
     <div class="page" id="page-camp"><div id="camp-in"></div></div>
     <div class="page" id="page-work"><div id="work-in"></div></div>
     <div class="page" id="page-abroad"><div id="abroad-in"></div></div>
+    <div class="page" id="page-docs"><div id="docs-in" style="padding:16px 20px;max-width:700px"></div></div>
     <div class="page" id="page-path">
       <div class="path-filter-bar" id="path-filter-bar">
         <span class="pipe-filter-label">Show</span>
@@ -1377,6 +1379,74 @@ input,textarea,select{font-family:inherit;font-weight:400}
   </div>
 </div>
 
+<!-- DOCUMENT -->
+<div class="mo" id="m-doc">
+  <div class="modal" style="width:460px">
+    <button class="mcl" onclick="closeM('m-doc')">✕</button>
+    <h2 id="doc-modal-title">Add Document</h2>
+    <div class="fr">
+      <div class="fg" style="flex:2"><label class="fl">Document Name *</label><input class="fi" id="doc-name" placeholder="e.g. US Passport, Mexico Tourist Visa"/></div>
+      <div class="fg"><label class="fl">Type</label>
+        <select class="fs" id="doc-type">
+          <option value="passport">🛂 Passport</option>
+          <option value="visa">🏷️ Visa</option>
+          <option value="dl">🪪 Driver's License</option>
+          <option value="idp">🌐 Int'l Driving Permit</option>
+          <option value="vehicle_reg">📋 Vehicle Registration</option>
+          <option value="vehicle_ins">🛡️ Vehicle Insurance</option>
+          <option value="carnet">🚐 Vehicle Import Permit / Carnet</option>
+          <option value="travel_ins">🏥 Travel Insurance</option>
+          <option value="work_permit">💼 Work Permit / Visa</option>
+          <option value="health">💊 Health Certificate</option>
+          <option value="custom">📄 Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Country / Issuer</label><input class="fi" id="doc-country" placeholder="United States"/></div>
+      <div class="fg"><label class="fl">Document #</label><input class="fi" id="doc-number" placeholder="A12345678"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Issue Date</label><input class="fi" id="doc-issue" type="date"/></div>
+      <div class="fg"><label class="fl">Expiry Date</label><input class="fi" id="doc-expiry" type="date"/></div>
+    </div>
+    <div class="fg" style="margin-bottom:0"><label class="fl">Notes</label><textarea class="ft" id="doc-notes" placeholder="Max stay, renewal process, linked insurance policy, coverage countries…" style="min-height:55px"></textarea></div>
+    <div class="fa"><button class="btn-s" onclick="closeM('m-doc')">Cancel</button><button class="btn-p" onclick="saveDoc()">Save</button></div>
+  </div>
+</div>
+
+<!-- TRIP EXPENSE -->
+<div class="mo" id="m-tripexp">
+  <div class="modal" style="width:420px">
+    <button class="mcl" onclick="closeM('m-tripexp')">✕</button>
+    <h2 id="tripexp-modal-title">Add Expense</h2>
+    <div class="fr">
+      <div class="fg"><label class="fl">Date</label><input class="fi" id="te-date" type="date"/></div>
+      <div class="fg" style="flex:2"><label class="fl">Category</label>
+        <select class="fs" id="te-cat">
+          <option value="Accommodation">🏨 Accommodation</option>
+          <option value="Transport">✈️ Transport</option>
+          <option value="Fuel">⛽ Fuel</option>
+          <option value="Food & Dining">🍽️ Food & Dining</option>
+          <option value="Activities">🎭 Activities</option>
+          <option value="Shopping">🛍️ Shopping</option>
+          <option value="Health">🏥 Health & Medical</option>
+          <option value="Visas & Fees">🛂 Visas & Entry Fees</option>
+          <option value="Vehicle">🚐 Vehicle</option>
+          <option value="Communications">📱 Communications</option>
+          <option value="Misc">📦 Misc</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Description</label><input class="fi" id="te-desc" placeholder="e.g. Hotel Roma 2 nights, Dinner in Florence"/></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Amount ($) *</label><input class="fi" id="te-amount" type="number" step="0.01" placeholder="0.00"/></div>
+      <div class="fg" style="flex:2"><label class="fl">Notes</label><input class="fi" id="te-notes" placeholder="Receipt #, split cost, currency, etc."/></div>
+    </div>
+    <div class="fa"><button class="btn-s" onclick="closeM('m-tripexp')">Cancel</button><button class="btn-p" onclick="saveTripExp()">Save</button></div>
+  </div>
+</div>
+
 <!-- STAY -->
 <div class="mo" id="m-stay">
   <div class="modal" style="width:480px">
@@ -1618,7 +1688,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
 // DATA
 // ══════════════════════════════════════════════
 const K={places:'wf_places',trips:'wf_trips',wish:'wf_wishlist',journal:'wf_journal',settings:'wf_settings'};
-function load(){return{places:JSON.parse(localStorage.getItem(K.places)||'[]'),trips:JSON.parse(localStorage.getItem(K.trips)||'[]'),wish:JSON.parse(localStorage.getItem(K.wish)||'[]'),journal:JSON.parse(localStorage.getItem(K.journal)||'[]'),settings:JSON.parse(localStorage.getItem(K.settings)||'{"name":"Chris","partner":"Partner","homeCity":"","since":"2020"}'),abroad:JSON.parse(localStorage.getItem('wf_abroad')||'{"countries":[],"goals":[]}'),camps:JSON.parse(localStorage.getItem('wf_camps')||'[]'),work:JSON.parse(localStorage.getItem('wf_work')||'[]')}}
+function load(){return{places:JSON.parse(localStorage.getItem(K.places)||'[]'),trips:JSON.parse(localStorage.getItem(K.trips)||'[]'),wish:JSON.parse(localStorage.getItem(K.wish)||'[]'),journal:JSON.parse(localStorage.getItem(K.journal)||'[]'),settings:JSON.parse(localStorage.getItem(K.settings)||'{"name":"Chris","partner":"Partner","homeCity":"","since":"2020"}'),abroad:JSON.parse(localStorage.getItem('wf_abroad')||'{"countries":[],"goals":[]}'),camps:JSON.parse(localStorage.getItem('wf_camps')||'[]'),work:JSON.parse(localStorage.getItem('wf_work')||'[]'),docs:JSON.parse(localStorage.getItem('wf_docs')||'[]')}}
 function save(k,d){localStorage.setItem(K[k],JSON.stringify(d));scheduledSync(k,d);}
 function saveAbroad(){localStorage.setItem('wf_abroad',JSON.stringify(D.abroad));}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
@@ -2121,8 +2191,8 @@ window.wfAuditLinks=function(){
 // ══════════════════════════════════════════════
 // ROUTING
 // ══════════════════════════════════════════════
-const TITLES={home:'Dashboard',map:'World Map',places:'Places',wishlist:'Wishlist',planner:'AI Planner',trips:'Trips',journal:'Memoirs',abroad:'Living Abroad',settings:'Settings',path:'The Path',camp:'Adventures',work:'Work Trips'};
-const ACTS={home:{l:'+ Add Place',f:'openPlace'},places:{l:'+ Add Place',f:'openPlace'},wishlist:{l:'+ Add to Wishlist',f:'openWish'},planner:{l:'',f:''},trips:{l:'+ New Trip',f:'openTrip'},journal:{l:'+ New Memoir',f:'openJournal'},map:{l:'+ Add Place',f:'openPlace'},abroad:{l:'',f:''},settings:{l:'',f:''},path:{l:'',f:''},camp:{l:'+ Add Adventure',f:'openCamp'},work:{l:'+ New Work Trip',f:'openWork'}};
+const TITLES={home:'Dashboard',map:'World Map',places:'Places',wishlist:'Wishlist',planner:'AI Planner',trips:'Trips',journal:'Memoirs',abroad:'Living Abroad',settings:'Settings',path:'The Path',camp:'Adventures',work:'Work Trips',docs:'Documents'};
+const ACTS={home:{l:'+ Add Place',f:'openPlace'},places:{l:'+ Add Place',f:'openPlace'},wishlist:{l:'+ Add to Wishlist',f:'openWish'},planner:{l:'',f:''},trips:{l:'+ New Trip',f:'openTrip'},journal:{l:'+ New Memoir',f:'openJournal'},map:{l:'+ Add Place',f:'openPlace'},abroad:{l:'',f:''},settings:{l:'',f:''},path:{l:'',f:''},camp:{l:'+ Add Adventure',f:'openCamp'},work:{l:'+ New Work Trip',f:'openWork'},docs:{l:'+ Add Document',f:'openDocModal'}};
 let cur='home';
 let tripTypeFilter='all';
 function go(p){
@@ -2142,7 +2212,7 @@ function go(p){
   if(p==='planner')rPlanner();
   if(p==='trips')rTrips();if(p==='journal')rJournal();if(p==='map')rMap();
   if(p==='abroad')rAbroad();if(p==='path')rPath();
-  if(p==='camp')rCamp();if(p==='work')rWork();
+  if(p==='camp')rCamp();if(p==='work')rWork();if(p==='docs')rDocs();
   badges();
 }
 function goTrips(type){
@@ -2206,7 +2276,7 @@ document.addEventListener('keydown',e=>{
 // ══════════════════════════════════════════════
 // BADGES
 // ══════════════════════════════════════════════
-function badges(){D=load();document.getElementById('b-places').textContent=D.places.length;document.getElementById('b-trips').textContent=D.trips.length;document.getElementById('b-wish').textContent=D.wish.filter(w=>!w.graduated).length;const bc=document.getElementById('b-camp');if(bc)bc.textContent=(D.camps||[]).filter(c=>c.recordType!=='spot').length||'';const bw=document.getElementById('b-work');if(bw)bw.textContent=(D.work||[]).length;}
+function badges(){D=load();document.getElementById('b-places').textContent=D.places.length;document.getElementById('b-trips').textContent=D.trips.length;document.getElementById('b-wish').textContent=D.wish.filter(w=>!w.graduated).length;const bc=document.getElementById('b-camp');if(bc)bc.textContent=(D.camps||[]).filter(c=>c.recordType!=='spot').length||'';const bw=document.getElementById('b-work');if(bw)bw.textContent=(D.work||[]).length;docsAlertBadge();}
 
 // ══════════════════════════════════════════════
 // HOME
@@ -3964,6 +4034,7 @@ function openTripD(id){
   ${rTripActivities(t,stageId)}
   ${rTripPrep(t,stageId)}
   ${rTripStaysSection(t)}
+  ${rTripExpenseSection(t)}
   ${rTripFuelSection(t)}
   ${rTripCrossingsSection(t)}
   ${placesSection}${journalSection}${itinerarySection}`;
@@ -6186,6 +6257,220 @@ function openCampD(id){
     </div>`;
 }
 
+// ── Documents ────────────────────────────────────────────
+const DOC_TYPES={
+  passport:{icon:'🛂',label:'Passport'},
+  visa:{icon:'🏷️',label:'Visa'},
+  dl:{icon:'🪪',label:"Driver's License"},
+  idp:{icon:'🌐',label:"Int'l Driving Permit"},
+  vehicle_reg:{icon:'📋',label:'Vehicle Registration'},
+  vehicle_ins:{icon:'🛡️',label:'Vehicle Insurance'},
+  carnet:{icon:'🚐',label:'Vehicle Import Permit / Carnet'},
+  travel_ins:{icon:'🏥',label:'Travel Insurance'},
+  work_permit:{icon:'💼',label:'Work Permit / Visa'},
+  health:{icon:'💊',label:'Health Certificate'},
+  custom:{icon:'📄',label:'Document'},
+};
+function docDaysLeft(expiry){
+  if(!expiry)return null;
+  const today=new Date();today.setHours(0,0,0,0);
+  const exp=new Date(expiry+'T00:00:00');
+  return Math.round((exp-today)/86400000);
+}
+function docStatusColor(days){
+  if(days===null)return'var(--muted)';
+  if(days<0)return'#c05050';
+  if(days<30)return'#c05050';
+  if(days<60)return'#B8892A';
+  if(days<90)return'#e0a020';
+  return'var(--green3)';
+}
+function docStatusLabel(days){
+  if(days===null)return'No expiry';
+  if(days<0)return'Expired '+Math.abs(days)+'d ago';
+  if(days===0)return'Expires today!';
+  if(days<30)return days+'d left — Renew now';
+  if(days<90)return days+'d left — Renew soon';
+  return days+'d left';
+}
+let _docId=null;
+function openDocModal(id){
+  D=load();_docId=id||null;
+  const doc=id?(D.docs||[]).find(x=>x.id===id):null;
+  document.getElementById('doc-modal-title').textContent=doc?'Edit Document':'Add Document';
+  document.getElementById('doc-name').value=doc?.name||'';
+  document.getElementById('doc-type').value=doc?.type||'passport';
+  document.getElementById('doc-country').value=doc?.country||'';
+  document.getElementById('doc-number').value=doc?.number||'';
+  document.getElementById('doc-issue').value=doc?.issueDate||'';
+  document.getElementById('doc-expiry').value=doc?.expiryDate||'';
+  document.getElementById('doc-notes').value=doc?.notes||'';
+  openM('m-doc');
+}
+function saveDoc(){
+  const name=document.getElementById('doc-name').value.trim();
+  if(!name){toast('⚠️ Name required');return;}
+  D=load();if(!D.docs)D.docs=[];
+  const doc={
+    id:_docId||uid(),name,
+    type:document.getElementById('doc-type').value,
+    country:document.getElementById('doc-country').value.trim(),
+    number:document.getElementById('doc-number').value.trim(),
+    issueDate:document.getElementById('doc-issue').value,
+    expiryDate:document.getElementById('doc-expiry').value,
+    notes:document.getElementById('doc-notes').value.trim(),
+    addedAt:_docId?(D.docs.find(x=>x.id===_docId)?.addedAt||Date.now()):Date.now(),
+  };
+  if(_docId){const i=D.docs.findIndex(x=>x.id===_docId);if(i>=0)D.docs[i]=doc;else D.docs.push(doc);}
+  else D.docs.push(doc);
+  localStorage.setItem('wf_docs',JSON.stringify(D.docs));
+  closeM('m-doc');toast(_docId?'✅ Updated':'📋 Document saved');rDocs();docsAlertBadge();
+}
+function delDoc(id){
+  if(!confirm('Delete this document?'))return;
+  D=load();D.docs=(D.docs||[]).filter(x=>x.id!==id);
+  localStorage.setItem('wf_docs',JSON.stringify(D.docs));
+  toast('🗑️ Deleted');rDocs();docsAlertBadge();
+}
+function docsAlertBadge(){
+  D=load();
+  const urgent=(D.docs||[]).filter(d=>{const dl=docDaysLeft(d.expiryDate);return dl!==null&&dl<90;});
+  const b=document.getElementById('b-docs');
+  if(b){b.textContent=urgent.length||'';b.style.display=urgent.length?'':'none';}
+}
+function rDocs(){
+  D=load();
+  const docs=D.docs||[];
+  const today=new Date();today.setHours(0,0,0,0);
+  const sorted=[...docs].sort((a,b)=>{
+    const da=docDaysLeft(a.expiryDate)??99999;
+    const db=docDaysLeft(b.expiryDate)??99999;
+    return da-db;
+  });
+  const urgent=sorted.filter(d=>{const dl=docDaysLeft(d.expiryDate);return dl!==null&&dl<90;});
+  const el=document.getElementById('docs-in');
+  if(!el)return;
+  el.innerHTML=`
+    <div style="margin-bottom:18px">
+      <div style="font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.4px;margin-bottom:4px">📋 Documents</div>
+      <div style="font-size:12px;color:var(--muted2)">Passports, visas, vehicle docs, insurance — all in one place with expiry tracking.</div>
+    </div>
+    ${urgent.length?`
+    <div style="background:rgba(192,80,80,.08);border:1px solid rgba(192,80,80,.25);border-radius:var(--r);padding:12px 14px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:600;color:#c05050;margin-bottom:8px">⚠️ ${urgent.length} document${urgent.length===1?'':'s'} expiring soon</div>
+      ${urgent.map(d=>{const dl=docDaysLeft(d.expiryDate);const info=DOC_TYPES[d.type]||DOC_TYPES.custom;return`<div style="font-size:11px;color:var(--text2);padding:3px 0">${info.icon} <strong>${d.name}</strong>${d.country?' · '+d.country:''} — <span style="color:${docStatusColor(dl)};font-weight:600">${docStatusLabel(dl)}</span></div>`;}).join('')}
+    </div>`:''}
+    ${sorted.length?`<div style="display:flex;flex-direction:column;gap:8px">
+      ${sorted.map(d=>{
+        const dl=docDaysLeft(d.expiryDate);
+        const info=DOC_TYPES[d.type]||DOC_TYPES.custom;
+        const sc=docStatusColor(dl);
+        return`<div style="background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:13px 15px;display:flex;align-items:flex-start;gap:11px;box-shadow:var(--shadow)">
+          <div style="font-size:22px;flex-shrink:0;margin-top:1px">${info.icon}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+              <div>
+                <div style="font-size:13px;font-weight:600;color:var(--text)">${d.name}</div>
+                <div style="font-size:11px;color:var(--muted2);margin-top:1px">${info.label}${d.country?' · '+d.country:''}${d.number?' · #'+d.number:''}</div>
+              </div>
+              <div style="text-align:right;flex-shrink:0">
+                <div style="font-size:11px;font-weight:600;color:${sc}">${docStatusLabel(dl)}</div>
+                ${d.expiryDate?`<div style="font-size:10px;color:var(--muted2);margin-top:1px">Expires ${fd(d.expiryDate)}</div>`:''}
+              </div>
+            </div>
+            ${d.issueDate?`<div style="font-size:11px;color:var(--muted2);margin-top:3px">Issued ${fd(d.issueDate)}</div>`:''}
+            ${dl!==null&&dl>=0&&dl<180?`<div style="margin-top:6px;background:var(--card2);border-radius:4px;height:4px;overflow:hidden"><div style="height:100%;width:${Math.max(2,100-Math.round(dl/180*100))}%;background:${sc};border-radius:4px;transition:width .3s"></div></div>`:''}
+            ${d.notes?`<div style="font-size:11px;color:var(--text2);margin-top:5px;line-height:1.5">${d.notes}</div>`:''}
+          </div>
+          <div style="display:flex;gap:3px;flex-shrink:0">
+            <button onclick="openDocModal('${d.id}')" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:2px 4px;border-radius:4px" onmouseover="this.style.color='var(--green3)'" onmouseout="this.style.color='var(--muted2)'">✏️</button>
+            <button onclick="delDoc('${d.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:2px 4px;border-radius:4px" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`:`<div style="text-align:center;padding:48px 20px;color:var(--muted2)">
+      <div style="font-size:40px;margin-bottom:12px">📋</div>
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">No documents yet</div>
+      <div style="font-size:12px;margin-bottom:16px;line-height:1.6">Add your passport, vehicle registration, travel insurance — anything with an expiry date you need to track.</div>
+      <button class="tb-btn" onclick="openDocModal()">+ Add First Document</button>
+    </div>`}`;
+}
+// ── Trip Expenses ─────────────────────────────────────────
+let _teTid=null,_teId=null;
+function openTripExpModal(tid,eid){
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  _teTid=tid;_teId=eid||null;
+  const e=eid?(t.expenses||[]).find(x=>x.id===eid):null;
+  document.getElementById('tripexp-modal-title').textContent=e?'Edit Expense':'Add Expense';
+  document.getElementById('te-date').value=e?.date||new Date().toISOString().split('T')[0];
+  document.getElementById('te-cat').value=e?.category||'Accommodation';
+  document.getElementById('te-desc').value=e?.description||'';
+  document.getElementById('te-amount').value=e?.amount||'';
+  document.getElementById('te-notes').value=e?.notes||'';
+  openM('m-tripexp');
+}
+function saveTripExp(){
+  const amt=parseFloat(document.getElementById('te-amount').value);
+  if(!amt){toast('⚠️ Enter an amount');return;}
+  D=load();const t=D.trips.find(x=>x.id===_teTid);if(!t)return;
+  if(!t.expenses)t.expenses=[];
+  const entry={
+    id:_teId||uid(),
+    date:document.getElementById('te-date').value,
+    category:document.getElementById('te-cat').value,
+    description:document.getElementById('te-desc').value.trim(),
+    amount:amt,
+    notes:document.getElementById('te-notes').value.trim(),
+  };
+  if(_teId){const i=t.expenses.findIndex(x=>x.id===_teId);if(i>=0)t.expenses[i]=entry;else t.expenses.push(entry);}
+  else t.expenses.push(entry);
+  t.expenses.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  save('trips',D.trips);closeM('m-tripexp');toast(_teId?'✅ Updated':'💰 Expense added');openTripD(_teTid);
+}
+function delTripExp(tid,eid){
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  t.expenses=(t.expenses||[]).filter(x=>x.id!==eid);
+  save('trips',D.trips);toast('🗑️ Removed');openTripD(tid);
+}
+function rTripExpenseSection(t){
+  const expenses=t.expenses||[];
+  const budget=parseFloat(t.budget)||0;
+  const total=expenses.reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+  const pct=budget?Math.min(100,Math.round(total/budget*100)):0;
+  const byCat={};
+  expenses.forEach(e=>{byCat[e.category]=(byCat[e.category]||0)+(parseFloat(e.amount)||0);});
+  const topCats=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  const EXP_CAT_ICONS={'Accommodation':'🏨','Transport':'✈️','Fuel':'⛽','Food & Dining':'🍽️','Activities':'🎭','Shopping':'🛍️','Health':'🏥','Visas & Fees':'🛂','Vehicle':'🚐','Communications':'📱','Misc':'📦'};
+  return`
+  <div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle ${expenses.length?'coll-open':''}" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">💰 Expenses</div><div class="cs">${expenses.length?[expenses.length+' item'+(expenses.length===1?'':'s'),'$'+total.toFixed(0)+' total',budget?pct+'% of $'+budget.toLocaleString()+' budget':''].filter(Boolean).join(' · '):'Track spending for this trip'}</div></div>
+      <div style="display:flex;align-items:center;gap:8px"><button class="pbtn" onclick="event.stopPropagation();openTripExpModal('${t.id}')">+ Add</button><span class="coll-arrow">▾</span></div>
+    </div>
+    <div class="coll-body ${expenses.length?'coll-open':''}">
+      ${expenses.length?`
+      ${budget?`<div style="margin:10px 0 6px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted2);margin-bottom:4px"><span>$${total.toFixed(0)} spent</span><span>$${Math.max(0,budget-total).toFixed(0)} left of $${budget.toLocaleString()} budget</span></div>
+        <div style="background:var(--card2);border-radius:4px;height:7px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct>90?'#c05050':pct>70?'#B8892A':'var(--green3)'};border-radius:4px;transition:width .3s"></div></div>
+      </div>`:''}
+      ${topCats.length>1?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin:10px 0 8px">
+        ${topCats.map(([cat,amt])=>`<span style="font-size:10px;background:var(--card2);border:1px solid var(--bdr);border-radius:20px;padding:2px 8px;color:var(--text2)">${EXP_CAT_ICONS[cat]||'📦'} ${cat}: $${amt.toFixed(0)}</span>`).join('')}
+      </div>`:''}
+      ${[...expenses].reverse().map(e=>`
+        <div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--bdr)">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+              <div style="font-size:12px;font-weight:600;color:var(--text)">${e.description||e.category}</div>
+              <div style="font-size:13px;font-weight:700;color:var(--text);flex-shrink:0">$${parseFloat(e.amount).toFixed(2)}</div>
+            </div>
+            <div style="font-size:11px;color:var(--muted2)">${EXP_CAT_ICONS[e.category]||'📦'} ${e.category}${e.date?' · '+fd(e.date):''}${e.notes?' · '+e.notes:''}</div>
+          </div>
+          <button onclick="delTripExp('${t.id}','${e.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:2px 4px;flex-shrink:0" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
+        </div>`).join('')}
+      `:`<div style="font-size:12px;color:var(--muted2);padding:14px 0;text-align:center">No expenses yet — track accommodation, food, transport, activities</div>`}
+    </div>
+  </div>`;
+}
 // ── Tab: Overview ───────────────────────────────────────
 function rAdvOverviewTab(c){
   const travelers=c.travelers||[];
