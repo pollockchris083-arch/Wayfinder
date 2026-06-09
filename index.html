@@ -1435,15 +1435,24 @@ input,textarea,select{font-family:inherit;font-weight:400}
     </div>
     <div class="fg"><label class="fl">Name *</label><input class="fi" id="c-name" placeholder="e.g. Sierras Loop, Big Basin Weekend"/></div>
     <div class="fg"><label class="fl">Adventure Type</label><select class="fs" id="c-camptype">
-      <option value="tent">🏕️ Tent Camping</option>
-      <option value="backpacking">🎒 Backpacking</option>
-      <option value="rv">🚐 RV Trip</option>
-      <option value="van">🚌 Van Life</option>
-      <option value="trailer">🚛 Trailer Trip</option>
-      <option value="glamping">⛺ Glamping</option>
-      <option value="car">🚗 Car Camping</option>
-      <option value="dispersed">🌲 Dispersed / Boondocking</option>
-      <option value="overlanding">🏔️ Overlanding</option>
+      <optgroup label="Camping &amp; Outdoors">
+        <option value="tent">🏕️ Tent Camping</option>
+        <option value="backpacking">🎒 Backpacking</option>
+        <option value="rv">🚐 RV Trip</option>
+        <option value="van">🚌 Van Life</option>
+        <option value="trailer">🚛 Trailer Trip</option>
+        <option value="glamping">⛺ Glamping</option>
+        <option value="car">🚗 Car Camping</option>
+        <option value="dispersed">🌲 Dispersed / Boondocking</option>
+        <option value="overlanding">🏔️ Overlanding</option>
+      </optgroup>
+      <optgroup label="Stays">
+        <option value="cabin">🏠 Cabin / Cottage</option>
+        <option value="hotel">🏨 Hotel / Motel</option>
+        <option value="hostel">🛏️ Hostel</option>
+        <option value="airbnb">🏡 Airbnb / VRBO</option>
+        <option value="friends">👥 Friend / Family</option>
+      </optgroup>
     </select></div>
     <div class="fr">
       <div class="fg"><label class="fl">Start Date</label><input class="fi" id="c-start" type="date"/></div>
@@ -1656,11 +1665,17 @@ input,textarea,select{font-family:inherit;font-weight:400}
       <div class="fg"><label class="fl">Departure</label><input class="fi" type="date" id="advstop-dep" oninput="advStopCalcNights()"/></div>
     </div>
     <div id="advstop-nights-hint" style="font-size:11px;color:var(--muted2);margin:-4px 0 10px;min-height:15px"></div>
-    <!-- Booked toggle -->
-    <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;color:var(--text2);margin-bottom:10px">
-      <input type="checkbox" id="advstop-booked" style="width:15px;height:15px;accent-color:var(--green)" onchange="advStopToggleBooked(this.checked)"/>
-      <span>Booked ✅ — show reservation details</span>
-    </label>
+    <!-- Stop type flags -->
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px">
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;color:var(--text2)">
+        <input type="checkbox" id="advstop-booked" style="width:15px;height:15px;accent-color:var(--green)" onchange="advStopToggleBooked(this.checked)"/>
+        <span>Booked ✅</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;color:var(--text2)" title="A day excursion that leaves and returns to the same base — doesn't advance your route">
+        <input type="checkbox" id="advstop-daytrip" style="width:15px;height:15px;accent-color:var(--green)"/>
+        <span>🥾 Day excursion (returns to base)</span>
+      </label>
+    </div>
     <div id="advstop-booking-fields" style="display:none">
       <div class="fr">
         <div class="fg"><label class="fl">Confirmation #<span style="font-size:9px;color:var(--muted2);font-weight:400;margin-left:4px">from booking email</span></label><input class="fi" id="advstop-conf" placeholder="RES-123456"/></div>
@@ -6078,6 +6093,11 @@ const ADV_TYPES={
   car:{icon:'🚗',label:'Car Camping'},
   dispersed:{icon:'🌲',label:'Dispersed/Boondocking'},
   overlanding:{icon:'🏔️',label:'Overlanding'},
+  cabin:{icon:'🏠',label:'Cabin / Cottage'},
+  hotel:{icon:'🏨',label:'Hotel / Motel'},
+  hostel:{icon:'🛏️',label:'Hostel'},
+  airbnb:{icon:'🏡',label:'Airbnb / VRBO'},
+  friends:{icon:'👥',label:'Friend / Family'},
 };
 const CAMP_TYPE_ICONS=Object.fromEntries(Object.entries(ADV_TYPES).map(([k,v])=>[k,v.icon]));
 CAMP_TYPE_ICONS.cabin='🏠';
@@ -7051,9 +7071,11 @@ function delAdvExpense(cid,idx){
 // ── Tab: Stops & Route ──────────────────────────────────
 function rAdvStopsTab(c){
   const stops=c.stops||[];
-  const totalMiles=stops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
-  const totalDriveSecs=stops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0);
-  const totalNights=stops.reduce((s,st)=>{
+  // Only base stops (non-day-trips) count toward route totals
+  const baseStops=stops.filter(s=>!s.isDayTrip);
+  const totalMiles=baseStops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  const totalDriveSecs=baseStops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0);
+  const totalNights=baseStops.reduce((s,st)=>{
     if(st.arrivalDate&&st.departureDate)return s+Math.max(0,Math.round((new Date(st.departureDate)-new Date(st.arrivalDate))/86400000));
     return s;
   },0);
@@ -7069,26 +7091,30 @@ function rAdvStopsTab(c){
     const summaryParts=[miLabel,totalNights>0?`${totalNights} nights`:'',totalCampCost>0?`💰 $${totalCampCost.toFixed(0)} campsite fees`:''].filter(Boolean).join(' · ');
     html+=`<div style="background:var(--card2);border:1px solid var(--bdr);border-radius:var(--r);padding:10px 14px;margin-bottom:12px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-        <div style="font-size:11px;font-weight:600;color:var(--text)">🗺️ Route${stops.length>1?' ('+stops.length+' stops)':''}</div>
+        <div style="font-size:11px;font-weight:600;color:var(--text)">🗺️ Route${baseStops.length>1?' ('+baseStops.length+' stops)':''}</div>
         ${hasAnyCoords?`<button id="adv-recalc-btn" class="pbtn" onclick="recalcAdvTripDriving('${c.id}')" style="font-size:10px;padding:3px 8px">🔄 Recalc distances</button>`:''}
       </div>
-      ${stops.length>1?`<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:12px;margin-bottom:6px">
-        ${stops.map((st,i)=>`${i>0?'<span style="color:var(--muted)">→</span>':''}<span style="font-weight:500;color:var(--text2)">${st.name||'Stop '+(i+1)}</span>`).join('')}
+      ${baseStops.length>1?`<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:12px;margin-bottom:6px">
+        ${baseStops.map((st,i)=>`${i>0?'<span style="color:var(--muted)">→</span>':''}<span style="font-weight:500;color:var(--text2)">${st.name||'Stop '+(i+1)}</span>`).join('')}
       </div>`:''}
       ${summaryParts?`<div style="font-size:11px;color:var(--muted)">${summaryParts}</div>`:''}
     </div>`;
   }
   stops.forEach((stop,i)=>{
+    const isDayTrip=!!stop.isDayTrip;
     const dur=stop.arrivalDate&&stop.departureDate?Math.max(0,Math.round((new Date(stop.departureDate)-new Date(stop.arrivalDate))/86400000)):0;
-    const nights=dur?dur+' night'+(dur!==1?'s':''):'';
+    const nights=isDayTrip?'Day excursion':(dur?dur+' night'+(dur!==1?'s':''):'');
     const costTotal=stop.costPerNight&&dur?` · $${(parseFloat(stop.costPerNight)*dur).toFixed(0)} total`:'';
     const hookups=stop.hookups||[];
     const HI={'Electric 20A':'🔌','Electric 30A':'🔌','Electric 50A':'⚡','Water':'💧','Sewer':'🚿','WiFi':'📶','Pull-through':'↔️','Back-in':'↩️','Pet Friendly':'🐕'};
-    html+=`<div class="card" style="margin-bottom:10px">
+    const stopLabel=isDayTrip?`🥾 Day hike / excursion${stop.name?' — '+stop.name:''}`:`Stop ${i+1}${stop.name?' — '+stop.name:''}`;
+    const cardStyle=isDayTrip?'margin-bottom:10px;border-color:rgba(74,114,89,.25);border-style:dashed;background:rgba(74,114,89,.03)':'margin-bottom:10px';
+    html+=`<div class="card" style="${cardStyle}">
       <div class="ch">
         <div>
-          <div style="font-size:13px;font-weight:700;color:var(--text)">Stop ${i+1}${stop.name?' — '+stop.name:''}</div>
-          ${stop.arrivalDate?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${fd(stop.arrivalDate)}${stop.departureDate?' — '+fd(stop.departureDate):''}${nights?' · '+nights:''}</div>`:''}
+          <div style="font-size:13px;font-weight:700;color:${isDayTrip?'var(--green3)':'var(--text)'}">${stopLabel}</div>
+          ${stop.arrivalDate?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${fd(stop.arrivalDate)}${!isDayTrip&&stop.departureDate?' — '+fd(stop.departureDate):''}${nights?' · '+nights:''}</div>`:''}
+          ${isDayTrip?`<div style="font-size:10px;color:var(--muted2);margin-top:2px">↩️ Returns to base — not counted in route mileage</div>`:''}
         </div>
         <div style="display:flex;gap:4px;align-items:center;flex-shrink:0">
           ${stop.booked?'<span style="font-size:9px;color:var(--green3);font-weight:600;background:rgba(74,114,89,.1);padding:2px 6px;border-radius:4px">✅ Booked</span>':''}
@@ -7097,7 +7123,7 @@ function rAdvStopsTab(c){
         </div>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
-        ${stop.milesPrev?`<span style="font-size:11px;color:var(--muted2)">🛣️ ${stop.milesEst?'~':''}${stop.milesPrev} mi${stop.driveSecs?` · ${fDrive(stop.driveSecs)} drive`:''}${stop.milesEst?' (est.)':''} from prev</span>`:''}
+        ${stop.milesPrev?`<span style="font-size:11px;color:var(--muted2)">${isDayTrip?'🥾':'🛣️'} ${stop.milesEst?'~':''}${stop.milesPrev} mi${stop.driveSecs?` · ${fDrive(stop.driveSecs)} drive`:''}${isDayTrip?' round trip':stop.milesEst?' (est.)':''} from base</span>`:''}
         ${stop.siteNumber?`<span style="font-size:11px;color:var(--muted2)">🏕️ Site ${stop.siteNumber}</span>`:''}
         ${stop.confirmation?`<span style="font-size:11px;color:var(--muted2)">📋 ${stop.confirmation}</span>`:''}
         ${stop.costPerNight?`<span style="font-size:11px;color:var(--muted2)">💰 $${stop.costPerNight}/night${costTotal}</span>`:''}
@@ -7119,7 +7145,11 @@ function rAdvStopsTab(c){
       ${c.mapsUrl?`<a href="${c.mapsUrl}" target="_blank" style="font-size:11px;color:var(--green3);text-decoration:none;margin-top:4px;display:block">🗺️ Open Maps</a>`:''}
     </div>`;
   }
-  html+=`<button class="tb-btn" style="width:100%;justify-content:center" onclick="openAdvStopModal('${c.id}',-1)">+ Add Stop</button>`;
+  html+=`<div style="display:flex;gap:7px;flex-wrap:wrap">
+    <button class="tb-btn" style="flex:1;justify-content:center;min-width:120px" onclick="openAdvStopModal('${c.id}',-1)">+ Add Stop</button>
+    <button class="tb-btn" style="justify-content:center;background:rgba(74,114,89,.1);border-color:rgba(74,114,89,.25);color:var(--green3);font-size:11px;padding:7px 11px" onclick="addDayExcursion('${c.id}')" title="Add a day hike or day trip that returns to base camp">🥾 + Day Excursion</button>
+    <button class="tb-btn" style="justify-content:center;background:var(--card2);font-size:11px;padding:7px 11px" onclick="addReturnHomeStop('${c.id}')" title="Add a return stop back to your home location">🏠 Return Home</button>
+  </div>`;
   return html;
 }
 
@@ -7506,6 +7536,7 @@ function openAdvStopModal(cid,idx){
   const booked=!!stop.booked;
   document.getElementById('advstop-booked').checked=booked;
   document.getElementById('advstop-booking-fields').style.display=booked?'block':'none';
+  document.getElementById('advstop-daytrip').checked=!!stop.isDayTrip;
   document.getElementById('advstop-save-spot').checked=false;
 
   // Hookup button states
@@ -7832,6 +7863,7 @@ function saveAdvStop(){
     maxRigLength:document.getElementById('advstop-rig').value,
     notes:document.getElementById('advstop-notes').value.trim(),
     booked:document.getElementById('advstop-booked').checked,
+    isDayTrip:document.getElementById('advstop-daytrip').checked||false,
     hookups,
   };
   D=load();
@@ -7849,6 +7881,31 @@ function saveAdvStop(){
   }
   localStorage.setItem('wf_camps',JSON.stringify(D.camps));
   closeM('m-adv-stop');window._campDTab='stops';openCampD(cid);toast('📍 Stop saved!');
+}
+function addReturnHomeStop(cid){
+  D=load();
+  const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  const hc=(D.settings.homeCity||'').trim();
+  openAdvStopModal(cid,-1);
+  setTimeout(()=>{
+    const nameEl=document.getElementById('advstop-name');
+    const searchEl=document.getElementById('advstop-search');
+    if(nameEl)nameEl.value=hc||'Home';
+    if(searchEl)searchEl.value=hc||'Home';
+    // Pre-fill arrival with adventure end date
+    const arrEl=document.getElementById('advstop-arr');
+    if(arrEl&&c.endDate)arrEl.value=c.endDate;
+    advStopUpdateProgress();
+  },60);
+}
+function addDayExcursion(cid){
+  openAdvStopModal(cid,-1);
+  setTimeout(()=>{
+    const el=document.getElementById('advstop-daytrip');
+    if(el){el.checked=true;}
+    const titleEl=document.getElementById('advstop-title');
+    if(titleEl)titleEl.textContent='Add Day Excursion';
+  },60);
 }
 function delAdvStop(cid,idx){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
