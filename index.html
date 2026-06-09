@@ -232,11 +232,17 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .day-lbl{font-size:12px;font-weight:600;color:var(--text)}
 .day-dt{font-size:11px;color:var(--muted)}
 .day-body{padding:10px 13px}
-.stop-row{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--bdr)}
+.stop-row{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--bdr)}
 .stop-row:last-child{border-bottom:none;padding-bottom:0}
+.stop-row.wp-done .stopname{text-decoration:line-through;opacity:.45}
 .stopnum{width:18px;height:18px;border-radius:50%;background:var(--green);color:#fff;font-size:9px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
 .stopname{font-size:12px;font-weight:500;color:var(--text)}
-.stopnote{font-size:11px;color:var(--muted);margin-top:1px}
+.stopnote{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
+.wp-icon{font-size:14px;flex-shrink:0;margin-top:1px;line-height:1}
+.wp-time{font-size:10px;font-weight:600;color:var(--muted2);background:var(--card2);border:1px solid var(--bdr);border-radius:4px;padding:1px 5px;flex-shrink:0;margin-top:2px;white-space:nowrap}
+.wp-nav{font-size:12px;color:var(--green3);text-decoration:none;flex-shrink:0;padding:2px 4px;border-radius:4px;line-height:1;background:rgba(74,114,89,.1);border:1px solid rgba(74,114,89,.25)}
+.wp-type-btn{font-size:10px;padding:3px 9px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.wp-type-btn[data-active="1"]{background:#4A7259!important;color:#fff!important;border-color:#4A7259!important}
 .add-stop{display:flex;align-items:center;gap:6px;background:none;border:1px dashed var(--bdr2);border-radius:6px;padding:7px 10px;font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s;width:100%;margin-top:6px}
 .add-stop:hover{border-color:var(--green);color:var(--green3)}
 
@@ -1162,12 +1168,21 @@ input,textarea,select{font-family:inherit;font-weight:400}
 
 <!-- STOP -->
 <div class="mo" id="m-stop">
-  <div class="modal">
+  <div class="modal" style="width:480px">
     <button class="mcl" onclick="closeM('m-stop')">✕</button>
     <h2 id="stop-modal-title">Add Stop</h2>
-    <div class="fg"><label class="fl">Link to Saved Place <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(optional)</span></label><select class="fs" id="st-place"><option value="">— New stop, no place link —</option></select></div>
-    <div class="fg"><label class="fl">Stop / Activity *</label><input class="fi" id="st-name" placeholder="e.g. Angels Landing hike"/></div>
-    <div class="fg" style="margin-bottom:0"><label class="fl">Notes</label><input class="fi" id="st-note" placeholder="Timing, reservations, tips…"/></div>
+    <div class="fg" style="margin-bottom:8px"><label class="fl">Stop Type</label>
+      <div id="wp-type-pills" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px"></div>
+    </div>
+    <div class="fg"><label class="fl">Name *</label><input class="fi" id="st-name" placeholder="e.g. Muir Woods, In-N-Out, Rest Area 23…"/></div>
+    <div class="fr">
+      <div class="fg" style="flex:1"><label class="fl">Time <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(optional)</span></label><input class="fi" type="time" id="st-time"/></div>
+      <div class="fg" style="flex:1"><label class="fl">Est. Duration</label><select class="fs" id="st-dur"><option value="">—</option><option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">1 hr</option><option value="90">1.5 hr</option><option value="120">2 hr</option><option value="180">3 hr</option><option value="240">4+ hr</option><option value="480">Half day</option><option value="1440">Full day</option></select></div>
+    </div>
+    <div class="fg"><label class="fl">Address / City</label><input class="fi" id="st-address" placeholder="City or street address — for GPS navigation"/></div>
+    <div class="fg"><label class="fl">Maps Link</label><div style="display:flex;gap:6px"><input class="fi" id="st-maps" placeholder="Paste Google Maps URL for one-tap navigation" style="flex:1"/><a id="st-maps-open" href="#" target="_blank" style="display:none;padding:6px 10px;background:var(--card2);border:1px solid var(--bdr);border-radius:6px;font-size:11px;color:var(--green3);text-decoration:none;white-space:nowrap;align-self:stretch;display:flex;align-items:center" onclick="return false">Open ↗</a></div></div>
+    <div class="fg"><label class="fl">Notes</label><input class="fi" id="st-note" placeholder="Reservations, tips, gate codes, dog friendly…"/></div>
+    <div class="fg" style="margin-bottom:0"><label class="fl">Link to Saved Place <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(optional)</span></label><select class="fs" id="st-place"><option value="">— None —</option></select></div>
     <div class="fa"><button class="btn-s" onclick="closeM('m-stop')">Cancel</button><button class="btn-p" id="stop-modal-save" onclick="saveStop()">Add Stop</button></div>
   </div>
 </div>
@@ -4006,20 +4021,26 @@ function openTripD(id){
           </div>
           ${(day.stops||[]).length?(day.stops||[]).map((s,si)=>{
             const lp=s.placeId?D.places.find(x=>x.id===s.placeId):null;
+            const wt=WP_TYPES[s.type||'other']||WP_TYPES.other;
             const otherDays=t.itinerary.map((d2,di2)=>di2===di?null:`<option value="${di2}">Day ${di2+1} · ${fd(d2.date)}</option>`).filter(Boolean).join('');
-            return`<div class="stop-row" ${lp?`style="cursor:pointer" onclick="go('places');setTimeout(()=>openPlaceD('${lp.id}'),10)"`:''}>
-              <div class="stopnum">${si+1}</div>
-              <div style="flex:1">
-                <div class="stopname">${s.name}${lp?` <span style="font-size:9px;color:var(--green3);margin-left:3px">↗</span>`:''}</div>
+            const dur=s.duration?parseInt(s.duration)>=60?Math.round(parseInt(s.duration)/60)+'h':(s.duration+'min'):'';
+            return`<div class="stop-row${s.done?' wp-done':''}">
+              <input type="checkbox" ${s.done?'checked':''} style="width:14px;height:14px;flex-shrink:0;margin-top:2px;accent-color:var(--green);cursor:pointer" onchange="toggleStopDone('${t.id}',${di},${si},this.checked)" title="Mark done"/>
+              <div class="wp-icon" title="${wt.l}">${wt.i}</div>
+              ${s.time?`<div class="wp-time">${s.time}${dur?' · '+dur:''}</div>`:''}
+              <div style="flex:1;min-width:0">
+                <div class="stopname">${s.name}${lp?` <span style="font-size:9px;color:var(--green3);cursor:pointer" onclick="go('places');setTimeout(()=>openPlaceD('${lp.id}'),10)">↗</span>`:''}</div>
+                ${s.address?`<div class="stopnote">📍 ${s.address}</div>`:''}
                 ${s.note?`<div class="stopnote">${s.note}</div>`:''}
               </div>
-              <div style="display:flex;gap:2px;flex-shrink:0" onclick="event.stopPropagation()">
-                <button onclick="openStopEdit('${t.id}',${di},${si})" title="Edit stop" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:2px 4px;border-radius:4px;line-height:1;transition:color .15s" onmouseover="this.style.color='var(--green3)'" onmouseout="this.style.color='var(--muted2)'">✏️</button>
-                ${otherDays?`<select title="Move to a different day" onchange="moveStop('${t.id}',${di},${si},parseInt(this.value));this.value=''" style="font-size:10px;padding:1px 2px;border:1px solid var(--bdr2);border-radius:4px;background:var(--card2);color:var(--text2);cursor:pointer;max-width:24px;text-align:center"><option value="">⇅</option>${otherDays}</select>`:''}
-                <button onclick="delStop('${t.id}',${di},${si})" title="Remove stop" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:2px 4px;border-radius:4px;line-height:1;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
+              <div style="display:flex;gap:2px;flex-shrink:0;align-items:center">
+                ${s.mapsUrl?`<a href="${s.mapsUrl}" target="_blank" class="wp-nav" title="Navigate">🗺️</a>`:''}
+                <button onclick="openStopEdit('${t.id}',${di},${si})" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:2px 4px;border-radius:4px;line-height:1;transition:color .15s" onmouseover="this.style.color='var(--green3)'" onmouseout="this.style.color='var(--muted2)'">✏️</button>
+                ${otherDays?`<select title="Move day" onchange="moveStop('${t.id}',${di},${si},parseInt(this.value));this.value=''" style="font-size:10px;padding:1px 2px;border:1px solid var(--bdr2);border-radius:4px;background:var(--card2);color:var(--text2);cursor:pointer;max-width:24px;text-align:center"><option value="">⇅</option>${otherDays}</select>`:''}
+                <button onclick="delStop('${t.id}',${di},${si})" title="Remove" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:2px 4px;border-radius:4px;line-height:1;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
               </div>
             </div>`;
-          }).join(''):`<div style="font-size:11px;color:var(--muted2);padding:5px 0">No stops yet</div>`}
+          }).join(''):`<div style="font-size:11px;color:var(--muted2);padding:5px 0">No stops yet — add meals, sights, rest stops, accommodation…</div>`}
           <button class="add-stop" onclick="openStop('${t.id}',${di})">+ Add Stop</button>
         </div>`).join(''):`<div style="padding:16px;text-align:center;font-size:12px;color:var(--muted)">Add dates to build a day-by-day itinerary</div>`}
       <button class="add-stop" style="margin-top:6px;opacity:.7" onclick="addItineraryDay('${t.id}')">+ Add Day</button>
@@ -4416,6 +4437,22 @@ function delStop(tid,di,si){
   save('trips',D.trips);
   toast('🗑️ Stop removed');openTripD(tid);
 }
+function toggleStopDone(tid,di,si,val){
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  if(t.itinerary[di]?.stops[si])t.itinerary[di].stops[si].done=val;
+  save('trips',D.trips);openTripD(tid);
+}
+function delAdvWaypoint(cid,di,wi){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c||!c.dailyPlans?.[di])return;
+  c.dailyPlans[di].waypoints=(c.dailyPlans[di].waypoints||[]).filter((_,i)=>i!==wi);
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  window._campDTab='daily';openCampD(cid);
+}
+function toggleAdvWaypointDone(cid,di,wi,val){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  const wp=c.dailyPlans?.[di]?.waypoints?.[wi];if(wp)wp.done=val;
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+}
 function unlinkPlace(placeId,tid){
   const p=D.places.find(x=>x.id===placeId);if(!p)return;
   p.tripIds=(p.tripIds||[]).filter(id=>id!==tid);
@@ -4495,64 +4532,91 @@ function saveLinkPlace(){
   }
   closeM('m-link-place');toast('📍 Place linked!');openTripD(tid);
 }
-function openStop(tid,di){
-  pendStop={tid,di,si:null};
-  document.getElementById('stop-modal-title').textContent='Add Stop';
-  document.getElementById('stop-modal-save').textContent='Add Stop';
-  document.getElementById('st-name').value='';
-  document.getElementById('st-note').value='';
+function _openStopModal(isAdv,tid,cid,di,si,existing){
+  pendStop={tid:tid||null,cid:cid||null,di,si:si!=null?si:null,isAdv:!!isAdv};
+  const isEdit=si!=null;
+  document.getElementById('stop-modal-title').textContent=isEdit?'Edit Stop':'Add Stop';
+  document.getElementById('stop-modal-save').textContent=isEdit?'Save Changes':'Add Stop';
+  const s=existing||{};
+  document.getElementById('st-name').value=s.name||'';
+  document.getElementById('st-note').value=s.note||'';
+  document.getElementById('st-time').value=s.time||'';
+  document.getElementById('st-dur').value=s.duration||'';
+  document.getElementById('st-address').value=s.address||'';
+  document.getElementById('st-maps').value=s.mapsUrl||'';
+  const mapsOpen=document.getElementById('st-maps-open');
+  if(mapsOpen){mapsOpen.href=s.mapsUrl||'#';mapsOpen.style.display=s.mapsUrl?'flex':'none';}
+  document.getElementById('st-maps').oninput=function(){const u=this.value.trim();if(mapsOpen){mapsOpen.href=u||'#';mapsOpen.style.display=u?'flex':'none';}};
+  _buildWpTypePills(s.type||'other');
   const sel=document.getElementById('st-place');
-  sel.innerHTML='<option value="">— New stop, no place link —</option>'+
-    [...D.places].sort((a,b)=>a.name.localeCompare(b.name))
-      .map(p=>`<option value="${p.id}">${ci(p.category)} ${p.name}${p.region?' — '+p.region:''}</option>`).join('');
-  sel.value='';
-  sel.onchange=()=>{
-    const p=D.places.find(x=>x.id===sel.value);
-    if(p&&!document.getElementById('st-name').value) document.getElementById('st-name').value=p.name;
-  };
+  if(isAdv){sel.closest('.fg').style.display='none';}
+  else{
+    sel.closest('.fg').style.display='';
+    sel.innerHTML='<option value="">— None —</option>'+
+      [...D.places].sort((a,b)=>a.name.localeCompare(b.name))
+        .map(p=>`<option value="${p.id}">${ci(p.category)} ${p.name}${p.region?' — '+p.region:''}</option>`).join('');
+    sel.value=s.placeId||'';
+    sel.onchange=()=>{const p=D.places.find(x=>x.id===sel.value);if(p&&!document.getElementById('st-name').value)document.getElementById('st-name').value=p.name;};
+  }
   openM('m-stop');
 }
+function openStop(tid,di){D=load();_openStopModal(false,tid,null,di,null,{});}
 function openStopEdit(tid,di,si){
   D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
   const s=t.itinerary[di]?.stops[si];if(!s)return;
-  pendStop={tid,di,si};
-  document.getElementById('stop-modal-title').textContent='Edit Stop';
-  document.getElementById('stop-modal-save').textContent='Save Changes';
-  document.getElementById('st-name').value=s.name||'';
-  document.getElementById('st-note').value=s.note||'';
-  const sel=document.getElementById('st-place');
-  sel.innerHTML='<option value="">— New stop, no place link —</option>'+
-    [...D.places].sort((a,b)=>a.name.localeCompare(b.name))
-      .map(p=>`<option value="${p.id}">${ci(p.category)} ${p.name}${p.region?' — '+p.region:''}</option>`).join('');
-  sel.value=s.placeId||'';
-  sel.onchange=()=>{
-    const p=D.places.find(x=>x.id===sel.value);
-    if(p&&!document.getElementById('st-name').value) document.getElementById('st-name').value=p.name;
-  };
-  openM('m-stop');
+  _openStopModal(false,tid,null,di,si,s);
+}
+function openAdvWaypoint(cid,di,wpIdx){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  const wp=wpIdx!=null?(c.dailyPlans?.[di]?.waypoints||[])[wpIdx]:null;
+  _openStopModal(true,null,cid,di,wpIdx!=null?wpIdx:null,wp||{});
 }
 function saveStop(){
   const n=document.getElementById('st-name').value.trim();
   if(!n||!pendStop)return;
-  const t=D.trips.find(x=>x.id===pendStop.tid);
-  if(!t)return;
-  const placeId=document.getElementById('st-place').value;
-  const stopData={name:n,note:document.getElementById('st-note').value.trim(),placeId};
-  if(pendStop.si!=null){
-    t.itinerary[pendStop.di].stops[pendStop.si]=stopData;
-  } else {
-    t.itinerary[pendStop.di].stops.push(stopData);
-  }
-  if(placeId){
-    const pl=D.places.find(x=>x.id===placeId);
-    if(pl){
-      if(!(pl.tripIds||[]).includes(pendStop.tid))pl.tripIds=[...(pl.tripIds||[]),pendStop.tid];
-      const dayDate=t.itinerary[pendStop.di]?.date;
-      if(dayDate&&!pl.visitDate)pl.visitDate=dayDate;
-      save('places',D.places);
+  const type=document.querySelector('#wp-type-pills .wp-type-btn[data-active="1"]')?.dataset.t||'other';
+  const stopData={
+    name:n,
+    note:document.getElementById('st-note').value.trim(),
+    type,
+    time:document.getElementById('st-time').value||'',
+    duration:document.getElementById('st-dur').value||'',
+    address:document.getElementById('st-address').value.trim(),
+    mapsUrl:document.getElementById('st-maps').value.trim(),
+    placeId:pendStop.isAdv?'':(document.getElementById('st-place').value||''),
+  };
+  if(pendStop.isAdv){
+    D=load();const c=(D.camps||[]).find(x=>x.id===pendStop.cid);if(!c)return;
+    if(!c.dailyPlans||!c.dailyPlans[pendStop.di])return;
+    if(!c.dailyPlans[pendStop.di].waypoints)c.dailyPlans[pendStop.di].waypoints=[];
+    if(pendStop.si!=null){
+      stopData.done=c.dailyPlans[pendStop.di].waypoints[pendStop.si]?.done||false;
+      c.dailyPlans[pendStop.di].waypoints[pendStop.si]=stopData;
+    } else {
+      stopData.done=false;c.dailyPlans[pendStop.di].waypoints.push(stopData);
     }
+    localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+    closeM('m-stop');toast(pendStop.si!=null?'✅ Updated':'📍 Stop added');
+    window._campDTab='daily';openCampD(pendStop.cid);
+  } else {
+    D=load();const t=D.trips.find(x=>x.id===pendStop.tid);if(!t)return;
+    if(pendStop.si!=null){
+      stopData.done=t.itinerary[pendStop.di].stops[pendStop.si]?.done||false;
+      t.itinerary[pendStop.di].stops[pendStop.si]=stopData;
+    } else {
+      stopData.done=false;t.itinerary[pendStop.di].stops.push(stopData);
+    }
+    if(stopData.placeId){
+      const pl=D.places.find(x=>x.id===stopData.placeId);
+      if(pl){
+        if(!(pl.tripIds||[]).includes(pendStop.tid))pl.tripIds=[...(pl.tripIds||[]),pendStop.tid];
+        const dayDate=t.itinerary[pendStop.di]?.date;
+        if(dayDate&&!pl.visitDate)pl.visitDate=dayDate;
+        save('places',D.places);
+      }
+    }
+    save('trips',D.trips);closeM('m-stop');toast(pendStop.si!=null?'✅ Stop updated':'✅ Stop added');openTripD(pendStop.tid);
   }
-  save('trips',D.trips);closeM('m-stop');toast(pendStop.si!=null?'✅ Stop updated':'✅ Stop added');openTripD(pendStop.tid);
 }
 function delDay(tid,di){
   D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
@@ -6762,6 +6826,9 @@ function rAdvStopsTab(c){
 }
 
 // ── Tab: Daily Plans ─────────────────────────────────────
+const WP_TYPES={sleep:{i:'🛏️',l:'Sleep'},camp:{i:'🏕️',l:'Camp'},food:{i:'🍽️',l:'Meal'},coffee:{i:'☕',l:'Coffee'},sight:{i:'🏛️',l:'Sight'},park:{i:'🌳',l:'Park'},pet:{i:'🐕',l:'Pets'},fuel:{i:'⛽',l:'Fuel'},rest:{i:'🅿️',l:'Rest Stop'},shop:{i:'🛒',l:'Shop'},photo:{i:'📸',l:'Photo'},drive:{i:'🚗',l:'Drive'},activity:{i:'🎯',l:'Activity'},other:{i:'📍',l:'Other'}};
+function _buildWpTypePills(selectedType){const pills=document.getElementById('wp-type-pills');if(!pills)return;pills.innerHTML=Object.entries(WP_TYPES).map(([k,v])=>`<button type="button" class="wp-type-btn" data-t="${k}" data-active="${(selectedType||'other')===k?'1':''}" onclick="pickWpType(this)">${v.i} ${v.l}</button>`).join('');}
+function pickWpType(btn){document.querySelectorAll('#wp-type-pills .wp-type-btn').forEach(b=>b.dataset.active='');btn.dataset.active='1';}
 const DAY_TYPES=[{v:'camp',l:'🏕️ Camp',c:'#4A7259'},{v:'drive',l:'🚗 Drive',c:'#6B7A8D'},{v:'adventure',l:'⛰️ Adventure',c:'#7A5C8A'},{v:'rest',l:'💤 Rest',c:'#8A7060'},{v:'town',l:'🏙️ Town',c:'#B8892A'},{v:'activity',l:'🎯 Activity',c:'#4A7EBA'}];
 function rAdvDailyTab(c){
   let days=c.dailyPlans||[];
@@ -6806,14 +6873,37 @@ function rAdvDailyTab(c){
       <div style="flex:1;min-width:80px"><label style="font-size:10px;color:var(--muted2)">Arrive</label><input class="fi" style="margin-top:2px" type="time" value="${day.arriveTime||''}" onblur="setAdvDayField('${c.id}',${di},'arriveTime',this.value)"/></div>
     </div>`:''}
     <div style="margin-top:6px">
-      ${(day.activities||[]).length?day.activities.map((act,ai)=>`<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--bdr)">
-        <input type="checkbox" ${act.done?'checked':''} style="width:13px;height:13px;flex-shrink:0;margin-top:2px;accent-color:var(--green)" onchange="toggleAdvActivity('${c.id}',${di},${ai},this.checked)"/>
-        <div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--text2);${act.done?'text-decoration:line-through;opacity:.5':''}">${act.name}</div></div>
-        ${act.link?`<a href="${act.link}" target="_blank" style="font-size:11px;color:var(--green3);text-decoration:none;flex-shrink:0">↗</a>`:''}
-      </div>`).join(''):`<div style="font-size:11px;color:var(--muted2);padding:4px 0">No activities yet</div>`}
-      <button style="background:none;border:none;color:var(--green3);font-size:11px;cursor:pointer;padding:5px 0;display:block;width:100%;text-align:left" onclick="addAdvActivity('${c.id}',${di})">+ Activity</button>
+      ${(()=>{
+        const wps=day.waypoints||[];
+        const legacyActs=(day.activities||[]).filter(a=>!wps.some(w=>w.name===a.name));
+        const allItems=[
+          ...wps.map((w,wi)=>({...w,_isWp:true,_idx:wi})),
+          ...legacyActs.map((a,ai)=>({name:a.name,type:'activity',done:a.done,mapsUrl:a.link||'',_isLegacy:true,_idx:ai}))
+        ];
+        if(!allItems.length)return`<div style="font-size:11px;color:var(--muted2);padding:4px 0">No stops yet — add meals, sights, rest stops, accommodation…</div>`;
+        return allItems.map((w,i)=>{
+          const wt=WP_TYPES[w.type||'other']||WP_TYPES.other;
+          const dur=w.duration?parseInt(w.duration)>=60?Math.round(parseInt(w.duration)/60)+'h':(w.duration+'min'):'';
+          return`<div class="stop-row${w.done?' wp-done':''}">
+            <input type="checkbox" ${w.done?'checked':''} style="width:14px;height:14px;flex-shrink:0;margin-top:2px;accent-color:var(--green);cursor:pointer" onchange="toggleAdvWaypointDone('${c.id}',${di},${w._idx},this.checked)" title="Mark done"/>
+            <div class="wp-icon">${wt.i}</div>
+            ${w.time?`<div class="wp-time">${w.time}${dur?' · '+dur:''}</div>`:''}
+            <div style="flex:1;min-width:0">
+              <div class="stopname">${w.name}</div>
+              ${w.address?`<div class="stopnote">📍 ${w.address}</div>`:''}
+              ${w.notes||w.note?`<div class="stopnote">${w.notes||w.note}</div>`:''}
+            </div>
+            <div style="display:flex;gap:2px;flex-shrink:0;align-items:center">
+              ${w.mapsUrl?`<a href="${w.mapsUrl}" target="_blank" class="wp-nav" title="Navigate">🗺️</a>`:''}
+              ${w._isWp?`<button onclick="openAdvWaypoint('${c.id}',${di},${w._idx})" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:2px 4px;line-height:1;transition:color .15s" onmouseover="this.style.color='var(--green3)'" onmouseout="this.style.color='var(--muted2)'">✏️</button>
+              <button onclick="delAdvWaypoint('${c.id}',${di},${w._idx})" title="Remove" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:2px 4px;line-height:1;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>`:''}
+            </div>
+          </div>`;
+        }).join('');
+      })()}
+      <button class="add-stop" onclick="openAdvWaypoint('${c.id}',${di},null)">+ Add Stop</button>
     </div>
-    <textarea class="ft" style="margin-top:6px;min-height:40px;font-size:11px" placeholder="Notes for this day…" onblur="setAdvDayField('${c.id}',${di},'notes',this.value)">${day.notes||''}</textarea>
+    <textarea class="ft" style="margin-top:6px;min-height:36px;font-size:11px" placeholder="Notes for this day…" onblur="setAdvDayField('${c.id}',${di},'notes',this.value)">${day.notes||''}</textarea>
   </div>`;
   }).join('');
   return html+`<button class="tb-btn" style="width:100%;justify-content:center" onclick="addAdvDay('${c.id}')">+ Add Day</button>`;
