@@ -2707,7 +2707,7 @@ function rHome(){
 
   <div style="margin-bottom:8px;display:flex;gap:7px;flex-wrap:wrap">
     <button class="tb-btn" onclick="openPlace()" style="flex:1;justify-content:center;font-size:11px;padding:8px 6px;min-width:80px">📍 Add Place</button>
-    <button class="tb-btn gold" onclick="openTrip()" style="flex:1;justify-content:center;font-size:11px;padding:8px 6px;min-width:80px">✈️ New Trip</button>
+    <button class="tb-btn gold" onclick="openNewTrip()" style="flex:1;justify-content:center;font-size:11px;padding:8px 6px;min-width:80px">✈️ New Trip</button>
     <button class="tb-btn" style="flex:1;background:var(--card2);border:1px solid var(--bdr2);color:var(--text2);justify-content:center;font-size:11px;padding:8px 6px;min-width:80px" onclick="openWish()">♡ Wishlist</button>
     <button class="tb-btn" style="flex:1;background:var(--card2);border:1px solid var(--bdr2);color:var(--text2);justify-content:center;font-size:11px;padding:8px 6px;min-width:80px" onclick="openJournal()">📓 Memoir</button>
   </div>
@@ -4106,7 +4106,8 @@ function openTrip(){
   ['t-start','t-end','t-budget'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('t-type').value='road-trip';document.getElementById('t-status').value='planning';
   document.getElementById('t-solo').checked=false;
-  document.getElementById('tm-title').textContent='New Trip';document.getElementById('tm-save').textContent='Create Trip';
+  const _ptLabel={all:'New Trip',road_trip:'Plan Road Trip',camping:'Plan Camping Trip',adventure:'Plan Adventure',getaway:'Plan Getaway',international:'Plan International Trip',event:'Plan Event'};
+  document.getElementById('tm-title').textContent=_ptLabel[window._pendingTripType]||'New Trip';document.getElementById('tm-save').textContent='Create Trip';
   openM('m-trip');
 }
 function openTripEdit(id){
@@ -4197,7 +4198,9 @@ function rTrips(){
   const g=document.getElementById('trips-grid');
   if(!allItems.length&&!workTrips.length){
     const tLabel=tripTypeFilter!=='all'?` ${(TRIP_TYPES[tripTypeFilter]?.label||tripTypeFilter)}`:'';
-    g.innerHTML=`<div class="empty"><div class="empty-icon">${TRIP_TYPES[tripTypeFilter]?.icon||'✈️'}</div><h3>No${tLabel} trips yet</h3><p>Pick a type to get started.</p><button class="tb-btn" onclick="openNewTrip()" style="margin-bottom:8px">+ New Trip</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;
+    const _emptyBtnLabel={'all':'+ New Trip','road_trip':'+ Plan Road Trip','camping':'+ Plan Camping Trip','adventure':'+ Plan Adventure','getaway':'+ Plan Getaway','international':'+ Plan International Trip','event':'+ Plan Event','solo':'+ New Trip'}[tripTypeFilter]||'+ New Trip';
+    const _emptyBtnAct=(!tripTypeFilter||tripTypeFilter==='all'||tripTypeFilter==='solo')?'openNewTrip()':`pickTripType('${tripTypeFilter}')`;
+    g.innerHTML=`<div class="empty"><div class="empty-icon">${TRIP_TYPES[tripTypeFilter]?.icon||'✈️'}</div><h3>No${tLabel} trips yet</h3><p>Pick a type to get started.</p><button class="tb-btn" onclick="${_emptyBtnAct}" style="margin-bottom:8px">${_emptyBtnLabel}</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;
     return;
   }
   // Bucket by lifecycle stage (trips + adventures together)
@@ -4319,7 +4322,9 @@ function rTrips(){
       </div>`;
     }).join('')}</div>`).join('')}</div>`;
   }
-  g.innerHTML=html||`<div class="empty"><div class="empty-icon">✈️</div><h3>No trips yet</h3><p>Pick a type to get started.</p><button class="tb-btn" onclick="openNewTrip()" style="margin-bottom:8px">+ New Trip</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;
+  const _fbLabel={'all':'+ New Trip','road_trip':'+ Plan Road Trip','camping':'+ Plan Camping Trip','adventure':'+ Plan Adventure','getaway':'+ Plan Getaway','international':'+ Plan International Trip','event':'+ Plan Event','solo':'+ New Trip'}[tripTypeFilter]||'+ New Trip';
+  const _fbAct=(!tripTypeFilter||tripTypeFilter==='all'||tripTypeFilter==='solo')?'openNewTrip()':`pickTripType('${tripTypeFilter}')`;
+  g.innerHTML=html||`<div class="empty"><div class="empty-icon">✈️</div><h3>No trips yet</h3><p>Pick a type to get started.</p><button class="tb-btn" onclick="${_fbAct}" style="margin-bottom:8px">${_fbLabel}</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;
 }
 function openTripD(id){
   D=load();const t=D.trips.find(x=>x.id===id);if(!t)return;atid=id;
