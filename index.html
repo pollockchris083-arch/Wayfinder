@@ -855,7 +855,10 @@ input,textarea,select{font-family:inherit;font-weight:400}
       <button class="ni ni-sub" data-p="trips" data-tf="all" onclick="goTrips('all')"><span class="ico">✈️</span>All Trips<span class="nb" id="b-trips">0</span></button>
       <button class="ni ni-sub" data-p="trips-road" data-tf="road_trip" onclick="goTrips('road_trip')"><span class="ico">🚗</span>Road Trips</button>
       <button class="ni ni-sub" data-p="trips-camping" data-tf="camping" onclick="goTrips('camping')"><span class="ico">🏕️</span>Camping</button>
-      <button class="ni ni-sub" data-p="trips-big" data-tf="big_trip" onclick="goTrips('big_trip')"><span class="ico">🌍</span>Big Trips</button>
+      <button class="ni ni-sub" data-p="trips-adventure" data-tf="adventure" onclick="goTrips('adventure')"><span class="ico">🎒</span>Adventures</button>
+      <button class="ni ni-sub" data-p="trips-getaway" data-tf="getaway" onclick="goTrips('getaway')"><span class="ico">🌆</span>Getaways</button>
+      <button class="ni ni-sub" data-p="trips-intl" data-tf="international" onclick="goTrips('international')"><span class="ico">🌍</span>International</button>
+      <button class="ni ni-sub" data-p="trips-event" data-tf="event" onclick="goTrips('event')"><span class="ico">🎪</span>Events</button>
       <button class="ni ni-sub" data-p="camp" onclick="go('camp')" style="opacity:.65"><span class="ico">📍</span>Saved Spots<span class="nb" id="b-camp">0</span></button>
       <button class="ni ni-sub" data-p="work" onclick="go('work')"><span class="ico">💼</span>Work<span class="nb" id="b-work">0</span></button>
     </div>
@@ -967,12 +970,12 @@ input,textarea,select{font-family:inherit;font-weight:400}
       <div id="trips-lv">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:13px;flex-wrap:wrap">
           <button class="fc on" data-ttf="all" onclick="tripTypeFlt(this,'all')">All</button>
-          <button class="fc" data-ttf="road_trip" onclick="tripTypeFlt(this,'road_trip')">🚗 Road</button>
+          <button class="fc" data-ttf="road_trip" onclick="tripTypeFlt(this,'road_trip')">🚗 Road Trips</button>
           <button class="fc" data-ttf="camping" onclick="tripTypeFlt(this,'camping')">🏕️ Camping</button>
-          <button class="fc" data-ttf="getaway" onclick="tripTypeFlt(this,'getaway')">✈️ Getaway</button>
-          <button class="fc" data-ttf="big_trip" onclick="tripTypeFlt(this,'big_trip')">🌍 Big Trip</button>
-          <button class="fc" data-ttf="expedition" onclick="tripTypeFlt(this,'expedition')">🎒 Expedition</button>
-          <button class="fc" data-ttf="event" onclick="tripTypeFlt(this,'event')">🎪 Event</button>
+          <button class="fc" data-ttf="adventure" onclick="tripTypeFlt(this,'adventure')">🎒 Adventures</button>
+          <button class="fc" data-ttf="getaway" onclick="tripTypeFlt(this,'getaway')">🌆 Getaways</button>
+          <button class="fc" data-ttf="international" onclick="tripTypeFlt(this,'international')">🌍 International</button>
+          <button class="fc" data-ttf="event" onclick="tripTypeFlt(this,'event')">🎪 Events</button>
           <button class="fc" data-ttf="solo" onclick="tripTypeFlt(this,'solo')">🧍 Solo</button>
           <div style="flex:1"></div>
           <button class="tb-btn" style="background:var(--card2);border-color:var(--bdr);color:var(--muted);font-size:11px;padding:5px 10px" onclick="go('camp')" title="Saved Spots library">📍 Spots</button>
@@ -1154,12 +1157,12 @@ input,textarea,select{font-family:inherit;font-weight:400}
     <h2 style="margin-bottom:4px">New Trip</h2>
     <div style="font-size:12px;color:var(--muted);margin-bottom:18px">What kind of trip is this?</div>
     <div class="trip-type-grid">
-      <div class="trip-type-card" onclick="pickTripType('road_trip')"><span class="tt-icon">🚗</span><div class="tt-label">Road Trip</div><div class="tt-desc">Drives &amp; routes with stops along the way</div></div>
-      <div class="trip-type-card" onclick="pickTripType('camping')"><span class="tt-icon">🏕️</span><div class="tt-label">Camping</div><div class="tt-desc">Tent, RV, car camping, glamping &amp; outdoors</div></div>
-      <div class="trip-type-card" onclick="pickTripType('getaway')"><span class="tt-icon">✈️</span><div class="tt-label">Getaway</div><div class="tt-desc">City break, resort, or short domestic trip</div></div>
-      <div class="trip-type-card" onclick="pickTripType('big_trip')"><span class="tt-icon">🌍</span><div class="tt-label">Big Trip</div><div class="tt-desc">Multi-week international or multi-city travel</div></div>
-      <div class="trip-type-card" onclick="pickTripType('expedition')"><span class="tt-icon">🎒</span><div class="tt-label">Expedition</div><div class="tt-desc">Backcountry, backpacking &amp; wilderness</div></div>
-      <div class="trip-type-card" onclick="pickTripType('event')"><span class="tt-icon">🎪</span><div class="tt-label">Event / Weekend</div><div class="tt-desc">Concert, festival, wedding, or quick trip</div></div>
+      <div class="trip-type-card" onclick="pickTripType('road_trip')"><span class="tt-icon">🚗</span><div class="tt-label">Road Trip</div><div class="tt-desc">Driving a route — scenic drives, stops along the way</div></div>
+      <div class="trip-type-card" onclick="pickTripType('camping')"><span class="tt-icon">🏕️</span><div class="tt-label">Camping</div><div class="tt-desc">Sleeping in nature — tent, RV, van life, glamping, overlanding</div></div>
+      <div class="trip-type-card" onclick="pickTripType('adventure')"><span class="tt-icon">🎒</span><div class="tt-label">Adventure</div><div class="tt-desc">Physical challenge in nature — backpacking, wilderness, trails</div></div>
+      <div class="trip-type-card" onclick="pickTripType('getaway')"><span class="tt-icon">🌆</span><div class="tt-label">Getaway</div><div class="tt-desc">Short break — city, beach, resort, cabin or weekend escape</div></div>
+      <div class="trip-type-card" onclick="pickTripType('international')"><span class="tt-icon">🌍</span><div class="tt-label">International</div><div class="tt-desc">Crossing borders — multi-country, weeks abroad, long journeys</div></div>
+      <div class="trip-type-card" onclick="pickTripType('event')"><span class="tt-icon">🎪</span><div class="tt-label">Event</div><div class="tt-desc">Going for something specific — concert, festival, wedding, reunion</div></div>
     </div>
   </div>
 </div>
@@ -2393,7 +2396,7 @@ function goTrips(type){
   document.querySelectorAll('.ni').forEach(x=>x.classList.remove('on'));
   document.getElementById('page-trips').classList.add('on');
   document.querySelector('[data-tf="'+type+'"]')?.classList.add('on');
-  const typeLabels={all:'Trips',international:'International Trips',domestic:'Domestic Trips',road_trip:'Road Trips'};
+  const typeLabels={all:'Trips',road_trip:'Road Trips',camping:'Camping',adventure:'Adventures',getaway:'Getaways',international:'International',event:'Events',solo:'Solo Trips'};
   document.getElementById('tbt').textContent=typeLabels[type]||'Trips';
   const a=ACTS['trips'],btn=document.getElementById('tba');
   btn.textContent=a?.l||'';btn.style.display=a?.l?'flex':'none';
@@ -4298,7 +4301,10 @@ function openTripD(id){
       </div>
     </div>
     <div class="coll-body coll-open">
-      ${t.itinerary.length?t.itinerary.map((day,di)=>`
+      ${t.itinerary.length?t.itinerary.map((day,di)=>{
+        const totalDays=t.itinerary.length;
+        const weekHeader=(totalDays>=8&&di%7===0)?`<div style="display:flex;align-items:center;gap:8px;margin:${di>0?'16px':'-2px'} 0 6px"><div style="flex:1;height:1px;background:var(--bdr)"></div><span style="font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap">Week ${Math.floor(di/7)+1}</span><div style="flex:1;height:1px;background:var(--bdr)"></div></div>`:'';
+        return`${weekHeader}
         <div style="margin-bottom:10px" data-drag-day draggable="true" ondragstart="dayDragStart(event,'${t.id}',${di})" ondragover="dayDragOver(event)" ondragenter="dayDragEnter(event)" ondragleave="dayDragLeave(event)" ondragend="dayDragEnd(event)" ondrop="dayDrop(event,'${t.id}',${di})">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;background:var(--card2);border-radius:6px;margin-bottom:4px">
             <div style="display:flex;align-items:center;gap:2px">
@@ -4334,7 +4340,7 @@ function openTripD(id){
             </div>`;
           }).join(''):`<div style="font-size:11px;color:var(--muted2);padding:5px 0">No stops yet — add meals, sights, rest stops, accommodation…</div>`}
           <button class="add-stop" onclick="openStop('${t.id}',${di})">+ Add Stop</button>
-        </div>`).join(''):`<div style="padding:16px;text-align:center;font-size:12px;color:var(--muted)">Add dates to build a day-by-day itinerary</div>`}
+        </div>`;}).join(''):`<div style="padding:16px;text-align:center;font-size:12px;color:var(--muted)">Add dates to build a day-by-day itinerary</div>`}
       <button class="add-stop" style="margin-top:6px;opacity:.7" onclick="addItineraryDay('${t.id}')">+ Add Day</button>
     </div>
   </div>`
@@ -6167,23 +6173,23 @@ function rAbroad(){
 const TRIP_TYPES={
   road_trip:{icon:'🚗',label:'Road Trip',color:'#B8892A',_store:'camps',_campType:'car'},
   camping:{icon:'🏕️',label:'Camping',color:'#4A7259',_store:'camps',_campType:'tent'},
-  getaway:{icon:'✈️',label:'Getaway',color:'#4A7EBA',_store:'trips',_type:'domestic'},
-  big_trip:{icon:'🌍',label:'Big Trip',color:'#7A5C8A',_store:'trips',_type:'international'},
-  expedition:{icon:'🎒',label:'Expedition',color:'#6B4C3B',_store:'camps',_campType:'backpacking'},
+  getaway:{icon:'🌆',label:'Getaway',color:'#4A7EBA',_store:'trips',_type:'domestic'},
+  international:{icon:'🌍',label:'International',color:'#7A5C8A',_store:'trips',_type:'international'},
+  adventure:{icon:'🎒',label:'Adventure',color:'#6B4C3B',_store:'camps',_campType:'backpacking'},
   event:{icon:'🎪',label:'Event',color:'#C0634C',_store:'trips',_type:'domestic'},
 };
 function inferTripType(item,isAdv){
   if(item.tripType)return item.tripType;
   if(isAdv){
     const ct=item.campType||'tent';
-    if(ct==='backpacking')return'expedition';
+    if(ct==='backpacking')return'adventure';
     if(['rv','van','trailer','overlanding'].includes(ct))return'road_trip';
     if(['cabin','hotel','hostel','airbnb','friends'].includes(ct))return'getaway';
     return'camping';
   }
   const t=item.type||'';
   if(t==='road-trip'||t==='road_trip')return'road_trip';
-  if(t==='international'){const dur=(item.startDate&&item.endDate)?Math.round((new Date(item.endDate)-new Date(item.startDate))/86400000):0;return dur>=14?'big_trip':'getaway';}
+  if(t==='international')return'international';
   return'getaway';
 }
 function openNewTrip(){openM('m-new-trip');}
