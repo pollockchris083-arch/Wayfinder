@@ -6293,18 +6293,20 @@ async function advStopDoSearch(query){
       });
     }
   }catch(e){}
-  // Google: AutocompleteService (when Places API enabled) → Geocoder fallback
+  // Google: AutocompleteService first, Geocoder fallback if Places API not enabled or returns nothing
   const mapsKey=(D.settings?.mapsApiKey||'').trim();
   if(mapsKey){
     try{
       if(!_gMapsLoaded)await loadGMapsAPI(mapsKey);
+      let placesHit=false;
+      // Try Places AutocompleteService (requires Places API enabled in GCP)
       if(google.maps.places?.AutocompleteService){
-        // Programmatic suggestions — no Google UI widget, no error overlay risk
         await new Promise(resolve=>{
           new google.maps.places.AutocompleteService().getPlacePredictions(
             {input:query,types:['geocode','establishment']},
             (predictions,status)=>{
-              if(status===google.maps.places.PlacesServiceStatus.OK&&predictions){
+              if(status===google.maps.places.PlacesServiceStatus.OK&&predictions&&predictions.length){
+                placesHit=true;
                 predictions.slice(0,6).forEach(p=>{
                   const main=p.structured_formatting?.main_text||p.description.split(',')[0];
                   const secondary=p.structured_formatting?.secondary_text||'';
@@ -6312,13 +6314,16 @@ async function advStopDoSearch(query){
                     hits.push({src:'places',name:main,sub:secondary,placeId:p.place_id,lat:null,lng:null,website:'',maxRigLength:null,hookups:[]});
                   }
                 });
+              } else if(status==='REQUEST_DENIED'){
+                console.warn('[search] Places API not enabled — enable it at console.cloud.google.com for project wayfinder-498522');
               }
               resolve();
             }
           );
         });
-      } else {
-        // Geocoder fallback — only Maps JavaScript API needed, no Places API required
+      }
+      // Geocoder fallback: always run if AutocompleteService gave nothing (Places API denied, no results, or not loaded)
+      if(!placesHit){
         await new Promise(resolve=>{
           new google.maps.Geocoder().geocode({address:query},(geocodeResults,status)=>{
             if(status==='OK'&&geocodeResults){
@@ -7171,7 +7176,9 @@ function pipeDelCustom(id){
 // SETTINGS
 // ══════════════════════════════════════════════
 function setSetting(k,v){D.settings[k]=v;save('settings',D.settings);if(k==='name'){document.getElementById('pn').textContent=v||'You';document.getElementById('av').textContent=(v||'Y')[0].toUpperCase()}}
-function loadSettings(){D=load();const s=D.settings;document.getElementById('s-name').value=s.name||'';document.getElementById('s-partner').value=s.partner||'';document.getElementById('s-city').value=s.homeCity||'';document.getElementById('s-since').value=s.since||'';document.getElementById('s-apikey').value=s.apiKey||'';document.getElementById('s-maps-api-key').value=s.mapsApiKey||'';document.getElementById('s-google-client-id').value=s.googleClientId||'';document.getElementById('s-drive-folder').value=s.driveFolderId||'';document.getElementById('s-abroad-notes').value=s.abroadNotes||'';document.getElementById('pn').textContent=s.name||'You';document.getElementById('av').textContent=(s.name||'Y')[0].toUpperCase();const pl=document.getElementById('pl-partner');if(pl)pl.textContent=s.partner?'& '+s.partner:'';const wbtn=document.getElementById('s-work-stats-btn');if(wbtn){wbtn.textContent=s.workIncludeInStats?'ON':'OFF';wbtn.style.background=s.workIncludeInStats?'var(--green)':'var(--card3)';wbtn.style.color=s.workIncludeInStats?'#fff':'var(--text2)';}}
+function loadSettings(){D=load();const s=D.settings;document.getElementById('s-name').value=s.name||'';document.getElementById('s-partner').value=s.partner||'';document.getElementById('s-city').value=s.homeCity||'';document.getElementById('s-since').value=s.since||'';document.getElementById('s-apikey').value=s.apiKey||'';document.getElementById('s-maps-api-key').value=s.mapsApiKey||'';document.getElementById('s-google-client-id').value=s.googleClientId||'';document.getElementById('s-drive-folder').value=s.driveFolderId||'';document.getElementById('s-abroad-notes').value=s.abroadNotes||'';document.getElementById('pn').textContent=s.name||'You';document.getElementById('av').textContent=(s.name||'Y')[0].toUpperCase();const pl=document.getElementById('pl-partner');if(pl)pl.textContent=s.partner?'& '+s.partner:'';const wbtn=document.getElementById('s-work-stats-btn');if(wbtn){wbtn.textContent=s.workIncludeInStats?'ON':'OFF';wbtn.style.background=s.workIncludeInStats?'var(--green)':'var(--card3)';wbtn.style.color=s.workIncludeInStats?'#fff':'var(--text2)';}
+// Pre-warm Google Maps + Places library so it's ready before any modal opens
+const mk=(s.mapsApiKey||'').trim();if(mk&&!_gMapsLoaded&&!_gMapsLoading)loadGMapsAPI(mk).catch(()=>{});}
 function exportData(){const b=new Blob([JSON.stringify(load(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='wayfinder-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('📥 Exported!')}
 function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);Object.keys(K).forEach(k=>{if(d[k])localStorage.setItem(K[k],JSON.stringify(d[k]))});if(d.abroad)localStorage.setItem('wf_abroad',JSON.stringify(d.abroad));D=load();go('home');loadSettings();rHome();badges();toast('📤 Imported!')}catch{toast('⚠️ Invalid file')}};r.readAsText(f)}
 function clearAll(){if(!confirm('Clear ALL data? Cannot be undone.'))return;Object.values(K).forEach(k=>localStorage.removeItem(k));D=load();loadSettings();rHome();badges();toast('🗑️ Cleared')}
