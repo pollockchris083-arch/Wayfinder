@@ -729,6 +729,8 @@ input,textarea,select{font-family:inherit;font-weight:400}
 #pipe-move-menu{position:fixed;z-index:500;background:var(--card);border:1px solid var(--bdr2);border-radius:8px;box-shadow:var(--shadowm);padding:5px;min-width:168px}
 .pipe-move-item{display:block;width:100%;text-align:left;background:none;border:none;padding:6px 10px;border-radius:5px;cursor:pointer;color:var(--text);font-family:inherit;font-size:11.5px;transition:background .1s}
 .pipe-move-item:hover,.pipe-move-item.active{background:var(--card2)}
+.hookup-btn{font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.hookup-btn[data-active="1"]{background:#4A7259!important;color:#fff!important;border-color:#4A7259!important}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" crossorigin=""/>
@@ -1613,15 +1615,15 @@ input,textarea,select{font-family:inherit;font-weight:400}
       <label class="fl" style="margin-bottom:6px">Hookups</label>
       <div id="advstop-hookup-quick" style="display:flex;gap:5px;margin-bottom:6px;flex-wrap:wrap"></div>
       <div id="advstop-hookups" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px">
-        <button type="button" class="hookup-btn" data-hookup="Electric 20A" onclick="toggleHookupBtn(this)" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:all .15s">Electric 20A</button>
-        <button type="button" class="hookup-btn" data-hookup="Electric 30A" onclick="toggleHookupBtn(this)" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:all .15s">Electric 30A</button>
-        <button type="button" class="hookup-btn" data-hookup="Electric 50A" onclick="toggleHookupBtn(this)" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:all .15s">Electric 50A</button>
-        <button type="button" class="hookup-btn" data-hookup="Water" onclick="toggleHookupBtn(this)" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:all .15s">Water</button>
-        <button type="button" class="hookup-btn" data-hookup="Sewer" onclick="toggleHookupBtn(this)" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:all .15s">Sewer</button>
-        <button type="button" class="hookup-btn" data-hookup="WiFi" onclick="toggleHookupBtn(this)" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:all .15s">WiFi</button>
-        <button type="button" class="hookup-btn" data-hookup="Pull-through" onclick="toggleHookupBtn(this)" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:all .15s">Pull-through</button>
-        <button type="button" class="hookup-btn" data-hookup="Back-in" onclick="toggleHookupBtn(this)" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:all .15s">Back-in</button>
-        <button type="button" class="hookup-btn" data-hookup="Pet Friendly" onclick="toggleHookupBtn(this)" style="font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:all .15s">Pet Friendly</button>
+        <button type="button" class="hookup-btn" data-hookup="Electric 20A" onclick="toggleHookupBtn(this)">Electric 20A</button>
+        <button type="button" class="hookup-btn" data-hookup="Electric 30A" onclick="toggleHookupBtn(this)">Electric 30A</button>
+        <button type="button" class="hookup-btn" data-hookup="Electric 50A" onclick="toggleHookupBtn(this)">Electric 50A</button>
+        <button type="button" class="hookup-btn" data-hookup="Water" onclick="toggleHookupBtn(this)">Water</button>
+        <button type="button" class="hookup-btn" data-hookup="Sewer" onclick="toggleHookupBtn(this)">Sewer</button>
+        <button type="button" class="hookup-btn" data-hookup="WiFi" onclick="toggleHookupBtn(this)">WiFi</button>
+        <button type="button" class="hookup-btn" data-hookup="Pull-through" onclick="toggleHookupBtn(this)">Pull-through</button>
+        <button type="button" class="hookup-btn" data-hookup="Back-in" onclick="toggleHookupBtn(this)">Back-in</button>
+        <button type="button" class="hookup-btn" data-hookup="Pet Friendly" onclick="toggleHookupBtn(this)">Pet Friendly</button>
       </div>
     </div>
     <!-- Option C: Manual coords (collapsible) -->
@@ -6980,7 +6982,7 @@ function saveAdvNotes(cid,text){
 }
 
 // ── Stop Modal ───────────────────────────────────────────
-function _advHookupState(btn,on){btn.dataset.active=on?'1':'';btn.style.background=on?'#4A7259':'var(--card2)';btn.style.color=on?'#fff':'var(--text2)';btn.style.borderColor=on?'#4A7259':'var(--bdr)';}
+function _advHookupState(btn,on){btn.dataset.active=on?'1':''}
 function toggleHookupBtn(btn){const on=btn.dataset.active==='1';_advHookupState(btn,!on);}
 
 function parseStopCoords(stop){
