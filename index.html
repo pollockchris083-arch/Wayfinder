@@ -757,6 +757,12 @@ input,textarea,select{font-family:inherit;font-weight:400}
 [data-drag-day].day-drag-over{outline:2px dashed var(--green3);outline-offset:2px;border-radius:8px;background:rgba(74,114,89,.05)}
 .day-drag-handle{cursor:grab;color:var(--muted2);font-size:15px;user-select:none;padding:0 4px 0 0;flex-shrink:0;line-height:1;opacity:.5;transition:opacity .15s}
 .day-drag-handle:hover{opacity:1}
+/* Stop drag-and-drop */
+[data-drag-stop]{transition:opacity .15s}
+[data-drag-stop].stop-drag-over{outline:2px dashed var(--green3);outline-offset:-1px;border-radius:6px;background:rgba(74,114,89,.07)}
+[data-drag-stop].stop-drag-over-after{border-bottom:2px solid var(--green3)}
+.stop-drag-handle{cursor:grab;color:var(--muted2);font-size:13px;user-select:none;padding:0 3px 0 0;flex-shrink:0;line-height:1;opacity:.4;transition:opacity .15s}
+.stop-drag-handle:hover{opacity:1}
 /* Trips Page — Stage Sections */
 .ts{margin-bottom:20px}
 .ts-h{display:flex;align-items:center;gap:7px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bdr)}
@@ -4306,7 +4312,8 @@ function openTripD(id){
             const wt=WP_TYPES[s.type||'other']||WP_TYPES.other;
             const otherDays=t.itinerary.map((d2,di2)=>di2===di?null:`<option value="${di2}">Day ${di2+1} · ${fd(d2.date)}</option>`).filter(Boolean).join('');
             const dur=s.duration?parseInt(s.duration)>=60?Math.round(parseInt(s.duration)/60)+'h':(s.duration+'min'):'';
-            return`<div class="stop-row${s.done?' wp-done':''}">
+            return`<div class="stop-row${s.done?' wp-done':''}" data-drag-stop draggable="true" ondragstart="stopDragStart(event,'${t.id}',${di},${si})" ondragover="stopDragOver(event)" ondragenter="stopDragEnter(event)" ondragleave="stopDragLeave(event)" ondragend="stopDragEnd(event)" ondrop="stopDrop(event,'${t.id}',${di},${si})">
+              <span class="stop-drag-handle" title="Drag to reorder">⠿</span>
               <input type="checkbox" ${s.done?'checked':''} style="width:14px;height:14px;flex-shrink:0;margin-top:2px;accent-color:var(--green);cursor:pointer" onchange="toggleStopDone('${t.id}',${di},${si},this.checked)" title="Mark done"/>
               <div class="wp-icon" title="${wt.l}">${wt.i}</div>
               ${s.time?`<div class="wp-time">${s.time}${dur?' · '+dur:''}</div>`:''}
@@ -4936,6 +4943,51 @@ function dayDrop(e,tid,targetIdx){
   // Reassign dates sequentially from startDate
   if(t.startDate){arr.forEach((day,i)=>{const d=new Date(t.startDate+'T12:00:00');d.setDate(d.getDate()+i);day.date=d.toISOString().split('T')[0];});}
   save('trips',D.trips);openTripD(tid);toast('📅 Day order updated');
+}
+// ── Stop drag-and-drop (within a day) ───────────────────
+let _dragStopTid=null,_dragStopDi=null,_dragStopSi=null;
+function stopDragStart(e,tid,di,si){
+  _dragStopTid=tid;_dragStopDi=di;_dragStopSi=si;
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain',si.toString());
+  e.stopPropagation(); // don't bubble to day drag
+  setTimeout(()=>{if(e.target)e.target.style.opacity='.35';},0);
+}
+function stopDragOver(e){e.preventDefault();e.stopPropagation();e.dataTransfer.dropEffect='move';}
+function stopDragEnter(e){
+  e.preventDefault();e.stopPropagation();
+  if(_dragStopTid!==null)e.currentTarget.classList.add('stop-drag-over');
+}
+function stopDragLeave(e){
+  e.stopPropagation();
+  if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.classList.remove('stop-drag-over');
+}
+function stopDragEnd(e){
+  e.target.style.opacity='';
+  document.querySelectorAll('.stop-drag-over').forEach(el=>el.classList.remove('stop-drag-over'));
+  _dragStopTid=null;_dragStopDi=null;_dragStopSi=null;
+}
+function stopDrop(e,tid,di,targetSi){
+  e.preventDefault();e.stopPropagation();
+  e.currentTarget.classList.remove('stop-drag-over');
+  const srcSi=_dragStopSi;const srcDi=_dragStopDi;
+  _dragStopTid=null;_dragStopDi=null;_dragStopSi=null;
+  if(srcSi===null||srcDi===null)return;
+  if(srcDi===di&&srcSi===targetSi)return;
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  const stops=t.itinerary[di]?.stops;if(!stops)return;
+  if(srcDi===di){
+    // Reorder within same day
+    const [moved]=stops.splice(srcSi,1);
+    const insertAt=srcSi<targetSi?targetSi-1:targetSi;
+    stops.splice(insertAt,0,moved);
+  } else {
+    // Move from another day into this day at targetSi position
+    const srcStops=t.itinerary[srcDi]?.stops;if(!srcStops)return;
+    const [moved]=srcStops.splice(srcSi,1);
+    stops.splice(targetSi,0,moved);
+  }
+  save('trips',D.trips);openTripD(tid);toast('✅ Stop reordered');
 }
 function delDay(tid,di){
   D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
