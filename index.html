@@ -752,6 +752,31 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .stage-cta-btn:hover{background:rgba(74,114,89,.18)}
 .stage-cta-secondary{width:100%;margin-top:6px;padding:6px 10px;border-radius:8px;border:1px solid var(--bdr2);background:var(--card2);color:var(--text2);font-size:11px;cursor:pointer;transition:background .15s;font-family:inherit}
 .stage-cta-secondary:hover{background:var(--card3)}
+/* Trips Page — Stage Sections */
+.ts{margin-bottom:20px}
+.ts-h{display:flex;align-items:center;gap:7px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bdr)}
+.ts-h-icon{font-size:12px;line-height:1;flex-shrink:0}
+.ts-h-title{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;flex:1}
+.ts-h-count{font-size:11px;color:var(--muted);font-weight:400}
+.ts-h-dim .ts-h-title{color:var(--muted)}
+.tc-hero{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:box-shadow .15s,border-color .15s;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.tc-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.tc-hero:hover{box-shadow:var(--shadowm);border-color:var(--bdr2)}
+.tc-hero-active::before{background:linear-gradient(90deg,#3a9e5c,#5fc47a)}
+.tc-hero-active{border-color:rgba(58,158,92,.2)}
+.tc-hero-locked::before{background:linear-gradient(90deg,#B8892A,var(--gold))}
+.tc-hero-locked{border-color:rgba(184,137,42,.2)}
+.tr{display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--bdr2);cursor:pointer;transition:background .12s;border-radius:4px}
+.tr:last-child{border-bottom:none}
+.tr:hover{background:var(--card2)}
+.tr-bar{width:3px;border-radius:2px;flex-shrink:0;align-self:stretch;min-height:30px}
+.tr-main{flex:1;min-width:0}
+.tr-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr-sub{font-size:11px;color:var(--muted2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr-meta{flex-shrink:0;text-align:right}
+.tr-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:100px;white-space:nowrap}
+.tr-past .tr-name{color:var(--text2)}
+.ts-year{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;padding:8px 6px 4px;margin-top:2px}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" crossorigin=""/>
@@ -919,16 +944,15 @@ input,textarea,select{font-family:inherit;font-weight:400}
 
     <div class="page" id="page-trips">
       <div id="trips-lv">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px">
-          <div class="fb" style="margin-bottom:0">
-            <button class="fc on" onclick="fTrip(this,'all')">All</button>
-            <button class="fc" onclick="fTrip(this,'upcoming')">📅 Upcoming</button>
-            <button class="fc" onclick="fTrip(this,'past')">✅ Past</button>
-            <button class="fc" onclick="fTrip(this,'planning')">✏️ Planning</button>
-          </div>
-          <button id="trips-import-btn" class="tb-btn" style="background:var(--gold);font-size:11px;padding:6px 12px;gap:5px" onclick="openImport()">📄 Import from Doc</button>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:13px;flex-wrap:wrap">
+          <button class="fc on" data-ttf="all" onclick="tripTypeFlt(this,'all')">All</button>
+          <button class="fc" data-ttf="international" onclick="tripTypeFlt(this,'international')">🌍 Intl</button>
+          <button class="fc" data-ttf="domestic" onclick="tripTypeFlt(this,'domestic')">🇺🇸 Domestic</button>
+          <button class="fc" data-ttf="road_trip" onclick="tripTypeFlt(this,'road_trip')">🚗 Road Trip</button>
+          <div style="flex:1"></div>
+          <button class="tb-btn" style="background:var(--gold);font-size:11px;padding:5px 10px;gap:4px" onclick="openImport()">📄 Import</button>
         </div>
-        <div id="trips-grid" class="ga"></div>
+        <div id="trips-grid"></div>
       </div>
       <div class="td-view" id="trip-dv"></div>
     </div>
@@ -3972,88 +3996,166 @@ function delTrip(id){
   save('trips',D.trips);save('places',D.places);save('journal',D.journal);
   toast('🗑️ Deleted');rTrips();badges();
 }
-function fTrip(b,f){document.querySelectorAll('#trips-lv .fc').forEach(x=>x.classList.remove('on'));b.classList.add('on');tf=f;rTrips()}
+function fTrip(b,f){tf=f;rTrips()}
+function tripTypeFlt(b,type){
+  document.querySelectorAll('#trips-lv [data-ttf]').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');tripTypeFilter=type;rTrips();
+}
 function rTrips(){
-  D=load();document.getElementById('trips-lv').style.display='block';document.getElementById('trip-dv').classList.remove('on');atid=null;
-  document.querySelectorAll('#trips-lv .fc').forEach(b=>{const v=b.getAttribute('onclick')?.match(/'([^']+)'\)/)?.[1];if(v)b.classList.toggle('on',v===tf);});
-  // Exclude Adventure trips (tracked in wf_camps) from all type-filtered views
-  const _campNamesTrips=new Set((D.camps||[]).filter(c=>c.recordType!=='spot').map(c=>c.name.toLowerCase().trim()));
+  D=load();
+  document.getElementById('trips-lv').style.display='block';
+  document.getElementById('trip-dv').classList.remove('on');
+  atid=null;
+  // Sync type filter pill active state
+  document.querySelectorAll('#trips-lv [data-ttf]').forEach(b=>b.classList.toggle('on',b.dataset.ttf===tripTypeFilter));
+  const today=new Date();today.setHours(0,0,0,0);
   const tq=(document.getElementById('srch')?.value||'').toLowerCase();
-  let list=D.trips.filter(t=>{
-    if(_campNamesTrips.has(t.name.toLowerCase().trim()))return false;
-    const mf=tf==='all'||(tf==='upcoming'&&(t.status==='locked'||t.status==='active'))||(tf==='past'&&t.status==='past')||(tf==='planning'&&(t.status==='planning'||t.status==='dream'||t.status==='research'));
+  const _campNames=new Set((D.camps||[]).filter(c=>c.recordType!=='spot').map(c=>c.name.toLowerCase().trim()));
+  // All trips passing type+search filter — sections handle stage bucketing
+  const allTrips=D.trips.filter(t=>{
+    if(_campNames.has(t.name.toLowerCase().trim()))return false;
     const mt=tripTypeFilter==='all'||inferTripCat(t)===tripTypeFilter;
     const ms=!tq||t.name.toLowerCase().includes(tq)||(t.destinations||[]).some(d=>(d||'').toLowerCase().includes(tq))||(t.notes||'').toLowerCase().includes(tq);
-    return mf&&mt&&ms;
-  }).sort((a,b)=>{if(a.startDate&&b.startDate)return new Date(b.startDate)-new Date(a.startDate);return b.addedAt-a.addedAt});
+    return mt&&ms;
+  });
+  // Bucket by lifecycle stage
+  const activeTrips=allTrips.filter(t=>t.status==='active').sort((a,b)=>new Date(a.startDate||0)-new Date(b.startDate||0));
+  const activeIds=new Set(activeTrips.map(t=>t.id));
+  const lockedTrips=allTrips.filter(t=>!activeIds.has(t.id)&&t.status==='locked').sort((a,b)=>{if(a.startDate&&b.startDate)return new Date(a.startDate)-new Date(b.startDate);return 0;});
+  const inWorksTrips=allTrips.filter(t=>t.status==='dream'||t.status==='research'||t.status==='planning');
+  const pastTrips=allTrips.filter(t=>t.status==='past').sort((a,b)=>new Date(b.startDate||0)-new Date(a.startDate||0));
+  const showAdv=D.settings.tripsShowAdventures!==false;
+  const showWork=D.settings.tripsShowWork===true;
+  const advTrips=showAdv?(D.camps||[]).filter(c=>c.recordType!=='spot'&&!c.excludeFromTrips):[];
+  const workTrips=showWork?(D.work||[]).filter(w=>!w.excludeFromTrips):[];
   const g=document.getElementById('trips-grid');
-  if(!list.length&&tripTypeFilter!=='all'){const typeLabels={international:'international',domestic:'domestic',road_trip:'road trip'};const tLabel=tripTypeFilter!=='all'?' '+typeLabels[tripTypeFilter]:'';g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">✈️</div><h3>No${tLabel} trips yet</h3><p>Create a trip or import from a doc.</p><button class="tb-btn" onclick="openTrip()" style="margin-bottom:8px">+ New Trip</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;return}
-  let html=list.map(t=>{
-    const stops=t.itinerary.reduce((s,d)=>s+(d.stops||[]).length,0);
-    const linked=D.places.filter(p=>(p.tripIds||[]).includes(t.id));
-    const intlCountries=[...new Set(linked.filter(p=>p.country&&normCountry(p.country)!=='United States').map(p=>normCountry(p.country)))];
-    const usStates=[...new Set(linked.filter(p=>normCountry(p.country)==='United States').map(p=>p.usState).filter(Boolean))];
-    const scopeParts=[];
-    if(intlCountries.length)scopeParts.push(intlCountries.length===1?intlCountries[0]:intlCountries.slice(0,2).join(', ')+(intlCountries.length>2?` +${intlCountries.length-2}`:''));
-    if(usStates.length)scopeParts.push(usStates.length===1?usStates[0]:'🇺🇸 '+usStates.length+' states');
-    const scopeStr=scopeParts.join(' · ')||(t.destinations.slice(0,2).join(', ')+(t.destinations.length>2?` +${t.destinations.length-2}`:'')||'');
-    const placesStat=linked.length?linked.length+' place'+(linked.length>1?'s':''):'';
-    const td=tripDays(t);const statParts=[td?td+' day'+(td>1?'s':''):'',stops?stops+' stop'+(stops>1?'s':''):'',placesStat].filter(Boolean).join(' · ');
-    const barColor=t.status==='active'?'linear-gradient(90deg,#3a9e5c,#5fc47a)':t.status==='locked'?'linear-gradient(90deg,#B8892A,var(--gold))':t.status==='planning'||t.status==='dream'||t.status==='research'?'linear-gradient(90deg,#4A7EBA,#6BA3D6)':'linear-gradient(90deg,#8a7060,#b09880)';
-    return`<div class="tc" onclick="openTripD('${t.id}')"><div class="tc-bar" style="background:${barColor}"></div><div class="tcb">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
-        <div class="tname" style="flex:1">${t.name}</div>
-        <button onclick="event.stopPropagation();delTrip('${t.id}')" style="background:none;border:none;cursor:pointer;font-size:15px;color:var(--muted2);padding:0 2px;line-height:1;flex-shrink:0;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'" title="Delete trip">×</button>
-      </div>
-      <div class="tdates">${t.startDate?fd(t.startDate)+' — '+fd(t.endDate):'Dates TBD'}</div>
-      ${scopeStr?`<div style="font-size:11px;color:var(--text2);margin-bottom:7px">📍 ${scopeStr}</div>`:''}
-      <div class="tfoot">
-        <div class="tstat">${statParts||'No stops yet'}</div>
-        <div style="font-size:11px;color:var(--muted)">${tsl(t.status)}</div>
-      </div>
-    </div></div>`;
-  }).join('');
-  // In 'all' type view, append Adventures and/or Work Trips sections
-  if(tripTypeFilter==='all'){
-    const showAdv=D.settings.tripsShowAdventures!==false;
-    const showWork=D.settings.tripsShowWork===true;
-    if(showAdv){
-      const advTrips=(D.camps||[]).filter(c=>c.recordType!=='spot'&&!c.excludeFromTrips);
-      if(advTrips.length){
-        html+=`<div style="grid-column:1/-1;margin-top:20px;padding-top:16px;border-top:1px solid var(--bdr)"><div style="font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px">🧭 Adventures</div><div class="trips-grid" style="padding:0">${advTrips.map(c=>{
-          const typeInfo=ADV_TYPES[c.campType]||{icon:'🏕️',label:'Tent Camping'};
-          const dur=c.startDate&&c.endDate?Math.round((new Date(c.endDate)-new Date(c.startDate))/86400000)+1:0;
-          const stops=(c.stops||[]).length;
-          return`<div class="tc" onclick="go('camp');openCampD('${c.id}')"><div class="tc-bar" style="background:linear-gradient(90deg,#4A7259,#5A8A6C)"></div><div class="tcb">
-            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px"><div class="tname" style="flex:1">${c.name}</div><span style="font-size:14px">${typeInfo.icon}</span></div>
-            <div class="tdates">${c.startDate?fd(c.startDate)+(c.endDate?' — '+fd(c.endDate):''):'Dates TBD'}</div>
-            ${c.location?`<div style="font-size:11px;color:var(--text2);margin-bottom:7px">📍 ${c.location}${c.state?', '+c.state:''}</div>`:''}
-            <div class="tfoot"><div class="tstat">${[dur?dur+'d':'',stops?stops+' stop'+(stops!==1?'s':''):'',typeInfo.label].filter(Boolean).join(' · ')}</div>
-            <div style="font-size:11px;color:var(--muted)">${tsl(c.status)}</div></div>
-          </div></div>`;
-        }).join('')}</div></div>`;
-      }
-    }
-    if(showWork){
-      const workTrips=(D.work||[]).filter(w=>!w.excludeFromTrips).sort((a,b)=>{if(a.startDate&&b.startDate)return new Date(b.startDate)-new Date(a.startDate);return b.addedAt-a.addedAt});
-      if(workTrips.length){
-        const TRANSPORT_ICONS={flight:'✈️',drive:'🚗',train:'🚆',other:'🚌'};
-        html+=`<div style="grid-column:1/-1;margin-top:20px;padding-top:16px;border-top:1px solid var(--bdr)"><div style="font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px">💼 Work Trips</div><div class="trips-grid" style="padding:0">${workTrips.map(w=>{
-          const dur=w.startDate&&w.endDate?Math.round((new Date(w.endDate)-new Date(w.startDate))/86400000)+1:0;
-          const icon=TRANSPORT_ICONS[w.transport]||'✈️';
-          return`<div class="tc" onclick="go('work');openWorkD('${w.id}')"><div class="tc-bar" style="background:linear-gradient(90deg,#3A5CA0,#5580D0)"></div><div class="tcb">
-            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px"><div class="tname" style="flex:1">${w.name}</div><span style="font-size:14px">${icon}</span></div>
-            <div class="tdates">${w.startDate?fd(w.startDate)+(w.endDate?' — '+fd(w.endDate):''):'Dates TBD'}</div>
-            ${w.destination?`<div style="font-size:11px;color:var(--text2);margin-bottom:7px">📍 ${w.destination}</div>`:''}
-            <div class="tfoot"><div class="tstat">${[dur?dur+'d':'',w.client||''].filter(Boolean).join(' · ')}</div>
-            <div style="font-size:11px;color:var(--muted)">${tsl(w.status)}</div></div>
-          </div></div>`;
-        }).join('')}</div></div>`;
-      }
-    }
+  if(!allTrips.length&&!advTrips.length&&!workTrips.length){
+    const tLabel=tripTypeFilter!=='all'?' '+(tripTypeFilter==='road_trip'?'road trip':tripTypeFilter):'';
+    g.innerHTML=`<div class="empty"><div class="empty-icon">✈️</div><h3>No${tLabel} trips yet</h3><p>Create a trip or import from a doc.</p><button class="tb-btn" onclick="openTrip()" style="margin-bottom:8px">+ New Trip</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;
+    return;
   }
-  if(!html){g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">✈️</div><h3>No trips yet</h3><p>Create a trip or import from a doc.</p><button class="tb-btn" onclick="openTrip()" style="margin-bottom:8px">+ New Trip</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;return}
-  g.innerHTML=html;
+  let html='';
+  // ── Happening Now ─────────────────────────────────────────────────
+  if(activeTrips.length){
+    html+=`<div class="ts"><div class="ts-h"><span class="ts-h-icon">🚀</span><span class="ts-h-title">Happening Now</span></div>
+    ${activeTrips.map(t=>{
+      const linked=D.places.filter(p=>(p.tripIds||[]).includes(t.id));
+      const dur=tripDays(t);
+      const start=t.startDate?new Date(t.startDate):null;
+      const dayNum=start?Math.round((today-start)/86400000)+1:1;
+      const dests=(t.destinations||[]).slice(0,3).join(', ');
+      return`<div class="tc-hero tc-hero-active" onclick="openTripD('${t.id}')">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px">
+          <div style="min-width:0"><div style="font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.3px;margin-bottom:3px">${t.name}</div>
+          <div style="font-size:11px;color:var(--muted)">${t.startDate?fd(t.startDate)+' — '+fd(t.endDate):'Active'}</div></div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:26px;font-weight:700;color:var(--green3);line-height:1">Day ${dayNum}</div>
+            <div style="font-size:9px;color:var(--muted);margin-top:1px">of ${dur||'?'}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;font-size:11px;color:var(--muted2);flex-wrap:wrap">
+          ${dests?`<span>📍 ${dests}</span>`:''}${linked.length?`<span>📌 ${linked.length} places</span>`:''}
+        </div></div>`;
+    }).join('')}</div>`;
+  }
+  // ── Up Next (Locked In) ───────────────────────────────────────────
+  if(lockedTrips.length){
+    html+=`<div class="ts"><div class="ts-h"><span class="ts-h-icon">🔒</span><span class="ts-h-title">Up Next</span><span class="ts-h-count">${lockedTrips.length}</span></div>
+    ${lockedTrips.map(t=>{
+      const linked=D.places.filter(p=>(p.tripIds||[]).includes(t.id));
+      const dur=tripDays(t);const stops=t.itinerary.reduce((s,d)=>s+(d.stops||[]).length,0);
+      const start=t.startDate?new Date(t.startDate):null;
+      const daysUntil=start?Math.ceil((start-today)/86400000):null;
+      const dests=(t.destinations||[]).slice(0,3).join(', ');
+      return`<div class="tc-hero tc-hero-locked" onclick="openTripD('${t.id}')">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px">
+          <div style="min-width:0"><div style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.3px;margin-bottom:3px">${t.name}</div>
+          <div style="font-size:11px;color:var(--muted)">${t.startDate?fd(t.startDate)+' — '+fd(t.endDate):'Dates TBD'}</div></div>
+          ${daysUntil!==null?`<div style="text-align:right;flex-shrink:0">
+            <div style="font-size:24px;font-weight:700;color:var(--gold);line-height:1">${daysUntil}</div>
+            <div style="font-size:9px;color:var(--muted);margin-top:1px">days away</div>
+          </div>`:''}
+        </div>
+        <div style="display:flex;gap:10px;font-size:11px;color:var(--muted2);flex-wrap:wrap">
+          ${dests?`<span>📍 ${dests}</span>`:''}${dur?`<span>📅 ${dur}d</span>`:''}${stops?`<span>🗺️ ${stops} stops</span>`:''}${linked.length?`<span>📌 ${linked.length} places</span>`:''}
+        </div></div>`;
+    }).join('')}</div>`;
+  }
+  // ── In The Works (dream/research/planning) ────────────────────────
+  if(inWorksTrips.length){
+    const stageOrder={planning:0,research:1,dream:2};
+    const sortedW=inWorksTrips.slice().sort((a,b)=>(stageOrder[a.status]??3)-(stageOrder[b.status]??3));
+    const sCol={dream:'var(--gold)',research:'#4A7EBA',planning:'#6B9575'};
+    html+=`<div class="ts"><div class="ts-h"><span class="ts-h-icon">✏️</span><span class="ts-h-title">In The Works</span><span class="ts-h-count">${inWorksTrips.length}</span></div>
+    <div>${sortedW.map(t=>{
+      const sc=sCol[t.status]||'var(--muted)';
+      const dests=(t.destinations||[]).slice(0,2).join(', ');
+      const dur=tripDays(t);
+      return`<div class="tr" onclick="openTripD('${t.id}')">
+        <div class="tr-bar" style="background:${sc}"></div>
+        <div class="tr-main"><div class="tr-name">${t.name}</div>
+        <div class="tr-sub">${[dests?'📍 '+dests:'',t.startDate?fd(t.startDate):'Dates TBD',dur?dur+'d':''].filter(Boolean).join(' · ')}</div></div>
+        <span class="tr-badge" style="background:${sc}18;color:${sc};border:1px solid ${sc}30">${tsl(t.status)}</span>
+      </div>`;
+    }).join('')}</div></div>`;
+  }
+  // ── Adventures ────────────────────────────────────────────────────
+  if(advTrips.length){
+    const sColA={dream:'var(--gold)',research:'#4A7EBA',planning:'#6B9575',locked:'#B8892A',active:'#3a9e5c',past:'var(--muted)'};
+    const soA={active:0,locked:1,planning:2,research:3,dream:4,past:5};
+    const sortedA=advTrips.slice().sort((a,b)=>{const od=(soA[a.status]??5)-(soA[b.status]??5);if(od)return od;if(a.startDate&&b.startDate)return new Date(a.startDate)-new Date(b.startDate);return 0;});
+    html+=`<div class="ts"><div class="ts-h"><span class="ts-h-icon">🧭</span><span class="ts-h-title">Adventures</span><span class="ts-h-count">${advTrips.length}</span></div>
+    <div>${sortedA.map(c=>{
+      const ti=ADV_TYPES[c.campType]||{icon:'🧭',label:'Adventure'};
+      const sc=sColA[c.status]||'#4A7259';
+      const dur=c.startDate&&c.endDate?Math.round((new Date(c.endDate)-new Date(c.startDate))/86400000)+1:0;
+      const start=c.startDate?new Date(c.startDate):null;
+      const daysUntil=start&&start>today?Math.ceil((start-today)/86400000):null;
+      return`<div class="tr" onclick="go('camp');openCampD('${c.id}')">
+        <div class="tr-bar" style="background:${sc}"></div>
+        <div class="tr-main"><div class="tr-name">${ti.icon} ${c.name}</div>
+        <div class="tr-sub">${[c.location?'📍 '+c.location+(c.state?', '+c.state:''):'',dur?dur+'d':'',c.startDate?fd(c.startDate):''].filter(Boolean).join(' · ')}</div></div>
+        <div class="tr-meta">${daysUntil!==null?`<div style="font-size:13px;font-weight:700;color:var(--gold);line-height:1">${daysUntil}</div><div style="font-size:9px;color:var(--muted)">days</div>`:`<span class="tr-badge" style="background:${sc}18;color:${sc};border:1px solid ${sc}30">${tsl(c.status)}</span>`}</div>
+      </div>`;
+    }).join('')}</div></div>`;
+  }
+  // ── Work Trips ────────────────────────────────────────────────────
+  if(workTrips.length){
+    const TI={flight:'✈️',drive:'🚗',train:'🚆',other:'🚌'};
+    const sortedWk=workTrips.slice().sort((a,b)=>{if(a.status==='past'&&b.status!=='past')return 1;if(b.status==='past'&&a.status!=='past')return -1;if(a.startDate&&b.startDate)return new Date(a.startDate)-new Date(b.startDate);return 0;});
+    html+=`<div class="ts"><div class="ts-h"><span class="ts-h-icon">💼</span><span class="ts-h-title">Work Trips</span><span class="ts-h-count">${workTrips.length}</span></div>
+    <div>${sortedWk.map(w=>{
+      const dur=w.startDate&&w.endDate?Math.round((new Date(w.endDate)-new Date(w.startDate))/86400000)+1:0;
+      const icon=TI[w.transport]||'✈️';
+      const start=w.startDate?new Date(w.startDate):null;
+      const daysUntil=start&&start>today&&w.status!=='past'?Math.ceil((start-today)/86400000):null;
+      return`<div class="tr" onclick="go('work');openWorkD('${w.id}')">
+        <div class="tr-bar" style="background:linear-gradient(180deg,#3A5CA0,#5580D0)"></div>
+        <div class="tr-main"><div class="tr-name">${icon} ${w.name}</div>
+        <div class="tr-sub">${[w.destination?'📍 '+w.destination:'',dur?dur+'d':'',w.client||''].filter(Boolean).join(' · ')}</div></div>
+        <div class="tr-meta">${daysUntil!==null?`<div style="font-size:13px;font-weight:700;color:#3A5CA0;line-height:1">${daysUntil}</div><div style="font-size:9px;color:var(--muted)">days</div>`:`<span class="tr-badge" style="background:#3A5CA018;color:#5580D0;border:1px solid #3A5CA030">${tsl(w.status)}</span>`}</div>
+      </div>`;
+    }).join('')}</div></div>`;
+  }
+  // ── Memories (past trips, grouped by year) ────────────────────────
+  if(pastTrips.length){
+    const byYear={};
+    pastTrips.forEach(t=>{const y=t.startDate?new Date(t.startDate).getFullYear():'?';if(!byYear[y])byYear[y]=[];byYear[y].push(t);});
+    const yEntries=Object.entries(byYear).sort(([a],[b])=>b-a);
+    html+=`<div class="ts"><div class="ts-h ts-h-dim"><span class="ts-h-icon">✅</span><span class="ts-h-title">Memories</span><span class="ts-h-count">${pastTrips.length} trips</span></div>
+    ${yEntries.map(([year,trips])=>`<div class="ts-year">${year}</div><div>${trips.map(t=>{
+      const dur=tripDays(t);
+      const dests=(t.destinations||[]).slice(0,2).join(', ');
+      const linked=D.places.filter(p=>(p.tripIds||[]).includes(t.id));
+      return`<div class="tr tr-past" onclick="openTripD('${t.id}')">
+        <div class="tr-bar" style="background:linear-gradient(180deg,#8a7060,#b09880)"></div>
+        <div class="tr-main"><div class="tr-name">${t.name}</div>
+        <div class="tr-sub">${[dests?'📍 '+dests:'',dur?dur+'d':'',linked.length?linked.length+' places':''].filter(Boolean).join(' · ')}</div></div>
+        <div style="font-size:11px;color:var(--muted);flex-shrink:0">${t.startDate?fd(t.startDate):''}</div>
+      </div>`;
+    }).join('')}</div>`).join('')}</div>`;
+  }
+  g.innerHTML=html||`<div class="empty"><div class="empty-icon">✈️</div><h3>No trips yet</h3><p>Create a trip or import from a doc.</p><button class="tb-btn" onclick="openTrip()" style="margin-bottom:8px">+ New Trip</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;
 }
 function openTripD(id){
   D=load();const t=D.trips.find(x=>x.id===id);if(!t)return;atid=id;
