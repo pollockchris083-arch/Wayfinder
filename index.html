@@ -2412,17 +2412,22 @@ function rHome(){
   const advDays=(D.camps||[]).filter(c=>c.recordType!=='spot'&&c.status==='past'&&c.startDate&&c.endDate).reduce((s,c)=>s+(Math.round((new Date(c.endDate)-new Date(c.startDate))/86400000)+1),0);
   const totalTravelDays=tripTravelDays+advDays;
 
-  // First and most recent trip per country/state
+  // First and most recent trip per country/state + trip counts
   const countryLastVisit={};const countryFirstVisit={};const stateFirstVisit={};
+  const countryTripCount={};const stateTripCount={};
   vis.filter(p=>p.country&&normCountry(p.country)!=='United States').forEach(p=>{
     const c=normCountry(p.country);
-    (p.tripIds||[]).forEach(tid=>{const t=D.trips.find(x=>x.id===tid);if(t&&t.startDate){if(!countryLastVisit[c]||new Date(t.startDate)>new Date(countryLastVisit[c]))countryLastVisit[c]=t.startDate;if(!countryFirstVisit[c]||new Date(t.startDate)<new Date(countryFirstVisit[c]))countryFirstVisit[c]=t.startDate;}});
+    (p.tripIds||[]).forEach(tid=>{const t=D.trips.find(x=>x.id===tid);if(t&&t.startDate){if(!countryLastVisit[c]||new Date(t.startDate)>new Date(countryLastVisit[c]))countryLastVisit[c]=t.startDate;if(!countryFirstVisit[c]||new Date(t.startDate)<new Date(countryFirstVisit[c]))countryFirstVisit[c]=t.startDate;countryTripCount[c]=(countryTripCount[c]||new Set());}countryTripCount[c]||(countryTripCount[c]=new Set());if(t)countryTripCount[c].add(tid);});
   });
+  // Finalize trip counts
+  Object.keys(countryTripCount).forEach(c=>{countryTripCount[c]=countryTripCount[c].size;});
   vis.filter(p=>normCountry(p.country)==='United States'&&p.usState).forEach(p=>{
     const s=p.usState;
     const dates=[(p.tripIds||[]).map(tid=>{const t=D.trips.find(x=>x.id===tid);return t?.startDate;}).filter(Boolean),p.visitDate?[p.visitDate]:[]].flat();
     dates.forEach(d=>{if(!stateFirstVisit[s]||new Date(d)<new Date(stateFirstVisit[s]))stateFirstVisit[s]=d;});
+    (p.tripIds||[]).forEach(tid=>{if(!stateTripCount[s])stateTripCount[s]=new Set();stateTripCount[s].add(tid);});
   });
+  Object.keys(stateTripCount).forEach(s=>{stateTripCount[s]=stateTripCount[s].size;});
 
   // Misc
   const longestTrip=[...D.trips].filter(t=>t.startDate&&t.endDate).map(t=>({...t,dur:tripDays(t)})).sort((a,b)=>b.dur-a.dur)[0];
@@ -2463,10 +2468,10 @@ function rHome(){
   const todayTrips=D.trips.filter(t=>{if(!t.startDate||!t.endDate)return false;const y=parseInt(t.startDate.slice(0,4));if(y>=thisYear)return false;const start=t.startDate.slice(5,10),end=t.endDate.slice(5,10);if(start<=end)return todayMMDD>=start&&todayMMDD<=end;return todayMMDD>=start||todayMMDD<=end;}).slice(0,2);
 
   const countriesBody=allCountries.length
-    ?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;padding-top:2px">${allCountries.map(c=>{const yr=countryFirstVisit[c]?new Date(countryFirstVisit[c]).getFullYear():'';return`<div class="dest-tag" data-type="country" data-dest="${c}" onclick="dossierOpen('country',this.dataset.dest)"><span class="dest-tag-flag">${countryFlag(c)}</span><div class="dest-tag-text"><div class="dest-tag-name">${c}</div>${yr?`<div class="dest-tag-date">${yr}</div>`:''}</div></div>`;}).join('')}</div>`
+    ?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;padding-top:2px">${allCountries.map(c=>{const yr=countryFirstVisit[c]?new Date(countryFirstVisit[c]).getFullYear():'';const tc=countryTripCount[c]||0;return`<div class="dest-tag" data-type="country" data-dest="${c}" onclick="dossierOpen('country',this.dataset.dest)"><span class="dest-tag-flag">${countryFlag(c)}</span><div class="dest-tag-text"><div class="dest-tag-name">${c}</div><div class="dest-tag-date">${yr?yr+' · ':''}<span style="color:var(--green3);font-weight:600">${tc} ${tc===1?'trip':'trips'}</span></div></div></div>`;}).join('')}</div>`
     :`<div style="font-size:12px;color:var(--muted2);padding:12px 0;text-align:center">No international trips yet</div>`;
   const statesBody=usStates.length
-    ?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;padding-top:2px">${usStates.map(s=>{const isH=homeState&&s===homeState;const yr=stateFirstVisit[s]?new Date(stateFirstVisit[s]).getFullYear():'';const abr=STATE_ABBR[s]||s.slice(0,2).toUpperCase();return`<div class="dest-tag${isH?' home':''}" data-type="state" data-dest="${s}" onclick="dossierOpen('state',this.dataset.dest)"><span class="dest-tag-abr">${isH?'🏠':abr}</span><div class="dest-tag-text"><div class="dest-tag-name">${s}</div>${yr?`<div class="dest-tag-date">${yr}</div>`:''}</div></div>`;}).join('')}</div>`
+    ?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;padding-top:2px">${usStates.map(s=>{const isH=homeState&&s===homeState;const yr=stateFirstVisit[s]?new Date(stateFirstVisit[s]).getFullYear():'';const sc=stateTripCount[s]||0;const abr=STATE_ABBR[s]||s.slice(0,2).toUpperCase();return`<div class="dest-tag${isH?' home':''}" data-type="state" data-dest="${s}" onclick="dossierOpen('state',this.dataset.dest)"><span class="dest-tag-abr">${isH?'🏠':abr}</span><div class="dest-tag-text"><div class="dest-tag-name">${s}</div><div class="dest-tag-date">${yr?yr+' · ':''}<span style="color:var(--green3);font-weight:600">${sc} ${sc===1?'trip':'trips'}</span></div></div></div>`;}).join('')}</div>`
     :`<div style="font-size:12px;color:var(--muted2);padding:12px 0;text-align:center">No US places yet</div>`;
 
   document.getElementById('home-in').innerHTML=`
@@ -2551,6 +2556,28 @@ function dossierClose(){
   if(dossierMap){if(!_dossierMapIsGoogle){try{dossierMap.remove();}catch(e){}}dossierMap=null;_dossierMapIsGoogle=false;}
 }
 
+// Count days actually spent in a country/state for a specific trip,
+// using visitDate data from linked places as ground truth.
+function daysInDest(trip,targetCountry,targetState){
+  const isC=!!targetCountry;
+  const linked=D.places.filter(p=>{
+    const mc=isC?normCountry(p.country)===targetCountry:(normCountry(p.country)==='United States'&&p.usState===targetState);
+    return mc&&(p.tripIds||[]).includes(trip.id);
+  });
+  if(!linked.length)return 0;
+  // Primary: count unique visit dates on linked places
+  const uDates=new Set(linked.filter(p=>p.visitDate).map(p=>p.visitDate));
+  if(uDates.size>0)return uDates.size;
+  // Secondary: count itinerary days that have stops linking to matched places
+  const pids=new Set(linked.map(p=>p.id));
+  const iDays=(trip.itinerary||[]).filter(d=>(d.stops||[]).some(s=>s.placeId&&pids.has(s.placeId))).length;
+  if(iDays>0)return iDays;
+  // Fallback: if sole destination, use full trip duration; otherwise estimate proportionally
+  const destCount=(trip.destinations||[]).length||1;
+  const dur=tripDays(trip)||0;
+  return destCount===1?dur:Math.max(1,Math.round(dur/destCount));
+}
+
 function rDossier(type,name){
   const isCountry=type==='country';
   const flag=isCountry?countryFlag(name):'🇺🇸';
@@ -2558,38 +2585,74 @@ function rDossier(type,name){
   const tripIdSet=new Set(places.flatMap(p=>p.tripIds||[]));
   if(isCountry)D.trips.forEach(t=>{if((t.destinations||[]).some(d=>normCountry(d)===name))tripIdSet.add(t.id);});
   const trips=[...tripIdSet].map(id=>D.trips.find(t=>t.id===id)).filter(Boolean).sort((a,b)=>new Date(b.startDate||0)-new Date(a.startDate||0));
-  const totalDays=trips.filter(t=>t.startDate&&t.endDate).reduce((s,t)=>s+(tripDays(t)||0),0);
+  // Accurate days: sum per-trip actual days in this country/state
+  const totalDays=trips.reduce((s,t)=>s+daysInDest(t,isCountry?name:null,isCountry?null:name),0);
   const tripIdArr=new Set(trips.map(t=>t.id));
   const memoirs=D.journal.filter(j=>j.tripId&&tripIdArr.has(j.tripId)).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const wishItem=D.wish.find(w=>!w.graduated&&w.name.toLowerCase()===name.toLowerCase());
-  const visitedPlaces=places.filter(p=>p.status==='visited');
+
+  // Group places by region for cleaner display
+  const regionMap={};
+  places.forEach(p=>{
+    const rk=p.region||'Other';
+    if(!regionMap[rk])regionMap[rk]=[];
+    regionMap[rk].push(p);
+  });
+  const regionEntries=Object.entries(regionMap).sort((a,b)=>b[1].length-a[1].length);
+  const maxRegionsShown=8;
+  const totalShown=regionEntries.slice(0,maxRegionsShown).reduce((s,[,arr])=>s+arr.length,0);
+  const hiddenCount=places.length-totalShown;
+
+  const placesHtml=regionEntries.slice(0,maxRegionsShown).map(([region,rPlaces])=>{
+    const rows=rPlaces.map(p=>{
+      const visitCount=(p.tripIds||[]).length;
+      return`<div style="display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--bdr2);cursor:pointer" onclick="dossierClose();setTimeout(()=>{go('places');openPlaceD('${p.id}')},120)">
+        <span style="font-size:14px;flex-shrink:0;width:18px;text-align:center">${ci(p.category)}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
+          ${p.region?`<div style="font-size:10px;color:var(--muted2)">${p.region}</div>`:''}
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+          ${p.rating?`<span style="font-size:10px;color:var(--gold2)">${'★'.repeat(Math.min(parseInt(p.rating)||0,5))}</span>`:''}
+          ${visitCount>1?`<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:100px;background:rgba(74,114,89,.12);color:var(--green3)">${visitCount}x</span>`:''}
+        </div>
+      </div>`;
+    }).join('');
+    return`<div style="margin-bottom:10px">
+      <div style="font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;display:flex;align-items:center;gap:6px">
+        <span>${region}</span><span style="font-size:10px;font-weight:400;color:var(--muted)">${rPlaces.length} place${rPlaces.length!==1?'s':''}</span>
+      </div>
+      ${rows}
+    </div>`;
+  }).join('');
+
   return`<div style="padding:16px 18px 14px;border-bottom:1px solid var(--bdr);background:linear-gradient(135deg,var(--card2),var(--card));position:sticky;top:0;z-index:1">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <button onclick="dossierClose()" style="background:var(--card2);border:1px solid var(--bdr);border-radius:7px;padding:5px 11px;font-size:12px;cursor:pointer;color:var(--text2);line-height:1.4">✕ Close</button>
       <button id="dossier-wish-btn" onclick="toggleDossierWish('${name.replace(/'/g,"\\'")}','${type}')" style="background:${wishItem?'rgba(74,114,89,.12)':'var(--card2)'};border:1px solid ${wishItem?'rgba(74,114,89,.3)':'var(--bdr)'};border-radius:7px;padding:5px 11px;font-size:12px;cursor:pointer;color:${wishItem?'var(--green3)':'var(--text2)'};line-height:1.4">${wishItem?'✓ On Wishlist':'♡ Visit Again?'}</button>
     </div>
     <div style="font-size:38px;line-height:1;margin-bottom:8px">${flag}</div>
-    <div style="font-size:22px;font-weight:700;color:var(--text);letter-spacing:-.4px;margin-bottom:6px">${name}</div>
-    <div style="display:flex;gap:12px;flex-wrap:wrap">
-      ${places.length?`<span style="font-size:12px;color:var(--muted)">📍 ${places.length} place${places.length!==1?'s':''}</span>`:''}
-      ${totalDays?`<span style="font-size:12px;color:var(--muted)">📅 ${totalDays} day${totalDays!==1?'s':''}</span>`:''}
-      ${trips.length?`<span style="font-size:12px;color:var(--muted)">✈️ ${trips.length} trip${trips.length!==1?'s':''}</span>`:''}
-      ${memoirs.length?`<span style="font-size:12px;color:var(--muted)">📓 ${memoirs.length} memoir${memoirs.length!==1?'s':''}</span>`:''}
+    <div style="font-size:22px;font-weight:700;color:var(--text);letter-spacing:-.4px;margin-bottom:10px">${name}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${places.length?`<span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:100px;background:var(--card3);color:var(--text2)">📍 ${places.length} places</span>`:''}
+      ${totalDays?`<span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:100px;background:var(--card3);color:var(--text2)">🗓️ ${totalDays} days</span>`:''}
+      ${trips.length?`<span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:100px;background:var(--card3);color:var(--text2)">✈️ ${trips.length} ${trips.length===1?'trip':'trips'}</span>`:''}
+      ${memoirs.length?`<span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:100px;background:var(--card3);color:var(--text2)">📓 ${memoirs.length}</span>`:''}
     </div>
   </div>
   <div id="dossier-map" style="height:200px;width:100%;background:var(--card2)"></div>
   ${trips.length?`<div style="padding:14px 18px;border-bottom:1px solid var(--bdr)">
-    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">✈️ Trips Here</div>
-    ${trips.map(t=>{const dur=tripDays(t);const yr=t.startDate?new Date(t.startDate).getFullYear():'';return`<div style="display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid var(--bdr);cursor:pointer" onclick="dossierClose();setTimeout(()=>{go('trips');openTripD('${t.id}')},120)"><div style="width:3px;height:32px;border-radius:2px;background:linear-gradient(180deg,var(--green),var(--gold));flex-shrink:0;margin-top:2px"></div><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:var(--text)">${t.name}</div><div style="font-size:10px;color:var(--muted);margin-top:1px">${yr?yr+' · ':''}${t.startDate?fd(t.startDate)+(t.endDate?' — '+fd(t.endDate):''):'Planning'}${dur?' · '+dur+'d':''}</div></div><span style="font-size:10px;color:var(--green3);flex-shrink:0">Open →</span></div>`;}).join('')}
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">✈️ TRIPS HERE</div>
+    ${trips.map(t=>{const dur=daysInDest(t,isCountry?name:null,isCountry?null:name);const fullDur=tripDays(t);const yr=t.startDate?new Date(t.startDate).getFullYear():'';const dests=(t.destinations||[]).filter(d=>isCountry?normCountry(d)!==name:true);return`<div style="display:flex;align-items:flex-start;gap:9px;padding:8px 0;border-bottom:1px solid var(--bdr2);cursor:pointer" onclick="dossierClose();setTimeout(()=>{go('trips');openTripD('${t.id}')},120)"><div style="width:3px;height:34px;border-radius:2px;background:linear-gradient(180deg,var(--green),var(--gold));flex-shrink:0;margin-top:2px"></div><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:var(--text)">${t.name}</div><div style="font-size:10px;color:var(--muted);margin-top:2px">${yr?yr+' · ':''}${t.startDate?fd(t.startDate)+(t.endDate?' — '+fd(t.endDate):''):'Planning'}${fullDur?' · '+fullDur+'d total':''}</div></div><div style="flex-shrink:0;text-align:right"><div style="font-size:13px;font-weight:700;color:var(--text)">${dur}</div><div style="font-size:9px;color:var(--muted)">days here</div></div></div>`;}).join('')}
   </div>`:''}
   ${places.length?`<div style="padding:14px 18px;border-bottom:1px solid var(--bdr)">
-    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">📍 Places (${places.length})</div>
-    ${places.slice(0,15).map(p=>`<div style="display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid var(--bdr);cursor:pointer" onclick="dossierClose();setTimeout(()=>{go('places');openPlaceD('${p.id}')},120)"><span style="font-size:15px;flex-shrink:0">${ci(p.category)}</span><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:500;color:var(--text)">${p.name}</div>${p.region?`<div style="font-size:10px;color:var(--muted2)">${p.region}</div>`:''}</div>${p.rating?`<div style="font-size:11px;flex-shrink:0">${'⭐'.repeat(Math.min(parseInt(p.rating)||0,5))}</div>`:''}</div>`).join('')}
-    ${places.length>15?`<div style="font-size:11px;color:var(--muted);padding:6px 0;text-align:center">+${places.length-15} more</div>`:''}
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">📍 PLACES (${places.length})</div>
+    ${placesHtml}
+    ${hiddenCount>0?`<div style="font-size:11px;color:var(--muted2);padding:4px 0;text-align:center">+ ${hiddenCount} more places</div>`:''}
   </div>`:''}
   ${memoirs.length?`<div style="padding:14px 18px;border-bottom:1px solid var(--bdr)">
-    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">📓 Memoirs</div>
-    ${memoirs.slice(0,5).map(j=>{const t=j.tripId?D.trips.find(x=>x.id===j.tripId):null;return`<div style="padding:8px 0;border-bottom:1px solid var(--bdr)"><div style="font-size:12px;font-weight:500;color:var(--text)">${j.title||'Untitled Memoir'}</div><div style="font-size:10px;color:var(--muted);margin-top:1px">${j.date?fd(j.date):''}${t?' · '+t.name:''}</div>${j.body?`<div style="font-size:11px;color:var(--text2);line-height:1.55;margin-top:5px">${j.body.slice(0,140)}${j.body.length>140?'…':''}</div>`:''}</div>`;}).join('')}
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">📓 MEMOIRS</div>
+    ${memoirs.slice(0,5).map(j=>{const t=j.tripId?D.trips.find(x=>x.id===j.tripId):null;return`<div style="padding:8px 0;border-bottom:1px solid var(--bdr2)"><div style="font-size:12px;font-weight:500;color:var(--text)">${j.title||'Untitled Memoir'}</div><div style="font-size:10px;color:var(--muted);margin-top:1px">${j.date?fd(j.date):''}${t?' · '+t.name:''}</div>${j.body?`<div style="font-size:11px;color:var(--text2);line-height:1.55;margin-top:5px">${j.body.slice(0,140)}${j.body.length>140?'…':''}</div>`:''}</div>`;}).join('')}
     ${memoirs.length>5?`<div style="font-size:11px;color:var(--muted);padding:6px 0;text-align:center">+${memoirs.length-5} more</div>`:''}
   </div>`:''}
   ${!trips.length&&!places.length?`<div style="padding:40px 18px;text-align:center;color:var(--muted2)"><div style="font-size:40px;margin-bottom:10px">${flag}</div><div style="font-size:13px">No saved data for ${name} yet.</div></div>`:''}`;
