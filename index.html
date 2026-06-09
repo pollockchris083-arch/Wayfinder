@@ -782,6 +782,15 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .tr-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:100px;white-space:nowrap}
 .tr-past .tr-name{color:var(--text2)}
 .ts-year{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;padding:8px 6px 4px;margin-top:2px}
+/* Trip type picker */
+.trip-type-grid{display:flex;flex-wrap:wrap;gap:9px;justify-content:center}
+.trip-type-card{background:var(--card);border:1.5px solid var(--bdr);border-radius:10px;padding:14px 10px 12px;cursor:pointer;transition:all .15s;text-align:center;flex:1;min-width:130px;max-width:155px;user-select:none}
+.trip-type-card:hover{border-color:var(--green3);background:rgba(74,114,89,.06);transform:translateY(-2px);box-shadow:var(--shadowm)}
+.tt-icon{font-size:28px;margin-bottom:7px;line-height:1;display:block}
+.tt-label{font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px}
+.tt-desc{font-size:10px;color:var(--muted2);line-height:1.45}
+/* Type badge on trip rows */
+.tr-type{font-size:13px;flex-shrink:0;width:18px;text-align:center}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" crossorigin=""/>
@@ -838,9 +847,10 @@ input,textarea,select{font-family:inherit;font-weight:400}
     <div class="sb-sec sb-sec-btn" onclick="toggleTripsNav()">Trips <span id="trips-nav-arr" style="font-size:10px;transition:transform .2s;display:inline-block">▾</span></div>
     <div id="trips-subnav" class="trips-subnav">
       <button class="ni ni-sub" data-p="trips" data-tf="all" onclick="goTrips('all')"><span class="ico">✈️</span>All Trips<span class="nb" id="b-trips">0</span></button>
-      <button class="ni ni-sub" data-p="trips-intl" data-tf="international" onclick="goTrips('international')"><span class="ico">🌍</span>International</button>
       <button class="ni ni-sub" data-p="trips-road" data-tf="road_trip" onclick="goTrips('road_trip')"><span class="ico">🚗</span>Road Trips</button>
-      <button class="ni ni-sub" data-p="camp" onclick="go('camp')"><span class="ico">🧭</span>Adventures<span class="nb" id="b-camp">0</span></button>
+      <button class="ni ni-sub" data-p="trips-camping" data-tf="camping" onclick="goTrips('camping')"><span class="ico">🏕️</span>Camping</button>
+      <button class="ni ni-sub" data-p="trips-big" data-tf="big_trip" onclick="goTrips('big_trip')"><span class="ico">🌍</span>Big Trips</button>
+      <button class="ni ni-sub" data-p="camp" onclick="go('camp')" style="opacity:.65"><span class="ico">📍</span>Saved Spots<span class="nb" id="b-camp">0</span></button>
       <button class="ni ni-sub" data-p="work" onclick="go('work')"><span class="ico">💼</span>Work<span class="nb" id="b-work">0</span></button>
     </div>
     <div class="sb-sec">Memoirs</div>
@@ -951,16 +961,21 @@ input,textarea,select{font-family:inherit;font-weight:400}
       <div id="trips-lv">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:13px;flex-wrap:wrap">
           <button class="fc on" data-ttf="all" onclick="tripTypeFlt(this,'all')">All</button>
-          <button class="fc" data-ttf="international" onclick="tripTypeFlt(this,'international')">🌍 Intl</button>
-          <button class="fc" data-ttf="domestic" onclick="tripTypeFlt(this,'domestic')">🇺🇸 Domestic</button>
-          <button class="fc" data-ttf="road_trip" onclick="tripTypeFlt(this,'road_trip')">🚗 Road Trip</button>
+          <button class="fc" data-ttf="road_trip" onclick="tripTypeFlt(this,'road_trip')">🚗 Road</button>
+          <button class="fc" data-ttf="camping" onclick="tripTypeFlt(this,'camping')">🏕️ Camping</button>
+          <button class="fc" data-ttf="getaway" onclick="tripTypeFlt(this,'getaway')">✈️ Getaway</button>
+          <button class="fc" data-ttf="big_trip" onclick="tripTypeFlt(this,'big_trip')">🌍 Big Trip</button>
+          <button class="fc" data-ttf="expedition" onclick="tripTypeFlt(this,'expedition')">🎒 Expedition</button>
+          <button class="fc" data-ttf="event" onclick="tripTypeFlt(this,'event')">🎪 Event</button>
           <button class="fc" data-ttf="solo" onclick="tripTypeFlt(this,'solo')">🧍 Solo</button>
           <div style="flex:1"></div>
+          <button class="tb-btn" style="background:var(--card2);border-color:var(--bdr);color:var(--muted);font-size:11px;padding:5px 10px" onclick="go('camp')" title="Saved Spots library">📍 Spots</button>
           <button class="tb-btn" style="background:var(--gold);font-size:11px;padding:5px 10px;gap:4px" onclick="openImport()">📄 Import</button>
         </div>
         <div id="trips-grid"></div>
       </div>
       <div class="td-view" id="trip-dv"></div>
+      <div class="td-view" id="camp-dv-in-trips"></div>
     </div>
 
     <div class="page" id="page-journal"><div id="jlist"></div></div>
@@ -1126,6 +1141,23 @@ input,textarea,select{font-family:inherit;font-weight:400}
 </div>
 
 <!-- TRIP -->
+<!-- TRIP TYPE PICKER -->
+<div class="mo" id="m-new-trip">
+  <div class="modal" style="width:520px">
+    <button class="mcl" onclick="closeM('m-new-trip')">✕</button>
+    <h2 style="margin-bottom:4px">New Trip</h2>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:18px">What kind of trip is this?</div>
+    <div class="trip-type-grid">
+      <div class="trip-type-card" onclick="pickTripType('road_trip')"><span class="tt-icon">🚗</span><div class="tt-label">Road Trip</div><div class="tt-desc">Drives &amp; routes with stops along the way</div></div>
+      <div class="trip-type-card" onclick="pickTripType('camping')"><span class="tt-icon">🏕️</span><div class="tt-label">Camping</div><div class="tt-desc">Tent, RV, car camping, glamping &amp; outdoors</div></div>
+      <div class="trip-type-card" onclick="pickTripType('getaway')"><span class="tt-icon">✈️</span><div class="tt-label">Getaway</div><div class="tt-desc">City break, resort, or short domestic trip</div></div>
+      <div class="trip-type-card" onclick="pickTripType('big_trip')"><span class="tt-icon">🌍</span><div class="tt-label">Big Trip</div><div class="tt-desc">Multi-week international or multi-city travel</div></div>
+      <div class="trip-type-card" onclick="pickTripType('expedition')"><span class="tt-icon">🎒</span><div class="tt-label">Expedition</div><div class="tt-desc">Backcountry, backpacking &amp; wilderness</div></div>
+      <div class="trip-type-card" onclick="pickTripType('event')"><span class="tt-icon">🎪</span><div class="tt-label">Event / Weekend</div><div class="tt-desc">Concert, festival, wedding, or quick trip</div></div>
+    </div>
+  </div>
+</div>
+
 <div class="mo" id="m-trip">
   <div class="modal">
     <button class="mcl" onclick="closeM('m-trip')">✕</button>
@@ -2321,7 +2353,7 @@ window.wfAuditLinks=function(){
 // ROUTING
 // ══════════════════════════════════════════════
 const TITLES={home:'Dashboard',map:'World Map',places:'Places',wishlist:'Wishlist',planner:'AI Planner',trips:'Trips',journal:'Memoirs',abroad:'Living Abroad',settings:'Settings',path:'The Path',camp:'Adventures',work:'Work Trips',docs:'Documents'};
-const ACTS={home:{l:'+ Add Place',f:'openPlace'},places:{l:'+ Add Place',f:'openPlace'},wishlist:{l:'+ Add to Wishlist',f:'openWish'},planner:{l:'',f:''},trips:{l:'+ New Trip',f:'openTrip'},journal:{l:'+ New Memoir',f:'openJournal'},map:{l:'+ Add Place',f:'openPlace'},abroad:{l:'',f:''},settings:{l:'',f:''},path:{l:'',f:''},camp:{l:'+ Add Adventure',f:'openCamp'},work:{l:'+ New Work Trip',f:'openWork'},docs:{l:'+ Add Document',f:'openDocModal'}};
+const ACTS={home:{l:'+ Add Place',f:'openPlace'},places:{l:'+ Add Place',f:'openPlace'},wishlist:{l:'+ Add to Wishlist',f:'openWish'},planner:{l:'',f:''},trips:{l:'+ New Trip',f:'openNewTrip'},journal:{l:'+ New Memoir',f:'openJournal'},map:{l:'+ Add Place',f:'openPlace'},abroad:{l:'',f:''},settings:{l:'',f:''},path:{l:'',f:''},camp:{l:'+ Add Spot',f:'openCampSpot'},work:{l:'+ New Work Trip',f:'openWork'},docs:{l:'+ Add Document',f:'openDocModal'}};
 let cur='home';
 let tripTypeFilter='all';
 function go(p){
@@ -2405,7 +2437,7 @@ document.addEventListener('keydown',e=>{
 // ══════════════════════════════════════════════
 // BADGES
 // ══════════════════════════════════════════════
-function badges(){D=load();document.getElementById('b-places').textContent=D.places.length;document.getElementById('b-trips').textContent=D.trips.length;document.getElementById('b-wish').textContent=D.wish.filter(w=>!w.graduated).length;const bc=document.getElementById('b-camp');if(bc)bc.textContent=(D.camps||[]).filter(c=>c.recordType!=='spot').length||'';const bw=document.getElementById('b-work');if(bw)bw.textContent=(D.work||[]).length;docsAlertBadge();}
+function badges(){D=load();const advCount=(D.camps||[]).filter(c=>c.recordType!=='spot').length;const spotCount=(D.camps||[]).filter(c=>c.recordType==='spot').length;document.getElementById('b-places').textContent=D.places.length;document.getElementById('b-trips').textContent=(D.trips.length+advCount)||'';document.getElementById('b-wish').textContent=D.wish.filter(w=>!w.graduated).length;const bc=document.getElementById('b-camp');if(bc)bc.textContent=spotCount||'';const bw=document.getElementById('b-work');if(bw)bw.textContent=(D.work||[]).length;docsAlertBadge();}
 
 // ══════════════════════════════════════════════
 // HOME
@@ -2500,7 +2532,7 @@ function rHome(){
   const motionNow=activeNow.map(t=>{const dur=tripDays(t);const start=t.startDate?new Date(t.startDate):null;const dayNum=start?Math.round((today-start)/86400000)+1:1;return{label:t.name,bc:'#3a9e5c',dayNum,dur,click:"go('trips');openTripD('"+t.id+"')",solo:!!t.solo};});
   const motionNext=upcoming.filter(t=>t.status==='locked').slice(0,3).map(t=>{const d=Math.ceil((new Date(t.startDate)-today)/86400000);return{label:t.name,sub:(d<=1?'Tomorrow':d+' days away')+' · '+fd(t.startDate),bc:'#B8892A',daysUntil:d,click:"go('trips');openTripD('"+t.id+"')",solo:!!t.solo};});
   const motionWorks=[...inWorksTrips,...upcoming.filter(t=>t.status!=='locked'&&t.status!=='active')].slice(0,4).map(t=>{const sc=_sCol[t.status]||'#4A7EBA';return{label:t.name,sub:t.startDate?fd(t.startDate):'No dates yet',bc:sc,badge:tsl(t.status),click:"go('trips');openTripD('"+t.id+"')",solo:!!t.solo};});
-  const motionAdv=(D.camps||[]).filter(c=>c.recordType!=='spot'&&c.status!=='past').slice(0,3).map(c=>{const ti=ADV_TYPES[c.campType]||{icon:'\u{1F9ED}',label:'Adventure'};const sc=_sCol[c.status]||'#4A7259';const cs=c.startDate?new Date(c.startDate):null;const daysUntil=cs&&cs>today?Math.ceil((cs-today)/86400000):null;return{icon:ti.icon,label:c.name,sub:ti.label+(c.location?' · '+c.location:''),bc:sc,badge:tsl(c.status),daysUntil,click:"go('camp');openCampD('"+c.id+"')"};});
+  const motionAdv=(D.camps||[]).filter(c=>c.recordType!=='spot'&&c.status!=='past').slice(0,3).map(c=>{const ti=ADV_TYPES[c.campType]||{icon:'\u{1F9ED}',label:'Adventure'};const sc=_sCol[c.status]||'#4A7259';const cs=c.startDate?new Date(c.startDate):null;const daysUntil=cs&&cs>today?Math.ceil((cs-today)/86400000):null;return{icon:ti.icon,label:c.name,sub:ti.label+(c.location?' · '+c.location:''),bc:sc,badge:tsl(c.status),daysUntil,click:"go('trips');openCampDInTrips('"+c.id+"')"};});
   const hasMotion=motionNow.length||motionNext.length||motionWorks.length||motionAdv.length||abroadActive.length;
   // Solo trip stats
   const soloTravelDays=pastTrips.filter(t=>t.solo&&t.startDate&&t.endDate).reduce((s,t)=>s+(tripDays(t)||0),0);
@@ -4002,7 +4034,8 @@ function saveTrip(){
     save('trips',D.trips);teid=null;closeM('m-trip');toast('✅ Trip updated!');
     if(atid===ex.id)openTripD(ex.id);else rTrips();badges();return;
   }
-  const t={id:uid(),name:n,startDate,endDate,destinations:document.getElementById('t-dests').value.split(',').map(d=>d.trim()).filter(Boolean),type:document.getElementById('t-type').value,status:document.getElementById('t-status').value,solo:document.getElementById('t-solo').checked||false,budget:parseFloat(document.getElementById('t-budget').value)||null,notes:document.getElementById('t-notes').value.trim(),itinerary:[],addedAt:Date.now()};
+  const t={id:uid(),name:n,startDate,endDate,destinations:document.getElementById('t-dests').value.split(',').map(d=>d.trim()).filter(Boolean),type:document.getElementById('t-type').value,status:document.getElementById('t-status').value,solo:document.getElementById('t-solo').checked||false,budget:parseFloat(document.getElementById('t-budget').value)||null,notes:document.getElementById('t-notes').value.trim(),itinerary:[],addedAt:Date.now(),tripType:window._pendingTripType||null};
+  window._pendingTripType=null;
   if(t.startDate&&t.endDate){const s=new Date(t.startDate),e=new Date(t.endDate);for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1))t.itinerary.push({date:d.toISOString().split('T')[0],stops:[]});}
   D.trips.push(t);save('trips',D.trips);
   if(pendGraduateWishId){const w=D.wish.find(x=>x.id===pendGraduateWishId);if(w){w.tripId=t.id;w.graduated=true;save('wish',D.wish);}pendGraduateWishId=null;}
@@ -4037,117 +4070,109 @@ function rTrips(){
   D=load();
   document.getElementById('trips-lv').style.display='block';
   document.getElementById('trip-dv').classList.remove('on');
+  const _cdv=document.getElementById('camp-dv-in-trips');if(_cdv){_cdv.classList.remove('on');_cdv.innerHTML='';}
+  window._campInTrips=false;
   atid=null;
   // Sync type filter pill active state
   document.querySelectorAll('#trips-lv [data-ttf]').forEach(b=>b.classList.toggle('on',b.dataset.ttf===tripTypeFilter));
   const today=new Date();today.setHours(0,0,0,0);
   const tq=(document.getElementById('srch')?.value||'').toLowerCase();
-  const _campNames=new Set((D.camps||[]).filter(c=>c.recordType!=='spot').map(c=>c.name.toLowerCase().trim()));
-  // All trips passing type+search filter — sections handle stage bucketing
-  const allTrips=D.trips.filter(t=>{
-    if(_campNames.has(t.name.toLowerCase().trim()))return false;
-    const mt=tripTypeFilter==='all'||(tripTypeFilter==='solo'?!!t.solo:inferTripCat(t)===tripTypeFilter);
-    const ms=!tq||t.name.toLowerCase().includes(tq)||(t.destinations||[]).some(d=>(d||'').toLowerCase().includes(tq))||(t.notes||'').toLowerCase().includes(tq);
+  // Unified pool: regular trips + adventures (non-spots) together
+  const _advItems=(D.camps||[]).filter(c=>c.recordType!=='spot'&&!c.excludeFromTrips).map(c=>({...c,_isAdv:true}));
+  const _tripItems=D.trips.map(t=>({...t,_isAdv:false}));
+  const allItems=[..._tripItems,..._advItems].filter(item=>{
+    const tt=inferTripType(item,!!item._isAdv);
+    const mt=tripTypeFilter==='all'||(tripTypeFilter==='solo'?!!item.solo:tt===tripTypeFilter);
+    const ms=!tq||(item.name||'').toLowerCase().includes(tq)||(item.destinations||[]).some(d=>(d||'').toLowerCase().includes(tq))||((item.location||'')).toLowerCase().includes(tq)||(item.notes||'').toLowerCase().includes(tq);
     return mt&&ms;
   });
-  // Bucket by lifecycle stage
-  const activeTrips=allTrips.filter(t=>t.status==='active').sort((a,b)=>new Date(a.startDate||0)-new Date(b.startDate||0));
-  const activeIds=new Set(activeTrips.map(t=>t.id));
-  const lockedTrips=allTrips.filter(t=>!activeIds.has(t.id)&&t.status==='locked').sort((a,b)=>{if(a.startDate&&b.startDate)return new Date(a.startDate)-new Date(b.startDate);return 0;});
-  const inWorksTrips=allTrips.filter(t=>t.status==='dream'||t.status==='research'||t.status==='planning');
-  const pastTrips=allTrips.filter(t=>t.status==='past').sort((a,b)=>new Date(b.startDate||0)-new Date(a.startDate||0));
-  const showAdv=D.settings.tripsShowAdventures!==false;
   const showWork=D.settings.tripsShowWork===true;
-  const advTrips=showAdv?(D.camps||[]).filter(c=>c.recordType!=='spot'&&!c.excludeFromTrips):[];
   const workTrips=showWork?(D.work||[]).filter(w=>!w.excludeFromTrips):[];
   const g=document.getElementById('trips-grid');
-  if(!allTrips.length&&!advTrips.length&&!workTrips.length){
-    const tLabel=tripTypeFilter!=='all'?' '+(tripTypeFilter==='road_trip'?'road trip':tripTypeFilter):'';
-    g.innerHTML=`<div class="empty"><div class="empty-icon">✈️</div><h3>No${tLabel} trips yet</h3><p>Create a trip or import from a doc.</p><button class="tb-btn" onclick="openTrip()" style="margin-bottom:8px">+ New Trip</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;
+  if(!allItems.length&&!workTrips.length){
+    const tLabel=tripTypeFilter!=='all'?` ${(TRIP_TYPES[tripTypeFilter]?.label||tripTypeFilter)}`:'';
+    g.innerHTML=`<div class="empty"><div class="empty-icon">${TRIP_TYPES[tripTypeFilter]?.icon||'✈️'}</div><h3>No${tLabel} trips yet</h3><p>Pick a type to get started.</p><button class="tb-btn" onclick="openNewTrip()" style="margin-bottom:8px">+ New Trip</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;
     return;
   }
+  // Bucket by lifecycle stage (trips + adventures together)
+  const activeItems=allItems.filter(i=>i.status==='active').sort((a,b)=>new Date(a.startDate||0)-new Date(b.startDate||0));
+  const activeIds=new Set(activeItems.map(i=>i.id));
+  const lockedItems=allItems.filter(i=>!activeIds.has(i.id)&&i.status==='locked').sort((a,b)=>{if(a.startDate&&b.startDate)return new Date(a.startDate)-new Date(b.startDate);return 0;});
+  const inWorksItems=allItems.filter(i=>i.status==='dream'||i.status==='research'||i.status==='planning');
+  const pastItems=allItems.filter(i=>i.status==='past').sort((a,b)=>new Date(b.startDate||0)-new Date(a.startDate||0));
+  // Helper: open the right detail based on source
+  function _openItem(item){return item._isAdv?`openCampDInTrips('${item.id}')`:`openTripD('${item.id}')`;}
+  // Helper: get type icon for an item
+  function _typeIcon(item){const tt=inferTripType(item,!!item._isAdv);return(TRIP_TYPES[tt]||{icon:item._isAdv?(ADV_TYPES[item.campType]||{icon:'🏕️'}).icon:'✈️'}).icon;}
+  // Helper: sub-label for an item
+  function _subLabel(item){
+    if(item._isAdv)return[item.location?'📍 '+item.location+(item.state?', '+item.state:''):'',item.startDate?fd(item.startDate):''].filter(Boolean).join(' · ');
+    const dests=(item.destinations||[]).slice(0,2).join(', ');const dur=tripDays(item);
+    return[dests?'📍 '+dests:'',item.startDate?fd(item.startDate):'Dates TBD',dur?dur+'d':''].filter(Boolean).join(' · ');
+  }
   let html='';
+  const sCol={dream:'var(--gold)',research:'#4A7EBA',planning:'#6B9575',locked:'#B8892A',active:'#3a9e5c',past:'var(--muted)'};
   // ── Happening Now ─────────────────────────────────────────────────
-  if(activeTrips.length){
+  if(activeItems.length){
     html+=`<div class="ts"><div class="ts-h"><span class="ts-h-icon">🚀</span><span class="ts-h-title">Happening Now</span></div>
-    ${activeTrips.map(t=>{
-      const linked=D.places.filter(p=>(p.tripIds||[]).includes(t.id));
-      const dur=tripDays(t);
-      const start=t.startDate?new Date(t.startDate):null;
+    ${activeItems.map(item=>{
+      const dur=item._isAdv?(item.startDate&&item.endDate?Math.round((new Date(item.endDate)-new Date(item.startDate))/86400000)+1:0):tripDays(item);
+      const start=item.startDate?new Date(item.startDate):null;
       const dayNum=start?Math.round((today-start)/86400000)+1:1;
-      const dests=(t.destinations||[]).slice(0,3).join(', ');
-      return`<div class="tc-hero tc-hero-active" onclick="openTripD('${t.id}')">
+      const linked=item._isAdv?0:D.places.filter(p=>(p.tripIds||[]).includes(item.id)).length;
+      const dests=item._isAdv?(item.location||''):(item.destinations||[]).slice(0,3).join(', ');
+      const tIcon=_typeIcon(item);
+      return`<div class="tc-hero tc-hero-active" onclick="${_openItem(item)}">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px">
-          <div style="min-width:0"><div style="font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.3px;margin-bottom:3px">${t.name}</div>
-          <div style="font-size:11px;color:var(--muted)">${t.startDate?fd(t.startDate)+' — '+fd(t.endDate):'Active'}</div></div>
+          <div style="min-width:0"><div style="font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.3px;margin-bottom:3px">${tIcon} ${item.name}</div>
+          <div style="font-size:11px;color:var(--muted)">${item.startDate?fd(item.startDate)+(item.endDate?' — '+fd(item.endDate):''):'Active'}</div></div>
           <div style="text-align:right;flex-shrink:0">
             <div style="font-size:26px;font-weight:700;color:var(--green3);line-height:1">Day ${dayNum}</div>
             <div style="font-size:9px;color:var(--muted);margin-top:1px">of ${dur||'?'}</div>
           </div>
         </div>
         <div style="display:flex;gap:12px;font-size:11px;color:var(--muted2);flex-wrap:wrap">
-          ${dests?`<span>📍 ${dests}</span>`:''}${linked.length?`<span>📌 ${linked.length} places</span>`:''}
+          ${dests?`<span>📍 ${dests}</span>`:''}${linked?`<span>📌 ${linked} places</span>`:''}
         </div></div>`;
     }).join('')}</div>`;
   }
   // ── Up Next (Locked In) ───────────────────────────────────────────
-  if(lockedTrips.length){
-    html+=`<div class="ts"><div class="ts-h"><span class="ts-h-icon">🔒</span><span class="ts-h-title">Up Next</span><span class="ts-h-count">${lockedTrips.length}</span></div>
-    ${lockedTrips.map(t=>{
-      const linked=D.places.filter(p=>(p.tripIds||[]).includes(t.id));
-      const dur=tripDays(t);const stops=t.itinerary.reduce((s,d)=>s+(d.stops||[]).length,0);
-      const start=t.startDate?new Date(t.startDate):null;
+  if(lockedItems.length){
+    html+=`<div class="ts"><div class="ts-h"><span class="ts-h-icon">🔒</span><span class="ts-h-title">Up Next</span><span class="ts-h-count">${lockedItems.length}</span></div>
+    ${lockedItems.map(item=>{
+      const dur=item._isAdv?(item.startDate&&item.endDate?Math.round((new Date(item.endDate)-new Date(item.startDate))/86400000)+1:0):tripDays(item);
+      const start=item.startDate?new Date(item.startDate):null;
       const daysUntil=start?Math.ceil((start-today)/86400000):null;
-      const dests=(t.destinations||[]).slice(0,3).join(', ');
-      return`<div class="tc-hero tc-hero-locked" onclick="openTripD('${t.id}')">
+      const dests=item._isAdv?(item.location||''):(item.destinations||[]).slice(0,3).join(', ');
+      const linked=item._isAdv?0:D.places.filter(p=>(p.tripIds||[]).includes(item.id)).length;
+      const tIcon=_typeIcon(item);
+      return`<div class="tc-hero tc-hero-locked" onclick="${_openItem(item)}">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px">
-          <div style="min-width:0"><div style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.3px;margin-bottom:3px">${t.name}</div>
-          <div style="font-size:11px;color:var(--muted)">${t.startDate?fd(t.startDate)+' — '+fd(t.endDate):'Dates TBD'}</div></div>
+          <div style="min-width:0"><div style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.3px;margin-bottom:3px">${tIcon} ${item.name}</div>
+          <div style="font-size:11px;color:var(--muted)">${item.startDate?fd(item.startDate)+(item.endDate?' — '+fd(item.endDate):''):'Dates TBD'}</div></div>
           ${daysUntil!==null?`<div style="text-align:right;flex-shrink:0">
             <div style="font-size:24px;font-weight:700;color:var(--gold);line-height:1">${daysUntil}</div>
             <div style="font-size:9px;color:var(--muted);margin-top:1px">days away</div>
           </div>`:''}
         </div>
         <div style="display:flex;gap:10px;font-size:11px;color:var(--muted2);flex-wrap:wrap">
-          ${dests?`<span>📍 ${dests}</span>`:''}${dur?`<span>📅 ${dur}d</span>`:''}${stops?`<span>🗺️ ${stops} stops</span>`:''}${linked.length?`<span>📌 ${linked.length} places</span>`:''}
+          ${dests?`<span>📍 ${dests}</span>`:''}${dur?`<span>📅 ${dur}d</span>`:''}${linked?`<span>📌 ${linked} places</span>`:''}
         </div></div>`;
     }).join('')}</div>`;
   }
   // ── In The Works (dream/research/planning) ────────────────────────
-  if(inWorksTrips.length){
+  if(inWorksItems.length){
     const stageOrder={planning:0,research:1,dream:2};
-    const sortedW=inWorksTrips.slice().sort((a,b)=>(stageOrder[a.status]??3)-(stageOrder[b.status]??3));
-    const sCol={dream:'var(--gold)',research:'#4A7EBA',planning:'#6B9575'};
-    html+=`<div class="ts"><div class="ts-h"><span class="ts-h-icon">✏️</span><span class="ts-h-title">In The Works</span><span class="ts-h-count">${inWorksTrips.length}</span></div>
-    <div>${sortedW.map(t=>{
-      const sc=sCol[t.status]||'var(--muted)';
-      const dests=(t.destinations||[]).slice(0,2).join(', ');
-      const dur=tripDays(t);
-      return`<div class="tr" onclick="openTripD('${t.id}')">
+    const sortedW=inWorksItems.slice().sort((a,b)=>(stageOrder[a.status]??3)-(stageOrder[b.status]??3));
+    html+=`<div class="ts"><div class="ts-h"><span class="ts-h-icon">✏️</span><span class="ts-h-title">In The Works</span><span class="ts-h-count">${inWorksItems.length}</span></div>
+    <div>${sortedW.map(item=>{
+      const sc=sCol[item.status]||'var(--muted)';const tIcon=_typeIcon(item);
+      return`<div class="tr" onclick="${_openItem(item)}">
         <div class="tr-bar" style="background:${sc}"></div>
-        <div class="tr-main"><div class="tr-name">${t.name}${t.solo?' <span style="opacity:.65;font-size:11px">🧍</span>':''}</div>
-        <div class="tr-sub">${[dests?'📍 '+dests:'',t.startDate?fd(t.startDate):'Dates TBD',dur?dur+'d':''].filter(Boolean).join(' · ')}</div></div>
-        <span class="tr-badge" style="background:${sc}18;color:${sc};border:1px solid ${sc}30">${tsl(t.status)}</span>
-      </div>`;
-    }).join('')}</div></div>`;
-  }
-  // ── Adventures ────────────────────────────────────────────────────
-  if(advTrips.length){
-    const sColA={dream:'var(--gold)',research:'#4A7EBA',planning:'#6B9575',locked:'#B8892A',active:'#3a9e5c',past:'var(--muted)'};
-    const soA={active:0,locked:1,planning:2,research:3,dream:4,past:5};
-    const sortedA=advTrips.slice().sort((a,b)=>{const od=(soA[a.status]??5)-(soA[b.status]??5);if(od)return od;if(a.startDate&&b.startDate)return new Date(a.startDate)-new Date(b.startDate);return 0;});
-    html+=`<div class="ts"><div class="ts-h"><span class="ts-h-icon">🧭</span><span class="ts-h-title">Adventures</span><span class="ts-h-count">${advTrips.length}</span></div>
-    <div>${sortedA.map(c=>{
-      const ti=ADV_TYPES[c.campType]||{icon:'🧭',label:'Adventure'};
-      const sc=sColA[c.status]||'#4A7259';
-      const dur=c.startDate&&c.endDate?Math.round((new Date(c.endDate)-new Date(c.startDate))/86400000)+1:0;
-      const start=c.startDate?new Date(c.startDate):null;
-      const daysUntil=start&&start>today?Math.ceil((start-today)/86400000):null;
-      return`<div class="tr" onclick="go('camp');openCampD('${c.id}')">
-        <div class="tr-bar" style="background:${sc}"></div>
-        <div class="tr-main"><div class="tr-name">${ti.icon} ${c.name}</div>
-        <div class="tr-sub">${[c.location?'📍 '+c.location+(c.state?', '+c.state:''):'',dur?dur+'d':'',c.startDate?fd(c.startDate):''].filter(Boolean).join(' · ')}</div></div>
-        <div class="tr-meta">${daysUntil!==null?`<div style="font-size:13px;font-weight:700;color:var(--gold);line-height:1">${daysUntil}</div><div style="font-size:9px;color:var(--muted)">days</div>`:`<span class="tr-badge" style="background:${sc}18;color:${sc};border:1px solid ${sc}30">${tsl(c.status)}</span>`}</div>
+        <div class="tr-type">${tIcon}</div>
+        <div class="tr-main"><div class="tr-name">${item.name}${item.solo?' <span style="opacity:.65;font-size:11px">🧍</span>':''}</div>
+        <div class="tr-sub">${_subLabel(item)}</div></div>
+        <span class="tr-badge" style="background:${sc}18;color:${sc};border:1px solid ${sc}30">${tsl(item.status)}</span>
       </div>`;
     }).join('')}</div></div>`;
   }
@@ -4169,25 +4194,26 @@ function rTrips(){
       </div>`;
     }).join('')}</div></div>`;
   }
-  // ── Memories (past trips, grouped by year) ────────────────────────
-  if(pastTrips.length){
+  // ── Memories (past items, grouped by year) ────────────────────────
+  if(pastItems.length){
     const byYear={};
-    pastTrips.forEach(t=>{const y=t.startDate?new Date(t.startDate).getFullYear():'?';if(!byYear[y])byYear[y]=[];byYear[y].push(t);});
+    pastItems.forEach(item=>{const y=item.startDate?new Date(item.startDate).getFullYear():'?';if(!byYear[y])byYear[y]=[];byYear[y].push(item);});
     const yEntries=Object.entries(byYear).sort(([a],[b])=>b-a);
-    html+=`<div class="ts"><div class="ts-h ts-h-dim"><span class="ts-h-icon">✅</span><span class="ts-h-title">Memories</span><span class="ts-h-count">${pastTrips.length} trips</span></div>
-    ${yEntries.map(([year,trips])=>`<div class="ts-year">${year}</div><div>${trips.map(t=>{
-      const dur=tripDays(t);
-      const dests=(t.destinations||[]).slice(0,2).join(', ');
-      const linked=D.places.filter(p=>(p.tripIds||[]).includes(t.id));
-      return`<div class="tr tr-past" onclick="openTripD('${t.id}')">
+    html+=`<div class="ts"><div class="ts-h ts-h-dim"><span class="ts-h-icon">✅</span><span class="ts-h-title">Memories</span><span class="ts-h-count">${pastItems.length}</span></div>
+    ${yEntries.map(([year,items])=>`<div class="ts-year">${year}</div><div>${items.map(item=>{
+      const tIcon=_typeIcon(item);
+      const dur=item._isAdv?(item.startDate&&item.endDate?Math.round((new Date(item.endDate)-new Date(item.startDate))/86400000)+1:0):tripDays(item);
+      const linked=item._isAdv?0:D.places.filter(p=>(p.tripIds||[]).includes(item.id)).length;
+      return`<div class="tr tr-past" onclick="${_openItem(item)}">
         <div class="tr-bar" style="background:linear-gradient(180deg,#8a7060,#b09880)"></div>
-        <div class="tr-main"><div class="tr-name">${t.name}${t.solo?' <span style="opacity:.6;font-size:11px">🧍</span>':''}</div>
-        <div class="tr-sub">${[dests?'📍 '+dests:'',dur?dur+'d':'',linked.length?linked.length+' places':''].filter(Boolean).join(' · ')}</div></div>
-        <div style="font-size:11px;color:var(--muted);flex-shrink:0">${t.startDate?fd(t.startDate):''}</div>
+        <div class="tr-type">${tIcon}</div>
+        <div class="tr-main"><div class="tr-name">${item.name}${item.solo?' <span style="opacity:.6;font-size:11px">🧍</span>':''}</div>
+        <div class="tr-sub">${[item._isAdv?(item.location||''):(item.destinations||[]).slice(0,2).join(', '),dur?dur+'d':'',linked?linked+' places':''].filter(Boolean).join(' · ')}</div></div>
+        <div style="font-size:11px;color:var(--muted);flex-shrink:0">${item.startDate?fd(item.startDate):''}</div>
       </div>`;
     }).join('')}</div>`).join('')}</div>`;
   }
-  g.innerHTML=html||`<div class="empty"><div class="empty-icon">✈️</div><h3>No trips yet</h3><p>Create a trip or import from a doc.</p><button class="tb-btn" onclick="openTrip()" style="margin-bottom:8px">+ New Trip</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;
+  g.innerHTML=html||`<div class="empty"><div class="empty-icon">✈️</div><h3>No trips yet</h3><p>Pick a type to get started.</p><button class="tb-btn" onclick="openNewTrip()" style="margin-bottom:8px">+ New Trip</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;
 }
 function openTripD(id){
   D=load();const t=D.trips.find(x=>x.id===id);if(!t)return;atid=id;
@@ -6083,6 +6109,41 @@ function rAbroad(){
 // ══════════════════════════════════════════════
 // ADVENTURES
 // ══════════════════════════════════════════════
+const TRIP_TYPES={
+  road_trip:{icon:'🚗',label:'Road Trip',color:'#B8892A',_store:'camps',_campType:'car'},
+  camping:{icon:'🏕️',label:'Camping',color:'#4A7259',_store:'camps',_campType:'tent'},
+  getaway:{icon:'✈️',label:'Getaway',color:'#4A7EBA',_store:'trips',_type:'domestic'},
+  big_trip:{icon:'🌍',label:'Big Trip',color:'#7A5C8A',_store:'trips',_type:'international'},
+  expedition:{icon:'🎒',label:'Expedition',color:'#6B4C3B',_store:'camps',_campType:'backpacking'},
+  event:{icon:'🎪',label:'Event',color:'#C0634C',_store:'trips',_type:'domestic'},
+};
+function inferTripType(item,isAdv){
+  if(item.tripType)return item.tripType;
+  if(isAdv){
+    const ct=item.campType||'tent';
+    if(ct==='backpacking')return'expedition';
+    if(['rv','van','trailer','overlanding'].includes(ct))return'road_trip';
+    if(['cabin','hotel','hostel','airbnb','friends'].includes(ct))return'getaway';
+    return'camping';
+  }
+  const t=item.type||'';
+  if(t==='road-trip'||t==='road_trip')return'road_trip';
+  if(t==='international'){const dur=(item.startDate&&item.endDate)?Math.round((new Date(item.endDate)-new Date(item.startDate))/86400000):0;return dur>=14?'big_trip':'getaway';}
+  return'getaway';
+}
+function openNewTrip(){openM('m-new-trip');}
+function pickTripType(type){
+  closeM('m-new-trip');
+  window._pendingTripType=type;
+  const tt=TRIP_TYPES[type];if(!tt)return;
+  if(tt._store==='camps'){
+    openCamp();
+    setTimeout(()=>{const el=document.getElementById('c-camptype');if(el)el.value=tt._campType||'tent';},60);
+  } else {
+    openTrip();
+    setTimeout(()=>{const el=document.getElementById('t-type');if(el)el.value=tt._type||'domestic';},60);
+  }
+}
 const ADV_TYPES={
   tent:{icon:'🏕️',label:'Tent Camping'},
   backpacking:{icon:'🎒',label:'Backpacking'},
@@ -6589,29 +6650,56 @@ function saveCamp(){
     thumb:document.getElementById('c-thumb').value.trim(),
     notes:document.getElementById('c-notes').value.trim(),
     excludeFromTrips:document.getElementById('c-exclude-trips').checked};
+  const pendingType=window._pendingTripType||null;
+  const wasInTrips=!!window._campInTrips;
+  window._pendingTripType=null;
+  const savedId=ceid||null;
   if(ceid){
     const i=D.camps.findIndex(x=>x.id===ceid);
     if(i>=0){D.camps[i]={...D.camps[i],...data};toast('✅ Updated!');}
   } else {
-    D.camps.push({id:uid(),...data,stops:[],checklist:[],links:[],addedAt:Date.now()});
+    const newId=uid();
+    D.camps.push({id:newId,...data,tripType:pendingType,stops:[],checklist:[],links:[],addedAt:Date.now()});
     toast('🧭 Adventure saved!');
   }
   localStorage.setItem('wf_camps',JSON.stringify(D.camps));
   ceid=null;closeM('m-camp');
-  if(rtype==='spot') window._campTab='spots';
-  else if(status==='past') window._campTab='past';
-  else window._campTab='planning';
-  rCamp();badges();
+  if(rtype==='spot'){window._campTab='spots';rCamp();}
+  else if(wasInTrips&&savedId){go('trips');openCampDInTrips(savedId);}
+  else{go('trips');rTrips();}
+  badges();
 }
 
 function delCamp(id){
   if(!confirm('Delete this adventure?'))return;
-  D=load();D.camps=(D.camps||[]).filter(c=>c.id!==id);
+  D=load();
+  const wasAdv=(D.camps||[]).find(c=>c.id===id&&c.recordType!=='spot');
+  D.camps=(D.camps||[]).filter(c=>c.id!==id);
   localStorage.setItem('wf_camps',JSON.stringify(D.camps));
-  toast('🗑️ Deleted');rCamp();badges();
+  toast('🗑️ Deleted');
+  if(window._campInTrips){closeCampDInTrips();}
+  else if(wasAdv){go('trips');rTrips();}
+  else rCamp();
+  badges();
 }
 
 // ── Trip Detail ─────────────────────────────────────────
+function openCampDInTrips(id){
+  D=load();
+  document.getElementById('trips-lv').style.display='none';
+  document.getElementById('trip-dv').classList.remove('on');
+  const dv=document.getElementById('camp-dv-in-trips');dv.classList.add('on');
+  window._campInTrips=true;
+  window._campDTab='overview';
+  openCampD(id);
+}
+function closeCampDInTrips(){
+  window._campInTrips=false;
+  const dv=document.getElementById('camp-dv-in-trips');
+  if(dv){dv.classList.remove('on');dv.innerHTML='';}
+  document.getElementById('trips-lv').style.display='';
+  rTrips();
+}
 function openCampD(id){
   D=load();
   const c=(D.camps||[]).find(x=>x.id===id);if(!c)return;
@@ -6630,8 +6718,12 @@ function openCampD(id){
   else if(tab==='gear') tabBody=rAdvGearTab(c);
   else if(tab==='links') tabBody=rAdvLinksTab(c);
   else tabBody=rAdvSummaryTab(c);
-  document.getElementById('camp-in').innerHTML=`
-    <button class="td-back" onclick="rCamp()">← Adventures</button>
+  const _inTrips=window._campInTrips;
+  const _campContainer=_inTrips?document.getElementById('camp-dv-in-trips'):document.getElementById('camp-in');
+  const _backBtn=_inTrips?`<button class="td-back" onclick="closeCampDInTrips()">← Trips</button>`:`<button class="td-back" onclick="rCamp()">← Adventures</button>`;
+  if(!_campContainer)return;
+  _campContainer.innerHTML=`
+    ${_backBtn}
     <div style="margin-top:10px">
       ${c.thumb?`<img src="${c.thumb}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r);margin-bottom:12px" onerror="this.style.display='none'"/>`:''}
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px">
@@ -8471,7 +8563,7 @@ function pipeOpenDetail(cardId){
       ${c.location?`<div class="path-detail-section"><div class="path-detail-section-label">Location</div><div style="font-size:13px;color:var(--text)">📍 ${c.location}${c.state?', '+c.state:''}</div></div>`:''}
       ${c.notes?`<div class="path-detail-section"><div class="path-detail-section-label">Notes</div><div style="font-size:12px;color:var(--text2);line-height:1.6">${c.notes}</div></div>`:''}
       <div style="display:flex;gap:8px;margin-top:16px">
-        <button class="tb-btn" style="flex:1;justify-content:center;font-size:11px" onclick="go('camp');openCampD('${c.id}');pipeCloseDetail()">Full Adventure Detail →</button>
+        <button class="tb-btn" style="flex:1;justify-content:center;font-size:11px" onclick="pipeCloseDetail();go('trips');openCampDInTrips('${c.id}')">Full Adventure Detail →</button>
       </div>`;
   }else{
     const c=card.data;
