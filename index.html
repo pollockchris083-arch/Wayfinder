@@ -949,6 +949,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
           <button class="fc" data-ttf="international" onclick="tripTypeFlt(this,'international')">🌍 Intl</button>
           <button class="fc" data-ttf="domestic" onclick="tripTypeFlt(this,'domestic')">🇺🇸 Domestic</button>
           <button class="fc" data-ttf="road_trip" onclick="tripTypeFlt(this,'road_trip')">🚗 Road Trip</button>
+          <button class="fc" data-ttf="solo" onclick="tripTypeFlt(this,'solo')">🧍 Solo</button>
           <div style="flex:1"></div>
           <button class="tb-btn" style="background:var(--gold);font-size:11px;padding:5px 10px;gap:4px" onclick="openImport()">📄 Import</button>
         </div>
@@ -1148,7 +1149,12 @@ input,textarea,select{font-family:inherit;font-weight:400}
     </div>
     <div class="fr">
       <div class="fg"><label class="fl">Budget ($)</label><input class="fi" id="t-budget" type="number" placeholder="2500"/></div>
-      <div class="fg"></div>
+      <div class="fg" style="display:flex;align-items:flex-end;padding-bottom:2px">
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:6px 0;user-select:none">
+          <input type="checkbox" id="t-solo" style="width:15px;height:15px;cursor:pointer;accent-color:var(--green3)">
+          <span style="font-size:12px;color:var(--text2)">🧍 Solo trip</span>
+        </label>
+      </div>
     </div>
     <div class="fg" style="margin-bottom:0"><label class="fl">Notes</label><textarea class="ft" id="t-notes" placeholder="Inspiration, goals, ideas…"></textarea></div>
     <div class="fa"><button class="btn-s" onclick="closeM('m-trip')">Cancel</button><button class="btn-p" id="tm-save" onclick="saveTrip()">Create Trip</button></div>
@@ -2467,21 +2473,18 @@ function rHome(){
   const _pipeState=pipeStateLoad();
   function tripStage(t){const col=_pipeState[t.id]||pipeAutoCol({id:t.id,type:'trip',data:t});return PIPE_COLS.find(c=>c.id===col)||PIPE_COLS[2];}
 
-  // Active section items
-  const activeItems=[];
-  activeNow.forEach(t=>{const st=tripStage(t);activeItems.push({icon:'🌍',label:t.name,sub:'Happening now',badge:st.label,bc:st.color,click:`go('trips');openTripD('${t.id}')`});});
-  upcoming.slice(0,3).forEach(t=>{const d=Math.ceil((new Date(t.startDate)-today)/86400000);const st=tripStage(t);activeItems.push({icon:'✈️',label:t.name,sub:(d<=1?'Tomorrow':d+' days away')+(t.endDate?' · '+fd(t.startDate):''),badge:st.label,bc:st.color,click:`go('trips');openTripD('${t.id}')`});});
-  if(!activeNow.length&&!upcoming.length)planning.slice(0,2).forEach(t=>{const st=tripStage(t);activeItems.push({icon:'📋',label:t.name,sub:'Planning · no dates yet',badge:st.label,bc:st.color,click:`go('trips');openTripD('${t.id}')`});});
-  // Add active Adventures to the dashboard active section
-  (D.camps||[]).filter(c=>c.recordType!=='spot'&&c.status!=='past').slice(0,2).forEach(c=>{
-    const typeInfo=ADV_TYPES[c.campType]||{icon:'🧭',label:'Adventure'};
-    const st=_pipeState[c.id]||pipeAutoCol({id:c.id,type:'adventure',data:c});
-    const stageInfo=PIPE_COLS.find(x=>x.id===st)||PIPE_COLS[2];
-    activeItems.push({icon:'🧭',label:c.name,sub:typeInfo.icon+' '+typeInfo.label+(c.location?' · '+c.location:''),badge:stageInfo.label,bc:stageInfo.color,click:`go('camp');openCampD('${c.id}')`});
-  });
+  // Grouped "What's In Motion" dashboard data
   const abroad=D.abroad||{countries:[]};
   const abroadActive=(abroad.countries||[]).filter(c=>c.status!=='eliminated');
-  if(abroadActive.length)activeItems.push({icon:'🌏',label:'Living Abroad Research',sub:abroadActive.length+' '+(abroadActive.length===1?'country':'countries')+' in consideration',badge:'Researching',bc:'#4A7EBA',click:`go('abroad')`});
+  const _sCol={dream:'var(--gold)',research:'#4A7EBA',planning:'#6B9575',locked:'#B8892A',active:'#3a9e5c'};
+  const motionNow=activeNow.map(t=>{const dur=tripDays(t);const start=t.startDate?new Date(t.startDate):null;const dayNum=start?Math.round((today-start)/86400000)+1:1;return{label:t.name,bc:'#3a9e5c',dayNum,dur,click:"go('trips');openTripD('"+t.id+"')",solo:!!t.solo};});
+  const motionNext=upcoming.filter(t=>t.status==='locked').slice(0,3).map(t=>{const d=Math.ceil((new Date(t.startDate)-today)/86400000);return{label:t.name,sub:(d<=1?'Tomorrow':d+' days away')+' · '+fd(t.startDate),bc:'#B8892A',daysUntil:d,click:"go('trips');openTripD('"+t.id+"')",solo:!!t.solo};});
+  const motionWorks=[...inWorksTrips,...upcoming.filter(t=>t.status!=='locked'&&t.status!=='active')].slice(0,4).map(t=>{const sc=_sCol[t.status]||'#4A7EBA';return{label:t.name,sub:t.startDate?fd(t.startDate):'No dates yet',bc:sc,badge:tsl(t.status),click:"go('trips');openTripD('"+t.id+"')",solo:!!t.solo};});
+  const motionAdv=(D.camps||[]).filter(c=>c.recordType!=='spot'&&c.status!=='past').slice(0,3).map(c=>{const ti=ADV_TYPES[c.campType]||{icon:'\u{1F9ED}',label:'Adventure'};const sc=_sCol[c.status]||'#4A7259';const cs=c.startDate?new Date(c.startDate):null;const daysUntil=cs&&cs>today?Math.ceil((cs-today)/86400000):null;return{icon:ti.icon,label:c.name,sub:ti.label+(c.location?' · '+c.location:''),bc:sc,badge:tsl(c.status),daysUntil,click:"go('camp');openCampD('"+c.id+"')"};});
+  const hasMotion=motionNow.length||motionNext.length||motionWorks.length||motionAdv.length||abroadActive.length;
+  // Solo trip stats
+  const soloTravelDays=pastTrips.filter(t=>t.solo&&t.startDate&&t.endDate).reduce((s,t)=>s+(tripDays(t)||0),0);
+  const sharedTravelDays=totalTravelDays-soloTravelDays;
 
   // Countries atlas
   const recentPlaces=[...D.places].sort((a,b)=>b.addedAt-a.addedAt).slice(0,4);
@@ -2509,7 +2512,7 @@ function rHome(){
     </div>
     ${nextTrip&&(nextTrip.status==='active'||activeNow.includes(nextTrip))?`<div class="hero-next" style="cursor:pointer;margin-top:12px" onclick="go('trips');openTripD('${nextTrip.id}')"><div><div class="hero-next-name">${nextTrip.name}</div><div class="hero-next-dates">${nextTrip.startDate?fd(nextTrip.startDate)+(nextTrip.endDate?' — '+fd(nextTrip.endDate):''):''}</div></div><div style="text-align:right;flex-shrink:0"><div class="hero-next-num">🚀</div><div class="hero-next-lbl">Happening now!</div></div></div>`
     :nextTrip&&daysUntil!==null?`<div class="hero-next" style="cursor:pointer;margin-top:12px" onclick="go('trips');openTripD('${nextTrip.id}')"><div><div class="hero-next-name">${nextTrip.name}</div><div class="hero-next-dates">${fd(nextTrip.startDate)}${nextTrip.endDate?' — '+fd(nextTrip.endDate):''}</div></div><div style="text-align:right;flex-shrink:0"><div class="hero-next-num">${daysUntil>0?daysUntil:'🚀'}</div><div class="hero-next-lbl">${daysUntil>0?'days away':'now!'}</div></div></div>`
-    :allCountries.length>0?`<div class="hero-next" style="margin-top:12px"><div style="flex:1;font-size:12px;opacity:.9;line-height:1.5">Explored <strong>${allCountries.length} ${allCountries.length===1?'country':'countries'}</strong>${usStates.length?` and <strong>${usStates.length} US states</strong>`:''} together${yearsCount?' over '+yearsCount+' years':''}</div>${totalTravelDays?`<div style="text-align:right;flex-shrink:0;margin-left:10px"><div style="font-size:20px;font-weight:700;letter-spacing:-.5px;line-height:1">${totalTravelDays}</div><div style="font-size:9px;opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-top:1px">days abroad</div></div>`:''}</div>`
+    :allCountries.length>0?`<div class="hero-next" style="margin-top:12px"><div style="flex:1;font-size:12px;opacity:.9;line-height:1.5">Explored <strong>${allCountries.length} ${allCountries.length===1?'country':'countries'}</strong>${usStates.length?` and <strong>${usStates.length} US states</strong>`:''} ${partnerStr?'together':''}${yearsCount?' over '+yearsCount+' years':''}</div>${totalTravelDays?`<div style="text-align:right;flex-shrink:0;margin-left:10px">${partnerStr&&soloTravelDays>0?`<div style="font-size:11px;opacity:.75;line-height:1.4;text-align:right">${sharedTravelDays}d together<br>${soloTravelDays}d solo</div>`:`<div><div style="font-size:20px;font-weight:700;letter-spacing:-.5px;line-height:1">${totalTravelDays}</div><div style="font-size:9px;opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-top:1px">days abroad</div></div>`}</div>`:''}</div>`
     :`<div class="hero-next" style="cursor:pointer;margin-top:12px" onclick="openTrip()"><div style="font-size:12px;opacity:.9">Ready to start exploring? <strong>Add your first trip →</strong></div></div>`}
   </div>
 
@@ -2522,8 +2525,14 @@ function rHome(){
     <div class="sc" style="--accent:#4A7EBA;cursor:pointer" onclick="go('map')"><div class="si">🇺🇸</div><div class="sn">${usStates.length}<span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:1px">/50</span></div><div class="sl">US States</div></div>
   </div>
 
-  ${activeItems.length?`<div style="margin-bottom:7px;display:flex;align-items:center;justify-content:space-between"><span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px">Active</span><span style="font-size:10px;color:var(--green3);cursor:pointer;font-weight:500" onclick="go('path')">The Path →</span></div>
-  <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:13px">${activeItems.map(item=>`<div style="background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:10px 13px;display:flex;align-items:center;gap:10px;cursor:pointer;box-shadow:var(--shadow);transition:box-shadow .15s" onclick="${item.click}" onmouseover="this.style.boxShadow='var(--shadowm)'" onmouseout="this.style.boxShadow='var(--shadow)'"><div style="width:30px;height:30px;border-radius:7px;background:${item.bc}18;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">${item.icon}</div><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.label}</div><div style="font-size:10px;color:var(--muted);margin-top:1px">${item.sub}</div></div><div style="flex-shrink:0;font-size:9px;font-weight:600;padding:2px 8px;border-radius:100px;background:${item.bc}18;color:${item.bc};border:1px solid ${item.bc}30">${item.badge}</div></div>`).join('')}</div>`:''}
+  ${hasMotion?`<div style="margin-bottom:7px;display:flex;align-items:center;justify-content:space-between"><span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px">What's In Motion</span><span style="font-size:10px;color:var(--green3);cursor:pointer;font-weight:500" onclick="go('path')">The Path →</span></div>
+  <div style="background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);margin-bottom:13px">
+  ${motionNow.map(it=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 13px;cursor:pointer;border-left:3px solid ${it.bc};border-bottom:1px solid var(--bdr2)" onclick="${it.click}"><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${it.label}${it.solo?' <span style="opacity:.7;font-size:10px">🧍</span>':''}</div><div style="font-size:10px;color:#3a9e5c;margin-top:1px">🚀 Happening now · Day ${it.dayNum} of ${it.dur||'?'}</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:18px;font-weight:700;color:#3a9e5c;line-height:1">${it.dayNum}</div><div style="font-size:9px;color:var(--muted)">day</div></div></div>`).join('')}
+  ${motionNext.length?`<div style="padding:4px 13px 3px;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--bdr2)">🔒 Up Next</div>${motionNext.map(it=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 13px;cursor:pointer;border-left:3px solid ${it.bc};border-bottom:1px solid var(--bdr2)" onclick="${it.click}"><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${it.label}${it.solo?' <span style="opacity:.7;font-size:10px">🧍</span>':''}</div><div style="font-size:10px;color:var(--muted);margin-top:1px">${it.sub}</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:18px;font-weight:700;color:var(--gold);line-height:1">${it.daysUntil}</div><div style="font-size:9px;color:var(--muted)">days</div></div></div>`).join('')}`:''}
+  ${motionWorks.length?`<div style="padding:4px 13px 3px;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--bdr2)">✏️ In The Works</div>${motionWorks.map(it=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 13px;cursor:pointer;border-left:3px solid ${it.bc};border-bottom:1px solid var(--bdr2)" onclick="${it.click}"><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${it.label}${it.solo?' <span style="opacity:.7;font-size:10px">🧍</span>':''}</div><div style="font-size:10px;color:var(--muted);margin-top:1px">${it.sub}</div></div><span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:100px;background:${it.bc}18;color:${it.bc};border:1px solid ${it.bc}30;flex-shrink:0;white-space:nowrap">${it.badge}</span></div>`).join('')}`:''}
+  ${motionAdv.length?`<div style="padding:4px 13px 3px;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--bdr2)">🧭 Adventures</div>${motionAdv.map(it=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 13px;cursor:pointer;border-left:3px solid ${it.bc};border-bottom:1px solid var(--bdr2)" onclick="${it.click}"><div style="font-size:13px;flex-shrink:0">${it.icon}</div><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${it.label}</div><div style="font-size:10px;color:var(--muted);margin-top:1px">${it.sub}</div></div>${it.daysUntil!==null?`<div style="text-align:right;flex-shrink:0"><div style="font-size:16px;font-weight:700;color:var(--gold);line-height:1">${it.daysUntil}</div><div style="font-size:9px;color:var(--muted)">days</div></div>`:`<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:100px;background:${it.bc}18;color:${it.bc};border:1px solid ${it.bc}30;flex-shrink:0">${it.badge}</span>`}</div>`).join('')}`:''}
+  ${abroadActive.length?`<div style="display:flex;align-items:center;gap:10px;padding:9px 13px;cursor:pointer;border-left:3px solid #4A7EBA" onclick="go('abroad')"><div style="font-size:13px;flex-shrink:0">🌏</div><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:var(--text)">Living Abroad Research</div><div style="font-size:10px;color:var(--muted)">${abroadActive.length} ${abroadActive.length===1?'country':'countries'} in consideration</div></div><span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:100px;background:#4A7EBA18;color:#4A7EBA;border:1px solid #4A7EBA30;flex-shrink:0">Researching</span></div>`:''}
+  </div>`:''}
 
   ${pastTrips.length?`<div style="margin-bottom:7px;display:flex;align-items:center;justify-content:space-between"><span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px">Past Adventures</span><span style="font-size:10px;color:var(--green3);cursor:pointer;font-weight:500" onclick="go('trips')">All trips →</span></div>
   <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:13px">${pastTrips.slice(0,3).map(t=>{const lp=D.places.filter(p=>(p.tripIds||[]).includes(t.id)).length;const lj=D.journal.filter(j=>j.tripId===t.id).length;const d=tripDays(t);const yr=t.startDate?new Date(t.startDate).getFullYear():'';const dests=(t.destinations||[]).slice(0,3).join(', ')+(t.destinations&&t.destinations.length>3?' +'+( t.destinations.length-3):'');return`<div style="background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:10px 13px;display:flex;align-items:center;gap:10px;cursor:pointer;box-shadow:var(--shadow);transition:box-shadow .15s" onclick="go('trips');openTripD('${t.id}')" onmouseover="this.style.boxShadow='var(--shadowm)'" onmouseout="this.style.boxShadow='var(--shadow)'"><div style="width:3px;height:32px;border-radius:2px;background:linear-gradient(180deg,var(--green),var(--gold));flex-shrink:0"></div><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div><div style="font-size:10px;color:var(--muted);margin-top:1px">${yr?yr+' · ':''}${d?d+'d':''}${dests?' · '+dests:''}</div></div><div style="flex-shrink:0;text-align:right;display:flex;gap:8px;align-items:center">${lp?`<span style="font-size:10px;color:var(--muted2)">📍${lp}</span>`:''}${lj?`<span style="font-size:10px;color:var(--muted2)">📓${lj}</span>`:''}</div></div>`;}).join('')}</div>`:''}
@@ -3938,6 +3947,7 @@ function openTrip(){
   ['t-name','t-dests','t-notes'].forEach(id=>document.getElementById(id).value='');
   ['t-start','t-end','t-budget'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('t-type').value='road-trip';document.getElementById('t-status').value='planning';
+  document.getElementById('t-solo').checked=false;
   document.getElementById('tm-title').textContent='New Trip';document.getElementById('tm-save').textContent='Create Trip';
   openM('m-trip');
 }
@@ -3951,6 +3961,7 @@ function openTripEdit(id){
   document.getElementById('t-type').value=t.type||'other';
   document.getElementById('t-status').value=t.status||'planning';
   document.getElementById('t-budget').value=t.budget||'';
+  document.getElementById('t-solo').checked=!!t.solo;
   document.getElementById('t-notes').value=t.notes||'';
   document.getElementById('tm-title').textContent='Edit Trip';document.getElementById('tm-save').textContent='Save Changes';
   openM('m-trip');
@@ -3964,13 +3975,14 @@ function saveTrip(){
     ex.name=n;ex.startDate=startDate;ex.endDate=endDate;
     ex.destinations=document.getElementById('t-dests').value.split(',').map(d=>d.trim()).filter(Boolean);
     ex.type=document.getElementById('t-type').value;ex.status=document.getElementById('t-status').value;
+    ex.solo=document.getElementById('t-solo').checked||false;
     ex.budget=parseFloat(document.getElementById('t-budget').value)||null;ex.notes=document.getElementById('t-notes').value.trim();
     // Rebuild itinerary only if dates changed and itinerary was empty or not set
     if(startDate&&endDate&&!(ex.itinerary||[]).length){ex.itinerary=[];const s=new Date(startDate),e=new Date(endDate);for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1))ex.itinerary.push({date:d.toISOString().split('T')[0],stops:[]});}
     save('trips',D.trips);teid=null;closeM('m-trip');toast('✅ Trip updated!');
     if(atid===ex.id)openTripD(ex.id);else rTrips();badges();return;
   }
-  const t={id:uid(),name:n,startDate,endDate,destinations:document.getElementById('t-dests').value.split(',').map(d=>d.trim()).filter(Boolean),type:document.getElementById('t-type').value,status:document.getElementById('t-status').value,budget:parseFloat(document.getElementById('t-budget').value)||null,notes:document.getElementById('t-notes').value.trim(),itinerary:[],addedAt:Date.now()};
+  const t={id:uid(),name:n,startDate,endDate,destinations:document.getElementById('t-dests').value.split(',').map(d=>d.trim()).filter(Boolean),type:document.getElementById('t-type').value,status:document.getElementById('t-status').value,solo:document.getElementById('t-solo').checked||false,budget:parseFloat(document.getElementById('t-budget').value)||null,notes:document.getElementById('t-notes').value.trim(),itinerary:[],addedAt:Date.now()};
   if(t.startDate&&t.endDate){const s=new Date(t.startDate),e=new Date(t.endDate);for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1))t.itinerary.push({date:d.toISOString().split('T')[0],stops:[]});}
   D.trips.push(t);save('trips',D.trips);
   if(pendGraduateWishId){const w=D.wish.find(x=>x.id===pendGraduateWishId);if(w){w.tripId=t.id;w.graduated=true;save('wish',D.wish);}pendGraduateWishId=null;}
@@ -4014,7 +4026,7 @@ function rTrips(){
   // All trips passing type+search filter — sections handle stage bucketing
   const allTrips=D.trips.filter(t=>{
     if(_campNames.has(t.name.toLowerCase().trim()))return false;
-    const mt=tripTypeFilter==='all'||inferTripCat(t)===tripTypeFilter;
+    const mt=tripTypeFilter==='all'||(tripTypeFilter==='solo'?!!t.solo:inferTripCat(t)===tripTypeFilter);
     const ms=!tq||t.name.toLowerCase().includes(tq)||(t.destinations||[]).some(d=>(d||'').toLowerCase().includes(tq))||(t.notes||'').toLowerCase().includes(tq);
     return mt&&ms;
   });
@@ -4093,7 +4105,7 @@ function rTrips(){
       const dur=tripDays(t);
       return`<div class="tr" onclick="openTripD('${t.id}')">
         <div class="tr-bar" style="background:${sc}"></div>
-        <div class="tr-main"><div class="tr-name">${t.name}</div>
+        <div class="tr-main"><div class="tr-name">${t.name}${t.solo?' <span style="opacity:.65;font-size:11px">🧍</span>':''}</div>
         <div class="tr-sub">${[dests?'📍 '+dests:'',t.startDate?fd(t.startDate):'Dates TBD',dur?dur+'d':''].filter(Boolean).join(' · ')}</div></div>
         <span class="tr-badge" style="background:${sc}18;color:${sc};border:1px solid ${sc}30">${tsl(t.status)}</span>
       </div>`;
@@ -4149,7 +4161,7 @@ function rTrips(){
       const linked=D.places.filter(p=>(p.tripIds||[]).includes(t.id));
       return`<div class="tr tr-past" onclick="openTripD('${t.id}')">
         <div class="tr-bar" style="background:linear-gradient(180deg,#8a7060,#b09880)"></div>
-        <div class="tr-main"><div class="tr-name">${t.name}</div>
+        <div class="tr-main"><div class="tr-name">${t.name}${t.solo?' <span style="opacity:.6;font-size:11px">🧍</span>':''}</div>
         <div class="tr-sub">${[dests?'📍 '+dests:'',dur?dur+'d':'',linked.length?linked.length+' places':''].filter(Boolean).join(' · ')}</div></div>
         <div style="font-size:11px;color:var(--muted);flex-shrink:0">${t.startDate?fd(t.startDate):''}</div>
       </div>`;
