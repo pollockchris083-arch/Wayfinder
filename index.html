@@ -786,7 +786,6 @@ input,textarea,select{font-family:inherit;font-weight:400}
     <div id="trips-subnav" class="trips-subnav">
       <button class="ni ni-sub" data-p="trips" data-tf="all" onclick="goTrips('all')"><span class="ico">✈️</span>All Trips<span class="nb" id="b-trips">0</span></button>
       <button class="ni ni-sub" data-p="trips-intl" data-tf="international" onclick="goTrips('international')"><span class="ico">🌍</span>International</button>
-      <button class="ni ni-sub" data-p="trips-dom" data-tf="domestic" onclick="goTrips('domestic')"><span class="ico">🇺🇸</span>Domestic</button>
       <button class="ni ni-sub" data-p="trips-road" data-tf="road_trip" onclick="goTrips('road_trip')"><span class="ico">🚗</span>Road Trips</button>
       <button class="ni ni-sub" data-p="camp" onclick="go('camp')"><span class="ico">🧭</span>Adventures<span class="nb" id="b-camp">0</span></button>
       <button class="ni ni-sub" data-p="work" onclick="go('work')"><span class="ico">💼</span>Work<span class="nb" id="b-work">0</span></button>
@@ -1375,6 +1374,60 @@ input,textarea,select{font-family:inherit;font-weight:400}
     <div class="fg"><label class="fl">Thumbnail URL</label><input class="fi" id="c-thumb" type="url" placeholder="https://…/photo.jpg"/></div>
     <div class="fg" style="margin-bottom:0"><label class="fl">Notes</label><textarea class="ft" id="c-notes" placeholder="Trip overview, goals, packing reminders…" style="min-height:65px"></textarea></div>
     <div class="fa"><button class="btn-s" onclick="closeM('m-camp')">Cancel</button><button class="btn-p" id="cm-save" onclick="saveCamp()">Save</button></div>
+  </div>
+</div>
+
+<!-- STAY -->
+<div class="mo" id="m-stay">
+  <div class="modal" style="width:480px">
+    <button class="mcl" onclick="closeM('m-stay')">✕</button>
+    <h2 id="stay-modal-title">Add Stay</h2>
+    <div class="fr">
+      <div class="fg" style="flex:2"><label class="fl">Name *</label><input class="fi" id="stay-name" placeholder="e.g. Hotel Roma, Zion Campsite, Airbnb Utah"/></div>
+      <div class="fg"><label class="fl">Type</label>
+        <select class="fs" id="stay-type" onchange="document.getElementById('stay-hookups-row').style.display=['camping','rvpark','dispersed','glamping'].includes(this.value)?'block':'none'">
+          <option value="hotel">🏨 Hotel / Motel</option>
+          <option value="airbnb">🏠 Airbnb / VRBO</option>
+          <option value="rental">🏡 Vacation Rental</option>
+          <option value="hostel">🛏️ Hostel</option>
+          <option value="camping">🏕️ Campsite</option>
+          <option value="rvpark">🚐 RV Park</option>
+          <option value="dispersed">🌲 Dispersed / Boondocking</option>
+          <option value="glamping">⛺ Glamping</option>
+          <option value="friend">👥 Friend / Family</option>
+          <option value="transit">🛳️ Overnight Transit</option>
+          <option value="other">📍 Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Check-in</label><input class="fi" id="stay-checkin" type="date"/></div>
+      <div class="fg"><label class="fl">Check-out</label><input class="fi" id="stay-checkout" type="date"/></div>
+      <div class="fg"><label class="fl">Status</label>
+        <select class="fs" id="stay-status">
+          <option value="idea">💭 Idea</option>
+          <option value="planned">📋 Planned</option>
+          <option value="booked">✅ Booked</option>
+          <option value="confirmed">🔑 Confirmed</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Cost / Night ($)</label><input class="fi" id="stay-cost" type="number" placeholder="120"/></div>
+      <div class="fg"><label class="fl">Confirmation #</label><input class="fi" id="stay-conf" placeholder="ABC123"/></div>
+    </div>
+    <div class="fg"><label class="fl">Address</label><input class="fi" id="stay-address" placeholder="123 Main St, City, Country"/></div>
+    <div class="fg" id="stay-hookups-row" style="display:none">
+      <label class="fl">Hookups</label>
+      <div style="display:flex;gap:14px;margin-top:6px;flex-wrap:wrap;align-items:center">
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:var(--text2)"><input type="checkbox" id="stay-water" style="accent-color:var(--green);width:14px;height:14px"/> Water</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:var(--text2)"><input type="checkbox" id="stay-electric" style="accent-color:var(--green);width:14px;height:14px"/> Electric</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:var(--text2)"><input type="checkbox" id="stay-sewer" style="accent-color:var(--green);width:14px;height:14px"/> Sewer</label>
+        <div style="display:flex;align-items:center;gap:6px"><label style="font-size:12px;color:var(--text2)">Amps:</label><input class="fi" id="stay-amps" type="number" placeholder="30" style="width:62px;padding:4px 7px;font-size:12px"/></div>
+      </div>
+    </div>
+    <div class="fg" style="margin-bottom:0"><label class="fl">Notes</label><textarea class="ft" id="stay-notes" placeholder="Check-in time, entry code, wifi password, parking, pet policy…" style="min-height:60px"></textarea></div>
+    <div class="fa"><button class="btn-s" onclick="closeM('m-stay')">Cancel</button><button class="btn-p" onclick="saveStay()">Save Stay</button></div>
   </div>
 </div>
 
@@ -3866,6 +3919,7 @@ function openTripD(id){
   ${rTripBookings(t,stageId)}
   ${rTripActivities(t,stageId)}
   ${rTripPrep(t,stageId)}
+  ${rTripStaysSection(t)}
   ${placesSection}${journalSection}${itinerarySection}`;
 }
 function tripInsights(t,linkedPlaces,tripJournal,isDomestic,tripCountries,tripUSStates){
@@ -4221,7 +4275,7 @@ function openJournalForTrip(tid){
   document.getElementById('j-date').value=new Date().toISOString().split('T')[0];
   ['j-title','j-loc','j-body'].forEach(id=>document.getElementById(id).value='');
   const tsel=document.getElementById('j-trip');
-  tsel.innerHTML='<option value="">— Not linked —</option>'+D.trips.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  tsel.innerHTML=_jTripPickerHtml(tid);
   tsel.value=tid;
   const psel=document.getElementById('j-place');
   psel.innerHTML='<option value="">— No specific place —</option>'+
@@ -4239,7 +4293,7 @@ function openJournalForPlace(pid){
   const place=D.places.find(x=>x.id===pid);
   const linkedTripIds=place?.tripIds||[];
   const tsel=document.getElementById('j-trip');
-  tsel.innerHTML='<option value="">— Not linked —</option>'+D.trips.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  tsel.innerHTML=_jTripPickerHtml(linkedTripIds.length===1?linkedTripIds[0]:'');
   tsel.value=linkedTripIds.length===1?linkedTripIds[0]:'';
   const psel=document.getElementById('j-place');
   psel.innerHTML='<option value="">— No specific place —</option>'+
@@ -4259,7 +4313,7 @@ function openJournalEdit(id){
   document.getElementById('j-loc').value=e.loc||'';
   document.getElementById('j-body').value=e.body||'';
   const tsel=document.getElementById('j-trip');
-  tsel.innerHTML='<option value="">— Not linked —</option>'+D.trips.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  tsel.innerHTML=_jTripPickerHtml(e.tripId||'');
   tsel.value=e.tripId||'';
   const psel=document.getElementById('j-place');
   psel.innerHTML='<option value="">— No specific place —</option>'+
@@ -4460,7 +4514,7 @@ function openJournal(){
   document.getElementById('j-date').value=new Date().toISOString().split('T')[0];
   ['j-title','j-loc','j-body'].forEach(id=>document.getElementById(id).value='');
   const tsel=document.getElementById('j-trip');
-  tsel.innerHTML='<option value="">— Not linked —</option>'+D.trips.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  tsel.innerHTML=_jTripPickerHtml('');
   const psel=document.getElementById('j-place');
   psel.innerHTML='<option value="">— No specific place —</option>'+
     [...D.places].sort((a,b)=>a.name.localeCompare(b.name))
@@ -5531,6 +5585,147 @@ const ADV_TYPES={
 };
 const CAMP_TYPE_ICONS=Object.fromEntries(Object.entries(ADV_TYPES).map(([k,v])=>[k,v.icon]));
 CAMP_TYPE_ICONS.cabin='🏠';
+const STAY_TYPES={
+  hotel:{icon:'🏨',label:'Hotel / Motel'},
+  airbnb:{icon:'🏠',label:'Airbnb / VRBO'},
+  rental:{icon:'🏡',label:'Vacation Rental'},
+  hostel:{icon:'🛏️',label:'Hostel'},
+  camping:{icon:'🏕️',label:'Campsite'},
+  rvpark:{icon:'🚐',label:'RV Park'},
+  dispersed:{icon:'🌲',label:'Dispersed / Boondocking'},
+  glamping:{icon:'⛺',label:'Glamping'},
+  friend:{icon:'👥',label:'Friend / Family'},
+  transit:{icon:'🛳️',label:'Overnight Transit'},
+  other:{icon:'📍',label:'Other'},
+};
+const STAY_STATUS={
+  idea:{label:'Idea',color:'var(--muted)'},
+  planned:{label:'Planned',color:'#4A7EBA'},
+  booked:{label:'Booked',color:'#B8892A'},
+  confirmed:{label:'Confirmed',color:'var(--green3)'},
+};
+// Build the unified trip picker for memoir modal (trips + adventures + work)
+function _jTripPickerHtml(selectedId){
+  const trips=(D.trips||[]).map(t=>`<option value="${t.id}"${t.id===selectedId?' selected':''}>${t.name}</option>`).join('');
+  const adventures=(D.camps||[]).filter(c=>c.recordType!=='spot').map(c=>`<option value="${c.id}"${c.id===selectedId?' selected':''}>🧭 ${c.name}</option>`).join('');
+  const work=(D.work||[]).map(w=>`<option value="${w.id}"${w.id===selectedId?' selected':''}>💼 ${w.name||w.client||'Work Trip'}</option>`).join('');
+  let html=`<option value="">— Not linked —</option>`;
+  if(trips)html+=`<optgroup label="Trips">${trips}</optgroup>`;
+  if(adventures)html+=`<optgroup label="Adventures">${adventures}</optgroup>`;
+  if(work)html+=`<optgroup label="Work Trips">${work}</optgroup>`;
+  return html;
+}
+// ── Stays feature ────────────────────────────────────────
+function stayNights(s){
+  if(!s.checkIn||!s.checkOut)return 0;
+  return Math.max(0,Math.round((new Date(s.checkOut)-new Date(s.checkIn))/86400000));
+}
+function rTripStaysSection(t){
+  const stays=t.stays||[];
+  const totalNights=stays.reduce((n,s)=>n+stayNights(s),0);
+  const totalCost=stays.reduce((c,s)=>{
+    if(s.totalCost)return c+parseFloat(s.totalCost)||0;
+    const n=stayNights(s);return c+(s.costPerNight&&n?n*parseFloat(s.costPerNight):0);
+  },0);
+  const summary=[stays.length+' stay'+(stays.length===1?'':'s'),totalNights?totalNights+' nights':'',totalCost?'$'+totalCost.toLocaleString(undefined,{maximumFractionDigits:0}):''].filter(Boolean).join(' · ');
+  return`
+  <div class="card" style="margin-bottom:13px">
+    <div class="ch coll-toggle coll-open" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div><div class="ct">🛏️ Stays & Accommodation</div><div class="cs">${summary}</div></div>
+      <div style="display:flex;align-items:center;gap:8px"><button class="pbtn" onclick="event.stopPropagation();openStayModal('${t.id}')">+ Add</button><span class="coll-arrow">▾</span></div>
+    </div>
+    <div class="coll-body coll-open">
+      ${stays.length?stays.map(s=>{
+        const info=STAY_TYPES[s.type]||{icon:'📍',label:'Stay'};
+        const nights=stayNights(s);
+        const cost=s.totalCost?parseFloat(s.totalCost):nights&&s.costPerNight?nights*parseFloat(s.costPerNight):0;
+        const st=STAY_STATUS[s.status]||STAY_STATUS.planned;
+        const isOutdoor=['camping','rvpark','dispersed','glamping'].includes(s.type);
+        const hk=s.hookups||{};
+        const hkStr=isOutdoor?(hk.water||hk.electric||hk.sewer||hk.amps?[hk.amps?hk.amps+'A':'',hk.water?'W':'',hk.sewer?'S':''].filter(Boolean).join('/'):'No hookups'):'';
+        return`<div style="padding:10px 0;border-bottom:1px solid var(--bdr);display:flex;align-items:flex-start;gap:10px">
+          <div style="font-size:20px;flex-shrink:0;margin-top:2px">${info.icon}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
+              <div style="font-size:13px;font-weight:600;color:var(--text)">${s.name}</div>
+              <span style="font-size:9px;font-weight:600;padding:2px 8px;border-radius:10px;white-space:nowrap;flex-shrink:0;background:${st.color}22;color:${st.color};border:1px solid ${st.color}44">${st.label}</span>
+            </div>
+            <div style="font-size:11px;color:var(--muted2);margin-top:2px">${info.label}${s.checkIn?' · '+fd(s.checkIn)+(s.checkOut&&s.checkOut!==s.checkIn?' → '+fd(s.checkOut):''):''}${nights?' · '+nights+' night'+(nights!==1?'s':''):''}</div>
+            ${cost?`<div style="font-size:11px;color:var(--muted2)">💰 $${cost.toLocaleString(undefined,{maximumFractionDigits:0})}${s.costPerNight&&nights>1?' ($'+parseFloat(s.costPerNight).toFixed(0)+'/night)':''}</div>`:''}
+            ${s.confirmationCode?`<div style="font-size:11px;color:var(--muted2)">🔑 ${s.confirmationCode}</div>`:''}
+            ${s.address?`<div style="font-size:11px;color:var(--muted2)">📍 ${s.address}</div>`:''}
+            ${isOutdoor&&hkStr?`<div style="font-size:10px;color:var(--muted2);margin-top:2px">${hk.water||hk.electric||hk.sewer||hk.amps?'⚡ '+hkStr:'🌲 '+hkStr}</div>`:''}
+            ${s.notes?`<div style="font-size:11px;color:var(--text2);margin-top:4px;line-height:1.5">${s.notes.slice(0,140)}${s.notes.length>140?'…':''}</div>`:''}
+          </div>
+          <div style="display:flex;gap:3px;flex-shrink:0">
+            <button onclick="openStayModal('${t.id}','${s.id}')" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:2px 4px;border-radius:4px;line-height:1" onmouseover="this.style.color='var(--green3)'" onmouseout="this.style.color='var(--muted2)'">✏️</button>
+            <button onclick="delStay('${t.id}','${s.id}')" title="Delete" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:2px 4px;border-radius:4px;line-height:1" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
+          </div>
+        </div>`;
+      }).join(''):`<div style="font-size:12px;color:var(--muted2);padding:14px 0;text-align:center">Track hotels, Airbnbs, campsites, RV parks — any place you sleep</div>`}
+    </div>
+  </div>`;
+}
+let _stayTid=null,_staySid=null;
+function openStayModal(tid,sid){
+  D=load();
+  const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  _stayTid=tid;_staySid=sid||null;
+  const s=sid?(t.stays||[]).find(x=>x.id===sid):null;
+  document.getElementById('stay-modal-title').textContent=s?'Edit Stay':'Add Stay';
+  document.getElementById('stay-name').value=s?.name||'';
+  document.getElementById('stay-type').value=s?.type||'hotel';
+  document.getElementById('stay-checkin').value=s?.checkIn||t.startDate||'';
+  document.getElementById('stay-checkout').value=s?.checkOut||'';
+  document.getElementById('stay-status').value=s?.status||'planned';
+  document.getElementById('stay-cost').value=s?.costPerNight||'';
+  document.getElementById('stay-conf').value=s?.confirmationCode||'';
+  document.getElementById('stay-address').value=s?.address||'';
+  document.getElementById('stay-notes').value=s?.notes||'';
+  const hk=s?.hookups||{};
+  document.getElementById('stay-water').checked=!!hk.water;
+  document.getElementById('stay-electric').checked=!!hk.electric;
+  document.getElementById('stay-sewer').checked=!!hk.sewer;
+  document.getElementById('stay-amps').value=hk.amps||'';
+  const showH=['camping','rvpark','dispersed','glamping'].includes(s?.type||'hotel');
+  document.getElementById('stay-hookups-row').style.display=showH?'block':'none';
+  openM('m-stay');
+}
+function saveStay(){
+  const name=document.getElementById('stay-name').value.trim();
+  if(!name){toast('⚠️ Add a name for this stay');return;}
+  D=load();
+  const t=D.trips.find(x=>x.id===_stayTid);if(!t)return;
+  if(!t.stays)t.stays=[];
+  const type=document.getElementById('stay-type').value;
+  const isOutdoor=['camping','rvpark','dispersed','glamping'].includes(type);
+  const stay={
+    id:_staySid||uid(),
+    name,type,
+    status:document.getElementById('stay-status').value,
+    checkIn:document.getElementById('stay-checkin').value,
+    checkOut:document.getElementById('stay-checkout').value,
+    costPerNight:parseFloat(document.getElementById('stay-cost').value)||null,
+    confirmationCode:document.getElementById('stay-conf').value.trim(),
+    address:document.getElementById('stay-address').value.trim(),
+    notes:document.getElementById('stay-notes').value.trim(),
+    hookups:isOutdoor?{
+      water:document.getElementById('stay-water').checked,
+      electric:document.getElementById('stay-electric').checked,
+      sewer:document.getElementById('stay-sewer').checked,
+      amps:parseInt(document.getElementById('stay-amps').value)||null,
+    }:null,
+  };
+  if(_staySid){const i=t.stays.findIndex(x=>x.id===_staySid);if(i>=0)t.stays[i]=stay;else t.stays.push(stay);}
+  else t.stays.push(stay);
+  t.stays.sort((a,b)=>(a.checkIn||'').localeCompare(b.checkIn||''));
+  save('trips',D.trips);closeM('m-stay');toast(_staySid?'✅ Stay updated':'✅ Stay added');openTripD(_stayTid);
+}
+function delStay(tid,sid){
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
+  t.stays=(t.stays||[]).filter(x=>x.id!==sid);
+  save('trips',D.trips);toast('🗑️ Stay removed');openTripD(tid);
+}
 
 const ADV_GEAR={
   tent:['Tent + poles + stakes','Sleeping bag','Sleeping pad','Headlamp + batteries','Camp chairs','Camp table','Cooking gear + stove','Food + cooler','Fire starter','First aid kit','Insect repellent','Sunscreen','Water filter/purifier'],
@@ -6193,7 +6388,7 @@ function rAdvSummaryTab(c){
     <textarea class="ft" style="margin-top:8px;min-height:90px" placeholder="Highlights, what went well, what to change…" onblur="saveAdvNotes('${c.id}',this.value)">${c.summaryNotes||''}</textarea>
   </div>
   <div class="card">
-    <div class="ch"><div class="ct">📓 Memoirs (${linked.length})</div><button class="pbtn" onclick="openJournal()">+ Write</button></div>
+    <div class="ch"><div class="ct">📓 Memoirs (${linked.length})</div><button class="pbtn" onclick="openJournalForTrip('${c.id}')">+ Write</button></div>
     ${linked.length?linked.map(j=>journalCard(j,false)).join(''):`<div style="font-size:12px;color:var(--muted2);padding:12px 0;text-align:center">No memoirs yet</div>`}
   </div>`;
 }
