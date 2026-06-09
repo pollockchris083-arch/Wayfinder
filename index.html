@@ -797,6 +797,24 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .tt-desc{font-size:10px;color:var(--muted2);line-height:1.45}
 /* Type badge on trip rows */
 .tr-type{font-size:13px;flex-shrink:0;width:18px;text-align:center}
+/* Saved Spots */
+.spot-card{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:box-shadow .15s,transform .15s;display:flex;flex-direction:column}
+.spot-card:hover{box-shadow:var(--shadowm);transform:translateY(-2px)}
+.spot-card-thumb{width:100%;height:90px;object-fit:cover;display:block;background:linear-gradient(135deg,var(--card2),var(--bdr))}
+.spot-card-thumb-fallback{width:100%;height:90px;display:flex;align-items:center;justify-content:center;font-size:32px;background:linear-gradient(135deg,var(--card2),var(--bdr2))}
+.spot-card-body{padding:10px 11px 11px;flex:1;display:flex;flex-direction:column;gap:4px}
+.spot-card-name{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spot-cat-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:var(--card2);color:var(--text2);border:1px solid var(--bdr2)}
+.spot-secret-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(192,99,76,.12);color:#C0634C;border:1px solid rgba(192,99,76,.25)}
+.spot-gps-btn{display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--green3);background:rgba(74,114,89,.1);border:1px solid rgba(74,114,89,.25);border-radius:4px;padding:2px 7px;cursor:pointer;text-decoration:none;transition:background .15s}
+.spot-gps-btn:hover{background:rgba(74,114,89,.2)}
+.spot-cat-filter{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
+.spot-detail{padding:0}
+.spot-detail h2{font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px}
+.spot-field{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:3px}
+.spot-field-label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;margin-top:10px}
+.spot-season-chip{display:inline-block;font-size:10px;padding:2px 6px;border-radius:3px;background:var(--card2);color:var(--text2);margin:2px 2px 0 0}
+.spot-season-chip.best{background:rgba(74,114,89,.15);color:var(--green3);font-weight:600}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" crossorigin=""/>
@@ -1462,6 +1480,76 @@ input,textarea,select{font-family:inherit;font-weight:400}
     <div id="ao-skip" style="display:none;margin-top:4px">
       <button onclick="skipCloudLoad()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;padding:4px 8px">Taking too long? Load without cloud sync</button>
     </div>
+  </div>
+</div>
+
+<!-- SAVED SPOTS -->
+<div class="mo" id="m-spot">
+  <div class="modal" style="width:540px">
+    <button class="mcl" onclick="closeM('m-spot')">✕</button>
+    <h2 id="spot-modal-title" style="margin-bottom:16px">Save a Spot</h2>
+    <div class="fg"><label class="fl">Name <span style="color:#c05050">*</span></label><input class="fi" id="sp-name" placeholder="e.g. &quot;The Ledge Pool&quot;, &quot;Granite Flat Camp&quot;"/></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Category</label><select class="fs" id="sp-type">
+        <option value="campsite">🏕️ Campsite</option>
+        <option value="fishing">🎣 Fishing Spot</option>
+        <option value="hiking">🥾 Trail / Hike</option>
+        <option value="swimhole">🏊 Swim Hole</option>
+        <option value="climbing">🧗 Climbing</option>
+        <option value="ski">⛷️ Ski / Snow</option>
+        <option value="paddle">🚣 Paddle / Water</option>
+        <option value="biking">🚵 Mountain Biking</option>
+        <option value="viewpoint">🔭 Viewpoint</option>
+        <option value="nature">🌿 Nature / Wildlife</option>
+        <option value="overlanding">🛤️ Overlanding</option>
+        <option value="secret">🤫 Secret Spot</option>
+        <option value="other">📍 Other</option>
+      </select></div>
+      <div class="fg"><label class="fl">Area / Region</label><input class="fi" id="sp-area" placeholder="e.g. Sierra Nevada, Escalante"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Latitude</label><input class="fi" id="sp-lat" placeholder="37.8651" type="text" inputmode="decimal"/></div>
+      <div class="fg"><label class="fl">Longitude</label><input class="fi" id="sp-lng" placeholder="-119.5383" type="text" inputmode="decimal"/></div>
+    </div>
+    <div class="fg"><label class="fl">Direct link (Google Maps, AllTrails, Gaia, OnX…)</label><input class="fi" id="sp-link" type="url" placeholder="https://maps.google.com/…"/></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Access</label><select class="fs" id="sp-access">
+        <option value="">Unknown</option>
+        <option value="paved">🛣️ Paved road</option>
+        <option value="dirt">🪨 Dirt / gravel road</option>
+        <option value="4wd">🚙 4WD / high clearance</option>
+        <option value="hike">🥾 Hike-in only</option>
+        <option value="paddle">🚣 Paddle-in only</option>
+        <option value="permit">📋 Permit required</option>
+      </select></div>
+      <div class="fg"><label class="fl">Difficulty</label><select class="fs" id="sp-diff">
+        <option value="">Not rated</option>
+        <option value="easy">🟢 Easy</option>
+        <option value="moderate">🟡 Moderate</option>
+        <option value="hard">🟠 Hard</option>
+        <option value="expert">🔴 Expert</option>
+      </select></div>
+    </div>
+    <div class="fg"><label class="fl">Best Seasons</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px" id="sp-seasons">
+        ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map(m=>`<label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="checkbox" value="${m}" style="accent-color:var(--green);width:12px;height:12px"/>${m}</label>`).join('')}
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Date Visited</label><input class="fi" id="sp-visited-date" type="date"/></div>
+      <div class="fg"><label class="fl">Rating</label><select class="fs" id="sp-rating">
+        <option value="">Not rated</option>
+        <option value="5">★★★★★</option>
+        <option value="4">★★★★☆</option>
+        <option value="3">★★★☆☆</option>
+        <option value="2">★★☆☆☆</option>
+        <option value="1">★☆☆☆☆</option>
+      </select></div>
+    </div>
+    <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="sp-notes" placeholder="Local knowledge, conditions, what to bring, directions…" style="min-height:65px"></textarea></div>
+    <div class="fg"><label class="fl">Photo URL</label><input class="fi" id="sp-thumb" type="url" placeholder="https://…/photo.jpg"/></div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;cursor:pointer;color:var(--text2)"><input type="checkbox" id="sp-secret" style="accent-color:#C0634C;width:14px;height:14px"/><span>🤫 Secret spot — keep coordinates private</span></label>
+    <div class="fa"><button class="btn-s" onclick="closeM('m-spot')">Cancel</button><button class="btn-p" id="sp-save" onclick="saveSpot()">Save Spot</button></div>
   </div>
 </div>
 
@@ -6170,6 +6258,170 @@ function rAbroad(){
 // ══════════════════════════════════════════════
 // ADVENTURES
 // ══════════════════════════════════════════════
+// ── Saved Spots ──────────────────────────────────────────
+const SPOT_TYPES={
+  campsite:{icon:'🏕️',label:'Campsite'},
+  fishing:{icon:'🎣',label:'Fishing Spot'},
+  hiking:{icon:'🥾',label:'Trail / Hike'},
+  swimhole:{icon:'🏊',label:'Swim Hole'},
+  climbing:{icon:'🧗',label:'Climbing'},
+  ski:{icon:'⛷️',label:'Ski / Snow'},
+  paddle:{icon:'🚣',label:'Paddle / Water'},
+  biking:{icon:'🚵',label:'Mountain Biking'},
+  viewpoint:{icon:'🔭',label:'Viewpoint'},
+  nature:{icon:'🌿',label:'Nature / Wildlife'},
+  overlanding:{icon:'🛤️',label:'Overlanding'},
+  secret:{icon:'🤫',label:'Secret Spot'},
+  other:{icon:'📍',label:'Other'},
+};
+let _spotEdit=null;
+function openSpotModal(id){
+  _spotEdit=id||null;
+  const s=id?(D.camps||[]).find(x=>x.id===id):null;
+  document.getElementById('spot-modal-title').textContent=id?'Edit Spot':'Save a Spot';
+  document.getElementById('sp-save').textContent=id?'Update Spot':'Save Spot';
+  document.getElementById('sp-name').value=s?.name||'';
+  document.getElementById('sp-type').value=s?.spotType||'campsite';
+  document.getElementById('sp-area').value=s?.area||s?.location||'';
+  document.getElementById('sp-lat').value=s?.lat||'';
+  document.getElementById('sp-lng').value=s?.lng||'';
+  document.getElementById('sp-link').value=s?.spotLink||s?.mapsUrl||'';
+  document.getElementById('sp-access').value=s?.access||'';
+  document.getElementById('sp-diff').value=s?.difficulty||'';
+  document.getElementById('sp-notes').value=s?.notes||'';
+  document.getElementById('sp-thumb').value=s?.thumb||'';
+  document.getElementById('sp-visited-date').value=s?.visitedDate||'';
+  document.getElementById('sp-rating').value=s?.rating||'';
+  document.getElementById('sp-secret').checked=!!(s?.secret);
+  document.querySelectorAll('#sp-seasons input[type=checkbox]').forEach(cb=>{
+    cb.checked=!!(s?.seasons||[]).includes(cb.value);
+  });
+  openM('m-spot');
+}
+function saveSpot(){
+  const name=document.getElementById('sp-name').value.trim();
+  if(!name){toast('⚠️ Name required');return;}
+  D=load();if(!D.camps)D.camps=[];
+  const seasons=[...document.querySelectorAll('#sp-seasons input:checked')].map(cb=>cb.value);
+  const lat=document.getElementById('sp-lat').value.trim();
+  const lng=document.getElementById('sp-lng').value.trim();
+  const spotLink=document.getElementById('sp-link').value.trim();
+  const mapsUrl=lat&&lng?`https://maps.google.com/?q=${lat},${lng}`:spotLink||'';
+  const data={
+    name,recordType:'spot',
+    spotType:document.getElementById('sp-type').value,
+    area:document.getElementById('sp-area').value.trim(),
+    lat,lng,spotLink,mapsUrl,
+    access:document.getElementById('sp-access').value,
+    difficulty:document.getElementById('sp-diff').value,
+    seasons,
+    notes:document.getElementById('sp-notes').value.trim(),
+    thumb:document.getElementById('sp-thumb').value.trim(),
+    visitedDate:document.getElementById('sp-visited-date').value,
+    rating:document.getElementById('sp-rating').value,
+    secret:document.getElementById('sp-secret').checked,
+    visited:!!(document.getElementById('sp-visited-date').value),
+  };
+  if(_spotEdit){
+    const i=D.camps.findIndex(x=>x.id===_spotEdit);
+    if(i>=0)D.camps[i]={...D.camps[i],...data};
+    toast('✅ Spot updated!');
+  } else {
+    D.camps.push({id:uid(),...data,addedAt:Date.now()});
+    toast('📍 Spot saved!');
+  }
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  _spotEdit=null;closeM('m-spot');
+  window._campTab='spots';rCamp();badges();
+}
+function delSpot(id){
+  if(!confirm('Delete this spot?'))return;
+  D=load();D.camps=(D.camps||[]).filter(c=>c.id!==id);
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  toast('🗑️ Deleted');window._campTab='spots';rCamp();badges();
+}
+function _spotType(s){return s.spotType||'other';}
+function spotCard(s){
+  const st=SPOT_TYPES[_spotType(s)]||SPOT_TYPES.other;
+  const gpsLabel=s.lat&&s.lng?`${parseFloat(s.lat).toFixed(4)}, ${parseFloat(s.lng).toFixed(4)}`:'';
+  const mapsUrl=s.mapsUrl||s.spotLink||(s.lat&&s.lng?`https://maps.google.com/?q=${s.lat},${s.lng}`:'');
+  const thumb=s.thumb&&!s.secret;
+  return`<div class="spot-card" onclick="openSpotD('${s.id}')">
+    ${thumb?`<img class="spot-card-thumb" src="${s.thumb}" onerror="this.style.display='none'">`:`<div class="spot-card-thumb-fallback">${s.secret?'🤫':st.icon}</div>`}
+    <div class="spot-card-body">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
+        <div class="spot-card-name">${s.name}</div>
+        ${s.secret?`<span class="spot-secret-badge">🤫 Secret</span>`:''}
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:3px">
+        <span class="spot-cat-badge">${st.icon} ${st.label}</span>
+        ${s.visited?`<span style="font-size:9px;color:var(--green3);font-weight:700">✓ Visited</span>`:''}
+        ${s.rating?`<span style="font-size:10px;color:var(--gold2)">★ ${s.rating}</span>`:''}
+      </div>
+      ${s.area?`<div style="font-size:11px;color:var(--muted);margin-top:3px">📍 ${s.area}</div>`:''}
+      ${gpsLabel&&!s.secret?`<a class="spot-gps-btn" href="${mapsUrl}" target="_blank" onclick="event.stopPropagation()">🗺️ ${gpsLabel}</a>`:''}
+      ${s.access?`<div style="font-size:10px;color:var(--muted2);margin-top:2px">${({'paved':'🛣️ Paved','dirt':'🪨 Dirt road','4wd':'🚙 4WD req.','hike':'🥾 Hike-in','paddle':'🚣 Paddle-in','permit':'📋 Permit req.'})[s.access]||s.access}</div>`:''}
+    </div>
+  </div>`;
+}
+function openSpotD(id){
+  D=load();
+  const s=(D.camps||[]).find(x=>x.id===id);if(!s)return;
+  const st=SPOT_TYPES[_spotType(s)]||SPOT_TYPES.other;
+  const mapsUrl=s.mapsUrl||s.spotLink||(s.lat&&s.lng?`https://maps.google.com/?q=${s.lat},${s.lng}`:'');
+  const appleMapsUrl=s.lat&&s.lng?`https://maps.apple.com/?q=${s.lat},${s.lng}`:'';
+  const seasons=(s.seasons||[]);
+  const ACCESS_LABELS={paved:'🛣️ Paved road',dirt:'🪨 Dirt / gravel road','4wd':'🚙 4WD / high clearance required',hike:'🥾 Hike-in only',paddle:'🚣 Paddle-in only',permit:'📋 Permit required'};
+  const DIFF_LABELS={easy:'🟢 Easy',moderate:'🟡 Moderate',hard:'🟠 Hard',expert:'🔴 Expert'};
+  const allMonths=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('camp-in').innerHTML=`
+    <button class="td-back" onclick="window._campTab='spots';rCamp()">← Saved Spots</button>
+    <div style="margin-top:12px">
+      ${s.thumb&&!s.secret?`<img src="${s.thumb}" style="width:100%;max-height:220px;object-fit:cover;border-radius:var(--r);margin-bottom:14px" onerror="this.style.display='none'"/>`:''}
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+            <h2 style="font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.3px;margin:0">${s.secret?'🤫 ':''}${s.name}</h2>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <span class="spot-cat-badge" style="font-size:11px;padding:3px 9px">${st.icon} ${st.label}</span>
+            ${s.secret?`<span class="spot-secret-badge">🤫 Secret</span>`:''}
+            ${s.visited?`<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:rgba(74,114,89,.12);color:var(--green3)">✓ Been here${s.visitedDate?' · '+fd(s.visitedDate):''}</span>`:''}
+            ${s.rating?`<span style="font-size:12px;color:var(--gold2);font-weight:600">★ ${s.rating}/5</span>`:''}
+          </div>
+        </div>
+        <div style="display:flex;gap:5px;flex-shrink:0">
+          <button class="pbtn" onclick="openSpotModal('${s.id}')">✏️</button>
+          <button class="pbtn del" onclick="delSpot('${s.id}')">🗑️</button>
+        </div>
+      </div>
+      ${s.area?`<div style="font-size:12px;color:var(--muted);margin-bottom:10px">📍 ${s.area}</div>`:''}
+
+      ${(s.lat&&s.lng)||mapsUrl?`
+      <div class="card" style="padding:12px;margin-bottom:12px">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📡 Location</div>
+        ${s.lat&&s.lng&&!s.secret?`<div style="font-family:monospace;font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;letter-spacing:.5px">${s.lat}, ${s.lng}</div>`:''}
+        ${s.secret?`<div style="font-size:12px;color:var(--muted2);margin-bottom:8px">🤫 Coordinates hidden — secret spot</div>`:''}
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${mapsUrl?`<a href="${mapsUrl}" target="_blank" class="spot-gps-btn" style="padding:5px 11px;font-size:11px">🗺️ Google Maps</a>`:''}
+          ${appleMapsUrl&&!s.secret?`<a href="${appleMapsUrl}" target="_blank" class="spot-gps-btn" style="padding:5px 11px;font-size:11px">🍎 Apple Maps</a>`:''}
+          ${s.lat&&s.lng&&!s.secret?`<button class="spot-gps-btn" style="padding:5px 11px;font-size:11px" onclick="navigator.clipboard.writeText('${s.lat}, ${s.lng}').then(()=>toast('📋 Copied coordinates'))">📋 Copy GPS</button>`:''}
+          ${s.spotLink&&s.spotLink!==mapsUrl?`<a href="${s.spotLink}" target="_blank" class="spot-gps-btn" style="padding:5px 11px;font-size:11px">🔗 Open Link</a>`:''}
+        </div>
+      </div>`:''}
+
+      <div class="card" style="padding:12px;margin-bottom:12px">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📋 Details</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          ${s.access?`<div><div style="font-size:10px;color:var(--muted);margin-bottom:2px">Access</div><div style="font-size:12px;color:var(--text2)">${ACCESS_LABELS[s.access]||s.access}</div></div>`:''}
+          ${s.difficulty?`<div><div style="font-size:10px;color:var(--muted);margin-bottom:2px">Difficulty</div><div style="font-size:12px;color:var(--text2)">${DIFF_LABELS[s.difficulty]||s.difficulty}</div></div>`:''}
+        </div>
+        ${seasons.length?`<div style="margin-top:10px"><div style="font-size:10px;color:var(--muted);margin-bottom:5px">Best Seasons</div><div>${allMonths.map(m=>`<span class="spot-season-chip${seasons.includes(m)?' best':''}">${m}</span>`).join('')}</div></div>`:''}
+      </div>
+
+      ${s.notes?`<div class="card" style="padding:12px;margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">📝 Notes</div><div style="font-size:12px;color:var(--text2);line-height:1.7;white-space:pre-wrap">${s.notes}</div></div>`:''}
+    </div>`;
+}
 const TRIP_TYPES={
   road_trip:{icon:'🚗',label:'Road Trip',color:'#B8892A',_store:'camps',_campType:'car'},
   camping:{icon:'🏕️',label:'Camping',color:'#4A7259',_store:'camps',_campType:'tent'},
@@ -6658,7 +6910,18 @@ function rCamp(){
       body=items.length?`<div class="ga">${items.map(campCard).join('')}</div>`:`<div class="empty"><div class="empty-icon">🌲</div><h3>No past adventures yet</h3><p>Log a completed outdoor trip.</p><button class="tb-btn" onclick="openCamp()">+ Log Trip</button></div>`;
     }
   } else {
-    body=spots.length?`<div class="ga">${spots.map(campCard).join('')}</div>`:`<div class="empty"><div class="empty-icon">📍</div><h3>No saved spots yet</h3><p>Save campgrounds and locations for later.</p><button class="tb-btn" onclick="openCampSpot()">+ Add Spot</button></div>`;
+    // Saved Spots — category filter
+    const sf=window._spotCatFilter||'all';
+    const spotCatBar=`<div class="spot-cat-filter">
+      <button class="fc${sf==='all'?' on':''}" style="font-size:10px;padding:3px 9px" onclick="window._spotCatFilter='all';rCamp()">All</button>
+      ${Object.entries(SPOT_TYPES).map(([k,v])=>`<button class="fc${sf===k?' on':''}" style="font-size:10px;padding:3px 9px" onclick="window._spotCatFilter='${k}';rCamp()">${v.icon} ${v.label}</button>`).join('')}
+    </div>`;
+    const filteredSpots=sf==='all'?spots:spots.filter(s=>(s.spotType||'other')===sf);
+    if(spots.length&&!filteredSpots.length){
+      body=spotCatBar+`<div class="empty"><div class="empty-icon">${SPOT_TYPES[sf]?.icon||'📍'}</div><h3>No ${SPOT_TYPES[sf]?.label||''} spots saved</h3><button class="tb-btn" onclick="window._spotCatFilter='all';rCamp()">Show All</button></div>`;
+    } else {
+      body=spotCatBar+(filteredSpots.length?`<div class="ga">${filteredSpots.map(spotCard).join('')}</div>`:`<div class="empty"><div class="empty-icon">📍</div><h3>No saved spots yet</h3><p>Build your personal collection — campsites, fishing holes, secret spots, trailheads and more.</p><button class="tb-btn" onclick="openSpotModal()">+ Save a Spot</button></div>`);
+    }
   }
   document.getElementById('camp-in').innerHTML=tabBar+typeBar+body;
 }
@@ -6676,7 +6939,7 @@ function openCamp(rtype){
   document.getElementById('c-solo').checked=false;
   openM('m-camp');
 }
-function openCampSpot(){openCamp('spot');}
+function openCampSpot(){openSpotModal();}
 
 function openCampEdit(id){
   D=load();ceid=id;
