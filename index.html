@@ -5344,6 +5344,7 @@ function rTripPlansTab(t){
           </div>
         </div>`;
       }).join(''):`<div style="font-size:11px;color:var(--muted2);padding:5px 0">No stops yet — add meals, sights, rest stops, accommodation…</div>`}
+      <textarea class="ft" style="margin-top:6px;min-height:34px;font-size:12px" placeholder="Notes for this day…" onblur="saveDayNotes('${t.id}',${di},this.value)">${day.notes||''}</textarea>
       <button class="add-stop" onclick="openStop('${t.id}',${di})">+ Add Stop to Day ${schIdx+1}</button>
     </div>`;
   }).join('');
@@ -5372,6 +5373,11 @@ function switchTripItinTab(tid,tab){
   ['stops','plans'].forEach(v=>{const btn=document.getElementById('trip-tab-'+v);if(btn)btn.classList.toggle('on',v===tab);});
   const body=document.getElementById('trip-itin-body');
   if(body)body.innerHTML=tab==='stops'?rTripStopsTab(t):rTripPlansTab(t);
+}
+function saveDayNotes(tid,di,notes){
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t||!t.itinerary[di])return;
+  t.itinerary[di].notes=notes;
+  save('trips',D.trips);
 }
 
 // ══════════════════════════════════════════════
