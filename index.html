@@ -1038,32 +1038,36 @@ input,textarea,select{font-family:inherit;font-weight:400}
       <div style="max-width:480px">
         <div class="ss"><h3>Your Profile</h3>
           <div class="card">
-            <div class="fg"><label class="fl">Your Name</label><input class="fi" id="s-name" placeholder="Chris" oninput="setSetting('name',this.value)"/></div>
-            <div class="fg"><label class="fl">Partner's Name</label><input class="fi" id="s-partner" placeholder="Partner" oninput="setSetting('partner',this.value)"/></div>
-            <div class="fg"><label class="fl">Home City</label><input class="fi" id="s-city" placeholder="e.g. Santa Cruz, CA" oninput="setSetting('homeCity',this.value)"/><div style="font-size:10px;color:var(--muted2);margin-top:3px">Format: City, ST — used to mark your home state on the dashboard</div></div>
-            <div class="fg"><label class="fl">Traveling Together Since</label><input class="fi" id="s-since" type="number" placeholder="2020" oninput="setSetting('since',this.value)"/></div>
-            <div class="fg"><label class="fl">Living Abroad Notes</label><textarea class="ft" id="s-abroad-notes" style="min-height:70px" placeholder="Target countries, timeline, visa research…" oninput="setSetting('abroadNotes',this.value)"></textarea></div>
+            <div class="fg"><label class="fl">Your Name</label><input class="fi" id="s-name" placeholder="Chris"/></div>
+            <div class="fg"><label class="fl">Partner's Name</label><input class="fi" id="s-partner" placeholder="Partner"/></div>
+            <div class="fg"><label class="fl">Home City</label><input class="fi" id="s-city" placeholder="e.g. Santa Cruz, CA"/><div style="font-size:10px;color:var(--muted2);margin-top:3px">Format: City, ST — used to mark your home state on the dashboard</div></div>
+            <div class="fg"><label class="fl">Traveling Together Since</label><input class="fi" id="s-since" type="number" placeholder="2020"/></div>
+            <div class="fg"><label class="fl">Living Abroad Notes</label><textarea class="ft" id="s-abroad-notes" style="min-height:70px" placeholder="Target countries, timeline, visa research…"></textarea></div>
             <div class="fg">
               <label class="fl">Claude API Key <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(for AI features on the web)</span></label>
-              <input class="fi" id="s-apikey" type="password" placeholder="sk-ant-api03-…" oninput="setSetting('apiKey',this.value)" autocomplete="off"/>
+              <input class="fi" id="s-apikey" type="password" placeholder="sk-ant-api03-…" autocomplete="off"/>
               <div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.6">Get a free key at <a href="https://console.anthropic.com" target="_blank" style="color:var(--green)">console.anthropic.com</a>. Only needed when using Wayfinder outside of Cowork. Stored locally in your browser only.</div>
             </div>
             <div class="fg">
               <label class="fl">Google Maps API Key <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(for World Map)</span></label>
-              <input class="fi" id="s-maps-api-key" type="password" placeholder="AIza…" oninput="setSetting('mapsApiKey',this.value)" autocomplete="off"/>
+              <input class="fi" id="s-maps-api-key" type="password" placeholder="AIza…" autocomplete="off"/>
               <div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.6"><a href="https://console.cloud.google.com" target="_blank" style="color:var(--green)">Google Cloud Console</a> → Enable <em>Maps JavaScript API</em> → Credentials → Create API Key → restrict to your site → paste here. Stored locally only.</div>
             </div>
             <div class="fg">
               <label class="fl">Google Client ID <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(for Google Drive import)</span></label>
-              <input class="fi" id="s-google-client-id" placeholder="….apps.googleusercontent.com" oninput="setSetting('googleClientId',this.value)" autocomplete="off"/>
+              <input class="fi" id="s-google-client-id" placeholder="….apps.googleusercontent.com" autocomplete="off"/>
               <div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.6">
                 <strong>Setup:</strong> <a href="https://console.cloud.google.com" target="_blank" style="color:var(--green)">Google Cloud Console</a> → Create project → Enable <em>Google Drive API</em> + <em>Google Picker API</em> → Credentials → Create OAuth 2.0 Client ID (Web app) → add your site URL to Authorized JavaScript Origins → copy the Client ID here.
               </div>
             </div>
-            <div class="fg" style="margin-bottom:0">
+            <div class="fg">
               <label class="fl">Travel Folder <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(Google Drive — optional)</span></label>
-              <input class="fi" id="s-drive-folder" placeholder="https://drive.google.com/drive/folders/…" oninput="setSetting('driveFolderId',this.value)" autocomplete="off"/>
+              <input class="fi" id="s-drive-folder" placeholder="https://drive.google.com/drive/folders/…" autocomplete="off"/>
               <div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.6">Paste the URL of your <strong>09--TRAVEL & EXPERIENCES</strong> folder. The Drive picker will open there directly instead of My Drive root.</div>
+            </div>
+            <div style="padding-top:14px;border-top:1px solid var(--bdr);display:flex;align-items:center;gap:12px;margin-top:4px">
+              <button id="s-profile-save" class="btn-p" onclick="saveProfileSettings()" style="padding:9px 22px">Save Changes</button>
+              <span id="s-profile-msg" style="font-size:12px;display:none"></span>
             </div>
           </div>
         </div>
@@ -8955,6 +8959,22 @@ function pipeDelCustom(id){
 // SETTINGS
 // ══════════════════════════════════════════════
 function setSetting(k,v){D.settings[k]=v;save('settings',D.settings);if(k==='name'){document.getElementById('pn').textContent=v||'You';document.getElementById('av').textContent=(v||'Y')[0].toUpperCase()}}
+function saveProfileSettings(){
+  const btn=document.getElementById('s-profile-save');
+  const msg=document.getElementById('s-profile-msg');
+  try{
+    [['name','s-name'],['partner','s-partner'],['homeCity','s-city'],['since','s-since'],
+     ['abroadNotes','s-abroad-notes'],['apiKey','s-apikey'],['mapsApiKey','s-maps-api-key'],
+     ['googleClientId','s-google-client-id'],['driveFolderId','s-drive-folder']
+    ].forEach(([k,id])=>{const el=document.getElementById(id);if(el)setSetting(k,el.value.trim());});
+    rHome();
+    if(btn){btn.textContent='Saved ✓';btn.style.background='var(--green2)';setTimeout(()=>{btn.textContent='Save Changes';btn.style.background='';},2200);}
+    if(msg){msg.textContent='';msg.style.display='none';}
+  }catch(e){
+    if(btn){btn.textContent='Save Changes';btn.style.background='';}
+    if(msg){msg.textContent='Save failed — try again';msg.style.color='#b05050';msg.style.display='';setTimeout(()=>{msg.style.display='none';},4000);}
+  }
+}
 function loadSettings(){D=load();const s=D.settings;document.getElementById('s-name').value=s.name||'';document.getElementById('s-partner').value=s.partner||'';document.getElementById('s-city').value=s.homeCity||'';document.getElementById('s-since').value=s.since||'';document.getElementById('s-apikey').value=s.apiKey||'';document.getElementById('s-maps-api-key').value=s.mapsApiKey||'';document.getElementById('s-google-client-id').value=s.googleClientId||'';document.getElementById('s-drive-folder').value=s.driveFolderId||'';document.getElementById('s-abroad-notes').value=s.abroadNotes||'';document.getElementById('pn').textContent=s.name||'You';document.getElementById('av').textContent=(s.name||'Y')[0].toUpperCase();const pl=document.getElementById('pl-partner');if(pl)pl.textContent=s.partner?'& '+s.partner:'';const wbtn=document.getElementById('s-work-stats-btn');if(wbtn){wbtn.textContent=s.workIncludeInStats?'ON':'OFF';wbtn.style.background=s.workIncludeInStats?'var(--green)':'var(--card3)';wbtn.style.color=s.workIncludeInStats?'#fff':'var(--text2)';}
 const advTBtn=document.getElementById('s-adv-trips-btn');if(advTBtn){const on=s.tripsShowAdventures!==false;advTBtn.textContent=on?'ON':'OFF';advTBtn.style.background=on?'var(--green)':'var(--card3)';advTBtn.style.color=on?'#fff':'var(--text2)';}
 const wkTBtn=document.getElementById('s-work-trips-btn');if(wkTBtn){wkTBtn.textContent=s.tripsShowWork?'ON':'OFF';wkTBtn.style.background=s.tripsShowWork?'var(--green)':'var(--card3)';wkTBtn.style.color=s.tripsShowWork?'#fff':'var(--text2)';}
