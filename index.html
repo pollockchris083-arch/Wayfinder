@@ -777,18 +777,24 @@ input,textarea,select{font-family:inherit;font-weight:400}
 [data-drag-day]{transition:opacity .18s,transform .12s}
 [data-drag-day].day-dragging{opacity:.45;transform:scale(.98)}
 [data-drag-day].day-drag-over{outline:2px dashed var(--plans-accent,#C8901E);outline-offset:3px;border-radius:8px;background:rgba(239,159,39,.04)}
-.day-drag-handle{display:flex;align-items:center;justify-content:center;width:26px;min-height:44px;cursor:grab;color:var(--plans-accent,#C8901E);font-size:18px;user-select:none;flex-shrink:0;opacity:.55;transition:opacity .15s;touch-action:none;-webkit-touch-callout:none}
-.day-drag-handle:hover{opacity:1;cursor:grabbing}
+.day-drag-handle{display:flex;align-items:center;justify-content:center;width:28px;min-height:44px;cursor:grab;color:var(--muted2);font-size:16px;user-select:none;flex-shrink:0;opacity:.7;transition:opacity .15s,color .15s;touch-action:none;-webkit-touch-callout:none}
+.day-drag-handle:hover{opacity:1;color:var(--plans-accent,#C8901E);cursor:grabbing}
 [data-drag-stop]{transition:background .1s}
 [data-drag-stop].stop-dragging{opacity:.38}
-[data-drag-stop].stop-drag-over{background:rgba(239,159,39,.08)!important;outline:1.5px dashed var(--plans-accent,#C8901E);outline-offset:-1px;border-radius:5px}
-.stop-drag-handle{display:flex;align-items:center;justify-content:center;width:20px;min-height:44px;cursor:grab;color:var(--plans-accent,#C8901E);font-size:15px;user-select:none;flex-shrink:0;opacity:.5;transition:opacity .15s;touch-action:none;-webkit-touch-callout:none}
-.stop-drag-handle:hover{opacity:1;cursor:grabbing}
-[data-day-drop-zone].stop-drag-over-day{outline:2px dashed var(--plans-accent,#C8901E);outline-offset:2px;border-radius:6px;background:rgba(239,159,39,.05)}
+[data-drag-stop].stop-drag-over{background:rgba(200,144,30,.08)!important;outline:1.5px dashed var(--plans-accent,#C8901E);outline-offset:-1px;border-radius:5px}
+.stop-drag-handle{display:flex;align-items:center;justify-content:center;width:22px;min-height:44px;cursor:grab;color:var(--muted2);font-size:14px;user-select:none;flex-shrink:0;opacity:.65;transition:opacity .15s,color .15s;touch-action:none;-webkit-touch-callout:none}
+.stop-drag-handle:hover{opacity:1;color:var(--plans-accent,#C8901E);cursor:grabbing}
+[data-day-drop-zone]{min-height:16px;transition:background .15s,outline .15s}
+[data-day-drop-zone].stop-drag-over-day{outline:2px dashed var(--plans-accent,#C8901E);outline-offset:4px;border-radius:6px;background:rgba(200,144,30,.06)}
 .plans-day-hdr{display:flex;align-items:center;padding:4px 8px;background:var(--card2);border-radius:6px;margin-bottom:4px;gap:4px}
 .plans-day-title{flex:1;font-size:12px;font-weight:600;color:var(--text);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .plans-day-acts{display:flex;align-items:center;gap:1px;opacity:0;transition:opacity .15s;flex-shrink:0}
 .plans-day-hdr:hover .plans-day-acts,.plans-day-hdr.acts-vis .plans-day-acts{opacity:1}
+.stop-move-btn{background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted2);padding:2px 5px;border-radius:4px;line-height:1;transition:color .15s,background .15s;font-family:inherit;white-space:nowrap}
+.stop-move-btn:hover{background:var(--card2);color:var(--amber)}
+.stop-day-menu{position:fixed;z-index:600;background:var(--card);border:1px solid var(--bdr2);border-radius:8px;box-shadow:var(--shadowm);padding:6px;min-width:160px;max-width:220px}
+.stop-day-menu button{display:block;width:100%;text-align:left;background:none;border:none;padding:7px 10px;font-size:12px;color:var(--text2);cursor:pointer;border-radius:5px;font-family:inherit;transition:background .12s}
+.stop-day-menu button:hover{background:var(--card2);color:var(--text)}
 .plans-day-act{min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);border-radius:6px;padding:0;transition:all .15s;line-height:1;font-family:inherit;text-decoration:none;position:relative}
 .plans-day-act:hover{background:var(--card3);color:var(--text)}
 .plans-day-act.del:hover{color:#c05050}
@@ -5536,10 +5542,54 @@ function _rPlanStop(rt,id,di,si,s,accentColor){
     </div>
     <div style="display:flex;gap:2px;flex-shrink:0;align-items:center">
       ${s.mapsUrl?`<a href="${s.mapsUrl}" target="_blank" class="wp-nav" title="Navigate">🗺️</a>`:''}
+      <button class="stop-move-btn" onclick="event.stopPropagation();moveStopToDay(event,'${rt}','${id}',${di},${si})" title="Move to another day">↕ Day</button>
       <button onclick="${editFn}" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:2px 4px;border-radius:4px;line-height:1;transition:color .15s" onmouseover="this.style.color='var(--green3)'" onmouseout="this.style.color='var(--muted2)'">✏️</button>
       <button onclick="${delFn}" title="Remove" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:2px 4px;border-radius:4px;line-height:1;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
     </div>
   </div>`;
+}
+function moveStopToDay(e,rt,id,fromDi,si){
+  document.querySelectorAll('.stop-day-menu').forEach(m=>m.remove());
+  D=load();
+  const obj=rt==='camp'?(D.camps||[]).find(x=>x.id===id):D.trips.find(x=>x.id===id);
+  if(!obj)return;
+  const itin=obj.itinerary||[];
+  const scheduled=itin.map((d,i)=>({i,date:d.date,label:d.date?'Day '+(itin.filter(x=>x.date).indexOf(d)+1)+' — '+fd(d.date):'Unscheduled'}));
+  const menu=document.createElement('div');menu.className='stop-day-menu';
+  const rect=e.target.getBoundingClientRect();
+  menu.style.left=Math.min(rect.left,window.innerWidth-230)+'px';
+  menu.style.top=Math.min(rect.bottom+4,window.innerHeight-280)+'px';
+  const title=document.createElement('div');title.style.cssText='font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.8px;padding:4px 10px 8px';title.textContent='Move to day';menu.appendChild(title);
+  scheduled.forEach(d=>{
+    if(d.i===fromDi)return;
+    const btn=document.createElement('button');
+    btn.textContent=d.label;
+    btn.onclick=()=>{doMoveStopToDay(rt,id,fromDi,si,d.i);menu.remove();};
+    menu.appendChild(btn);
+  });
+  if(fromDi>=0){const uBtn=document.createElement('button');uBtn.textContent='📋 Unscheduled';uBtn.onclick=()=>{doMoveStopToDay(rt,id,fromDi,si,-1);menu.remove();};menu.appendChild(uBtn);}
+  if(menu.children.length<=1){toast('No other days to move to');return;}
+  document.body.appendChild(menu);
+  setTimeout(()=>document.addEventListener('click',function h(){menu.remove();document.removeEventListener('click',h);}),30);
+}
+function doMoveStopToDay(rt,id,fromDi,si,toDi){
+  D=load();
+  const obj=rt==='camp'?(D.camps||[]).find(x=>x.id===id):D.trips.find(x=>x.id===id);
+  if(!obj)return;
+  const itin=obj.itinerary||[];
+  const fromStops=itin[fromDi]?.stops||[];
+  const stop=fromStops.splice(si,1)[0];if(!stop)return;
+  if(toDi<0){
+    let unsched=itin.find(d=>!d.date);
+    if(!unsched){unsched={date:'',notes:'',stops:[]};itin.push(unsched);}
+    unsched.stops.push(stop);
+  }else{
+    if(!itin[toDi].stops)itin[toDi].stops=[];
+    itin[toDi].stops.push(stop);
+  }
+  if(rt==='camp'){localStorage.setItem('wf_camps',JSON.stringify(D.camps));window._campDTab='daily';openCampD(id);}
+  else{save('trips',D.trips);switchTripItinTab(id,'plans');}
+  toast('↕ Stop moved');
 }
 function rTripPlansTab(t){
   const itin=t.itinerary||[];
@@ -7766,9 +7816,18 @@ function rAdvOverviewTab(c){
       ${travelers.length?travelers.map((t,i)=>`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--bdr);border-radius:20px;padding:4px 10px;font-size:12px;color:var(--text)">${t}<button onclick="removeAdvTraveler('${c.id}',${i})" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:0;line-height:1;margin-left:2px">×</button></span>`).join(''):`<span style="font-size:12px;color:var(--muted2)">No travelers added yet</span>`}
     </div>
   </div>
+  ${rTripStaysSection(c)}
+  ${showRig?rTripFuelSection(c):''}
   ${showRig?`
-  <div class="card" style="margin-bottom:12px">
-    <div class="ch"><div class="ct">🚐 Rig Info</div></div>
+  <div class="card" style="margin-bottom:12px;border-top:3px solid var(--earth)">
+    <div class="ch coll-toggle${rig.name||rig.mpg||rig.length?'':' coll-open'}" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
+      <div>
+        <div class="ct">🚐 Rig Info</div>
+        <div class="cs">${[rig.name,rig.type,rig.length?rig.length+'ft':null,rig.mpg?rig.mpg+' mpg':null].filter(Boolean).join(' · ')||'Tap to add your rig details'}</div>
+      </div>
+      <span class="coll-arrow">▾</span>
+    </div>
+    <div class="coll-body${rig.name||rig.mpg||rig.length?'':' coll-open'}">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
       <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Rig Name</label>
         <input class="fi" style="margin-top:3px" value="${rig.name||''}" placeholder="e.g. Big Red" onblur="saveAdvRig('${c.id}','name',this.value)"/></div>
@@ -7800,9 +7859,8 @@ function rAdvOverviewTab(c){
       <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Black Tank (gal)</label>
         <input class="fi" style="margin-top:3px" type="number" value="${rig.blackTank||''}" onblur="saveAdvRig('${c.id}','blackTank',this.value)"/></div>
     </div>
-  </div>`:''}
-  ${rTripStaysSection(c)}
-  ${showRig?rTripFuelSection(c):''}`;
+    </div>
+  </div>`:''}`;
 }
 function saveAdvField(cid,field,value){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
@@ -7836,7 +7894,8 @@ function rAdvBudgetTab(c){
   const stops=c.stops||[];
   const rig=c.rig||{};
   const totalMiles=stops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
-  const fuelEst=(rig.mpg&&totalMiles&&c.fuelPrice)?Math.round(totalMiles/parseFloat(rig.mpg)*parseFloat(c.fuelPrice)):0;
+  const effectiveMiles=totalMiles||(parseFloat(c.estTripMiles)||0);
+  const fuelEst=(rig.mpg&&effectiveMiles&&c.fuelPrice)?Math.round(effectiveMiles/parseFloat(rig.mpg)*parseFloat(c.fuelPrice)):0;
   const includeFuel=!!c.includeFuelInBudget&&fuelEst>0;
   const totalSpent=expensesTotal+(includeFuel?fuelEst:0);
   const pct=budget?Math.min(100,Math.round(totalSpent/budget*100)):0;
@@ -7855,25 +7914,45 @@ function rAdvBudgetTab(c){
     ${budget?`<div style="margin-top:10px;background:var(--card2);border-radius:4px;height:8px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct>90?'#c05050':pct>70?'#B8892A':'var(--green3)'};border-radius:4px;transition:width .3s"></div></div>
     <div style="font-size:11px;color:var(--muted2);margin-top:4px">${pct}% spent · $${Math.max(0,budget-totalSpent).toFixed(0)} remaining${includeFuel?' (incl. est. fuel)':''}</div>`:''}
   </div>
-  ${rig.mpg&&totalMiles?`
-  <div class="card" style="margin-bottom:12px">
-    <div class="ch"><div class="ct">⛽ Fuel Calculator</div></div>
+  ${rig.mpg?`
+  <div class="card" style="margin-bottom:12px;border-top:3px solid var(--amber)">
+    <div class="ch"><div class="ct">⛽ Fuel Calculator</div><div class="cs">${rig.mpg} mpg · ${effectiveMiles?effectiveMiles.toFixed(0)+' mi':'set miles below'}</div></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
       <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Gas Price ($/gal)</label>
         <input class="fi" style="margin-top:3px" type="number" step="0.01" id="fuel-price-${c.id}" value="${c.fuelPrice||''}" placeholder="e.g. 4.25" oninput="updateFuelCalc('${c.id}')"/></div>
-      <div style="padding-top:14px"><div style="font-size:11px;color:var(--muted2)">Route miles: ${totalMiles.toFixed(0)}</div>
-        <div style="font-size:11px;color:var(--muted2)">Rig MPG: ${rig.mpg}</div>
-        <div id="fuel-est-${c.id}" style="font-size:14px;font-weight:600;color:var(--green3);margin-top:4px">${c.fuelPrice&&rig.mpg?'~$'+(totalMiles/rig.mpg*c.fuelPrice).toFixed(0)+' est. fuel':''}</div>
+      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Est. Trip Miles${totalMiles?` <span style="color:var(--green3)">(auto)</span>`:''}</label>
+        <input class="fi" style="margin-top:3px" type="number" id="est-miles-${c.id}" value="${totalMiles||c.estTripMiles||''}" placeholder="e.g. 350" ${totalMiles?'readonly style="margin-top:3px;opacity:.65"':''} oninput="updateFuelCalc('${c.id}')"/></div>
+    </div>
+    ${effectiveMiles&&rig.mpg?`
+    <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+      <div style="background:var(--card2);border-radius:7px;padding:8px 6px">
+        <div style="font-size:15px;font-weight:700;color:var(--amber)">${(effectiveMiles/parseFloat(rig.mpg)).toFixed(1)}</div>
+        <div style="font-size:10px;color:var(--muted2);margin-top:2px">Gallons needed</div>
+      </div>
+      <div style="background:var(--card2);border-radius:7px;padding:8px 6px">
+        <div style="font-size:15px;font-weight:700;color:var(--amber)">${Math.ceil(effectiveMiles/parseFloat(rig.mpg)/18)}</div>
+        <div style="font-size:10px;color:var(--muted2);margin-top:2px">Fill-ups (~18 gal)</div>
+      </div>
+      <div style="background:var(--card2);border-radius:7px;padding:8px 6px">
+        <div id="fuel-est-${c.id}" style="font-size:15px;font-weight:700;color:var(--green3)">${c.fuelPrice?'$'+(effectiveMiles/parseFloat(rig.mpg)*parseFloat(c.fuelPrice)).toFixed(0):'—'}</div>
+        <div style="font-size:10px;color:var(--muted2);margin-top:2px">Est. fuel cost</div>
       </div>
     </div>
+    <div style="margin-top:8px;padding:8px 10px;background:rgba(200,144,30,.07);border-radius:6px;border-left:3px solid var(--amber)">
+      <div style="font-size:11px;color:var(--text2);line-height:1.5">⛽ <strong>Before you leave:</strong> Top off the tank. At ${rig.mpg} MPG you'll need ~${(effectiveMiles/parseFloat(rig.mpg)).toFixed(0)} gal total — plan to fill up ${Math.ceil(effectiveMiles/parseFloat(rig.mpg)/18)===1?'once on the road':'every ~${Math.round(parseFloat(rig.mpg)*18)} miles'}.</div>
+    </div>`:
+    `<div style="margin-top:8px;font-size:11px;color:var(--muted2);padding:6px 0">Enter trip miles above (or add per-stop distances in Daily tab) to see fuel estimate.</div>`}
     <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr2);display:flex;align-items:center;gap:8px">
       <label style="display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none">
         <input type="checkbox" id="fuel-in-budget-${c.id}" ${c.includeFuelInBudget?'checked':''} style="width:15px;height:15px;cursor:pointer;accent-color:var(--green3)" onchange="toggleFuelInBudget('${c.id}',this.checked)">
-        <span style="font-size:12px;color:var(--text2)">Include fuel estimate in budget total</span>
+        <span style="font-size:12px;color:var(--text2)">Include fuel estimate in budget</span>
       </label>
-      ${c.includeFuelInBudget&&fuelEst?`<span style="font-size:11px;color:var(--green3);font-weight:600;margin-left:auto">+$${fuelEst}</span>`:''}
+      ${c.includeFuelInBudget&&fuelEst?`<span style="font-size:11px;color:var(--green3);font-weight:700;margin-left:auto">+$${fuelEst} counted</span>`:`<span style="font-size:11px;color:var(--muted2);margin-left:auto">off — not in budget</span>`}
     </div>
-  </div>`:''}
+  </div>`:`
+  <div class="card" style="margin-bottom:12px;border:1px dashed var(--bdr2)">
+    <div style="padding:10px;text-align:center;font-size:12px;color:var(--muted2)">⛽ Add your rig's MPG in <strong>Rig Info</strong> below to enable fuel calculations</div>
+  </div>`}
   <div class="card" style="margin-bottom:12px">
     <div class="ch"><div class="ct">📊 By Category</div></div>
     <div style="margin-top:10px">
@@ -7900,14 +7979,17 @@ function rAdvBudgetTab(c){
 }
 function updateFuelCalc(cid){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
-  const priceEl=document.getElementById('fuel-price-'+cid);const estEl=document.getElementById('fuel-est-'+cid);
-  if(!priceEl||!estEl)return;
-  const price=parseFloat(priceEl.value)||0;
+  const priceEl=document.getElementById('fuel-price-'+cid);const milesEl=document.getElementById('est-miles-'+cid);
+  const price=parseFloat(priceEl?.value)||0;
   const mpg=parseFloat((c.rig||{}).mpg)||0;
-  const miles=(c.stops||[]).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
-  c.fuelPrice=price||undefined;
+  const stopMiles=(c.stops||[]).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  const manualMiles=milesEl&&!milesEl.readOnly?parseFloat(milesEl.value)||0:0;
+  const miles=stopMiles||manualMiles;
+  if(price)c.fuelPrice=price;
+  if(manualMiles&&!stopMiles)c.estTripMiles=manualMiles;
   localStorage.setItem('wf_camps',JSON.stringify(D.camps));
-  estEl.textContent=price&&mpg&&miles?'~$'+(miles/mpg*price).toFixed(0)+' est. fuel':'';
+  const estEl=document.getElementById('fuel-est-'+cid);
+  if(estEl)estEl.textContent=price&&mpg&&miles?'$'+(miles/mpg*price).toFixed(0):'—';
   if(c.includeFuelInBudget){window._campDTab='budget';openCampD(cid);}
 }
 function toggleFuelInBudget(cid,val){
