@@ -2670,18 +2670,19 @@ function rHome(){
   const nextTrip=(nextTripOnly&&nextAdv)?(new Date(nextTripOnly.startDate||0)<=new Date(nextAdv.startDate||0)?nextTripOnly:Object.assign({},nextAdv,{_isAdv:true})):(nextTripOnly||( nextAdv?Object.assign({},nextAdv,{_isAdv:true}):null));
   const daysUntil=nextTrip&&nextTrip.status!=='active'&&nextTrip.startDate?Math.ceil((new Date(nextTrip.startDate)-today)/86400000):null;
 
-  // Geography — combine places + trip destinations for country count
+  // Geography — countries ONLY from visited places that are linked to real trips
   // isUS covers: country='United States'/'US'/'USA', usState set, or country field holds a state name
   const isUS=p=>normCountry(p.country)==='United States'||!!p.usState||US_STATES.includes(p.country);
-  const placesCountries=[...new Set(vis.filter(p=>!isUS(p)).map(p=>normCountry(p.country)).filter(Boolean))];
-  const destCountries=new Set();
-  cleanTrips.filter(t=>t.status==='past').forEach(t=>(t.destinations||[]).forEach(d=>{const c=normCountry(d);if(c&&c!=='United States')destCountries.add(c);}));
-  const allCountries=[...new Set([...placesCountries,...destCountries])].sort();
+  // Real trips: not dream/research, and has at least one saved place linked to it
+  const realTripIds=new Set(D.trips.filter(t=>t.status!=='dream'&&t.status!=='research').map(t=>t.id).filter(id=>D.places.some(p=>(p.tripIds||[]).includes(id))));
+  // Countries only from visited places linked to real trips — no phantoms from orphaned places or trip-only destinations
+  const allCountries=[...new Set(vis.filter(p=>!isUS(p)&&(p.tripIds||[]).some(tid=>realTripIds.has(tid))).map(p=>normCountry(p.country)).filter(Boolean))].sort();
   console.log('[Wayfinder] Countries visited ('+allCountries.length+'):', allCountries);
   // Include states from Adventures stops
   const advStopStates=(D.camps||[]).filter(c=>c.recordType!=='spot').flatMap(c=>(c.stops||[]).map(s=>s.state).filter(Boolean));
   const usStates=[...new Set([...vis.filter(p=>isUS(p)).map(p=>p.usState||(US_STATES.includes(p.country)?p.country:null)).filter(Boolean),...(D.camps||[]).filter(c=>c.recordType!=='spot').map(c=>c.state).filter(Boolean),...advStopStates])].sort();
-  const continents=[...new Set(allCountries.map(c=>Object.entries(CONTINENTS).find(([,v])=>v.includes(c))?.[0]).filter(Boolean))];
+  // Continents: from international countries + North America if user has any US visits
+  const continents=[...new Set([...allCountries.map(c=>Object.entries(CONTINENTS).find(([,v])=>v.includes(c))?.[0]).filter(Boolean),...(usStates.length?['North America']:[])])];
   const homeState=getHomeState();
 
   // Estimated total miles (rough: international base + per-day in-country)
@@ -2991,7 +2992,7 @@ function toggleDossierWish(name,type){
 // MAP
 // ══════════════════════════════════════════════
 const US_STATES=['Alabama','Alaska','Arizona','Arkansas','California','Colorado','Connecticut','Delaware','Florida','Georgia','Hawaii','Idaho','Illinois','Indiana','Iowa','Kansas','Kentucky','Louisiana','Maine','Maryland','Massachusetts','Michigan','Minnesota','Mississippi','Missouri','Montana','Nebraska','Nevada','New Hampshire','New Jersey','New Mexico','New York','North Carolina','North Dakota','Ohio','Oklahoma','Oregon','Pennsylvania','Rhode Island','South Carolina','South Dakota','Tennessee','Texas','Utah','Vermont','Virginia','Washington','West Virginia','Wisconsin','Wyoming'];
-const CONTINENTS={'North America':['United States','Canada','Mexico','Cuba','Costa Rica','Panama','Guatemala','Honduras','Jamaica','Dominican Republic','Belize','El Salvador','Nicaragua'],'South America':['Brazil','Argentina','Peru','Colombia','Chile','Ecuador','Bolivia','Uruguay','Venezuela','Paraguay'],'Europe':['France','Italy','Spain','Germany','United Kingdom','Portugal','Greece','Switzerland','Austria','Netherlands','Belgium','Sweden','Norway','Denmark','Finland','Iceland','Ireland','Poland','Czech Republic','Hungary','Croatia','Slovenia','Romania','Bulgaria','Serbia','Montenegro','Albania','Estonia','Latvia','Lithuania','Malta','Cyprus','Luxembourg','Bosnia','Bosnia and Herzegovina','Liechtenstein','Slovakia','Moldova','Kosovo','Macedonia','Andorra','San Marino','Monaco'],'Asia':['Japan','Thailand','Vietnam','Indonesia','Philippines','Singapore','Malaysia','Cambodia','Myanmar','Laos','South Korea','China','Taiwan','Hong Kong','India','Nepal','Sri Lanka','Maldives','Bangladesh','Bhutan'],'Middle East':['Turkey','Israel','Jordan','United Arab Emirates','Oman','Qatar','Bahrain','Kuwait','Saudi Arabia','Lebanon','Egypt','Morocco','Tunisia','Algeria'],'Africa':['South Africa','Kenya','Tanzania','Ethiopia','Ghana','Rwanda','Uganda','Namibia','Botswana','Zimbabwe','Senegal','Madagascar','Morocco'],'Oceania':['Australia','New Zealand','Fiji','French Polynesia']};
+const CONTINENTS={'North America':['United States','Canada','Mexico','Cuba','Costa Rica','Panama','Guatemala','Honduras','Jamaica','Dominican Republic','Belize','El Salvador','Nicaragua'],'South America':['Brazil','Argentina','Peru','Colombia','Chile','Ecuador','Bolivia','Uruguay','Venezuela','Paraguay'],'Europe':['France','Italy','Spain','Germany','United Kingdom','Portugal','Greece','Switzerland','Austria','Netherlands','Belgium','Sweden','Norway','Denmark','Finland','Iceland','Ireland','Poland','Czech Republic','Hungary','Croatia','Slovenia','Romania','Bulgaria','Serbia','Montenegro','Albania','Estonia','Latvia','Lithuania','Malta','Cyprus','Luxembourg','Bosnia','Bosnia and Herzegovina','Liechtenstein','Slovakia','Moldova','Kosovo','Macedonia','North Macedonia','Andorra','San Marino','Monaco'],'Asia':['Japan','Thailand','Vietnam','Indonesia','Philippines','Singapore','Malaysia','Cambodia','Myanmar','Laos','South Korea','China','Taiwan','Hong Kong','India','Nepal','Sri Lanka','Maldives','Bangladesh','Bhutan'],'Middle East':['Turkey','Israel','Jordan','United Arab Emirates','Oman','Qatar','Bahrain','Kuwait','Saudi Arabia','Lebanon','Egypt','Morocco','Tunisia','Algeria'],'Africa':['South Africa','Kenya','Tanzania','Ethiopia','Ghana','Rwanda','Uganda','Namibia','Botswana','Zimbabwe','Senegal','Madagascar','Morocco'],'Oceania':['Australia','New Zealand','Fiji','French Polynesia']};
 
 let mCharts=null;
 
@@ -3305,12 +3306,15 @@ async function mapRenderHome(){
   if(!leafletMap)return;
   const hc=(D.settings.homeCity||'').trim();
   if(!hc)return;
-  const cacheKey='home:'+hc;
+  // Append ", United States" for US cities to prevent geocoder returning same-named foreign cities
+  const isUSHome=!!getHomeState();
+  const searchQ=isUSHome?hc+', United States':hc;
+  const cacheKey='home:'+searchQ;
   const cache=JSON.parse(localStorage.getItem('wf_geocache')||'{}');
   let coords=cache[cacheKey];
   if(!coords){
     try{
-      const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(hc)}&format=json&limit=1`);
+      const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQ)}&format=json&limit=1`);
       const d=await r.json();
       if(d[0]){coords={lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon)};cache[cacheKey]=coords;localStorage.setItem('wf_geocache',JSON.stringify(cache));}
     }catch(e){}
@@ -3557,10 +3561,12 @@ async function mapRenderHomeG(){
   if(gMapHomeMarker){gMapHomeMarker.setMap(null);gMapHomeMarker=null;}
   if(!gMap)return;
   const hc=(D.settings.homeCity||'').trim();if(!hc)return;
-  const cacheKey='home:'+hc;
+  const isUSHome=!!getHomeState();
+  const searchQ=isUSHome?hc+', United States':hc;
+  const cacheKey='home:'+searchQ;
   const cache=JSON.parse(localStorage.getItem('wf_geocache')||'{}');
   let coords=cache[cacheKey];
-  if(!coords)coords=await mapGeocodeGStr(hc,cacheKey);
+  if(!coords)coords=await mapGeocodeGStr(searchQ,cacheKey);
   if(!coords)return;
   const svg='<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#4A7259" stroke="white" stroke-width="2.5"/><text x="16" y="22" text-anchor="middle" font-size="14" font-family="Apple Color Emoji,Segoe UI Emoji,sans-serif">🏠</text></svg>';
   gMapHomeMarker=new google.maps.Marker({
@@ -3639,7 +3645,7 @@ function mapRenderStats(){
   }
   const intl=[...new Set([...vis.map(p=>normCountry(p.country)).filter(c=>c&&c!=='United States'),...bonusCountries])];
   const states=[...new Set(vis.filter(p=>normCountry(p.country)==='United States').map(p=>p.usState).filter(Boolean))];
-  const continents=[...new Set(intl.map(c=>Object.entries(CONTINENTS).find(([,v])=>v.includes(c))?.[0]).filter(Boolean))];
+  const continents=[...new Set([...intl.map(c=>Object.entries(CONTINENTS).find(([,v])=>v.includes(c))?.[0]).filter(Boolean),...(states.length?['North America']:[])])];
   const el=document.getElementById('map-stats-row');if(!el)return;
   el.innerHTML='<div class="sc" style="--accent:var(--green2)"><div class="si">📍</div><div class="sn">'+vis.length+'</div><div class="sl">Places Visited</div></div>'
     +'<div class="sc" style="--accent:var(--gold)"><div class="si">🌍</div><div class="sn">'+intl.length+'</div><div class="sl">Countries</div></div>'
