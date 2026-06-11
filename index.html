@@ -1063,6 +1063,36 @@ input,textarea,select{font-family:inherit;font-weight:400}
 
     <div class="page" id="page-settings">
       <div style="max-width:480px">
+        <div class="ss"><h3>About</h3>
+          <div class="card">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+              <svg viewBox="0 0 30 30" fill="none" style="width:28px;height:28px;flex-shrink:0">
+                <circle cx="15" cy="15" r="13" fill="rgba(62,102,68,.06)"/>
+                <circle cx="15" cy="15" r="13.5" stroke="#3E6644" stroke-width=".75" opacity=".4"/>
+                <circle cx="15" cy="15" r="3" stroke="#3E6644" stroke-width=".8" fill="none" opacity=".5"/>
+                <g stroke="#3E6644" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.05">
+                  <g transform="rotate(0 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="13.2" y2="3"/><line x1="15" y1="4.5" x2="16.8" y2="3"/><line x1="13.3" y1="7" x2="16.7" y2="7"/></g>
+                  <g transform="rotate(45 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="16.8" y2="3"/><line x1="15" y1="7.5" x2="13.2" y2="7.5"/></g>
+                  <g transform="rotate(90 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="13.2" y1="4.5" x2="16.8" y2="4.5"/><line x1="15" y1="4.5" x2="15" y2="3"/></g>
+                  <g transform="rotate(135 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="13.2" y2="3"/><line x1="15" y1="7.5" x2="16.8" y2="7.5"/></g>
+                  <g transform="rotate(180 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="13.2" y2="3"/><line x1="15" y1="4.5" x2="16.8" y2="3"/></g>
+                  <g transform="rotate(225 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="16.8" y2="3"/><line x1="13.3" y1="7.2" x2="16.7" y2="7.2"/></g>
+                  <g transform="rotate(270 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="13.2" y1="4.5" x2="16.8" y2="4.5"/><line x1="15" y1="4.5" x2="13.2" y2="3"/></g>
+                  <g transform="rotate(315 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="13.2" y2="3"/><line x1="15" y1="4.5" x2="16.8" y2="3"/><line x1="13.3" y1="7.5" x2="16.7" y2="7.5"/></g>
+                </g>
+                <circle cx="15" cy="15" r="1.8" fill="#B8892A"/>
+                <circle cx="14.4" cy="14.4" r=".5" fill="rgba(255,255,255,.38)"/>
+              </svg>
+              <div>
+                <div style="font-size:13px;font-weight:700;color:var(--text)">Way<span style="color:var(--gold2)">finder</span></div>
+                <div style="font-size:10px;color:var(--muted);margin-top:1px">Your Personal Travel Universe</div>
+              </div>
+            </div>
+            <p style="font-size:12px;color:var(--muted);line-height:1.75;margin-bottom:8px">The <strong style="color:var(--text2)">Vegvísir</strong> is an ancient Icelandic compass carried by those who ventured into storms and unknown waters. Eight runic staves — eight possible paths — radiating outward in all directions. "If this sign is carried, one will never lose one's way in storms or bad weather, even when the way is not known."</p>
+            <p style="font-size:12px;color:var(--muted2);font-style:italic;border-top:1px solid var(--bdr);padding-top:8px;line-height:1.6">The Vegvísir guides those lost in storms. May you always find your way.</p>
+            <p style="font-size:10px;color:var(--muted2);margin-top:8px;opacity:.7">Phase 1 · Built with Claude</p>
+          </div>
+        </div>
         <div class="ss"><h3>Your Profile</h3>
           <div class="card">
             <div class="fg"><label class="fl">Your Name</label><input class="fi" id="s-name" placeholder="Chris"/></div>
@@ -1129,36 +1159,6 @@ input,textarea,select{font-family:inherit;font-weight:400}
               <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(event)"/>
             </div>
             <button class="btn-s" onclick="clearAll()" style="width:100%;margin-top:8px;border-color:rgba(160,60,60,.3);color:#b05050">⚠️ Clear All Data</button>
-          </div>
-        </div>
-        <div class="ss"><h3>About</h3>
-          <div class="card">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-              <svg viewBox="0 0 30 30" fill="none" style="width:28px;height:28px;flex-shrink:0">
-                <circle cx="15" cy="15" r="13" fill="rgba(62,102,68,.06)"/>
-                <circle cx="15" cy="15" r="13.5" stroke="#3E6644" stroke-width=".75" opacity=".4"/>
-                <circle cx="15" cy="15" r="3" stroke="#3E6644" stroke-width=".8" fill="none" opacity=".5"/>
-                <g stroke="#3E6644" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.05">
-                  <g transform="rotate(0 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="13.2" y2="3"/><line x1="15" y1="4.5" x2="16.8" y2="3"/><line x1="13.3" y1="7" x2="16.7" y2="7"/></g>
-                  <g transform="rotate(45 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="16.8" y2="3"/><line x1="15" y1="7.5" x2="13.2" y2="7.5"/></g>
-                  <g transform="rotate(90 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="13.2" y1="4.5" x2="16.8" y2="4.5"/><line x1="15" y1="4.5" x2="15" y2="3"/></g>
-                  <g transform="rotate(135 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="13.2" y2="3"/><line x1="15" y1="7.5" x2="16.8" y2="7.5"/></g>
-                  <g transform="rotate(180 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="13.2" y2="3"/><line x1="15" y1="4.5" x2="16.8" y2="3"/></g>
-                  <g transform="rotate(225 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="16.8" y2="3"/><line x1="13.3" y1="7.2" x2="16.7" y2="7.2"/></g>
-                  <g transform="rotate(270 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="13.2" y1="4.5" x2="16.8" y2="4.5"/><line x1="15" y1="4.5" x2="13.2" y2="3"/></g>
-                  <g transform="rotate(315 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="13.2" y2="3"/><line x1="15" y1="4.5" x2="16.8" y2="3"/><line x1="13.3" y1="7.5" x2="16.7" y2="7.5"/></g>
-                </g>
-                <circle cx="15" cy="15" r="1.8" fill="#B8892A"/>
-                <circle cx="14.4" cy="14.4" r=".5" fill="rgba(255,255,255,.38)"/>
-              </svg>
-              <div>
-                <div style="font-size:13px;font-weight:700;color:var(--text)">Way<span style="color:var(--gold2)">finder</span></div>
-                <div style="font-size:10px;color:var(--muted);margin-top:1px">Your Personal Travel Universe</div>
-              </div>
-            </div>
-            <p style="font-size:12px;color:var(--muted);line-height:1.75;margin-bottom:8px">The <strong style="color:var(--text2)">Vegvísir</strong> is an ancient Icelandic compass carried by those who ventured into storms and unknown waters. Eight runic staves — eight possible paths — radiating outward in all directions. "If this sign is carried, one will never lose one's way in storms or bad weather, even when the way is not known."</p>
-            <p style="font-size:12px;color:var(--muted2);font-style:italic;border-top:1px solid var(--bdr);padding-top:8px;line-height:1.6">The Vegvísir guides those lost in storms. May you always find your way.</p>
-            <p style="font-size:10px;color:var(--muted2);margin-top:8px;opacity:.7">Phase 1 · Built with Claude</p>
           </div>
         </div>
       </div>
