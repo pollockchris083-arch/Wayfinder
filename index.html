@@ -1925,6 +1925,16 @@ input,textarea,select{font-family:inherit;font-weight:400}
 </div>
 
 <script>
+// Place category constants — declared first so they're available before any call site runs
+const MACRO_KEYS=['outdoors','food-drink','sights','stay','shopping','transit','other'];
+const CAT_RX=[
+  ['outdoors',/\b(trail|hiking|hike|park|national park|beach|lake|mountain|waterfall|falls|glacier|canyon|nature reserve|wildlife|forest|volcano|hot spring|geyser|tide pool|bluff|dune|ridge|peak|summit|fjord|bay|coast|cliff|reef|lagoon|scenic|gorge|ravine|spring|thermal|overlook|viewpoint|vista|valley|meadow|island|estuary|estuary|headland|cape|peninsula|desert|savanna|steppe)\b/i],
+  ['food-drink',/\b(restaurant|cafe|coffee|bar|pub|brewery|winery|bakery|market hall|food hall|gelato|ice cream|dessert|pastry|wine bar|cocktail|brunch|bistro|trattoria|pizzeria|ramen|sushi|taco|burger|pizza|ristorante|osteria|cantina|deli|tapas|brasserie|eatery|kebab|steakhouse|seafood|grill|tavern|patisserie|creperie|boulangerie)\b/i],
+  ['sights',/\b(museum|church|cathedral|castle|monument|temple|mosque|synagogue|shrine|gallery|ruins|palace|basilica|chapel|convent|monastery|fortress|piazza|plaza|square|bridge|fountain|statue|memorial|lighthouse|old town|old city|historic|district|harbour|harbor|waterfront|promenade|parliament|opera|theatre|theater|amphitheat|colosseum|tower|city wall|gate|arch|pagoda|stupa|campanile|baptistry|crypt|abbey|citadel|acropolis)\b/i],
+  ['stay',/\b(hotel|hostel|airbnb|resort|guesthouse|inn|lodge|villa|apartment|rental|accommodation|campground|b&b|bed and breakfast)\b/i],
+  ['shopping',/\b(boutique|souvenir|bookstore|market(?! square| hall| place)|mall|shopping|design store|antique)\b/i],
+  ['transit',/\b(airport|train station|bus station|ferry|port|harbour|terminal|metro station|tram stop|parking|transfer)\b/i],
+];
 // ══════════════════════════════════════════════
 // DATA
 // ══════════════════════════════════════════════
@@ -2438,16 +2448,6 @@ function migrate(){
     localStorage.setItem('wf_intl_v1','1');
   }
 }
-// Declared here so migratePlaceCategories() can access them at top-level call time
-const MACRO_KEYS=['outdoors','food-drink','sights','stay','shopping','transit','other'];
-const CAT_RX=[
-  ['outdoors',/\b(trail|hiking|hike|park|national park|beach|lake|mountain|waterfall|falls|glacier|canyon|nature reserve|wildlife|forest|volcano|hot spring|geyser|tide pool|bluff|dune|ridge|peak|summit|fjord|bay|coast|cliff|reef|lagoon|scenic|gorge|ravine|spring|thermal|overlook|viewpoint|vista|valley|meadow|island|estuary|estuary|headland|cape|peninsula|desert|savanna|steppe)\b/i],
-  ['food-drink',/\b(restaurant|cafe|coffee|bar|pub|brewery|winery|bakery|market hall|food hall|gelato|ice cream|dessert|pastry|wine bar|cocktail|brunch|bistro|trattoria|pizzeria|ramen|sushi|taco|burger|pizza|ristorante|osteria|cantina|deli|tapas|brasserie|eatery|kebab|steakhouse|seafood|grill|tavern|patisserie|creperie|boulangerie)\b/i],
-  ['sights',/\b(museum|church|cathedral|castle|monument|temple|mosque|synagogue|shrine|gallery|ruins|palace|basilica|chapel|convent|monastery|fortress|piazza|plaza|square|bridge|fountain|statue|memorial|lighthouse|old town|old city|historic|district|harbour|harbor|waterfront|promenade|parliament|opera|theatre|theater|amphitheat|colosseum|tower|city wall|gate|arch|pagoda|stupa|campanile|baptistry|crypt|abbey|citadel|acropolis)\b/i],
-  ['stay',/\b(hotel|hostel|airbnb|resort|guesthouse|inn|lodge|villa|apartment|rental|accommodation|campground|b&b|bed and breakfast)\b/i],
-  ['shopping',/\b(boutique|souvenir|bookstore|market(?! square| hall| place)|mall|shopping|design store|antique)\b/i],
-  ['transit',/\b(airport|train station|bus station|ferry|port|harbour|terminal|metro station|tram stop|parking|transfer)\b/i],
-];
 try { migrate(); } catch(e) { console.error('migrate() failed:', e); }
 try { migratePlaceCategories(); } catch(e) { console.error('migratePlaceCategories() failed:', e); }
 
@@ -3354,6 +3354,7 @@ function _gMapSvgIcon(emoji,color,size){
 }
 function mapRenderCountriesG(){
   if(!gMap||!geoWorld)return;
+  const totalFeatures=geoWorld.features?.length||0;
 
   // Build visited set from past trip destinations + individually visited places
   const visited=new Set();
@@ -3370,19 +3371,21 @@ function mapRenderCountriesG(){
   gMap.data.forEach(f=>gMap.data.remove(f));
   gMap.data.addGeoJson(geoWorld);
 
+  // Count how many features will be highlighted for the log
+  let highlightCount=0;
   gMap.data.setStyle(f=>{
     const raw=f.getProperty('ADMIN')||'';
-    // Normalize the GeoJSON ADMIN name multiple ways to catch aliases
-    const byNorm=normCountry(raw);          // handles "Bosnia and Herzegovina" → "Bosnia", "Czechia" → "Czech Republic"
-    const byGeo=normCountry(mapGeoToName(raw)); // handles "Republic of Serbia" → "Serbia" etc.
+    const byNorm=normCountry(raw);
+    const byGeo=normCountry(mapGeoToName(raw));
     const isHome=raw==='United States of America'||byNorm==='United States';
     if(isHome)return{fillColor:'#4A7259',fillOpacity:0.1,strokeColor:'#4A7259',strokeWeight:0.8,strokeOpacity:0.4};
     const isVisited=visited.has(raw)||visited.has(byNorm)||visited.has(byGeo);
-    if(isVisited)return{fillColor:'#EF9F27',fillOpacity:0.4,strokeColor:'#D4890A',strokeWeight:1};
+    if(isVisited){highlightCount++;return{fillColor:'#EF9F27',fillOpacity:0.4,strokeColor:'#D4890A',strokeWeight:1};}
     const isWanted=wanted.has(raw)||wanted.has(byNorm)||wanted.has(byGeo);
     if(isWanted)return{fillColor:'#B8892A',fillOpacity:0.05,strokeColor:'#B8892A',strokeWeight:1.5,strokeOpacity:0.65};
     return{fillColor:'#888888',fillOpacity:0,strokeColor:'#888',strokeWeight:0.4,strokeOpacity:0.5};
   });
+  console.log('Country highlight: loaded',totalFeatures,'features, highlighting',visited.size,'countries');
 
   // Wire click/hover on the data layer (only once per gMap instance)
   if(!_gCountryDataLoaded){
@@ -3662,6 +3665,13 @@ async function mapDrawRoute(tripId){
 // PLACES
 // ══════════════════════════════════════════════
 let pf='all',pCat='all',pStatus='all',plSearch='',eid=null,pendVisitWishId=null,_atlasDestFilter=null;
+function getMacroCategory(p){
+  const c=p.category||'other';
+  if(MACRO_KEYS.includes(c))return c;
+  if(c==='culture')return'sights';
+  const map={'nat-park':'outdoors','hiking':'outdoors','camp':'outdoors','viewpoint':'outdoors','swim':'outdoors','food':'food-drink','accommodation':'stay','city':'sights','road-trip':'transit','international':'sights','hidden-gem':'other'};
+  return map[c]||'other';
+}
 function inferCategoryFromName(p){
   const s=((p.name||'')+' '+(p.notes||'')).toLowerCase();
   for(const[cat,rx] of CAT_RX){if(rx.test(s))return cat;}
