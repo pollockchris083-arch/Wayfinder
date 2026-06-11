@@ -4266,7 +4266,8 @@ function saveTrip(){
   if(t.startDate&&t.endDate){const s=new Date(t.startDate),e=new Date(t.endDate);for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1))t.itinerary.push({date:d.toISOString().split('T')[0],stops:[]});}
   D.trips.push(t);save('trips',D.trips);
   if(pendGraduateWishId){const w=D.wish.find(x=>x.id===pendGraduateWishId);if(w){w.tripId=t.id;w.graduated=true;save('wish',D.wish);}pendGraduateWishId=null;}
-  closeM('m-trip');toast('✈️ Trip created!');if(cur==='path')rPath();else rTrips();badges();
+  window._newlyCreated=t.id;window._tripItinTab='plans';
+  closeM('m-trip');toast('✈️ Trip created!');go('trips');openTripD(t.id);badges();
 }
 function delTrip(id){
   const t=D.trips.find(x=>x.id===id);if(!t)return;
@@ -4543,6 +4544,13 @@ function openTripD(id){
     else if(t.status==='past'&&_dSince>0&&_dSince<730)daysChip=`<span style="font-size:10px;color:var(--muted);padding:3px 9px;border:1px solid var(--bdr2);border-radius:100px">${_dSince<1?'Yesterday':_dSince+' days ago'}</span>`;
   }
 
+  const _tripIsNew=window._newlyCreated===t.id;
+  if(_tripIsNew)window._newlyCreated=null;
+  const _tripTT=inferTripType(t,false);
+  const _tripNudgeMsgs={international:'Where will each day take you? Start with your first destination.',getaway:'What do you want to see and do? Add your first stops.',event:'Plan the days around your event — what else is on the itinerary?'};
+  const _tripNudgeMsg=_tripNudgeMsgs[_tripTT]||'Where will this trip take you? Start adding stops and places.';
+  const _tripNudge=_tripIsNew?`<div id="new-trip-nudge" style="background:linear-gradient(135deg,rgba(62,102,68,.08),rgba(62,102,68,.02));border:1px solid rgba(62,102,68,.22);border-left:3px solid var(--green);border-radius:var(--r);padding:14px 16px;margin-bottom:14px;position:relative"><button onclick="document.getElementById('new-trip-nudge').remove()" style="position:absolute;top:8px;right:10px;background:none;border:none;font-size:17px;color:var(--muted2);cursor:pointer;line-height:1;padding:2px 6px;border-radius:4px;font-family:inherit">×</button><div style="font-size:10px;font-weight:700;color:var(--green3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.9px">✦ Start planning</div><div style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.5;padding-right:24px">${_tripNudgeMsg}</div><div style="display:flex;gap:7px;flex-wrap:wrap"><button onclick="switchTripItinTab('${t.id}','plans');document.getElementById('new-trip-nudge')?.remove()" class="pbtn" style="font-size:13px">📅 Plan Itinerary</button><button onclick="document.getElementById('new-trip-nudge')?.remove();openPlace();setTimeout(()=>{const s=document.getElementById('p-trip');if(s)s.value='${t.id}';},50)" class="pbtn" style="font-size:13px">📍 Add Places</button><button onclick="document.getElementById('new-trip-nudge')?.remove();openTripEdit('${t.id}')" class="pbtn" style="font-size:13px">✏️ Notes & Budget</button></div></div>`:'';
+
   dv.innerHTML=`
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
     <button class="td-back" onclick="rTrips()">← All Trips</button>
@@ -4580,6 +4588,7 @@ function openTripD(id){
   ${rTripExpenseSection(t)}
   ${rTripFuelSection(t)}
   ${rTripCrossingsSection(t)}
+  ${_tripNudge}
   ${placesSection}${journalSection}${itinerarySection}`;
 }
 function tripInsights(t,linkedPlaces,tripJournal,isDomestic,tripCountries,tripUSStates){
@@ -7402,18 +7411,20 @@ function saveCamp(){
   const wasInTrips=!!window._campInTrips;
   window._pendingTripType=null;
   const savedId=ceid||null;
+  let _createdCampId=null;
   if(ceid){
     const i=D.camps.findIndex(x=>x.id===ceid);
     if(i>=0){D.camps[i]={...D.camps[i],...data};toast('✅ Updated!');}
   } else {
-    const newId=uid();
-    D.camps.push({id:newId,...data,tripType:pendingType,stops:[],checklist:[],links:[],addedAt:Date.now()});
+    _createdCampId=uid();
+    D.camps.push({id:_createdCampId,...data,tripType:pendingType,stops:[],checklist:[],links:[],addedAt:Date.now()});
     toast('🧭 Adventure saved!');
   }
   localStorage.setItem('wf_camps',JSON.stringify(D.camps));
   ceid=null;closeM('m-camp');
   if(rtype==='spot'){window._campTab='spots';rCamp();}
   else if(wasInTrips&&savedId){go('trips');openCampDInTrips(savedId);}
+  else if(_createdCampId){window._newlyCreated=_createdCampId;window._campDTab='daily';go('trips');openCampDInTrips(_createdCampId);}
   else{go('trips');rTrips();}
   badges();
 }
@@ -7468,6 +7479,13 @@ function openCampD(id){
   else if(tab==='gear') tabBody=rAdvGearTab(c);
   else if(tab==='links') tabBody=rAdvLinksTab(c);
   else tabBody=rAdvSummaryTab(c);
+  const _campIsNew=window._newlyCreated===c.id;
+  if(_campIsNew)window._newlyCreated=null;
+  const _campTT=inferTripType(c,true);
+  const _campNudgeMsgs={camping:'Where will you sleep night one? Add your first campsite to Day 1.',adventure:'What\'s the route? Plan your trail days — add waypoints and build your pack list.',road_trip:'Map your route. Add your stops and where you\'ll camp along the way.'};
+  const _campNudgeMsg=_campNudgeMsgs[_campTT]||'Ready to plan? Start with your first stop.';
+  const _campNudge=_campIsNew&&tab==='daily'?`<div id="new-trip-nudge" style="background:linear-gradient(135deg,rgba(62,102,68,.08),rgba(62,102,68,.02));border:1px solid rgba(62,102,68,.22);border-left:3px solid var(--green);border-radius:var(--r);padding:14px 16px;margin-bottom:14px;position:relative"><button onclick="document.getElementById('new-trip-nudge').remove()" style="position:absolute;top:8px;right:10px;background:none;border:none;font-size:17px;color:var(--muted2);cursor:pointer;line-height:1;padding:2px 6px;border-radius:4px;font-family:inherit">×</button><div style="font-size:10px;font-weight:700;color:var(--green3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.9px">✦ Start planning</div><div style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.5;padding-right:24px">${_campNudgeMsg}</div><div style="display:flex;gap:7px;flex-wrap:wrap"><button onclick="document.getElementById('new-trip-nudge')?.remove();openAdvItinStop('${c.id}',0)" class="pbtn" style="font-size:13px">📅 Add First Stop</button><button onclick="document.getElementById('new-trip-nudge')?.remove();window._campDTab='gear';openCampD('${c.id}')" class="pbtn" style="font-size:13px">🎒 Gear List</button><button onclick="document.getElementById('new-trip-nudge')?.remove();openCampEdit('${c.id}')" class="pbtn" style="font-size:13px">✏️ Edit Details</button></div></div>`:'';
+
   const _inTrips=window._campInTrips;
   const _campContainer=_inTrips?document.getElementById('camp-dv-in-trips'):document.getElementById('camp-in');
   const _backBtn=_inTrips?`<button class="td-back" onclick="closeCampDInTrips()">← Trips</button>`:`<button class="td-back" onclick="go('trips');rTrips()">← Trips</button>`;
@@ -7505,7 +7523,7 @@ function openCampD(id){
         <button class="fc ${tab==='links'?'on':''}" onclick="window._campDTab='links';openCampD('${c.id}')">🔗 Links</button>
         <button class="fc ${tab==='summary'?'on':''}" onclick="window._campDTab='summary';openCampD('${c.id}')">📓 Memoirs</button>
       </div>
-      ${tabBody}
+      ${_campNudge}${tabBody}
     </div>`;
 }
 
