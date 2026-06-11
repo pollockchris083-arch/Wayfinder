@@ -20,29 +20,29 @@
 <style>
 :root {
   color-scheme: light;
-  --bg:     #F4EFE6;
-  --bg2:    #EDE7DB;
-  --card:   #FFFFFF;
-  --card2:  #F9F5EF;
-  --card3:  #F0EAE0;
-  --green:  #4A7259;
-  --green2: #5A8A6C;
-  --green3: #3D5E49;
+  --bg:     #F2EDE1;
+  --bg2:    #E8E1D4;
+  --card:   #FAF6EE;
+  --card2:  #F2EDE0;
+  --card3:  #E8E0CE;
+  --green:  #3E6644;
+  --green2: #527D5C;
+  --green3: #2F5035;
   --gold:   #9B7420;
   --gold2:  #B8892A;
   --earth:  #7A5535;
   --earth2: #96693F;
   --sage:   #6B9575;
-  --text:   #2A2218;
-  --text2:  #5A4E42;
-  --muted:  #8A7D6E;
-  --muted2: #B0A394;
-  --bdr:    rgba(80,60,40,.11);
-  --bdr2:   rgba(80,60,40,.22);
-  --shadow: 0 1px 8px rgba(50,35,15,.08);
-  --shadowm:0 4px 24px rgba(50,35,15,.13);
+  --text:   #27200E;
+  --text2:  #574A38;
+  --muted:  #8A7A62;
+  --muted2: #AFA090;
+  --bdr:    rgba(80,60,30,.10);
+  --bdr2:   rgba(80,60,30,.20);
+  --shadow: 0 1px 8px rgba(50,35,10,.08);
+  --shadowm:0 4px 24px rgba(50,35,10,.14);
   --r: 10px;
-  --amber: #EF9F27;
+  --amber: #C8901E;
   --blue-acc: #378ADD;
   --purple-acc: #7F77DD;
   --green-acc: #639922;
@@ -50,19 +50,19 @@
 }
 body.dark {
   color-scheme: dark;
-  --bg:     #1C1812;
-  --bg2:    #231E18;
-  --card:   #2C2720;
-  --card2:  #342E27;
-  --card3:  #3C362E;
-  --text:   #EAE2D6;
-  --text2:  #BBA98E;
-  --muted:  #8A7D6E;
-  --muted2: #5E5348;
-  --bdr:    rgba(255,230,200,.08);
-  --bdr2:   rgba(255,230,200,.16);
-  --shadow: 0 1px 8px rgba(0,0,0,.32);
-  --shadowm:0 4px 24px rgba(0,0,0,.48);
+  --bg:     #171209;
+  --bg2:    #1E1810;
+  --card:   #261E12;
+  --card2:  #302519;
+  --card3:  #3A2E1E;
+  --text:   #EDE3CD;
+  --text2:  #C0AA88;
+  --muted:  #8A7A60;
+  --muted2: #5E5040;
+  --bdr:    rgba(255,225,180,.07);
+  --bdr2:   rgba(255,225,180,.15);
+  --shadow: 0 1px 8px rgba(0,0,0,.35);
+  --shadowm:0 4px 24px rgba(0,0,0,.55);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:15px;overflow:hidden;font-weight:400}
@@ -83,10 +83,10 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .sb-sec{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.6px;padding:12px 7px 4px}
 .ni{display:flex;align-items:center;gap:8px;padding:10px 8px;border-radius:7px;font-size:15px;font-weight:400;color:var(--text2);cursor:pointer;transition:background .15s,color .15s,box-shadow .15s;border:none;background:none;width:100%;text-align:left;margin-bottom:2px;min-height:48px;box-shadow:inset 3px 0 0 transparent}
 .ni .ico{font-size:16px;width:20px;text-align:center;opacity:.75}
-.ni:hover{background:var(--card2);color:var(--text);box-shadow:inset 3px 0 0 rgba(239,159,39,.3)}
-.ni.on{background:rgba(239,159,39,.09);color:#B07000;font-weight:600;box-shadow:inset 3px 0 0 #EF9F27}
+.ni:hover{background:var(--card2);color:var(--text);box-shadow:inset 3px 0 0 rgba(200,144,30,.3)}
+.ni.on{background:rgba(200,144,30,.10);color:var(--gold);font-weight:600;box-shadow:inset 3px 0 0 var(--amber)}
 .ni.on .ico{opacity:1;filter:none}
-.nb{margin-left:auto;background:#EF9F27;color:#fff;font-size:9px;font-weight:700;border-radius:100px;padding:2px 6px;min-width:18px;text-align:center}
+.nb{margin-left:auto;background:var(--amber);color:#fff;font-size:9px;font-weight:700;border-radius:100px;padding:2px 6px;min-width:18px;text-align:center}
 .sb-foot{padding:10px 12px;border-top:1px solid var(--bdr)}
 .sb-prof{display:flex;align-items:center;gap:8px;padding:8px 6px;border-radius:7px;cursor:pointer;transition:background .15s;min-height:44px}
 .sb-prof:hover{background:var(--card2)}
@@ -111,7 +111,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .sd-item-sub{font-size:13px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sd-divider{border:none;border-top:1px solid var(--bdr2);margin:0}
 .sd-empty{padding:20px;text-align:center;font-size:14px;color:var(--muted2)}
-.tb-btn{display:flex;align-items:center;gap:5px;background:#EF9F27;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:700;transition:background .15s,transform .1s;white-space:nowrap;min-height:48px;letter-spacing:.1px}
+.tb-btn{display:flex;align-items:center;gap:5px;background:var(--amber);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:700;transition:background .15s,transform .1s;white-space:nowrap;min-height:48px;letter-spacing:.1px}
 .tb-btn:hover{background:#D48C1A}
 .tb-btn.gold{background:var(--gold)}
 .tb-btn.gold:hover{background:var(--gold2)}
@@ -184,7 +184,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .pc-tg{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
 .pact{display:flex;gap:5px;margin-top:8px}
 .pbtn{background:var(--card2);border:1px solid var(--bdr2);border-radius:6px;padding:7px 13px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s;min-height:38px}
-.pbtn:hover{border-color:#EF9F27;color:#B07000;background:rgba(239,159,39,.05)}
+.pbtn:hover{border-color:var(--amber);color:var(--gold);background:rgba(200,144,30,.05)}
 .pbtn.del:hover{border-color:#c05050;color:#c05050}
 /* List view */
 .places-list{display:flex;flex-direction:column;gap:0}
@@ -196,8 +196,8 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .pc-lac{display:flex;gap:5px;flex-shrink:0}
 /* Form cat/stat buttons */
 .pc-cat-btn,.pc-stat-btn{background:var(--card2);border:1px solid var(--bdr);border-radius:20px;padding:8px 14px;font-size:14px;cursor:pointer;color:var(--text2);font-family:inherit;transition:all .15s;white-space:nowrap;min-height:36px}
-.pc-cat-btn.on{background:rgba(239,159,39,.1);border-color:#EF9F27;color:#B07000;font-weight:700}
-.pc-stat-btn.on{background:rgba(239,159,39,.1);border-color:#EF9F27;color:#B07000;font-weight:700}
+.pc-cat-btn.on{background:rgba(200,144,30,.1);border-color:var(--amber);color:var(--gold);font-weight:700}
+.pc-stat-btn.on{background:rgba(200,144,30,.1);border-color:var(--amber);color:var(--gold);font-weight:700}
 /* FAB */
 #places-fab{display:none;position:fixed;bottom:calc(60px + env(safe-area-inset-bottom,0px) + 16px);right:16px;width:52px;height:52px;border-radius:50%;background:var(--green);color:#fff;border:none;font-size:26px;font-weight:300;cursor:pointer;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.4);z-index:30;line-height:1}
 /* Scrollbar hide for filter rows */
@@ -242,7 +242,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
 /* ── TRIP DETAIL ── */
 .td-view{display:none}.td-view.on{display:block;animation:fi .22s ease}
 .td-back{background:var(--card2);border:1px solid var(--bdr2);border-radius:7px;padding:9px 14px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px;min-height:40px}
-.td-back:hover{border-color:#EF9F27;color:var(--text)}
+.td-back:hover{border-color:var(--amber);color:var(--text)}
 .day-blk{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:8px;overflow:hidden;box-shadow:var(--shadow)}
 .day-hdr{padding:10px 13px;background:var(--card2);display:flex;align-items:center;justify-content:space-between}
 .day-lbl{font-size:14px;font-weight:600;color:var(--text)}
@@ -259,12 +259,12 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .wp-time{font-size:10px;font-weight:600;color:var(--muted2);background:var(--card2);border:1px solid var(--bdr);border-radius:4px;padding:1px 5px;flex-shrink:0;margin-top:2px;white-space:nowrap}
 .wp-nav{font-size:12px;color:var(--green3);text-decoration:none;flex-shrink:0;padding:2px 4px;border-radius:4px;line-height:1;background:rgba(74,114,89,.1);border:1px solid rgba(74,114,89,.25)}
 .wp-type-btn{font-size:13px;padding:6px 12px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:background .15s,color .15s,border-color .15s;min-height:36px}
-.wp-type-btn[data-active="1"]{background:#EF9F27!important;color:#fff!important;border-color:#EF9F27!important}
+.wp-type-btn[data-active="1"]{background:var(--amber)!important;color:#fff!important;border-color:var(--amber)!important}
 .wp-type-btn{white-space:nowrap;flex-shrink:0}
 #wp-type-pills{scrollbar-width:none}
 #wp-type-pills::-webkit-scrollbar{display:none}
 .add-stop{display:flex;align-items:center;gap:6px;background:none;border:1px dashed rgba(239,159,39,.35);border-radius:7px;padding:10px 14px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .15s;width:100%;margin-top:8px;min-height:48px}
-.add-stop:hover{border-color:#EF9F27;color:#B07000;background:rgba(239,159,39,.04)}
+.add-stop:hover{border-color:var(--amber);color:var(--gold);background:rgba(200,144,30,.05)}
 
 /* ── FILTER BAR ── */
 .fb{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:13px}
@@ -290,13 +290,13 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .fg{margin-bottom:13px}
 .fl{font-size:13px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px;display:block}
 .fi,.fs,.ft{width:100%;background:var(--card2);border:1px solid var(--bdr2);border-radius:7px;padding:10px 12px;font-size:15px;color:var(--text);outline:none;transition:border-color .15s;font-weight:400}
-.fi:focus,.fs:focus,.ft:focus{border-color:#EF9F27;box-shadow:0 0 0 3px rgba(239,159,39,.1)}
+.fi:focus,.fs:focus,.ft:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(200,144,30,.12)}
 .fi::placeholder,.ft::placeholder{color:var(--muted2)}
 .ft{resize:vertical;min-height:70px}
 .fs option{background:var(--card)}
 .fr{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .fa{display:flex;gap:8px;margin-top:18px}
-.btn-p{flex:1;background:#EF9F27;color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;transition:background .15s;min-height:48px;letter-spacing:.1px}
+.btn-p{flex:1;background:var(--amber);color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;transition:background .15s;min-height:48px;letter-spacing:.1px}
 .btn-p:hover{background:#D48C1A}
 .btn-s{background:var(--card2);color:var(--text2);border:1px solid var(--bdr2);border-radius:8px;padding:12px 16px;font-size:15px;font-weight:500;cursor:pointer;transition:all .15s;min-height:48px}
 .btn-s:hover{border-color:var(--green);color:var(--text)}
@@ -514,8 +514,9 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .df-bar{height:4px;border-radius:3px;background:linear-gradient(90deg,var(--green3),var(--green2));transition:width .4s}
 .df-score{font-size:12px;font-weight:700;color:var(--green3);min-width:28px;text-align:right}
 /* ── DASHBOARD HERO ── */
-.hero{background:linear-gradient(135deg,var(--green) 0%,var(--green3) 100%);border-radius:var(--r);padding:20px 22px 18px;position:relative;overflow:hidden;margin-bottom:13px;color:#fff}
-.hero::after{content:'';position:absolute;bottom:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.06)}
+.hero{background:linear-gradient(140deg,#3E6644 0%,#2A4A30 60%,#1E3824 100%);border-radius:var(--r);padding:20px 22px 18px;position:relative;overflow:hidden;margin-bottom:13px;color:#fff}
+.hero::before{content:'';position:absolute;top:-28px;right:-28px;width:110px;height:110px;border-radius:50%;border:1.5px solid rgba(255,255,255,.06);opacity:.5}
+.hero::after{content:'';position:absolute;bottom:-35px;right:-15px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.05)}
 .hero-greet{font-size:20px;font-weight:700;letter-spacing:-.3px;line-height:1.2}
 .hero-date{font-size:13px;opacity:.7;margin-top:3px}
 .hero-next{margin-top:12px;background:rgba(255,255,255,.13);border-radius:7px;padding:10px 13px;display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -772,17 +773,28 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .stage-cta-btn:hover{background:rgba(239,159,39,.16)}
 .stage-cta-secondary{width:100%;margin-top:6px;padding:6px 10px;border-radius:8px;border:1px solid var(--bdr2);background:var(--card2);color:var(--text2);font-size:11px;cursor:pointer;transition:background .15s;font-family:inherit}
 .stage-cta-secondary:hover{background:var(--card3)}
-/* Day drag-and-drop */
-[data-drag-day]{transition:opacity .15s}
-[data-drag-day].day-drag-over{outline:2px dashed var(--green3);outline-offset:2px;border-radius:8px;background:rgba(74,114,89,.05)}
-.day-drag-handle{cursor:grab;color:#EF9F27;font-size:22px;user-select:none;padding:0 6px 0 0;flex-shrink:0;line-height:1;opacity:.6;transition:opacity .15s}
+/* ── Plans drag-and-drop ───────────────────────────────── */
+[data-drag-day]{transition:opacity .18s,transform .12s}
+[data-drag-day].day-dragging{opacity:.45;transform:scale(.98)}
+[data-drag-day].day-drag-over{outline:2px dashed var(--plans-accent,#C8901E);outline-offset:3px;border-radius:8px;background:rgba(239,159,39,.04)}
+.day-drag-handle{display:flex;align-items:center;justify-content:center;width:26px;min-height:44px;cursor:grab;color:var(--plans-accent,#C8901E);font-size:18px;user-select:none;flex-shrink:0;opacity:.55;transition:opacity .15s;touch-action:none;-webkit-touch-callout:none}
 .day-drag-handle:hover{opacity:1;cursor:grabbing}
-/* Stop drag-and-drop */
-[data-drag-stop]{transition:opacity .15s}
-[data-drag-stop].stop-drag-over{outline:2px dashed var(--green3);outline-offset:-1px;border-radius:6px;background:rgba(74,114,89,.07)}
-[data-drag-stop].stop-drag-over-after{border-bottom:2px solid var(--green3)}
-.stop-drag-handle{cursor:grab;color:#EF9F27;font-size:20px;user-select:none;padding:0 4px 0 0;flex-shrink:0;line-height:1;opacity:.55;transition:opacity .15s}
+[data-drag-stop]{transition:background .1s}
+[data-drag-stop].stop-dragging{opacity:.38}
+[data-drag-stop].stop-drag-over{background:rgba(239,159,39,.08)!important;outline:1.5px dashed var(--plans-accent,#C8901E);outline-offset:-1px;border-radius:5px}
+.stop-drag-handle{display:flex;align-items:center;justify-content:center;width:20px;min-height:44px;cursor:grab;color:var(--plans-accent,#C8901E);font-size:15px;user-select:none;flex-shrink:0;opacity:.5;transition:opacity .15s;touch-action:none;-webkit-touch-callout:none}
 .stop-drag-handle:hover{opacity:1;cursor:grabbing}
+[data-day-drop-zone].stop-drag-over-day{outline:2px dashed var(--plans-accent,#C8901E);outline-offset:2px;border-radius:6px;background:rgba(239,159,39,.05)}
+.plans-day-hdr{display:flex;align-items:center;padding:4px 8px;background:var(--card2);border-radius:6px;margin-bottom:4px;gap:4px}
+.plans-day-title{flex:1;font-size:12px;font-weight:600;color:var(--text);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plans-day-acts{display:flex;align-items:center;gap:1px;opacity:0;transition:opacity .15s;flex-shrink:0}
+.plans-day-hdr:hover .plans-day-acts,.plans-day-hdr.acts-vis .plans-day-acts{opacity:1}
+.plans-day-act{min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);border-radius:6px;padding:0;transition:all .15s;line-height:1;font-family:inherit;text-decoration:none;position:relative}
+.plans-day-act:hover{background:var(--card3);color:var(--text)}
+.plans-day-act.del:hover{color:#c05050}
+.plans-unsched{border:1.5px dashed rgba(239,159,39,.28);border-radius:var(--r);padding:10px 12px;margin-top:8px;transition:border-color .15s,background .15s}
+.plans-unsched.stop-drag-over-day{border-color:var(--plans-accent,#C8901E)!important;background:rgba(239,159,39,.05)}
+.stopname-edit{font-size:14px;font-weight:600;color:var(--text);background:transparent;border:none;border-bottom:1.5px solid var(--plans-accent,#C8901E);outline:none;width:100%;padding:1px 0;font-family:inherit;display:none}
 /* Trips Page — Stage Sections */
 .ts{margin-bottom:20px}
 .ts-h{display:flex;align-items:center;gap:7px;margin-bottom:10px;padding-bottom:9px;border-bottom:2px solid var(--bdr)}
@@ -795,7 +807,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .tc-hero:hover{box-shadow:var(--shadowm);border-color:var(--bdr2);transform:translateY(-1px)}
 .tc-hero-active::before{background:linear-gradient(90deg,#3a9e5c,#5fc47a)}
 .tc-hero-active{border-color:rgba(58,158,92,.2)}
-.tc-hero-locked::before{background:linear-gradient(90deg,#EF9F27,#D48C1A)}
+.tc-hero-locked::before{background:linear-gradient(90deg,var(--amber),#A87018)}
 .tc-hero-locked{border-color:rgba(239,159,39,.2)}
 .tr{display:flex;align-items:center;gap:10px;padding:11px 8px;border-bottom:1px solid var(--bdr);cursor:pointer;transition:background .12s;border-radius:6px;min-height:52px}
 .tr:last-child{border-bottom:none}
@@ -811,7 +823,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
 /* Trip type picker */
 .trip-type-grid{display:flex;flex-wrap:wrap;gap:9px;justify-content:center}
 .trip-type-card{background:var(--card);border:1.5px solid var(--bdr);border-radius:10px;padding:14px 10px 12px;cursor:pointer;transition:all .15s;text-align:center;flex:1;min-width:130px;max-width:155px;user-select:none}
-.trip-type-card:hover{border-color:#EF9F27;background:rgba(239,159,39,.05);transform:translateY(-2px);box-shadow:var(--shadowm)}
+.trip-type-card:hover{border-color:var(--amber);background:rgba(200,144,30,.05);transform:translateY(-2px);box-shadow:var(--shadowm)}
 .tt-icon{font-size:28px;margin-bottom:7px;line-height:1;display:block}
 .tt-label{font-size:15px;font-weight:700;color:var(--text);margin-bottom:3px}
 .tt-desc{font-size:13px;color:var(--muted2);line-height:1.45}
@@ -860,19 +872,21 @@ input,textarea,select{font-family:inherit;font-weight:400}
 <div id="sb">
   <div class="sb-logo">
     <svg viewBox="0 0 30 30" fill="none">
-      <circle cx="15" cy="15" r="13.5" stroke="#4A7259" stroke-width=".6" opacity=".45"/>
-      <circle cx="15" cy="15" r="2.5" stroke="#4A7259" stroke-width="1" fill="none"/>
-      <g stroke="#4A7259" stroke-linecap="round" stroke-linejoin="round" stroke-width=".95">
-        <g transform="rotate(0 15 15)"><line x1="15" y1="12.5" x2="15" y2="5"/><line x1="15" y1="5" x2="13.3" y2="3.5"/><line x1="15" y1="5" x2="16.7" y2="3.5"/><line x1="13.5" y1="7.3" x2="16.5" y2="7.3"/></g>
-        <g transform="rotate(45 15 15)"><line x1="15" y1="12.5" x2="15" y2="5"/><line x1="15" y1="5" x2="16.7" y2="3.5"/><line x1="15" y1="8" x2="13.3" y2="8"/></g>
-        <g transform="rotate(90 15 15)"><line x1="15" y1="12.5" x2="15" y2="5"/><line x1="13.3" y1="5" x2="16.7" y2="5"/><line x1="15" y1="5" x2="15" y2="3.5"/></g>
-        <g transform="rotate(135 15 15)"><line x1="15" y1="12.5" x2="15" y2="5"/><line x1="15" y1="5" x2="13.3" y2="3.5"/><line x1="15" y1="8" x2="16.7" y2="8"/></g>
-        <g transform="rotate(180 15 15)"><line x1="15" y1="12.5" x2="15" y2="5"/><line x1="15" y1="5" x2="13.3" y2="3.5"/><line x1="15" y1="5" x2="16.7" y2="3.5"/></g>
-        <g transform="rotate(225 15 15)"><line x1="15" y1="12.5" x2="15" y2="5"/><line x1="15" y1="5" x2="16.7" y2="3.5"/><line x1="13.5" y1="7.5" x2="16.5" y2="7.5"/></g>
-        <g transform="rotate(270 15 15)"><line x1="15" y1="12.5" x2="15" y2="5"/><line x1="13.3" y1="5" x2="16.7" y2="5"/><line x1="15" y1="5" x2="13.3" y2="3.5"/></g>
-        <g transform="rotate(315 15 15)"><line x1="15" y1="12.5" x2="15" y2="5"/><line x1="15" y1="5" x2="13.3" y2="3.5"/><line x1="15" y1="5" x2="16.7" y2="3.5"/><line x1="13.5" y1="8" x2="16.5" y2="8"/></g>
+      <circle cx="15" cy="15" r="13" fill="rgba(62,102,68,.06)"/>
+      <circle cx="15" cy="15" r="13.5" stroke="#3E6644" stroke-width=".75" opacity=".4"/>
+      <circle cx="15" cy="15" r="3" stroke="#3E6644" stroke-width=".8" fill="none" opacity=".5"/>
+      <g stroke="#3E6644" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.05">
+        <g transform="rotate(0 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="13.2" y2="3"/><line x1="15" y1="4.5" x2="16.8" y2="3"/><line x1="13.3" y1="7" x2="16.7" y2="7"/></g>
+        <g transform="rotate(45 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="16.8" y2="3"/><line x1="15" y1="7.5" x2="13.2" y2="7.5"/></g>
+        <g transform="rotate(90 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="13.2" y1="4.5" x2="16.8" y2="4.5"/><line x1="15" y1="4.5" x2="15" y2="3"/></g>
+        <g transform="rotate(135 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="13.2" y2="3"/><line x1="15" y1="7.5" x2="16.8" y2="7.5"/></g>
+        <g transform="rotate(180 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="13.2" y2="3"/><line x1="15" y1="4.5" x2="16.8" y2="3"/></g>
+        <g transform="rotate(225 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="16.8" y2="3"/><line x1="13.3" y1="7.2" x2="16.7" y2="7.2"/></g>
+        <g transform="rotate(270 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="13.2" y1="4.5" x2="16.8" y2="4.5"/><line x1="15" y1="4.5" x2="13.2" y2="3"/></g>
+        <g transform="rotate(315 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="13.2" y2="3"/><line x1="15" y1="4.5" x2="16.8" y2="3"/><line x1="13.3" y1="7.5" x2="16.7" y2="7.5"/></g>
       </g>
-      <circle cx="15" cy="15" r="1.2" fill="#9B7420"/>
+      <circle cx="15" cy="15" r="1.8" fill="#B8892A"/>
+      <circle cx="14.4" cy="14.4" r=".5" fill="rgba(255,255,255,.38)"/>
     </svg>
     <div>
       <div class="sb-name">Way<em>finder</em></div>
@@ -915,6 +929,9 @@ input,textarea,select{font-family:inherit;font-weight:400}
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 6px;margin-top:5px">
       <button id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode" style="background:none;border:none;cursor:pointer;font-size:16px;padding:4px 6px;border-radius:6px;transition:background .15s;line-height:1" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background='none'">🌙</button>
+    </div>
+    <div style="padding:4px 6px 5px;text-align:center">
+      <p style="font-size:9px;color:var(--muted2);font-style:italic;line-height:1.4;opacity:.7">May you always find your way.</p>
     </div>
     <div id="sync-bar" style="display:none;align-items:center;justify-content:space-between;padding:5px 6px;border-top:1px solid var(--bdr);margin-top:3px">
       <span id="sync-status" style="font-size:10px;color:var(--muted);cursor:pointer;padding:2px 4px;border-radius:4px;transition:background .15s" onclick="manualCloudSync()" title="Tap to sync from cloud" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background='none'">☁️ Synced</span>
@@ -1115,7 +1132,34 @@ input,textarea,select{font-family:inherit;font-weight:400}
           </div>
         </div>
         <div class="ss"><h3>About</h3>
-          <div class="card"><p style="font-size:12px;color:var(--muted);line-height:1.8"><strong style="color:var(--text)">Wayfinder</strong> — Your Personal Travel Universe<br>Phase 1 · Built with Claude<br><em style="color:var(--muted2)">The Vegvísir guides those lost in storms. May you always find your way.</em></p></div>
+          <div class="card">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+              <svg viewBox="0 0 30 30" fill="none" style="width:28px;height:28px;flex-shrink:0">
+                <circle cx="15" cy="15" r="13" fill="rgba(62,102,68,.06)"/>
+                <circle cx="15" cy="15" r="13.5" stroke="#3E6644" stroke-width=".75" opacity=".4"/>
+                <circle cx="15" cy="15" r="3" stroke="#3E6644" stroke-width=".8" fill="none" opacity=".5"/>
+                <g stroke="#3E6644" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.05">
+                  <g transform="rotate(0 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="13.2" y2="3"/><line x1="15" y1="4.5" x2="16.8" y2="3"/><line x1="13.3" y1="7" x2="16.7" y2="7"/></g>
+                  <g transform="rotate(45 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="16.8" y2="3"/><line x1="15" y1="7.5" x2="13.2" y2="7.5"/></g>
+                  <g transform="rotate(90 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="13.2" y1="4.5" x2="16.8" y2="4.5"/><line x1="15" y1="4.5" x2="15" y2="3"/></g>
+                  <g transform="rotate(135 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="13.2" y2="3"/><line x1="15" y1="7.5" x2="16.8" y2="7.5"/></g>
+                  <g transform="rotate(180 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="13.2" y2="3"/><line x1="15" y1="4.5" x2="16.8" y2="3"/></g>
+                  <g transform="rotate(225 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="16.8" y2="3"/><line x1="13.3" y1="7.2" x2="16.7" y2="7.2"/></g>
+                  <g transform="rotate(270 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="13.2" y1="4.5" x2="16.8" y2="4.5"/><line x1="15" y1="4.5" x2="13.2" y2="3"/></g>
+                  <g transform="rotate(315 15 15)"><line x1="15" y1="12" x2="15" y2="4.5"/><line x1="15" y1="4.5" x2="13.2" y2="3"/><line x1="15" y1="4.5" x2="16.8" y2="3"/><line x1="13.3" y1="7.5" x2="16.7" y2="7.5"/></g>
+                </g>
+                <circle cx="15" cy="15" r="1.8" fill="#B8892A"/>
+                <circle cx="14.4" cy="14.4" r=".5" fill="rgba(255,255,255,.38)"/>
+              </svg>
+              <div>
+                <div style="font-size:13px;font-weight:700;color:var(--text)">Way<span style="color:var(--gold2)">finder</span></div>
+                <div style="font-size:10px;color:var(--muted);margin-top:1px">Your Personal Travel Universe</div>
+              </div>
+            </div>
+            <p style="font-size:12px;color:var(--muted);line-height:1.75;margin-bottom:8px">The <strong style="color:var(--text2)">Vegvísir</strong> is an ancient Icelandic compass carried by those who ventured into storms and unknown waters. Eight runic staves — eight possible paths — radiating outward in all directions. "If this sign is carried, one will never lose one's way in storms or bad weather, even when the way is not known."</p>
+            <p style="font-size:12px;color:var(--muted2);font-style:italic;border-top:1px solid var(--bdr);padding-top:8px;line-height:1.6">The Vegvísir guides those lost in storms. May you always find your way.</p>
+            <p style="font-size:10px;color:var(--muted2);margin-top:8px;opacity:.7">Phase 1 · Built with Claude</p>
+          </div>
         </div>
       </div>
     </div>
@@ -2736,12 +2780,12 @@ function rHome(){
   // Grouped "What's In Motion" dashboard data
   const abroad=D.abroad||{countries:[]};
   const abroadActive=(abroad.countries||[]).filter(c=>c.status!=='eliminated');
-  const _sCol={dream:'#7F77DD',research:'#7F77DD',planning:'#378ADD',locked:'#EF9F27',active:'#3a9e5c'};
+  const _sCol={dream:'#7F77DD',research:'#7F77DD',planning:'#378ADD',locked:'#C8901E',active:'#3a9e5c'};
   const motionNow=activeNow.map(t=>{const dur=tripDays(t);const start=t.startDate?new Date(t.startDate):null;const dayNum=start?Math.round((today-start)/86400000)+1:1;return{label:t.name,bc:'#3a9e5c',dayNum,dur,click:"go('trips');openTripD('"+t.id+"')",solo:!!t.solo};});
   // Include locked upcoming adventures in motionNext alongside locked trips
   const _lockedAdvNext=upcomingAdvs.filter(c=>c.status==='locked'||c.status==='active');
   const _motionNextRaw=[...upcoming.filter(t=>t.status==='locked').map(t=>({...t,_isAdv:false})),..._lockedAdvNext.map(c=>({...c,_isAdv:true}))].sort((a,b)=>new Date(a.startDate)-new Date(b.startDate)).slice(0,4);
-  const motionNext=_motionNextRaw.map(t=>{const d=Math.ceil((new Date(t.startDate)-today)/86400000);const click=t._isAdv?"go('trips');openCampDInTrips('"+t.id+"')":`go('trips');openTripD('`+t.id+`')`;return{label:t.name,sub:(d<=1?'Tomorrow':d+' days away')+' · '+fd(t.startDate),bc:'#EF9F27',daysUntil:d,click,solo:!!t.solo};});
+  const motionNext=_motionNextRaw.map(t=>{const d=Math.ceil((new Date(t.startDate)-today)/86400000);const click=t._isAdv?"go('trips');openCampDInTrips('"+t.id+"')":`go('trips');openTripD('`+t.id+`')`;return{label:t.name,sub:(d<=1?'Tomorrow':d+' days away')+' · '+fd(t.startDate),bc:'#C8901E',daysUntil:d,click,solo:!!t.solo};});
   const motionWorks=cleanTrips.filter(t=>t.status==='planning').slice(0,4).map(t=>{const sc=_sCol[t.status]||'#4A7EBA';return{label:t.name,sub:t.startDate?fd(t.startDate):'No dates yet',bc:sc,badge:tsl(t.status),click:"go('trips');openTripD('"+t.id+"')",solo:!!t.solo};});
   const motionAdv=(D.camps||[]).filter(c=>c.recordType!=='spot'&&c.status!=='past'&&c.status!=='dream'&&c.status!=='research').sort((a,b)=>new Date(a.startDate||0)-new Date(b.startDate||0)).slice(0,4).map(c=>{const ti=ADV_TYPES[c.campType]||{icon:'\u{1F9ED}',label:'Adventure'};const sc=_sCol[c.status||'planning']||'#4A7259';const cs=c.startDate?new Date(c.startDate):null;const daysUntil=cs&&cs>today?Math.ceil((cs-today)/86400000):null;const badge=daysUntil?((daysUntil===1?'Tomorrow':daysUntil+' days away')):tsl(c.status||'planning');return{icon:ti.icon,label:c.name,sub:ti.label+(c.startDate?' · '+fd(c.startDate):'')+(c.location?' · '+c.location:''),bc:sc,badge,daysUntil,click:"go('trips');openCampDInTrips('"+c.id+"')"};});
   const radarTrips=cleanTrips.filter(t=>t.status==='dream'||t.status==='research');
@@ -2782,8 +2826,10 @@ function rHome(){
     :`<div class="hero-next" style="cursor:pointer;margin-top:12px" onclick="openTrip()"><div style="font-size:12px;opacity:.9">Ready to start exploring? <strong>Add your first trip →</strong></div></div>`}
   </div>
 
+  ${(()=>{const _q=['The mountains are calling and I must go. — John Muir','To be lost is to be fully present. — Rebecca Solnit','The real home of man is not his house but the road. — Bruce Chatwin','In every walk with nature, one receives far more than he seeks. — John Muir','Travel is not really about leaving our homes, but leaving our habits. — Pico Iyer','Leave the door open for the unknown, the door into the dark. — Rebecca Solnit','Every place you\'ve been is still a part of you. — Wayfinder','Of all the paths you take in life, make sure a few of them are dirt. — John Muir','Getting lost was not a matter of geography so much as identity. — Rebecca Solnit','Home lies in the things you carry with you everywhere. — Pico Iyer','The clearest way into the Universe is through a forest wilderness. — John Muir','Not all those who wander are lost. — J.R.R. Tolkien','Where will you go next? The compass is patient. — Wayfinder','Tell me, what is it you plan to do with your one wild and precious life? — Mary Oliver'];const _d=Math.floor((Date.now()-(new Date(new Date().getFullYear(),0,0)).getTime())/86400000);return`<div style="margin-bottom:13px;padding:11px 14px 11px 16px;background:var(--card);border:1px solid var(--bdr);border-left:3px solid rgba(62,102,68,.3);border-radius:var(--r);display:flex;align-items:center;gap:10px"><span style="opacity:.35;font-size:13px;flex-shrink:0;color:var(--green)">✦</span><p style="font-size:12px;color:var(--muted);font-style:italic;line-height:1.55;margin:0">${_q[_d%_q.length]}</p></div>`})()}
+
   <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px">
-    <div class="sc" style="--accent:#EF9F27;cursor:pointer" onclick="go('trips')"><div class="si">🔒</div><div class="sn">${lockedCount||'—'}</div><div class="sl">Locked In</div></div>
+    <div class="sc" style="--accent:var(--amber);cursor:pointer" onclick="go('trips')"><div class="si">🔒</div><div class="sn">${lockedCount||'—'}</div><div class="sl">Locked In</div></div>
     <div class="sc" style="--accent:#378ADD;cursor:pointer" onclick="go('trips')"><div class="si">✏️</div><div class="sn">${inWorksCount||'—'}</div><div class="sl">In The Works</div></div>
   </div>
   <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:13px">
@@ -2793,7 +2839,7 @@ function rHome(){
 
   ${hasMotion?`<div style="margin-bottom:10px;display:flex;align-items:center;justify-content:space-between"><span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">What's In Motion</span><span style="font-size:11px;color:var(--green3);cursor:pointer;font-weight:500" onclick="go('path')">The Path →</span></div>
   ${motionNow.map(it=>`<div style="background:var(--card);border:1px solid rgba(58,158,92,.25);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);margin-bottom:20px"><div style="display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid rgba(58,158,92,.2);border-left:4px solid #3a9e5c;background:rgba(58,158,92,.06)"><span style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:#3a9e5c;flex:1">🚀 Happening Now</span></div><div style="display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer;border-left:4px solid #3a9e5c" onclick="${it.click}" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background=''"><div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${it.label}${it.solo?' <span style="opacity:.7;font-size:12px">🧍</span>':''}</div><div style="font-size:13px;color:#3a9e5c;margin-top:3px">Day ${it.dayNum} of ${it.dur||'?'}</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:22px;font-weight:700;color:#3a9e5c;line-height:1">${it.dayNum}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">day</div></div></div></div>`).join('')}
-  ${motionNext.length?`<div style="background:var(--card);border:1px solid rgba(239,159,39,.25);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);margin-bottom:20px"><div style="display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--bdr2);border-left:4px solid #EF9F27;background:rgba(239,159,39,.07)"><span style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:#EF9F27;flex:1">🔒 Up Next</span><span style="font-size:11px;color:#EF9F27;opacity:.65;font-weight:600">${motionNext.length}</span></div>${motionNext.map(it=>`<div style="display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer;border-left:4px solid #EF9F27;border-bottom:1px solid var(--bdr2);transition:background .13s" onclick="${it.click}" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background=''"><div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${it.label}${it.solo?' <span style="opacity:.7;font-size:12px">🧍</span>':''}</div><div style="font-size:13px;color:var(--muted);margin-top:3px">${it.sub}</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:22px;font-weight:700;color:#EF9F27;line-height:1">${it.daysUntil}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">days</div></div></div>`).join('')}</div>`:''}
+  ${motionNext.length?`<div style="background:var(--card);border:1px solid rgba(200,144,30,.25);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);margin-bottom:20px"><div style="display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--bdr2);border-left:4px solid var(--amber);background:rgba(200,144,30,.07)"><span style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:var(--amber);flex:1">🔒 Up Next</span><span style="font-size:11px;color:var(--amber);opacity:.65;font-weight:600">${motionNext.length}</span></div>${motionNext.map(it=>`<div style="display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer;border-left:4px solid var(--amber);border-bottom:1px solid var(--bdr2);transition:background .13s" onclick="${it.click}" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background=''"><div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${it.label}${it.solo?' <span style="opacity:.7;font-size:12px">🧍</span>':''}</div><div style="font-size:13px;color:var(--muted);margin-top:3px">${it.sub}</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:22px;font-weight:700;color:var(--amber);line-height:1">${it.daysUntil}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">days</div></div></div>`).join('')}</div>`:''}
   ${motionWorks.length?`<div style="background:var(--card);border:1px solid rgba(55,138,221,.25);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);margin-bottom:20px"><div style="display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--bdr2);border-left:4px solid #378ADD;background:rgba(55,138,221,.07)"><span style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:#378ADD;flex:1">✏️ In The Works</span><span style="font-size:11px;color:#378ADD;opacity:.65;font-weight:600">${motionWorks.length}</span></div>${motionWorks.map(it=>`<div style="display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer;border-left:4px solid #378ADD;border-bottom:1px solid var(--bdr2);transition:background .13s" onclick="${it.click}" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background=''"><div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${it.label}${it.solo?' <span style="opacity:.7;font-size:12px">🧍</span>':''}</div><div style="font-size:13px;color:var(--muted);margin-top:3px">${it.sub}</div></div><span style="font-size:10px;font-weight:600;padding:3px 9px;border-radius:100px;background:${it.bc}18;color:${it.bc};border:1px solid ${it.bc}30;flex-shrink:0;white-space:nowrap">${it.badge}</span></div>`).join('')}</div>`:''}
   ${motionOnRadar.length?`<div style="background:var(--card);border:1px solid rgba(127,119,221,.25);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);margin-bottom:20px"><div style="display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--bdr2);border-left:4px solid #7F77DD;background:rgba(127,119,221,.07)"><span style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:#7F77DD;flex:1">🔭 On The Radar</span><span style="font-size:11px;color:#7F77DD;opacity:.65;font-weight:600">${motionOnRadar.length}</span></div>${motionOnRadar.map(it=>`<div style="display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer;border-left:4px solid #7F77DD;border-bottom:1px solid var(--bdr2);transition:background .13s" onclick="${it.click}" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background=''"><div style="font-size:16px;flex-shrink:0">${it.icon||'🔭'}</div><div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${it.label}</div><div style="font-size:13px;color:var(--muted);margin-top:3px">${it.note}</div></div><div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:100px;background:rgba(127,119,221,.12);color:#7F77DD;border:1px solid rgba(127,119,221,.2);white-space:nowrap">Researching</span><span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:rgba(127,119,221,.07);color:#7F77DD;border:1px solid rgba(127,119,221,.15);white-space:nowrap">${it.tag}</span></div></div>`).join('')}</div>`:''}
   ${motionAdv.length?`<div style="background:var(--card);border:1px solid rgba(99,153,34,.25);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);margin-bottom:20px"><div style="display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--bdr2);border-left:4px solid #639922;background:rgba(99,153,34,.07)"><span style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:#639922;flex:1">🧭 Adventures</span><span style="font-size:11px;color:#639922;opacity:.65;font-weight:600">${motionAdv.length}</span></div>${motionAdv.map(it=>`<div style="display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer;border-left:4px solid #639922;border-bottom:1px solid var(--bdr2);transition:background .13s" onclick="${it.click}" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background=''"><div style="font-size:16px;flex-shrink:0">${it.icon}</div><div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${it.label}</div><div style="font-size:13px;color:var(--muted);margin-top:3px">${it.sub}</div></div>${it.daysUntil!==null?`<div style="text-align:right;flex-shrink:0"><div style="font-size:22px;font-weight:700;color:var(--gold);line-height:1">${it.daysUntil}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">days</div></div>`:`<span style="font-size:10px;font-weight:600;padding:3px 9px;border-radius:100px;background:${it.bc}18;color:${it.bc};border:1px solid ${it.bc}30;flex-shrink:0;white-space:nowrap">${it.badge}</span>`}</div>`).join('')}</div>`:''}
@@ -2806,7 +2852,7 @@ function rHome(){
   </div>
 
   <div class="g2" style="margin-bottom:13px">
-    <div class="card"><div class="ch"><div><div class="ct">Top Wishlist</div><div class="cs">Where you want to go next</div></div><button class="pbtn" onclick="go('wishlist')">All →</button></div>${topWish.length?topWish.map(w=>`<div class="ai" style="cursor:pointer" onclick="go('wishlist')"><div class="ai-icon">${pi(w.priority)}</div><div style="flex:1"><div class="ai-text"><strong>${w.name}</strong></div><div class="ai-time">${w.type||'destination'}${w.season?' · '+w.season:''}</div></div></div>`).join(''):'<div style="text-align:center;padding:16px;color:var(--muted2);font-size:12px">Wishlist is empty</div>'}</div>
+    <div class="card"><div class="ch"><div><div class="ct">Top Wishlist</div><div class="cs">Where you want to go next</div></div><button class="pbtn" onclick="go('wishlist')">All →</button></div>${topWish.length?topWish.map(w=>`<div class="ai" style="cursor:pointer" onclick="go('wishlist')"><div class="ai-icon">${pi(w.priority)}</div><div style="flex:1"><div class="ai-text"><strong>${w.name}</strong></div><div class="ai-time">${w.type||'destination'}${w.season?' · '+w.season:''}</div></div></div>`).join(''):'<div style="text-align:center;padding:16px;color:var(--muted2);font-size:12px;font-style:italic">Where will you go next?</div>'}</div>
     <div class="card"><div class="ch"><div><div class="ct">Recently Saved</div><div class="cs">Latest places added</div></div><button class="pbtn" onclick="go('places')">All →</button></div>${recentPlaces.length?recentPlaces.map(p=>`<div class="ai" style="cursor:pointer" onclick="go('places');setTimeout(()=>openPlaceD('${p.id}'),10)"><div class="ai-icon">${ci(p.category)}</div><div style="flex:1"><div class="ai-text"><strong>${p.name}</strong></div><div class="ai-time">${p.usState&&p.country?p.usState+', '+p.country:p.country||p.region||'—'} · ${sl(p.status)}</div></div></div>`).join(''):'<div style="text-align:center;padding:16px;color:var(--muted2);font-size:12px">No places yet</div>'}</div>
   </div>
 
@@ -3073,7 +3119,7 @@ function rMap(){
     <div id="map-summary" style="display:none;font-size:11px;color:var(--text2);padding:6px 10px;background:rgba(74,114,89,.06);border:1px solid rgba(74,114,89,.2);border-radius:6px;margin-bottom:6px"></div>
     <div id="the-map" style="height:calc(100vh - 320px);min-height:370px;border-radius:var(--r);overflow:hidden;border:1px solid var(--bdr);box-shadow:var(--shadow)"></div>
     <div id="map-legend-row" style="display:flex;flex-wrap:wrap;gap:13px;padding:9px 2px;align-items:center">
-      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:14px;height:9px;background:#EF9F27;border-radius:2px;opacity:.85"></div>Visited</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:14px;height:9px;background:#C8901E;border-radius:2px;opacity:.85"></div>Visited</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:14px;height:9px;background:transparent;border:2px dashed #B8892A;border-radius:2px"></div>Want to Go</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)">🏠 Home</div>
       ${legendPins}
@@ -3138,7 +3184,7 @@ function mapRenderCountries(){
       const isTripDest=tripDestVisited.has(n)||tripDestVisited.has(raw);
       const isHome=n==='United States'||raw==='United States of America';
       if(isHome)return{fillColor:'rgba(74,114,89,.1)',fillOpacity:1,color:'#4A7259',weight:0.8,opacity:0.4};
-      if(d.vis>0||isTripDest)return{fillColor:'#EF9F27',fillOpacity:0.4,color:'#F5C84A',weight:1.4,opacity:0.85};
+      if(d.vis>0||isTripDest)return{fillColor:'#C8901E',fillOpacity:0.38,color:'#E8A830',weight:1.4,opacity:0.85};
       if(d.want>0)return{fillColor:'transparent',fillOpacity:0,color:'#B8892A',weight:1.5,opacity:0.65,dashArray:'5 3'};
       return{fillColor:'transparent',fillOpacity:0,color:'#ccc',weight:0.4,opacity:0.5};
     },
@@ -3422,7 +3468,7 @@ function mapRenderCountriesG(){
     const isHome=raw==='United States of America'||byNorm==='United States';
     if(isHome)return{fillColor:'#4A7259',fillOpacity:0.1,strokeColor:'#4A7259',strokeWeight:0.8,strokeOpacity:0.4};
     const isVisited=visited.has(raw)||visited.has(byNorm)||visited.has(byGeo);
-    if(isVisited){highlightCount++;return{fillColor:'#EF9F27',fillOpacity:0.4,strokeColor:'#D4890A',strokeWeight:1};}
+    if(isVisited){highlightCount++;return{fillColor:'#C8901E',fillOpacity:0.38,strokeColor:'#A07018',strokeWeight:1};}
     const isWanted=wanted.has(raw)||wanted.has(byNorm)||wanted.has(byGeo);
     if(isWanted)return{fillColor:'#B8892A',fillOpacity:0.05,strokeColor:'#B8892A',strokeWeight:1.5,strokeOpacity:0.65};
     return{fillColor:'#888888',fillOpacity:0,strokeColor:'#888',strokeWeight:0.4,strokeOpacity:0.5};
@@ -3568,7 +3614,7 @@ async function mapRenderHomeG(){
   let coords=cache[cacheKey];
   if(!coords)coords=await mapGeocodeGStr(searchQ,cacheKey);
   if(!coords)return;
-  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#4A7259" stroke="white" stroke-width="2.5"/><text x="16" y="22" text-anchor="middle" font-size="14" font-family="Apple Color Emoji,Segoe UI Emoji,sans-serif">🏠</text></svg>';
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#3E6644" stroke="white" stroke-width="2.5"/><text x="16" y="22" text-anchor="middle" font-size="14" font-family="Apple Color Emoji,Segoe UI Emoji,sans-serif">🏠</text></svg>';
   gMapHomeMarker=new google.maps.Marker({
     position:{lat:coords.lat,lng:coords.lng},map:gMap,
     icon:{url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),scaledSize:new google.maps.Size(32,32),anchor:new google.maps.Point(16,16)},
@@ -4047,7 +4093,7 @@ function stateEmoji(s){const m={'Hawaii':'🌺','Alaska':'🏔️','California':
 function rPlacesAtlas(){
   const g=document.getElementById('places-grid');g.className='';
   const all=D.places||[];
-  if(!all.length){g.innerHTML=`<div class="empty"><div class="empty-icon">🌍</div><h3>No places yet</h3><p>Add places you've visited or want to go — they'll appear here organized by destination.</p><button class="tb-btn" onclick="openPlace()">+ Add First Place</button></div>`;return;}
+  if(!all.length){g.innerHTML=`<div class="empty"><div class="empty-icon">🌍</div><h3>Your map is empty — for now.</h3><p>Every dot on this map is a story you've lived. Start with anywhere.</p><button class="tb-btn" onclick="openPlace()">+ Add First Place</button></div>`;return;}
   const intl=all.filter(p=>p.country&&normCountry(p.country)!=='United States');
   const us=all.filter(p=>normCountry(p.country)==='United States');
   const noloc=all.filter(p=>!p.country);
@@ -4274,7 +4320,7 @@ function rTrips(){
     const tLabel=tripTypeFilter!=='all'?` ${(TRIP_TYPES[tripTypeFilter]?.label||tripTypeFilter)}`:'';
     const _emptyBtnLabel={'all':'+ New Trip','road_trip':'+ Plan Road Trip','camping':'+ Plan Camping Trip','adventure':'+ Plan Adventure','getaway':'+ Plan Getaway','international':'+ Plan International Trip','event':'+ Plan Event','solo':'+ New Trip'}[tripTypeFilter]||'+ New Trip';
     const _emptyBtnAct=(!tripTypeFilter||tripTypeFilter==='all'||tripTypeFilter==='solo')?'openNewTrip()':`pickTripType('${tripTypeFilter}')`;
-    g.innerHTML=`<div class="empty"><div class="empty-icon">${TRIP_TYPES[tripTypeFilter]?.icon||'✈️'}</div><h3>No${tLabel} trips yet</h3><p>Pick a type to get started.</p><button class="tb-btn" onclick="${_emptyBtnAct}" style="margin-bottom:8px">${_emptyBtnLabel}</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;
+    g.innerHTML=`<div class="empty"><div class="empty-icon">${TRIP_TYPES[tripTypeFilter]?.icon||'✈️'}</div><h3>No journeys logged yet.</h3><p>Every great adventure starts with the first step. Where did you begin?</p><button class="tb-btn" onclick="${_emptyBtnAct}" style="margin-bottom:8px">${_emptyBtnLabel}</button><br><button class="tb-btn gold" onclick="openImport()">📄 Import from Doc</button></div>`;
     return;
   }
   // Bucket by lifecycle stage (trips + adventures together)
@@ -4294,7 +4340,7 @@ function rTrips(){
     return[dests?'📍 '+dests:'',item.startDate?fd(item.startDate):'Dates TBD',dur?dur+'d':''].filter(Boolean).join(' · ');
   }
   let html='';
-  const sCol={dream:'#7F77DD',research:'#7F77DD',planning:'#378ADD',locked:'#EF9F27',active:'#3a9e5c',past:'#888880'};
+  const sCol={dream:'#7F77DD',research:'#7F77DD',planning:'#378ADD',locked:'#C8901E',active:'#3a9e5c',past:'#888880'};
   // ── Happening Now ─────────────────────────────────────────────────
   if(activeItems.length){
     html+=`<div class="ts"><div class="ts-h"><span class="ts-h-icon">🚀</span><span class="ts-h-title">Happening Now</span></div>
@@ -4506,7 +4552,7 @@ function openTripD(id){
     </div>
   </div>
   <div style="background:linear-gradient(135deg,var(--card2),var(--card));border:1px solid var(--bdr);border-radius:var(--r);padding:16px 18px;margin-bottom:13px;position:relative;overflow:hidden">
-    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${t.status==='active'?'linear-gradient(90deg,#3a9e5c,#5fc47a)':t.status==='locked'?'linear-gradient(90deg,#EF9F27,#D48C1A)':t.status==='planning'?'linear-gradient(90deg,#378ADD,#5BA3F5)':t.status==='dream'||t.status==='research'?'linear-gradient(90deg,#7F77DD,#9B95E8)':'linear-gradient(90deg,#888880,#AAA8A0)'}"></div>
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${t.status==='active'?'linear-gradient(90deg,#3a9e5c,#5fc47a)':t.status==='locked'?'linear-gradient(90deg,#C8901E,#A07018)':t.status==='planning'?'linear-gradient(90deg,#378ADD,#5BA3F5)':t.status==='dream'||t.status==='research'?'linear-gradient(90deg,#7F77DD,#9B95E8)':'linear-gradient(90deg,#888880,#AAA8A0)'}"></div>
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px">
       <div style="font-size:21px;font-weight:700;color:var(--text);letter-spacing:-.4px">${t.name}</div>
       ${daysChip}
@@ -5141,90 +5187,230 @@ function saveStop(){
     else{toast('📍 Stop added');window._tripItinTab='plans';openTripD(pendStop.tid);}
   }
 }
-// ── Day drag-and-drop ─────────────────────────────────────────────
-let _dragDayIdx=null,_dragTripId=null;
-function dayDragStart(e,tid,di){
-  _dragDayIdx=di;_dragTripId=tid;
+// ── Plans: unified drag-and-drop (HTML5 + Touch) ────────────────
+let _pd=null; // {kind:'day'|'stop', rt:'trip'|'camp', id, di, si?}
+let _ptTimer=null,_ptActive=false,_ptClone=null,_ptOriginEl=null,_ptLastHL=null;
+
+function _pdRec(rt,id){D=load();return rt==='camp'?(D.camps||[]).find(x=>x.id===id):D.trips.find(x=>x.id===id);}
+function _pdSave(rt){if(rt==='camp'){localStorage.setItem('wf_camps',JSON.stringify(D.camps));scheduledSync('camps',D.camps);}else save('trips',D.trips);}
+function _pdRefresh(rt,id){if(rt==='camp'){window._campDTab='daily';openCampD(id);}else{window._tripItinTab='plans';openTripD(id);}}
+function _pdUnsched(rec){let ui=rec.itinerary.findIndex(d=>!d.date);if(ui<0){rec.itinerary.push({date:'',stops:[]});ui=rec.itinerary.length-1;}return ui;}
+
+// Day HTML5 events
+function pdDayStart(e){
+  const el=e.currentTarget;
+  const rt=el.dataset.recordType,id=el.dataset.recordId,di=parseInt(el.dataset.dayIdx);
+  if(_pd?.kind==='stop'){e.preventDefault();return;}
+  _pd={kind:'day',rt,id,di};
   e.dataTransfer.effectAllowed='move';
-  e.dataTransfer.setData('text/plain',di.toString());
-  setTimeout(()=>{if(e.target)e.target.style.opacity='.4';},0);
+  e.dataTransfer.setData('text/plain','day:'+di);
+  setTimeout(()=>el.classList.add('day-dragging'),0);
 }
-function dayDragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';}
-function dayDragEnter(e){
-  e.preventDefault();
-  if(_dragDayIdx!==null)e.currentTarget.classList.add('day-drag-over');
-}
-function dayDragLeave(e){
-  if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.classList.remove('day-drag-over');
-}
-function dayDragEnd(e){
-  e.target.style.opacity='';
+function pdDayEnd(e){
+  e.currentTarget.classList.remove('day-dragging');
   document.querySelectorAll('.day-drag-over').forEach(el=>el.classList.remove('day-drag-over'));
-  _dragDayIdx=null;_dragTripId=null;
+  if(!_ptActive)_pd=null;
 }
-function dayDrop(e,tid,targetIdx){
+function pdDayEnter(e){
   e.preventDefault();
-  e.currentTarget.classList.remove('day-drag-over');
-  const srcIdx=_dragDayIdx;
-  _dragDayIdx=null;_dragTripId=null;
-  if(srcIdx===null||srcIdx===targetIdx)return;
-  D=load();const t=D.trips.find(x=>x.id===tid);if(!t||!t.itinerary)return;
-  const arr=t.itinerary;
-  const [moved]=arr.splice(srcIdx,1);
-  const insertAt=srcIdx<targetIdx?targetIdx-1:targetIdx;
-  arr.splice(insertAt,0,moved);
-  // Reassign dates sequentially from startDate
-  if(t.startDate){arr.forEach((day,i)=>{const d=new Date(t.startDate+'T12:00:00');d.setDate(d.getDate()+i);day.date=d.toISOString().split('T')[0];});}
-  save('trips',D.trips);openTripD(tid);toast('📅 Day order updated');
+  if(_pd?.kind!=='day')return;
+  const el=e.currentTarget;
+  if(parseInt(el.dataset.dayIdx)!==_pd.di)el.classList.add('day-drag-over');
 }
-// ── Stop drag-and-drop (within a day) ───────────────────
-let _dragStopTid=null,_dragStopDi=null,_dragStopSi=null;
-function stopDragStart(e,tid,di,si){
-  _dragStopTid=tid;_dragStopDi=di;_dragStopSi=si;
-  e.dataTransfer.effectAllowed='move';
-  e.dataTransfer.setData('text/plain',si.toString());
-  e.stopPropagation(); // don't bubble to day drag
-  setTimeout(()=>{if(e.target)e.target.style.opacity='.35';},0);
+function pdDayLeave(e){if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.classList.remove('day-drag-over');}
+function pdDayDrop(e){
+  e.preventDefault();
+  const el=e.currentTarget;el.classList.remove('day-drag-over');
+  if(!_pd||_pd.kind!=='day')return;
+  const tDi=parseInt(el.dataset.dayIdx);if(tDi===_pd.di)return;
+  const {rt,id,di:src}=_pd;_pd=null;
+  _pdDoReorderDay(rt,id,src,tDi);
 }
-function stopDragOver(e){e.preventDefault();e.stopPropagation();e.dataTransfer.dropEffect='move';}
-function stopDragEnter(e){
-  e.preventDefault();e.stopPropagation();
-  if(_dragStopTid!==null)e.currentTarget.classList.add('stop-drag-over');
+function _pdDoReorderDay(rt,id,src,tgt){
+  const rec=_pdRec(rt,id);if(!rec||!rec.itinerary)return;
+  const arr=rec.itinerary;
+  const [moved]=arr.splice(src,1);
+  const ins=src<tgt?tgt-1:tgt;
+  arr.splice(ins,0,moved);
+  if(rec.startDate){let di2=0;arr.forEach(day=>{if(day.date){const d=new Date(rec.startDate+'T12:00:00');d.setDate(d.getDate()+di2);day.date=d.toISOString().split('T')[0];di2++;}});}
+  _pdSave(rt);_pdRefresh(rt,id);_pdToast('Saved');
 }
-function stopDragLeave(e){
+
+// Stop HTML5 events
+function pdStopStart(e){
   e.stopPropagation();
-  if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.classList.remove('stop-drag-over');
+  const el=e.currentTarget;
+  const rt=el.dataset.recordType,id=el.dataset.recordId,di=parseInt(el.dataset.dayIdx),si=parseInt(el.dataset.stopIdx);
+  _pd={kind:'stop',rt,id,di,si};
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain','stop:'+di+':'+si);
+  setTimeout(()=>el.classList.add('stop-dragging'),0);
 }
-function stopDragEnd(e){
-  e.target.style.opacity='';
-  document.querySelectorAll('.stop-drag-over').forEach(el=>el.classList.remove('stop-drag-over'));
-  _dragStopTid=null;_dragStopDi=null;_dragStopSi=null;
+function pdStopEnd(e){
+  e.currentTarget.classList.remove('stop-dragging');
+  document.querySelectorAll('.stop-drag-over,.stop-drag-over-day').forEach(el=>el.classList.remove('stop-drag-over','stop-drag-over-day'));
+  if(!_ptActive)_pd=null;
 }
-function stopDrop(e,tid,di,targetSi){
+function pdStopEnter(e){
   e.preventDefault();e.stopPropagation();
-  e.currentTarget.classList.remove('stop-drag-over');
-  const srcSi=_dragStopSi;const srcDi=_dragStopDi;
-  _dragStopTid=null;_dragStopDi=null;_dragStopSi=null;
-  if(srcSi===null||srcDi===null)return;
-  if(srcDi===di&&srcSi===targetSi)return;
-  D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
-  const stops=t.itinerary[di]?.stops;if(!stops)return;
-  if(srcDi===di){
-    // Reorder within same day
-    const [moved]=stops.splice(srcSi,1);
-    const insertAt=srcSi<targetSi?targetSi-1:targetSi;
-    stops.splice(insertAt,0,moved);
+  if(_pd?.kind!=='stop')return;
+  const el=e.currentTarget;
+  if(parseInt(el.dataset.dayIdx)!==_pd.di||parseInt(el.dataset.stopIdx)!==_pd.si)el.classList.add('stop-drag-over');
+}
+function pdStopLeave(e){e.stopPropagation();if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.classList.remove('stop-drag-over');}
+function pdStopDrop(e){
+  e.preventDefault();e.stopPropagation();
+  const el=e.currentTarget;el.classList.remove('stop-drag-over');
+  if(!_pd||_pd.kind!=='stop')return;
+  const tDi=parseInt(el.dataset.dayIdx),tSi=parseInt(el.dataset.stopIdx);
+  if(_pd.di===tDi&&_pd.si===tSi)return;
+  const {rt,id,di,si}=_pd;_pd=null;
+  _pdDoMoveStop(rt,id,di,si,tDi,tSi,false);
+}
+
+// Zone (day container) drop — stop appends to end of that day
+function pdOver(e){e.preventDefault();if(e.dataTransfer)e.dataTransfer.dropEffect='move';}
+function pdZoneEnter(e){
+  e.preventDefault();e.stopPropagation();
+  if(_pd?.kind!=='stop')return;
+  const el=e.currentTarget,tDi=parseInt(el.dataset.dayIdx);
+  if(tDi!==_pd.di||el.classList.contains('plans-unsched'))el.classList.add('stop-drag-over-day');
+}
+function pdZoneLeave(e){e.stopPropagation();if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.classList.remove('stop-drag-over-day');}
+function pdZoneDrop(e){
+  e.preventDefault();e.stopPropagation();
+  const el=e.currentTarget;el.classList.remove('stop-drag-over-day');
+  if(!_pd||_pd.kind!=='stop')return;
+  const tDi=parseInt(el.dataset.dayIdx);
+  if(tDi===_pd.di){_pd=null;return;}
+  const {rt,id,di,si}=_pd;_pd=null;
+  _pdDoMoveStop(rt,id,di,si,tDi,-1,true); // -1 si means append
+}
+
+// Core stop move
+function _pdDoMoveStop(rt,id,srcDi,srcSi,toDi,toSi,append){
+  const rec=_pdRec(rt,id);if(!rec)return;
+  let realToDi=toDi===-1?_pdUnsched(rec):toDi;
+  if(srcDi===realToDi&&append)return; // same zone, no-op
+  const srcStops=rec.itinerary[srcDi]?.stops;if(!srcStops)return;
+  const [moved]=srcStops.splice(srcSi,1);
+  if(!rec.itinerary[realToDi].stops)rec.itinerary[realToDi].stops=[];
+  const destStops=rec.itinerary[realToDi].stops;
+  if(append){
+    destStops.push(moved);
   } else {
-    // Move from another day into this day at targetSi position
-    const srcStops=t.itinerary[srcDi]?.stops;if(!srcStops)return;
-    const [moved]=srcStops.splice(srcSi,1);
-    stops.splice(targetSi,0,moved);
+    const ins=srcDi===realToDi?(srcSi<toSi?toSi-1:toSi):toSi;
+    destStops.splice(ins,0,moved);
   }
-  save('trips',D.trips);openTripD(tid);toast('✅ Stop reordered');
+  if(srcDi!==realToDi&&moved.placeId){
+    const pl=D.places.find(x=>x.id===moved.placeId);
+    const nd=rec.itinerary[realToDi]?.date||'';
+    if(pl){pl.visitDate=nd||null;save('places',D.places);}
+  }
+  _pdSave(rt);_pdRefresh(rt,id);_pdToast('Saved');
+}
+
+// Toast
+let _pdToastTm=null;
+function _pdToast(msg){const el=document.getElementById('toast');if(!el)return;el.textContent='✅ '+msg;el.style.display='block';clearTimeout(_pdToastTm);_pdToastTm=setTimeout(()=>el.style.display='none',1500);}
+
+// ── Touch drag ─────────────────────────────────────────────────
+function ptStart(e,rt,id,di,si){
+  const handle=e.currentTarget;
+  const kind=(si!=null&&si!==undefined)?'stop':'day';
+  const originEl=handle.closest(kind==='stop'?'[data-drag-stop]':'[data-drag-day]');
+  if(!originEl)return;
+  const touch=e.touches[0];
+  _ptActive=false;_ptOriginEl=originEl;
+  clearTimeout(_ptTimer);
+  _ptTimer=setTimeout(()=>{
+    _ptActive=true;
+    _pd={kind,rt,id,di:parseInt(di),si:si!=null?parseInt(si):undefined};
+    originEl.style.opacity='.3';originEl.style.transform='scale(.97)';
+    const rect=originEl.getBoundingClientRect();
+    const clone=originEl.cloneNode(true);
+    clone.style.cssText='position:fixed;top:'+rect.top+'px;left:'+rect.left+'px;width:'+rect.width+'px;pointer-events:none;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,.22);opacity:.88;transform:scale(1.03);border-radius:8px';
+    document.body.appendChild(clone);
+    _ptClone={el:clone,initTop:rect.top,initLeft:rect.left,startY:touch.clientY,startX:touch.clientX};
+    if(navigator.vibrate)navigator.vibrate(18);
+  },500);
+}
+function ptMove(e){
+  clearTimeout(_ptTimer);
+  if(!_ptActive||!_ptClone)return;
+  e.preventDefault();
+  const touch=e.touches[0];
+  _ptClone.el.style.top=(_ptClone.initTop+(touch.clientY-_ptClone.startY))+'px';
+  _ptClone.el.style.left=(_ptClone.initLeft+(touch.clientX-_ptClone.startX))+'px';
+  _ptClone.el.style.pointerEvents='none';
+  const target=document.elementFromPoint(touch.clientX,touch.clientY);
+  _ptClone.el.style.pointerEvents='';
+  if(_ptLastHL){_ptLastHL.classList.remove('stop-drag-over','day-drag-over','stop-drag-over-day');_ptLastHL=null;}
+  if(!target)return;
+  if(_pd?.kind==='stop'){
+    const sr=target.closest('[data-drag-stop]');
+    const zone=target.closest('[data-day-drop-zone]');
+    if(sr&&sr!==_ptOriginEl){sr.classList.add('stop-drag-over');_ptLastHL=sr;}
+    else if(zone){zone.classList.add('stop-drag-over-day');_ptLastHL=zone;}
+  } else if(_pd?.kind==='day'){
+    const de=target.closest('[data-drag-day]');
+    if(de&&de!==_ptOriginEl){de.classList.add('day-drag-over');_ptLastHL=de;}
+  }
+}
+function ptEnd(e){
+  clearTimeout(_ptTimer);
+  if(!_ptActive){_ptActive=false;return;}
+  _ptActive=false;
+  const touch=e.changedTouches[0];
+  if(_ptClone){_ptClone.el.remove();_ptClone=null;}
+  if(_ptOriginEl){_ptOriginEl.style.opacity='';_ptOriginEl.style.transform='';_ptOriginEl=null;}
+  if(_ptLastHL){_ptLastHL.classList.remove('stop-drag-over','day-drag-over','stop-drag-over-day');_ptLastHL=null;}
+  const target=document.elementFromPoint(touch.clientX,touch.clientY);
+  if(!target||!_pd){_pd=null;return;}
+  const saved={..._pd};_pd=null;
+  if(saved.kind==='stop'){
+    const sr=target.closest('[data-drag-stop]');
+    const zone=target.closest('[data-day-drop-zone]');
+    if(sr){_pdDoMoveStop(saved.rt,saved.id,saved.di,saved.si,parseInt(sr.dataset.dayIdx),parseInt(sr.dataset.stopIdx),false);}
+    else if(zone){_pdDoMoveStop(saved.rt,saved.id,saved.di,saved.si,parseInt(zone.dataset.dayIdx),-1,true);}
+  } else if(saved.kind==='day'){
+    const de=target.closest('[data-drag-day]');
+    if(de){const tDi=parseInt(de.dataset.dayIdx);if(tDi!==saved.di)_pdDoReorderDay(saved.rt,saved.id,saved.di,tDi);}
+  }
+}
+function ptCancel(e){
+  clearTimeout(_ptTimer);_ptActive=false;
+  if(_ptClone){_ptClone.el.remove();_ptClone=null;}
+  if(_ptOriginEl){_ptOriginEl.style.opacity='';_ptOriginEl.style.transform='';_ptOriginEl=null;}
+  if(_ptLastHL){_ptLastHL.classList.remove('stop-drag-over','day-drag-over','stop-drag-over-day');_ptLastHL=null;}
+  _pd=null;
+}
+
+// ── Inline stop name editing ─────────────────────────────
+function plansInlineEditStart(nameEl,tid,di,si){
+  const inp=nameEl.nextElementSibling;if(!inp||!inp.classList.contains('stopname-edit'))return;
+  nameEl.style.display='none';inp.style.display='block';inp.focus();inp.select();
+}
+function plansInlineEditSave(inp,tid,di,si){
+  if(inp._busy)return;inp._busy=true;
+  const v=inp.value.trim();
+  if(!v){plansInlineEditCancel(inp);return;}
+  D=load();const t=D.trips.find(x=>x.id===tid);if(!t){plansInlineEditCancel(inp);return;}
+  const s=t.itinerary[di]?.stops?.[si];if(!s){plansInlineEditCancel(inp);return;}
+  s.name=v;save('trips',D.trips);_pdToast('Saved');openTripD(tid);
+}
+function plansInlineEditCancel(inp){
+  const prev=inp.previousElementSibling;if(prev)prev.style.display='';inp.style.display='none';
 }
 function delDay(tid,di){
   D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
-  if(t.itinerary[di]?.stops?.length&&!confirm('Remove this day and its stops?'))return;
+  const day=t.itinerary[di];if(!day)return;
+  if((day.stops||[]).length){
+    if(!confirm('Move '+day.stops.length+' stop'+(day.stops.length>1?'s':'')+' to Unscheduled and remove this day?'))return;
+    let ui=t.itinerary.findIndex((d,i)=>!d.date&&i!==di);
+    if(ui<0){t.itinerary.push({date:'',stops:[]});ui=t.itinerary.length-1;}
+    t.itinerary[ui].stops.push(...day.stops);
+  }
   t.itinerary.splice(di,1);
   save('trips',D.trips);toast('🗑️ Day removed');openTripD(tid);
 }
@@ -5310,74 +5496,76 @@ function rTripStopsTab(t){
   html+=`<button class="tb-btn" style="width:100%;justify-content:center;margin-top:12px" onclick="openStop('${t.id}',null)">+ Add Stop</button>`;
   return html;
 }
+function _rPlanStop(rt,id,di,si,s,accentColor){
+  const lp=(rt==='trip'&&s.placeId)?D.places.find(x=>x.id===s.placeId):null;
+  const wt=WP_TYPES[s.type||'other']||WP_TYPES.other;
+  const dur=s.duration?parseInt(s.duration)>=60?Math.round(parseInt(s.duration)/60)+'h':(s.duration+'min'):'';
+  const editFn=rt==='camp'?`openAdvItinStopEdit('${id}',${di},${si})`:`openStopEdit('${id}',${di},${si})`;
+  const delFn=rt==='camp'?`delAdvItinStop('${id}',${di},${si})`:`delStop('${id}',${di},${si})`;
+  const doneFn=rt==='camp'?`toggleAdvItinDone('${id}',${di},${si},this.checked)`:`toggleStopDone('${id}',${di},${si},this.checked)`;
+  const inlineEdit=rt==='trip'?`ondblclick="plansInlineEditStart(this,'${id}',${di},${si})"`:'' ;
+  const safeName=(s.name||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  return`<div class="stop-row${s.done?' wp-done':''}" data-drag-stop data-record-type="${rt}" data-record-id="${id}" data-day-idx="${di}" data-stop-idx="${si}" draggable="true"
+    ondragstart="pdStopStart(event)" ondragover="pdOver(event)" ondragenter="pdStopEnter(event)" ondragleave="pdStopLeave(event)" ondragend="pdStopEnd(event)" ondrop="pdStopDrop(event)">
+    <span class="stop-drag-handle" title="Drag to reorder" ontouchstart="ptStart(event,'${rt}','${id}',${di},${si})" ontouchmove="ptMove(event)" ontouchend="ptEnd(event)" ontouchcancel="ptCancel(event)">⠿</span>
+    <input type="checkbox" ${s.done?'checked':''} style="width:14px;height:14px;flex-shrink:0;margin-top:2px;accent-color:${accentColor};cursor:pointer" onchange="${doneFn}" title="Mark done"/>
+    <div class="wp-icon" title="${wt.l}">${wt.i}</div>
+    ${s.time?`<div class="wp-time">${s.time}${dur?' · '+dur:''}</div>`:''}
+    <div style="flex:1;min-width:0">
+      <div class="stopname" ${inlineEdit}>${s.name}${lp?` <span style="font-size:9px;color:var(--green3);cursor:pointer" onclick="go('places');setTimeout(()=>openPlaceD('${lp.id}'),10)">↗</span>`:''}</div>
+      ${rt==='trip'?`<input class="stopname-edit" value="${safeName}" onkeydown="if(event.key==='Enter'){plansInlineEditSave(this,'${id}',${di},${si})}else if(event.key==='Escape'){plansInlineEditCancel(this)}" onblur="plansInlineEditSave(this,'${id}',${di},${si})"/>`:''}
+      ${s.address?`<div class="stopnote">📍 ${s.address}</div>`:''}
+      ${s.note?`<div class="stopnote">${s.note}</div>`:''}
+    </div>
+    <div style="display:flex;gap:2px;flex-shrink:0;align-items:center">
+      ${s.mapsUrl?`<a href="${s.mapsUrl}" target="_blank" class="wp-nav" title="Navigate">🗺️</a>`:''}
+      <button onclick="${editFn}" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:2px 4px;border-radius:4px;line-height:1;transition:color .15s" onmouseover="this.style.color='var(--green3)'" onmouseout="this.style.color='var(--muted2)'">✏️</button>
+      <button onclick="${delFn}" title="Remove" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:2px 4px;border-radius:4px;line-height:1;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
+    </div>
+  </div>`;
+}
 function rTripPlansTab(t){
   const itin=t.itinerary||[];
+  const tt=inferTripType(t,false);
+  const accent=(TRIP_TYPES[tt]?.color)||'#C8901E';
   if(!itin.length){
-    return`<div style="padding:16px;text-align:center;font-size:12px;color:var(--muted)">Add dates or click below to build a day-by-day plan</div>
-    <button class="add-stop" style="margin-top:6px;opacity:.7;width:100%;justify-content:center" onclick="addItineraryDay('${t.id}')">+ Add Day</button>`;
+    return`<div style="--plans-accent:${accent}"><div style="padding:16px;text-align:center;font-size:12px;color:var(--muted)">Add dates or click below to build a day-by-day plan</div><button class="add-stop" style="margin-top:6px;opacity:.7;width:100%;justify-content:center" onclick="addItineraryDay('${t.id}')">+ Add Day</button></div>`;
   }
-  const totalDays=itin.length;
   const scheduled=itin.filter(d=>d.date);
-  const unscheduledDay=itin.find(d=>!d.date&&(d.stops||[]).length);
-  let html=scheduled.map((day,schIdx)=>{
+  const unschedDi=itin.findIndex(d=>!d.date);
+  const unschedDay=unschedDi>=0?itin[unschedDi]:null;
+  let html=`<div style="--plans-accent:${accent}">`;
+  scheduled.forEach((day,schIdx)=>{
     const di=itin.indexOf(day);
-    const weekHeader=(totalDays>=8&&schIdx%7===0)?`<div style="display:flex;align-items:center;gap:8px;margin:${schIdx>0?'16px':'-2px'} 0 6px"><div style="flex:1;height:1px;background:var(--bdr)"></div><span style="font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap">Week ${Math.floor(schIdx/7)+1}</span><div style="flex:1;height:1px;background:var(--bdr)"></div></div>`:'';
-    return`${weekHeader}
-    <div style="margin-bottom:10px" data-drag-day draggable="true" ondragstart="dayDragStart(event,'${t.id}',${di})" ondragover="dayDragOver(event)" ondragenter="dayDragEnter(event)" ondragleave="dayDragLeave(event)" ondragend="dayDragEnd(event)" ondrop="dayDrop(event,'${t.id}',${di})">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;background:var(--card2);border-radius:6px;margin-bottom:4px">
-        <div style="display:flex;align-items:center;gap:2px">
-          <span class="day-drag-handle" title="Drag to reorder">⠿</span>
-          <div style="font-size:12px;font-weight:600;color:var(--text)">Day ${schIdx+1}${day.date?' — '+fd(day.date):''}</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <input type="date" value="${day.date}" onchange="setDayDate('${t.id}',${di},this.value)" title="Edit date" style="font-size:11px;color:var(--muted);background:transparent;border:none;border-bottom:1px dashed var(--bdr2);padding:1px 2px;cursor:pointer;width:108px;color-scheme:dark light"/>
-          <button onclick="delDay('${t.id}',${di})" title="Remove this day" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:1px 3px;line-height:1;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
+    const wk=(scheduled.length>=8&&schIdx%7===0)?`<div style="display:flex;align-items:center;gap:8px;margin:${schIdx>0?'16px':'-2px'} 0 6px"><div style="flex:1;height:1px;background:var(--bdr)"></div><span style="font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap">Week ${Math.floor(schIdx/7)+1}</span><div style="flex:1;height:1px;background:var(--bdr)"></div></div>`:'';
+    html+=`${wk}<div style="margin-bottom:10px" data-drag-day data-record-type="trip" data-record-id="${t.id}" data-day-idx="${di}" draggable="true"
+      ondragstart="pdDayStart(event)" ondragover="pdOver(event)" ondragenter="pdDayEnter(event)" ondragleave="pdDayLeave(event)" ondragend="pdDayEnd(event)" ondrop="pdDayDrop(event)">
+      <div class="plans-day-hdr" onmouseenter="this.classList.add('acts-vis')" onmouseleave="this.classList.remove('acts-vis')" ontouchstart="this.classList.add('acts-vis')" ontouchend="setTimeout(()=>this.classList.remove('acts-vis'),2000)">
+        <span class="day-drag-handle" title="Drag to reorder day" ontouchstart="ptStart(event,'trip','${t.id}',${di})" ontouchmove="ptMove(event)" ontouchend="ptEnd(event)" ontouchcancel="ptCancel(event)">⠿</span>
+        <div class="plans-day-title">Day ${schIdx+1}${day.date?' — '+fd(day.date):''}</div>
+        <div class="plans-day-acts">
+          <label class="plans-day-act" title="Edit date" style="cursor:pointer">✏️<input type="date" value="${day.date}" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;font-size:0;color-scheme:dark light" onchange="setDayDate('${t.id}',${di},this.value)"/></label>
+          <button class="plans-day-act" title="Add stop" onclick="event.stopPropagation();openStop('${t.id}',${di})">＋</button>
+          <button class="plans-day-act del" title="Remove day" onclick="event.stopPropagation();delDay('${t.id}',${di})">×</button>
         </div>
       </div>
-      ${(day.stops||[]).length?(day.stops||[]).map((s,si)=>{
-        const lp=s.placeId?D.places.find(x=>x.id===s.placeId):null;
-        const wt=WP_TYPES[s.type||'other']||WP_TYPES.other;
-        const otherDays=itin.map((d2,di2)=>di2===di?null:`<option value="${di2}">Day ${di2+1} · ${fd(d2.date)}</option>`).filter(Boolean).join('');
-        const dur=s.duration?parseInt(s.duration)>=60?Math.round(parseInt(s.duration)/60)+'h':(s.duration+'min'):'';
-        return`<div class="stop-row${s.done?' wp-done':''}" data-drag-stop draggable="true" ondragstart="stopDragStart(event,'${t.id}',${di},${si})" ondragover="stopDragOver(event)" ondragenter="stopDragEnter(event)" ondragleave="stopDragLeave(event)" ondragend="stopDragEnd(event)" ondrop="stopDrop(event,'${t.id}',${di},${si})">
-          <span class="stop-drag-handle" title="Drag to reorder">⠿</span>
-          <input type="checkbox" ${s.done?'checked':''} style="width:14px;height:14px;flex-shrink:0;margin-top:2px;accent-color:var(--green);cursor:pointer" onchange="toggleStopDone('${t.id}',${di},${si},this.checked)" title="Mark done"/>
-          <div class="wp-icon" title="${wt.l}">${wt.i}</div>
-          ${s.time?`<div class="wp-time">${s.time}${dur?' · '+dur:''}</div>`:''}
-          <div style="flex:1;min-width:0">
-            <div class="stopname">${s.name}${lp?` <span style="font-size:9px;color:var(--green3);cursor:pointer" onclick="go('places');setTimeout(()=>openPlaceD('${lp.id}'),10)">↗</span>`:''}</div>
-            ${s.address?`<div class="stopnote">📍 ${s.address}</div>`:''}
-            ${s.note?`<div class="stopnote">${s.note}</div>`:''}
-          </div>
-          <div style="display:flex;gap:2px;flex-shrink:0;align-items:center">
-            ${s.mapsUrl?`<a href="${s.mapsUrl}" target="_blank" class="wp-nav" title="Navigate">🗺️</a>`:''}
-            <button onclick="openStopEdit('${t.id}',${di},${si})" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:2px 4px;border-radius:4px;line-height:1;transition:color .15s" onmouseover="this.style.color='var(--green3)'" onmouseout="this.style.color='var(--muted2)'">✏️</button>
-            ${otherDays?`<select title="Move day" onchange="moveStop('${t.id}',${di},${si},parseInt(this.value));this.value=''" style="font-size:10px;padding:1px 2px;border:1px solid var(--bdr2);border-radius:4px;background:var(--card2);color:var(--text2);cursor:pointer;max-width:24px;text-align:center"><option value="">⇅</option>${otherDays}</select>`:''}
-            <button onclick="delStop('${t.id}',${di},${si})" title="Remove" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:2px 4px;border-radius:4px;line-height:1;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
-          </div>
-        </div>`;
-      }).join(''):`<div style="font-size:11px;color:var(--muted2);padding:5px 0">No stops yet — add meals, sights, rest stops, accommodation…</div>`}
+      <div data-day-drop-zone data-record-type="trip" data-record-id="${t.id}" data-day-idx="${di}"
+        ondragover="pdOver(event)" ondragenter="pdZoneEnter(event)" ondragleave="pdZoneLeave(event)" ondrop="pdZoneDrop(event)">
+        ${(day.stops||[]).length?(day.stops||[]).map((s,si)=>_rPlanStop('trip',t.id,di,si,s,accent)).join(''):`<div style="font-size:11px;color:var(--muted2);padding:5px 0;pointer-events:none">No stops yet — add meals, sights, rest stops…</div>`}
+      </div>
       <textarea class="ft" style="margin-top:6px;min-height:34px;font-size:12px" placeholder="Notes for this day…" onblur="saveDayNotes('${t.id}',${di},this.value)">${day.notes||''}</textarea>
-      <button class="add-stop" onclick="openStop('${t.id}',${di})">+ Add Stop to Day ${schIdx+1}</button>
     </div>`;
-  }).join('');
-  if(unscheduledDay){
-    const di=itin.indexOf(unscheduledDay);
-    html+=`<div style="border:1px dashed var(--bdr2);border-radius:var(--r);padding:10px 12px;margin-bottom:10px">
-      <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px">📋 Unscheduled</div>
-      <div style="font-size:11px;color:var(--muted2);margin-bottom:8px">Edit a stop to assign it to a day</div>
-      ${(unscheduledDay.stops||[]).map((s,si)=>{
-        const wt=WP_TYPES[s.type||'other']||WP_TYPES.other;
-        return`<div class="stop-row">
-          <div class="wp-icon">${wt.i}</div>
-          <div style="flex:1;min-width:0"><div class="stopname">${s.name}</div>${s.note?`<div class="stopnote">${s.note}</div>`:''}</div>
-          <button onclick="openStopEdit('${t.id}',${di},${si})" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:2px 4px" title="Edit to assign a day">✏️</button>
-          <button onclick="delStop('${t.id}',${di},${si})" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:2px 4px" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
-        </div>`;
-      }).join('')}
-    </div>`;
-  }
-  html+=`<button class="add-stop" style="margin-top:6px;opacity:.7;width:100%;justify-content:center" onclick="addItineraryDay('${t.id}')">+ Add Day</button>`;
+  });
+  const unschedStops=unschedDay?(unschedDay.stops||[]):[];
+  const realUnschedDi=unschedDi>=0?unschedDi:-1;
+  html+=`<div class="plans-unsched" data-day-drop-zone data-record-type="trip" data-record-id="${t.id}" data-day-idx="-1"
+    ondragover="pdOver(event)" ondragenter="pdZoneEnter(event)" ondragleave="pdZoneLeave(event)" ondrop="pdZoneDrop(event)">
+    <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:${unschedStops.length?'6':'3'}px">📋 Unscheduled</div>
+    ${unschedStops.length?unschedStops.map((s,si)=>_rPlanStop('trip',t.id,realUnschedDi,si,s,accent)).join(''):`<div style="font-size:11px;color:var(--muted2);padding:2px 0">Drag stops here to park them without a date.</div>`}
+    <button class="add-stop" style="margin-top:6px;opacity:.6" onclick="openStop('${t.id}',null)">+ Add Unscheduled Stop</button>
+  </div>`;
+  html+=`<button class="add-stop" style="margin-top:8px;opacity:.7;width:100%;justify-content:center" onclick="addItineraryDay('${t.id}')">+ Add Day</button>`;
+  html+=`</div>`;
   return html;
 }
 function switchTripItinTab(tid,tab){
@@ -5437,7 +5625,7 @@ function rWish(){
   D=load();const wq=(document.getElementById('srch')?.value||'').toLowerCase();
   let list=D.wish.filter(w=>{const mf=wf==='all'||w.priority===wf||w.type===wf;const ms=!wq||(w.name||'').toLowerCase().includes(wq)||(w.notes||'').toLowerCase().includes(wq)||(w.type||'').toLowerCase().includes(wq)||(w.season||'').toLowerCase().includes(wq);return mf&&ms}).sort((a,b)=>({must:0,soon:1,someday:2}[a.priority]||3)-({must:0,soon:1,someday:2}[b.priority]||3));
   const el=document.getElementById('wish-list');
-  if(!list.length){el.innerHTML=`<div class="empty"><div class="empty-icon">♡</div><h3>Wishlist empty</h3><p>Add dream destinations and bucket list items.</p><button class="tb-btn" onclick="openWish()">+ Add First Dream</button></div>`;return}
+  if(!list.length){el.innerHTML=`<div class="empty"><div class="empty-icon">♡</div><h3>Your horizon is open.</h3><p>What places are calling to you? Add them here and let the compass guide the way.</p><button class="tb-btn" onclick="openWish()">+ Add a Dream Destination</button></div>`;return}
   el.innerHTML=list.map((w,i)=>{
     const gt=w.graduated&&w.tripId?D.trips.find(x=>x.id===w.tripId):null;
     const gp=w.graduated&&w.placeId?D.places.find(x=>x.id===w.placeId):null;
@@ -5528,7 +5716,7 @@ function rJournal(){
     ${journalTrips.map(t=>`<button class="fc ${jf===t.id?'on':''}" onclick="fJournal(this,'${t.id}')">${t.name}</button>`).join('')}
   </div>`:'';
 
-  if(!entries.length){el.innerHTML=tripFilter+`<div class="empty"><div class="empty-icon">📓</div><h3>${jf==='all'?'No memoirs yet':'No memoirs for this trip'}</h3><p>Record your travel memories and stories.</p><button class="tb-btn" onclick="openJournal()">+ Write First Memoir</button></div>`;return}
+  if(!entries.length){el.innerHTML=tripFilter+`<div class="empty"><div class="empty-icon">📓</div><h3>${jf==='all'?'The page is blank — for now.':'No memoirs for this trip yet.'}</h3><p>${jf==='all'?'The best travel stories start with something small. A smell, a meal, a moment of getting wonderfully lost.':'Write something while it\'s still vivid.'}</p><button class="tb-btn" onclick="openJournal()">+ Write First Memoir</button></div>`;return}
 
   // Group by trip then by date
   const grouped={};const ungrouped=[];
@@ -6680,12 +6868,12 @@ function openSpotD(id){
     </div>`;
 }
 const TRIP_TYPES={
-  road_trip:{icon:'🚗',label:'Road Trip',color:'#B8892A',_store:'camps',_campType:'car'},
-  camping:{icon:'🏕️',label:'Camping',color:'#4A7259',_store:'camps',_campType:'tent'},
-  getaway:{icon:'🌆',label:'Getaway',color:'#4A7EBA',_store:'trips',_type:'domestic'},
-  international:{icon:'🌍',label:'International',color:'#7A5C8A',_store:'trips',_type:'international'},
-  adventure:{icon:'🎒',label:'Adventure',color:'#6B4C3B',_store:'camps',_campType:'backpacking'},
-  event:{icon:'🎪',label:'Event',color:'#C0634C',_store:'trips',_type:'domestic'},
+  road_trip:{icon:'🚗',label:'Road Trip',color:'#A07828',_store:'camps',_campType:'car'},
+  camping:{icon:'🏕️',label:'Camping',color:'#3E6644',_store:'camps',_campType:'tent'},
+  getaway:{icon:'🌆',label:'Getaway',color:'#3D7098',_store:'trips',_type:'domestic'},
+  international:{icon:'🌍',label:'International',color:'#6A507A',_store:'trips',_type:'international'},
+  adventure:{icon:'🎒',label:'Adventure',color:'#5E4030',_store:'camps',_campType:'backpacking'},
+  event:{icon:'🎪',label:'Event',color:'#A8583C',_store:'trips',_type:'domestic'},
 };
 function inferTripType(item,isAdv){
   if(isAdv){
@@ -7928,72 +8116,50 @@ function _stopPlaceTypesToWpType(types){
 function rAdvDailyTab(c){
   ensureAdvItinerary(c);
   const itin=c.itinerary||[];
+  const tt=inferTripType(c,true);
+  const accent=(TRIP_TYPES[tt]?.color)||'#4A7259';
   const scheduled=itin.filter(d=>d.date);
-  const unscheduled=itin.find(d=>!d.date&&(d.stops||[]).length);
-  if(!scheduled.length&&!unscheduled){
-    return`<div class="empty" style="padding:30px 0">
+  const unschedDi=itin.findIndex(d=>!d.date);
+  const unschedDay=unschedDi>=0?itin[unschedDi]:null;
+  if(!scheduled.length&&!(unschedDay&&(unschedDay.stops||[]).length)){
+    return`<div style="--plans-accent:${accent}"><div class="empty" style="padding:30px 0">
       <div class="empty-icon">📅</div>
       <h3>No days planned yet</h3>
       <p>Add a stop from the Stops tab, or click below to add a day manually.</p>
       <button class="tb-btn" onclick="addAdvItinDay('${c.id}')">+ Add Day</button>
-    </div>`;
+    </div></div>`;
   }
-  let html='';
+  let html=`<div style="--plans-accent:${accent}">`;
   scheduled.forEach((day,schIdx)=>{
     const di=itin.indexOf(day);
-    const stops=day.stops||[];
-    html+=`<div class="card" style="margin-bottom:10px">
-      <div class="ch">
-        <div>
-          <div style="font-size:14px;font-weight:600;color:var(--text)">Day ${schIdx+1} — ${fd(day.date)}</div>
-          ${stops.length?`<div style="font-size:12px;color:var(--muted2)">${stops.length} stop${stops.length!==1?'s':''}</div>`:''}
-        </div>
-        <div style="display:flex;gap:5px;align-items:center">
-          <button class="pbtn del" onclick="delAdvItinDay('${c.id}',${di})" style="font-size:10px" title="Remove day">×</button>
+    html+=`<div data-drag-day data-record-type="camp" data-record-id="${c.id}" data-day-idx="${di}" draggable="true"
+      ondragstart="pdDayStart(event)" ondragover="pdOver(event)" ondragenter="pdDayEnter(event)" ondragleave="pdDayLeave(event)" ondragend="pdDayEnd(event)" ondrop="pdDayDrop(event)" style="margin-bottom:10px">
+      <div class="plans-day-hdr" onmouseenter="this.classList.add('acts-vis')" onmouseleave="this.classList.remove('acts-vis')" ontouchstart="this.classList.add('acts-vis')" ontouchend="setTimeout(()=>this.classList.remove('acts-vis'),2000)">
+        <span class="day-drag-handle" title="Drag to reorder day" ontouchstart="ptStart(event,'camp','${c.id}',${di})" ontouchmove="ptMove(event)" ontouchend="ptEnd(event)" ontouchcancel="ptCancel(event)">⠿</span>
+        <div class="plans-day-title">Day ${schIdx+1}${day.date?' — '+fd(day.date):''}</div>
+        <div class="plans-day-acts">
+          <label class="plans-day-act" title="Edit date" style="cursor:pointer">✏️<input type="date" value="${day.date}" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;font-size:0;color-scheme:dark light" onchange="advSetDayDate('${c.id}',${di},this.value)"/></label>
+          <button class="plans-day-act" title="Add stop" onclick="event.stopPropagation();openAdvItinStop('${c.id}',${di})">＋</button>
+          <button class="plans-day-act del" title="Remove day" onclick="event.stopPropagation();delAdvItinDay('${c.id}',${di})">×</button>
         </div>
       </div>
-      <div style="margin-top:6px">
-        ${stops.length?stops.map((s,si)=>{
-          const wt=WP_TYPES[s.type||'other']||WP_TYPES.other;
-          const dur=s.duration?parseInt(s.duration)>=60?Math.round(parseInt(s.duration)/60)+'h':(s.duration+'min'):'';
-          return`<div class="stop-row${s.done?' wp-done':''}">
-            <input type="checkbox" ${s.done?'checked':''} style="width:14px;height:14px;flex-shrink:0;margin-top:2px;accent-color:var(--green);cursor:pointer" onchange="toggleAdvItinDone('${c.id}',${di},${si},this.checked)"/>
-            <div class="wp-icon">${wt.i}</div>
-            ${s.time?`<div class="wp-time">${s.time}${dur?' · '+dur:''}</div>`:''}
-            <div style="flex:1;min-width:0">
-              <div class="stopname${s.done?' wp-done':''}">${s.name}</div>
-              ${s.address?`<div class="stopnote">📍 ${s.address}</div>`:''}
-              ${s.note?`<div class="stopnote">${s.note}</div>`:''}
-            </div>
-            <div style="display:flex;gap:2px;flex-shrink:0;align-items:center">
-              ${s.mapsUrl?`<a href="${s.mapsUrl}" target="_blank" class="wp-nav" title="Navigate">🗺️</a>`:''}
-              <button onclick="openAdvItinStopEdit('${c.id}',${di},${si})" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:2px 4px;line-height:1;transition:color .15s" onmouseover="this.style.color='var(--green3)'" onmouseout="this.style.color='var(--muted2)'" title="Edit">✏️</button>
-              <button onclick="delAdvItinStop('${c.id}',${di},${si})" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:2px 4px;line-height:1;transition:color .15s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'" title="Remove">×</button>
-            </div>
-          </div>`;
-        }).join(''):`<div style="font-size:12px;color:var(--muted2);padding:4px 0">No stops yet — add meals, sights, rest stops, accommodation…</div>`}
-        <button class="add-stop" onclick="openAdvItinStop('${c.id}',${di})">+ Add Stop to Day ${schIdx+1}</button>
+      <div data-day-drop-zone data-record-type="camp" data-record-id="${c.id}" data-day-idx="${di}"
+        ondragover="pdOver(event)" ondragenter="pdZoneEnter(event)" ondragleave="pdZoneLeave(event)" ondrop="pdZoneDrop(event)">
+        ${(day.stops||[]).length?(day.stops||[]).map((s,si)=>_rPlanStop('camp',c.id,di,si,s,accent)).join(''):`<div style="font-size:11px;color:var(--muted2);padding:5px 0;pointer-events:none">No stops yet — add meals, sights, rest stops…</div>`}
       </div>
       <textarea class="ft" style="margin-top:6px;min-height:34px;font-size:12px" placeholder="Notes for this day…" onblur="setAdvItinDayNotes('${c.id}',${di},this.value)">${day.notes||''}</textarea>
     </div>`;
   });
-  if(unscheduled){
-    const di=itin.indexOf(unscheduled);
-    html+=`<div class="card" style="margin-bottom:10px;border-style:dashed;border-color:var(--bdr2)">
-      <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:4px">📋 Unscheduled</div>
-      <div style="font-size:12px;color:var(--muted2);margin-bottom:8px">Edit a stop to assign it to a day</div>
-      ${(unscheduled.stops||[]).map((s,si)=>{
-        const wt=WP_TYPES[s.type||'other']||WP_TYPES.other;
-        return`<div class="stop-row">
-          <div class="wp-icon">${wt.i}</div>
-          <div style="flex:1;min-width:0"><div class="stopname">${s.name}</div>${s.note?`<div class="stopnote">${s.note}</div>`:''}</div>
-          <button onclick="openAdvItinStopEdit('${c.id}',${di},${si})" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:2px 4px" title="Edit to assign a day">✏️</button>
-          <button onclick="delAdvItinStop('${c.id}',${di},${si})" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:2px 4px" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button>
-        </div>`;
-      }).join('')}
-    </div>`;
-  }
-  html+=`<button class="tb-btn" style="width:100%;justify-content:center" onclick="addAdvItinDay('${c.id}')">+ Add Day</button>`;
+  const unschedStops=unschedDay?(unschedDay.stops||[]):[];
+  const realUnschedDi=unschedDi>=0?unschedDi:-1;
+  html+=`<div class="plans-unsched" data-day-drop-zone data-record-type="camp" data-record-id="${c.id}" data-day-idx="-1"
+    ondragover="pdOver(event)" ondragenter="pdZoneEnter(event)" ondragleave="pdZoneLeave(event)" ondrop="pdZoneDrop(event)">
+    <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:${unschedStops.length?'6':'3'}px">📋 Unscheduled</div>
+    ${unschedStops.length?unschedStops.map((s,si)=>_rPlanStop('camp',c.id,realUnschedDi,si,s,accent)).join(''):`<div style="font-size:11px;color:var(--muted2);padding:2px 0">Drag stops here to park them without a date.</div>`}
+    <button class="add-stop" style="margin-top:6px;opacity:.6" onclick="openAdvItinStop('${c.id}',null)">+ Add Unscheduled Stop</button>
+  </div>`;
+  html+=`<button class="tb-btn" style="width:100%;justify-content:center;margin-top:8px" onclick="addAdvItinDay('${c.id}')">+ Add Day</button>`;
+  html+=`</div>`;
   return html;
 }
 function openAdvItinStop(cid,di){
@@ -8027,6 +8193,13 @@ function setAdvItinDayNotes(cid,di,val){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   if(c.itinerary?.[di])c.itinerary[di].notes=val;
   localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+}
+function advSetDayDate(cid,di,date){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c||!date)return;
+  c.itinerary[di].date=date;
+  c.itinerary.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  toast('📅 Date updated');window._campDTab='daily';openCampD(cid);
 }
 function addAdvItinDay(cid){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
