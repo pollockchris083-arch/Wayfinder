@@ -96,6 +96,16 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .tb-search{display:flex;align-items:center;gap:7px;background:var(--card2);border:1px solid var(--bdr);border-radius:7px;padding:6px 10px;flex:0 0 200px}
 .tb-search input{background:none;border:none;outline:none;font-size:12px;color:var(--text);width:100%}
 .tb-search input::placeholder{color:var(--muted2)}
+#search-drop{position:fixed;top:54px;right:18px;width:340px;max-height:500px;overflow-y:auto;background:var(--card);border:1px solid var(--bdr);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:1200;display:none}
+.sd-hdr{padding:8px 14px 4px;font-size:10px;color:var(--muted2);border-bottom:1px solid var(--bdr2)}
+.sd-sec-hd{padding:6px 14px 2px;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px}
+.sd-item{display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;transition:background .1s}
+.sd-item:hover,.sd-item.sd-focus{background:var(--card2)}
+.sd-item-icon{font-size:13px;flex-shrink:0;width:18px;text-align:center}
+.sd-item-name{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sd-item-sub{font-size:10px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sd-divider{border:none;border-top:1px solid var(--bdr2);margin:0}
+.sd-empty{padding:20px;text-align:center;font-size:12px;color:var(--muted2)}
 .tb-btn{display:flex;align-items:center;gap:5px;background:var(--green);color:#fff;border:none;border-radius:7px;padding:7px 13px;font-size:12px;font-weight:500;transition:background .15s;white-space:nowrap}
 .tb-btn:hover{background:var(--green2)}
 .tb-btn.gold{background:var(--gold)}
@@ -908,9 +918,10 @@ input,textarea,select{font-family:inherit;font-weight:400}
   <div id="topbar">
     <button id="sb-menu" onclick="sbOpen()">☰</button>
     <div class="tb-title" id="tbt">Dashboard</div>
-    <div class="tb-search"><span style="font-size:12px;color:var(--muted2)">🔍</span><input id="srch" placeholder="Search…" oninput="onSearch(this.value)"/></div>
+    <div class="tb-search"><span style="font-size:12px;color:var(--muted2)">🔍</span><input id="srch" placeholder="Search…" oninput="onSearch(this.value)" onkeydown="searchKey(event)" autocomplete="off"/></div>
     <button class="tb-btn" id="tba" onclick="topAct()">+ Add Place</button>
   </div>
+  <div id="search-drop"></div>
   <div id="content">
 
     <div class="page on" id="page-home"><div id="home-in"></div></div>
@@ -2008,7 +2019,7 @@ async function _blockingSync(uid){
     ]);
     const _timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Cloud load timed out')),20000));
     const[p,t,w,j,s]=await Promise.race([_fetch,_timeout]);
-    if(s.data){const local=JSON.parse(localStorage.getItem(K.settings)||'{}');const merged={...stripRow(s.data),apiKey:local.apiKey,googleClientId:local.googleClientId,driveFolderId:local.driveFolderId,mapsApiKey:local.mapsApiKey,abroadNotes:local.abroadNotes};localStorage.setItem(K.settings,JSON.stringify(merged));}
+    if(s.data){const local=JSON.parse(localStorage.getItem(K.settings)||'{}');const cloud=stripRow(s.data);const merged={...cloud,apiKey:local.apiKey,googleClientId:local.googleClientId,driveFolderId:local.driveFolderId,mapsApiKey:local.mapsApiKey||cloud.mapsApiKey||'',abroadNotes:local.abroadNotes};localStorage.setItem(K.settings,JSON.stringify(merged));}
     if(p.data?.length)localStorage.setItem(K.places,JSON.stringify(p.data.map(stripRow)));
     if(t.data?.length)localStorage.setItem(K.trips,JSON.stringify(t.data.map(stripRow)));
     if(w.data?.length)localStorage.setItem(K.wish,JSON.stringify(w.data.map(stripRow)));
@@ -2050,7 +2061,7 @@ async function _bgSync(uid){
       toast('☁️ Data synced to your account!');
       return;
     }
-    if(s.data){const local=JSON.parse(localStorage.getItem(K.settings)||'{}');const merged={...stripRow(s.data),apiKey:local.apiKey,googleClientId:local.googleClientId,driveFolderId:local.driveFolderId,mapsApiKey:local.mapsApiKey,abroadNotes:local.abroadNotes};localStorage.setItem(K.settings,JSON.stringify(merged));}
+    if(s.data){const local=JSON.parse(localStorage.getItem(K.settings)||'{}');const cloud=stripRow(s.data);const merged={...cloud,apiKey:local.apiKey,googleClientId:local.googleClientId,driveFolderId:local.driveFolderId,mapsApiKey:local.mapsApiKey||cloud.mapsApiKey||'',abroadNotes:local.abroadNotes};localStorage.setItem(K.settings,JSON.stringify(merged));}
     if(t.data?.length)localStorage.setItem(K.trips,JSON.stringify(t.data.map(stripRow)));
     D=load();loadSettings();rHome();
     // Phase 2: wishlist + journal
@@ -2067,7 +2078,7 @@ async function _bgSync(uid){
     t0=Date.now();
     const p=await SUPA.from('wf_places').select('*').eq('user_id',uid);
     console.log(`[sync] places: ${Date.now()-t0}ms (${p.data?.length||0} records)`);
-    if(p.data?.length){localStorage.setItem(K.places,JSON.stringify(p.data.map(stripRow)));localStorage.removeItem('wf_cloud_v4');}
+    if(p.data?.length){localStorage.setItem(K.places,JSON.stringify(p.data.map(stripRow)));localStorage.removeItem('wf_cloud_v5');}
     D=load();
     await migrateCloudData();
     try{migratePlaceCategories();}catch(e){}
@@ -2114,9 +2125,9 @@ async function cloudPush(collection,items){
 }
 async function cloudPushSettings(cfg){
   if(!currentUser)return;
-  // Strip credentials — these are local-only; the Supabase schema has no column for them
-  // and API keys must never be stored server-side
-  const{apiKey,googleClientId,driveFolderId,mapsApiKey,abroadNotes,...syncable}=cfg;
+  // Strip secrets — apiKey (Anthropic), OAuth credentials, and notes are local-only
+  // mapsApiKey is a public Maps JS API key (restricted by domain) so it syncs across devices
+  const{apiKey,googleClientId,driveFolderId,abroadNotes,...syncable}=cfg;
   const sRow={user_id:currentUser.id,updated_at:new Date().toISOString()};
   Object.entries(syncable).forEach(([k,v])=>{sRow[k.replace(/[A-Z]/g,c=>'_'+c.toLowerCase())]=v;});
   const{error}=await SUPA.from('wf_settings').upsert(sRow,{onConflict:'user_id'});
@@ -2130,18 +2141,20 @@ async function migrateCloudData(){
   // No early exit — always run canonical fixes (idempotent: no-ops if data correct)
   // wf_cloud_v4 flag only suppresses verbose audit logs after the first run
   D=load();
-  const verbose=!localStorage.getItem('wf_cloud_v4');
+  const verbose=!localStorage.getItem('wf_cloud_v5');
 
-  // CANONICAL trip definitions — match by name keyword only (no date fallbacks to avoid false matches)
+  // CANONICAL trip definitions — match by name keyword; id is the stable canonical ID all places must reference
   const CANONICAL=[
-    {name:'Italy 2022',start:'2022-10-06',end:'2022-10-22',dests:['Italy'],status:'past',
+    {id:'trip-italy-2022',name:'Italy 2022',start:'2022-10-06',end:'2022-10-22',dests:['Italy'],status:'past',
      test:t=>t.name.toLowerCase().includes('italy 2022')||(t.name.toLowerCase().includes('italy')&&!t.name.toLowerCase().includes('central')&&!t.name.toLowerCase().includes('europe'))},
-    {name:'Balkans & Alps 2023',start:'2023-10-18',end:'2023-11-04',dests:['Croatia','Slovenia','Austria','Montenegro','Bosnia'],status:'past',
+    {id:'trip-balkans-2023',name:'Balkans & Alps 2023',start:'2023-10-18',end:'2023-11-04',dests:['Croatia','Slovenia','Austria','Montenegro','Bosnia','Albania','North Macedonia','Serbia'],status:'past',
      test:t=>t.name.toLowerCase().includes('balkan')},
-    {name:'Central Europe 2024',start:'2024-10-16',end:'2024-10-31',dests:['Italy','Switzerland','Austria','Liechtenstein','Germany','Czech Republic'],status:'past',
+    {id:'trip-central-europe-2024',name:'Central Europe 2024',start:'2024-10-16',end:'2024-10-31',dests:['Italy','Switzerland','Austria','Liechtenstein','Germany','Czech Republic','Hungary','Slovakia','Slovenia','Croatia'],status:'past',
      test:t=>t.name.toLowerCase().includes('central europe')||t.name.toLowerCase().includes('liechtenstein')||t.name.toLowerCase().includes('czech')},
-    {name:'Iceland 2025',start:'2025-09-11',end:'2025-09-26',dests:['Iceland'],status:'past',
+    {id:'trip-iceland-2025',name:'Iceland 2025',start:'2025-09-11',end:'2025-09-26',dests:['Iceland'],status:'past',
      test:t=>t.name.toLowerCase().includes('iceland')},
+    {id:'trip-thailand-planning',name:'Thailand',dests:['Thailand'],status:'planning',
+     test:t=>t.name.toLowerCase().includes('thailand')},
   ];
 
   // ── Audit snapshot (verbose first run only) ──
@@ -2167,22 +2180,27 @@ async function migrateCloudData(){
     return days;
   }
 
-  // 1. Fix metadata + rebuild itinerary for known international trips
+  // 1. Fix metadata + normalize to canonical IDs (places/journal refs updated to match)
   D.trips.forEach(t=>{
     const c=CANONICAL.find(x=>x.test(t));if(!c)return;
-    const needsFix=t.name!==c.name||t.startDate!==c.start||t.endDate!==c.end||JSON.stringify(t.destinations)!==JSON.stringify(c.dests);
-    if(needsFix){
-      const rebuilt=rebuildItinerary(t.itinerary,c.start,c.end);
-      t.name=c.name;t.startDate=c.start;t.endDate=c.end;t.destinations=c.dests;t.status=c.status;t.itinerary=rebuilt;
-      changed=true;
-      console.log(`[Wayfinder] Fixed "${c.name}": itinerary rebuilt to ${rebuilt.length} days`);
+    const needsMeta=t.name!==c.name||JSON.stringify(t.destinations)!==JSON.stringify(c.dests)||t.status!==c.status||
+      (c.start&&(t.startDate!==c.start||t.endDate!==c.end));
+    if(needsMeta){
+      if(c.start){const rebuilt=rebuildItinerary(t.itinerary,c.start,c.end);t.startDate=c.start;t.endDate=c.end;t.itinerary=rebuilt;console.log(`[Wayfinder] Fixed "${c.name}": itinerary rebuilt to ${rebuilt.length} days`);}
+      t.name=c.name;t.destinations=c.dests;t.status=c.status;changed=true;
+    }
+    if(t.id!==c.id){
+      const oldId=t.id;t.id=c.id;
+      D.places.forEach(p=>{if((p.tripIds||[]).includes(oldId)){p.tripIds=[...new Set([...p.tripIds.filter(id=>id!==oldId),c.id])];changed=true;}});
+      D.journal.forEach(j=>{if(j.tripId===oldId){j.tripId=c.id;changed=true;}});
+      console.log(`[Wayfinder] Normalized trip ID "${c.name}": ${oldId} → ${c.id}`);
     }
   });
 
   // 2. Add Central Europe 2024 if completely missing
   if(!D.trips.some(t=>CANONICAL[2].test(t))){
     const c=CANONICAL[2];
-    D.trips.push({id:uid(),name:c.name,startDate:c.start,endDate:c.end,destinations:c.dests,status:c.status,type:'leisure',itinerary:rebuildItinerary([],c.start,c.end),notes:'',budget:null,addedAt:Date.now()});
+    D.trips.push({id:c.id,name:c.name,startDate:c.start,endDate:c.end,destinations:c.dests,status:c.status,type:'leisure',itinerary:rebuildItinerary([],c.start,c.end),notes:'',budget:null,addedAt:Date.now()});
     changed=true;
     console.log('[Wayfinder] Created missing Central Europe 2024 trip');
   }
@@ -2250,6 +2268,26 @@ async function migrateCloudData(){
   });
   if(autoLinked)console.log(`[Wayfinder] Auto-linked ${autoLinked} places to trips by country/date`);
 
+  // 6.5. Date-range linking: any non-US visited place whose visitDate falls within a past trip's
+  // date range gets linked to that trip. This catches places step 6 misses because:
+  //  - their country isn't in the trip's destinations array
+  //  - they're already linked to another trip that shares a country (Italy, Austria, etc.)
+  //  - their country field uses an alias not matched by normCountry
+  let dateLinked=0;
+  const datedTrips=D.trips.filter(t=>t.startDate&&t.endDate&&t.status==='past');
+  D.places.filter(p=>p.status==='visited'&&p.visitDate).forEach(p=>{
+    const cn=(normCountry(p.country)||'').toLowerCase();
+    if(cn==='united states')return;
+    if(!cn&&p.usState)return; // usState set but no country → treat as US place
+    datedTrips.forEach(t=>{
+      if(p.visitDate>=t.startDate&&p.visitDate<=t.endDate&&!(p.tripIds||[]).includes(t.id)){
+        p.tripIds=[...new Set([...(p.tripIds||[]),t.id])];
+        dateLinked++;changed=true;
+      }
+    });
+  });
+  if(dateLinked)console.log(`[Wayfinder] Date-range linked ${dateLinked} places to trips`);
+
   if(changed){
     localStorage.setItem(K.places,JSON.stringify(D.places));
     localStorage.setItem(K.trips,JSON.stringify(D.trips));
@@ -2263,12 +2301,15 @@ async function migrateCloudData(){
       }catch(e){console.error('[Wayfinder] Migration push failed:',e);setSyncStatus('⚠️ Migration sync failed');}
     }
   }
+  console.group('[Wayfinder] Places per trip');
+  D.trips.forEach(t=>{const pl=D.places.filter(p=>(p.tripIds||[]).includes(t.id)).length,jr=D.journal.filter(j=>j.tripId===t.id).length,st=(t.itinerary||[]).reduce((n,d)=>n+(d.stops||[]).length,0);console.log(`"${t.name}" [${t.id}] | places:${pl} journal:${jr} days:${tripDays(t)} stops:${st}`);});
+  console.groupEnd();
   if(verbose){
-    console.group('[Wayfinder] Post-migration summary (cloud v4)');
-    D.trips.forEach(t=>{const pl=D.places.filter(p=>(p.tripIds||[]).includes(t.id)).length,jr=D.journal.filter(j=>j.tripId===t.id).length,st=(t.itinerary||[]).reduce((n,d)=>n+(d.stops||[]).length,0);console.log(`"${t.name}" | places:${pl} journal:${jr} days:${tripDays(t)} (itinerary:${(t.itinerary||[]).length}) stops:${st} | dests:[${(t.destinations||[]).join(',')}]`);});
+    console.group('[Wayfinder] Post-migration audit (cloud v5)');
+    D.trips.forEach(t=>{const pl=D.places.filter(p=>(p.tripIds||[]).includes(t.id)).length,jr=D.journal.filter(j=>j.tripId===t.id).length,st=(t.itinerary||[]).reduce((n,d)=>n+(d.stops||[]).length,0);console.log(`"${t.name}" [${t.id}] | places:${pl} journal:${jr} days:${tripDays(t)} (itinerary:${(t.itinerary||[]).length}) stops:${st} | dests:[${(t.destinations||[]).join(',')}]`);});
     console.groupEnd();
   }
-  localStorage.setItem('wf_cloud_v4','1'); // suppresses audit logs on future runs, not the fixes
+  localStorage.setItem('wf_cloud_v5','1'); // suppresses audit logs on future runs, not the fixes
 }
 function scheduledSync(k,items){
   if(!currentUser)return;
@@ -2353,6 +2394,7 @@ function migrate(){
     if(!('placeId' in j)){j.placeId='';cj=true}
     if(!('tripId' in j)){j.tripId='';cj=true}
     if(!j.addedAt){j.addedAt=Date.now();cj=true}
+    if(j.body==null){j.body='';cj=true}
   });
   if(cj)save('journal',D.journal);
   D.wish.forEach(w=>{
@@ -2566,7 +2608,8 @@ function rHome(){
   const _pipeStateHome=pipeStateLoad();
   function _tripStageId(t){return _pipeStateHome[t.id]||pipeAutoCol({id:t.id,type:'trip',data:t});}
   const CONFIRMED_STAGES=new Set(['booked','trip-prep','in-progress']);
-  const lockedTrips=cleanTrips.filter(t=>t.status==='locked'||t.status==='active');
+  // Use pipeline stage (not raw status) so Planning/Researching/Dreaming trips don't count as upcoming
+  const lockedTrips=cleanTrips.filter(t=>CONFIRMED_STAGES.has(_tripStageId(t)));
   const lockedAdvs=(D.camps||[]).filter(c=>c.recordType!=='spot'&&(c.status==='locked'||c.status==='active'));
   const lockedCount=lockedTrips.length+lockedAdvs.length;
   const inWorksTrips=cleanTrips.filter(t=>t.status==='dream'||t.status==='research'||t.status==='planning');
@@ -2580,13 +2623,16 @@ function rHome(){
   const daysUntil=nextTrip&&nextTrip.status!=='active'&&nextTrip.startDate?Math.ceil((new Date(nextTrip.startDate)-today)/86400000):null;
 
   // Geography — combine places + trip destinations for country count
-  const placesCountries=[...new Set(vis.map(p=>normCountry(p.country)).filter(c=>c&&c!=='United States'))];
+  // isUS covers: country='United States'/'US'/'USA', usState set, or country field holds a state name
+  const isUS=p=>normCountry(p.country)==='United States'||!!p.usState||US_STATES.includes(p.country);
+  const placesCountries=[...new Set(vis.filter(p=>!isUS(p)).map(p=>normCountry(p.country)).filter(Boolean))];
   const destCountries=new Set();
   cleanTrips.filter(t=>t.status==='past').forEach(t=>(t.destinations||[]).forEach(d=>{const c=normCountry(d);if(c&&c!=='United States')destCountries.add(c);}));
   const allCountries=[...new Set([...placesCountries,...destCountries])].sort();
+  console.log('[Wayfinder] Countries visited ('+allCountries.length+'):', allCountries);
   // Include states from Adventures stops
   const advStopStates=(D.camps||[]).filter(c=>c.recordType!=='spot').flatMap(c=>(c.stops||[]).map(s=>s.state).filter(Boolean));
-  const usStates=[...new Set([...vis.filter(p=>normCountry(p.country)==='United States').map(p=>p.usState).filter(Boolean),...(D.camps||[]).filter(c=>c.recordType!=='spot').map(c=>c.state).filter(Boolean),...advStopStates])].sort();
+  const usStates=[...new Set([...vis.filter(p=>isUS(p)).map(p=>p.usState||(US_STATES.includes(p.country)?p.country:null)).filter(Boolean),...(D.camps||[]).filter(c=>c.recordType!=='spot').map(c=>c.state).filter(Boolean),...advStopStates])].sort();
   const continents=[...new Set(allCountries.map(c=>Object.entries(CONTINENTS).find(([,v])=>v.includes(c))?.[0]).filter(Boolean))];
   const homeState=getHomeState();
 
@@ -2610,14 +2656,14 @@ function rHome(){
   // First and most recent trip per country/state + trip counts
   const countryLastVisit={};const countryFirstVisit={};const stateFirstVisit={};
   const countryTripCount={};const stateTripCount={};
-  vis.filter(p=>p.country&&normCountry(p.country)!=='United States').forEach(p=>{
+  vis.filter(p=>!isUS(p)&&p.country).forEach(p=>{
     const c=normCountry(p.country);
     (p.tripIds||[]).forEach(tid=>{const t=D.trips.find(x=>x.id===tid);if(t&&t.startDate){if(!countryLastVisit[c]||new Date(t.startDate)>new Date(countryLastVisit[c]))countryLastVisit[c]=t.startDate;if(!countryFirstVisit[c]||new Date(t.startDate)<new Date(countryFirstVisit[c]))countryFirstVisit[c]=t.startDate;countryTripCount[c]=(countryTripCount[c]||new Set());}countryTripCount[c]||(countryTripCount[c]=new Set());if(t)countryTripCount[c].add(tid);});
   });
   // Finalize trip counts
   Object.keys(countryTripCount).forEach(c=>{countryTripCount[c]=countryTripCount[c].size;});
-  vis.filter(p=>normCountry(p.country)==='United States'&&p.usState).forEach(p=>{
-    const s=p.usState;
+  vis.filter(p=>isUS(p)).forEach(p=>{
+    const s=p.usState||(US_STATES.includes(p.country)?p.country:'');if(!s)return;
     const dates=[(p.tripIds||[]).map(tid=>{const t=D.trips.find(x=>x.id===tid);return t?.startDate;}).filter(Boolean),p.visitDate?[p.visitDate]:[]].flat();
     dates.forEach(d=>{if(!stateFirstVisit[s]||new Date(d)<new Date(stateFirstVisit[s]))stateFirstVisit[s]=d;});
     (p.tripIds||[]).forEach(tid=>{if(!stateTripCount[s])stateTripCount[s]=new Set();stateTripCount[s].add(tid);});
@@ -3036,7 +3082,7 @@ function rMap(){
     <div id="map-summary" style="display:none;font-size:11px;color:var(--text2);padding:6px 10px;background:rgba(74,114,89,.06);border:1px solid rgba(74,114,89,.2);border-radius:6px;margin-bottom:6px"></div>
     <div id="the-map" style="height:calc(100vh - 320px);min-height:370px;border-radius:var(--r);overflow:hidden;border:1px solid var(--bdr);box-shadow:var(--shadow)"></div>
     <div id="map-legend-row" style="display:flex;flex-wrap:wrap;gap:13px;padding:9px 2px;align-items:center">
-      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:14px;height:9px;background:#C27D5C;border-radius:2px;opacity:.85"></div>Visited (heat)</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:14px;height:9px;background:#EF9F27;border-radius:2px;opacity:.85"></div>Visited</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:14px;height:9px;background:transparent;border:2px dashed #B8892A;border-radius:2px"></div>Want to Go</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)">🏠 Home</div>
       ${legendPins}
@@ -3069,7 +3115,12 @@ async function mapInit(){
 }
 async function mapLoadWorld(){
   if(geoWorld)return;
-  try{const r=await fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson');geoWorld=await r.json();}catch(e){console.warn('World geo failed',e);}
+  try{
+    const r=await fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson');
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    geoWorld=await r.json();
+    console.log('[Wayfinder] World GeoJSON loaded:',geoWorld?.features?.length,'features');
+  }catch(e){console.warn('[Wayfinder] World GeoJSON fetch failed:',e.message);}
 }
 async function mapLoadStates(){
   if(geoUSStates)return;
@@ -3086,7 +3137,8 @@ function mapRenderCountries(){
   D.places.forEach(p=>{const c=normCountry(p.country);if(!c)return;if(!countryData[c])countryData[c]={vis:0,want:0};if(p.status==='visited')countryData[c].vis++;else if(p.status==='want'||p.status==='planned')countryData[c].want++;});
   // Countries from past trip destinations — highlighted even with no individually-logged places
   const tripDestVisited=new Set();
-  D.trips.filter(t=>t.status==='past').forEach(t=>{(t.destinations||[]).forEach(dest=>{const c=normCountry(dest);if(c&&c!=='United States')tripDestVisited.add(c);});});
+  const today=new Date().toISOString().slice(0,10);
+  D.trips.filter(t=>t.status==='past'||(t.endDate&&t.endDate<today)).forEach(t=>{(t.destinations||[]).forEach(dest=>{const c=normCountry(dest);if(c&&c!=='United States')tripDestVisited.add(c);});});
   mapLayer_c=L.geoJSON(geoWorld,{
     style:f=>{
       const raw=f.properties.ADMIN||'';const n=mapGeoToName(raw);
@@ -3094,8 +3146,7 @@ function mapRenderCountries(){
       const isTripDest=tripDestVisited.has(n)||tripDestVisited.has(raw);
       const isHome=n==='United States'||raw==='United States of America';
       if(isHome)return{fillColor:'rgba(74,114,89,.1)',fillOpacity:1,color:'#4A7259',weight:0.8,opacity:0.4};
-      if(d.vis>0){const h=d.vis<=1?'#EDBA9E':d.vis<=3?'#D9885D':d.vis<=7?'#C27D5C':'#A66040';return{fillColor:h,fillOpacity:0.72,color:'#9C5535',weight:1.2,opacity:0.8};}
-      if(isTripDest)return{fillColor:'#EDBA9E',fillOpacity:0.55,color:'#9C5535',weight:1.1,opacity:0.7};
+      if(d.vis>0||isTripDest)return{fillColor:'#EF9F27',fillOpacity:0.4,color:'#F5C84A',weight:1.4,opacity:0.85};
       if(d.want>0)return{fillColor:'transparent',fillOpacity:0,color:'#B8892A',weight:1.5,opacity:0.65,dashArray:'5 3'};
       return{fillColor:'transparent',fillOpacity:0,color:'#ccc',weight:0.4,opacity:0.5};
     },
@@ -3343,16 +3394,42 @@ function _gMapSvgIcon(emoji,color,size){
 }
 function mapRenderCountriesG(){
   if(!gMap||!geoWorld)return;
-  if(!gMapCountryData){gMapCountryData=new google.maps.Data({map:gMap});}
+
+  // Build place-level country data
   const countryData={};
   D.places.forEach(p=>{const c=normCountry(p.country);if(!c)return;if(!countryData[c])countryData[c]={vis:0,want:0};if(p.status==='visited')countryData[c].vis++;else if(p.status==='want'||p.status==='planned')countryData[c].want++;});
+
+  // Build visited-country set from past trip destinations
   const tripDestVisited=new Set();
-  D.trips.filter(t=>t.status==='past').forEach(t=>{(t.destinations||[]).forEach(dest=>{const c=normCountry(dest);if(c&&c!=='United States')tripDestVisited.add(c);});});
+  const _today=new Date().toISOString().slice(0,10);
+  D.trips.filter(t=>t.status==='past'||(t.endDate&&t.endDate<_today)).forEach(t=>{
+    (t.destinations||[]).forEach(dest=>{const c=normCountry(dest);if(c&&c!=='United States')tripDestVisited.add(c);});
+  });
+  console.log('[Wayfinder] Map visited countries ('+tripDestVisited.size+'):',[...tripDestVisited].sort().join(', ')||'(none — check trip destinations)');
+
+  // Use the map's built-in data layer; clear then reload features on every render
+  gMap.data.forEach(f=>gMap.data.remove(f));
+  const features=gMap.data.addGeoJson(geoWorld);
+  console.log('[Wayfinder] Map GeoJSON: added',features.length,'country features to data layer');
+
+  // Apply style immediately after features are loaded
+  gMap.data.setStyle(f=>{
+    const raw=f.getProperty('ADMIN')||f.getProperty('name')||'';
+    const n=mapGeoToName(raw);
+    const d=countryData[n]||countryData[raw]||{vis:0,want:0};
+    const isTripDest=tripDestVisited.has(n)||tripDestVisited.has(raw);
+    const isHome=n==='United States'||raw==='United States of America';
+    if(isHome)return{fillColor:'#4A7259',fillOpacity:0.1,strokeColor:'#4A7259',strokeWeight:0.8,strokeOpacity:0.4,zIndex:1};
+    if(d.vis>0||isTripDest)return{fillColor:'#EF9F27',fillOpacity:0.4,strokeColor:'#C87A0A',strokeWeight:1.2,strokeOpacity:0.9,zIndex:2};
+    if(d.want>0)return{fillColor:'#B8892A',fillOpacity:0.05,strokeColor:'#B8892A',strokeWeight:1.5,strokeOpacity:0.65,zIndex:1};
+    return{fillColor:'transparent',fillOpacity:0,strokeColor:'#888',strokeWeight:0.4,strokeOpacity:0.5,zIndex:0};
+  });
+
+  // Wire click/hover on the data layer (only once per gMap instance)
   if(!_gCountryDataLoaded){
-    gMapCountryData.addGeoJson(geoWorld);
     _gCountryDataLoaded=true;
-    gMapCountryData.addListener('click',ev=>{
-      const raw=ev.feature.getProperty('ADMIN')||'';const n=mapGeoToName(raw);
+    gMap.data.addListener('click',ev=>{
+      const raw=ev.feature.getProperty('ADMIN')||ev.feature.getProperty('name')||'';const n=mapGeoToName(raw);
       const ps=D.places.filter(p=>{const c=normCountry(p.country);return c===n||c===raw;});
       const visPlaces=ps.filter(p=>p.status==='visited');
       const destTrips=D.trips.filter(t=>(t.destinations||[]).some(dest=>{const c=normCountry(dest);return c===n||c===raw;}));
@@ -3375,21 +3452,9 @@ function mapRenderCountriesG(){
         +'</div>');
       iw.setPosition(ev.latLng);iw.open(gMap);
     });
-    gMapCountryData.addListener('mouseover',ev=>{gMap.getDiv().style.cursor='pointer';});
-    gMapCountryData.addListener('mouseout',()=>{gMap.getDiv().style.cursor='';});
+    gMap.data.addListener('mouseover',()=>{gMap.getDiv().style.cursor='pointer';});
+    gMap.data.addListener('mouseout',()=>{gMap.getDiv().style.cursor='';});
   }
-  const _cd=countryData,_tdv=tripDestVisited;
-  gMapCountryData.setStyle(f=>{
-    const raw=f.getProperty('ADMIN')||'';const n=mapGeoToName(raw);
-    const d=_cd[n]||_cd[raw]||{vis:0,want:0};
-    const isTripDest=_tdv.has(n)||_tdv.has(raw);
-    const isHome=n==='United States'||raw==='United States of America';
-    if(isHome)return{fillColor:'#4A7259',fillOpacity:0.1,strokeColor:'#4A7259',strokeWeight:0.8,strokeOpacity:0.4,zIndex:1};
-    if(d.vis>0){const h=d.vis<=1?'#EDBA9E':d.vis<=3?'#D9885D':d.vis<=7?'#C27D5C':'#A66040';return{fillColor:h,fillOpacity:0.72,strokeColor:'#9C5535',strokeWeight:1.2,strokeOpacity:0.8,zIndex:2};}
-    if(isTripDest)return{fillColor:'#EDBA9E',fillOpacity:0.55,strokeColor:'#9C5535',strokeWeight:1.1,strokeOpacity:0.7,zIndex:2};
-    if(d.want>0)return{fillColor:'#B8892A',fillOpacity:0.05,strokeColor:'#B8892A',strokeWeight:1.5,strokeOpacity:0.65,zIndex:1};
-    return{fillColor:'transparent',fillOpacity:0,strokeColor:'#555',strokeWeight:0.4,strokeOpacity:0.4,zIndex:0};
-  });
 }
 function mapRenderStatesG(){
   if(!gMap||!geoUSStates)return;
@@ -3777,6 +3842,11 @@ function normCountry(c){
   if(!c)return'';
   const l=c.toLowerCase().trim();
   if(l==='us'||l==='usa'||l==='united states'||l==='united states of america'||l==='america')return'United States';
+  if(l==='czechia'||l==='czech'||l==='czech rep'||l==='cz')return'Czech Republic';
+  if(l==='bosnia and herzegovina'||l==='bosnia & herzegovina'||l==='bih'||l==='b&h')return'Bosnia';
+  if(l==='slovak republic')return'Slovakia';
+  if(l==='holland')return'Netherlands';
+  if(l==='uk'||l==='britain'||l==='great britain'||l==='england'||l==='scotland'||l==='wales')return'United Kingdom';
   return c.trim();
 }
 function getHomeState(){
@@ -5326,7 +5396,7 @@ function journalCard(e,showTrip){
   const lp=e.placeId?D.places.find(x=>x.id===e.placeId):null;
   const lt=showTrip&&e.tripId?D.trips.find(x=>x.id===e.tripId):null;
   const LIMIT=320;
-  const bodyHtml=e.body.length>LIMIT?`<div class="jbody" style="-webkit-line-clamp:initial;overflow:visible">${e.body.slice(0,LIMIT)}…<span id="jbf-${e.id}" style="display:none">${e.body.slice(LIMIT)}</span></div><button id="jbt-${e.id}" onclick="toggleJBody('${e.id}')" style="background:none;border:none;font-size:11px;color:var(--green3);cursor:pointer;padding:2px 0;margin-top:2px;display:block">▼ Read more</button>`:`<div class="jbody" style="-webkit-line-clamp:initial;overflow:visible">${e.body}</div>`;
+  const bodyHtml=(e.body||'').length>LIMIT?`<div class="jbody" style="-webkit-line-clamp:initial;overflow:visible">${(e.body||'').slice(0,LIMIT)}…<span id="jbf-${e.id}" style="display:none">${(e.body||'').slice(LIMIT)}</span></div><button id="jbt-${e.id}" onclick="toggleJBody('${e.id}')" style="background:none;border:none;font-size:11px;color:var(--green3);cursor:pointer;padding:2px 0;margin-top:2px;display:block">▼ Read more</button>`:`<div class="jbody" style="-webkit-line-clamp:initial;overflow:visible">${e.body||''}</div>`;
   return`<div class="je">
     <div class="jdate">${fd(e.date)}${lt?` · <span style="color:var(--green3);font-weight:500">✈️ ${lt.name}</span>`:''}</div>
     <div class="jtitle">${e.title}</div>
@@ -8935,7 +9005,43 @@ const mk=(s.mapsApiKey||'').trim();if(mk&&!_gMapsLoaded&&!_gMapsLoading)loadGMap
 function exportData(){const b=new Blob([JSON.stringify(load(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='wayfinder-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('📥 Exported!')}
 function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);Object.keys(K).forEach(k=>{if(d[k])localStorage.setItem(K[k],JSON.stringify(d[k]))});if(d.abroad)localStorage.setItem('wf_abroad',JSON.stringify(d.abroad));D=load();go('home');loadSettings();rHome();badges();toast('📤 Imported!')}catch{toast('⚠️ Invalid file')}};r.readAsText(f)}
 function clearAll(){if(!confirm('Clear ALL data? Cannot be undone.'))return;Object.values(K).forEach(k=>localStorage.removeItem(k));D=load();loadSettings();rHome();badges();toast('🗑️ Cleared')}
-function onSearch(q){if(cur==='places')rPlaces();else if(cur==='trips')rTrips();else if(cur==='journal')rJournal();else if(cur==='wishlist')rWish();}
+let _srchActs=[],_srchFocus=-1;
+function searchClose(){const d=document.getElementById('search-drop');if(d)d.style.display='none';_srchActs=[];_srchFocus=-1;}
+function searchGo(i){if(_srchActs[i]){searchClose();document.getElementById('srch').blur();_srchActs[i]();}}
+function searchKey(e){
+  const items=document.querySelectorAll('#search-drop .sd-item');
+  if(e.key==='Escape'){searchClose();document.getElementById('srch').value='';onSearch('');}
+  else if(e.key==='ArrowDown'){e.preventDefault();_srchFocus=Math.min(_srchFocus+1,items.length-1);items.forEach((el,i)=>el.classList.toggle('sd-focus',i===_srchFocus));}
+  else if(e.key==='ArrowUp'){e.preventDefault();_srchFocus=Math.max(_srchFocus-1,0);items.forEach((el,i)=>el.classList.toggle('sd-focus',i===_srchFocus));}
+  else if(e.key==='Enter'&&_srchFocus>=0){searchGo(_srchFocus);}
+}
+function onSearch(q){
+  // Keep per-page filtering working for dedicated page search bars
+  if(cur==='places')rPlaces();else if(cur==='trips')rTrips();else if(cur==='journal')rJournal();else if(cur==='wishlist')rWish();
+  // Global dropdown
+  const drop=document.getElementById('search-drop');if(!drop)return;
+  const qn=(q||'').trim().toLowerCase();
+  if(qn.length<2){drop.style.display='none';return;}
+  D=load();
+  function sc(fields){const n=(fields[0]||'').toLowerCase();if(n.startsWith(qn))return 3;if(n.includes(qn))return 2;for(let i=1;i<fields.length;i++){if((fields[i]||'').toLowerCase().includes(qn))return 1;}return 0;}
+  const places=(D.places||[]).map(p=>({s:sc([p.name,p.country,p.usState,p.region,p.city]),r:{icon:ci(p.category)||'📍',name:p.name,sub:[p.usState,p.country].filter(Boolean).join(', ')||p.region||'',act:()=>{go('places');setTimeout(()=>openPlaceD(p.id),50);}}})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,5).map(x=>x.r);
+  const trips=(D.trips||[]).map(t=>({s:sc([t.name,...(t.destinations||[])]),r:{icon:TRIP_TYPES[inferTripType(t,false)]?.icon||'✈️',name:t.name,sub:(t.destinations||[]).join(', ')+(t.startDate?' · '+fd(t.startDate):''),act:()=>{go('trips');setTimeout(()=>openTripD(t.id),50);}}})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,5).map(x=>x.r);
+  const advs=(D.camps||[]).filter(c=>c.recordType!=='spot').map(c=>({s:sc([c.name,c.location,c.area,c.state]),r:{icon:ADV_TYPES[c.campType]?.icon||'🎒',name:c.name,sub:(ADV_TYPES[c.campType]?.label||'Adventure')+(c.location?' · '+c.location:''),act:()=>{go('trips');setTimeout(()=>openCampDInTrips(c.id),50);}}})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,5).map(x=>x.r);
+  const spots=(D.camps||[]).filter(c=>c.recordType==='spot').map(c=>({s:sc([c.name,c.area,c.region]),r:{icon:SPOT_TYPES[c.spotType]?.icon||'📍',name:c.name,sub:(SPOT_TYPES[c.spotType]?.label||'Spot')+(c.area?' · '+c.area:''),act:()=>{go('camp');setTimeout(()=>openCampD(c.id),50);}}})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,5).map(x=>x.r);
+  const wish=(D.wish||[]).filter(w=>!w.graduated).map(w=>({s:sc([w.name,w.type,w.country]),r:{icon:pi(w.priority)||'♡',name:w.name,sub:w.type||'destination',act:()=>go('wishlist')}})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,5).map(x=>x.r);
+  const journal=(D.journal||[]).map(j=>({s:sc([j.title,j.loc,(j.body||'').slice(0,300)]),r:{icon:'📓',name:j.title||'Untitled',sub:(j.loc||'')+(j.date?' · '+j.date.slice(0,4):''),act:()=>{go('journal');}}})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,4).map(x=>x.r);
+  const work=(D.work||[]).map(w=>({s:sc([w.name,w.company,...(w.destinations||[])]),r:{icon:'💼',name:w.name,sub:(w.company||'')+(w.startDate?' · '+fd(w.startDate):''),act:()=>go('work')}})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,4).map(x=>x.r);
+  const sections=[{k:'Places',items:places},{k:'Trips',items:trips},{k:'Adventures',items:advs},{k:'Saved Spots',items:spots},{k:'Wishlist',items:wish},{k:'Journal',items:journal},{k:'Work',items:work}].filter(s=>s.items.length);
+  if(!sections.length){drop.innerHTML=`<div class="sd-empty">No results for "${q.trim()}"</div>`;drop.style.display='block';return;}
+  _srchActs=sections.flatMap(s=>s.items.map(it=>it.act));
+  let idx=0,html=`<div class="sd-hdr">🔍 Results for <strong>${q.trim()}</strong></div>`;
+  sections.forEach((sec,si)=>{
+    if(si>0)html+='<hr class="sd-divider">';
+    html+=`<div class="sd-sec-hd">${sec.k}</div>`;
+    sec.items.forEach(it=>{const i=idx++;html+=`<div class="sd-item" onclick="searchGo(${i})"><div class="sd-item-icon">${it.icon}</div><div style="flex:1;min-width:0"><div class="sd-item-name">${it.name}</div>${it.sub?`<div class="sd-item-sub">${it.sub}</div>`:''}</div></div>`;});
+  });
+  drop.innerHTML=html;drop.style.display='block';_srchFocus=-1;
+}
 function sbOpen(){document.getElementById('sb').classList.add('sb-open');document.getElementById('sb-overlay').classList.add('sb-open');}
 function sbClose(){document.getElementById('sb').classList.remove('sb-open');document.getElementById('sb-overlay').classList.remove('sb-open');}
 
@@ -10134,6 +10240,8 @@ if(localStorage.getItem('wf_dark')==='1'){
 pipeAutoAdvance();
 loadSettings();rHome();badges();
 document.getElementById('tba').style.display='flex';
+// Close search dropdown when clicking outside
+document.addEventListener('click',e=>{const d=document.getElementById('search-drop');const s=document.getElementById('srch');if(d&&d.style.display!=='none'&&!d.contains(e.target)&&e.target!==s)searchClose();});
 // Show loading overlay immediately if a session exists, so user never sees empty data
 SUPA.auth.getSession().then(({data:{session}})=>{
   if(session){
