@@ -2438,6 +2438,16 @@ function migrate(){
     localStorage.setItem('wf_intl_v1','1');
   }
 }
+// Declared here so migratePlaceCategories() can access them at top-level call time
+const MACRO_KEYS=['outdoors','food-drink','sights','stay','shopping','transit','other'];
+const CAT_RX=[
+  ['outdoors',/\b(trail|hiking|hike|park|national park|beach|lake|mountain|waterfall|falls|glacier|canyon|nature reserve|wildlife|forest|volcano|hot spring|geyser|tide pool|bluff|dune|ridge|peak|summit|fjord|bay|coast|cliff|reef|lagoon|scenic|gorge|ravine|spring|thermal|overlook|viewpoint|vista|valley|meadow|island|estuary|estuary|headland|cape|peninsula|desert|savanna|steppe)\b/i],
+  ['food-drink',/\b(restaurant|cafe|coffee|bar|pub|brewery|winery|bakery|market hall|food hall|gelato|ice cream|dessert|pastry|wine bar|cocktail|brunch|bistro|trattoria|pizzeria|ramen|sushi|taco|burger|pizza|ristorante|osteria|cantina|deli|tapas|brasserie|eatery|kebab|steakhouse|seafood|grill|tavern|patisserie|creperie|boulangerie)\b/i],
+  ['sights',/\b(museum|church|cathedral|castle|monument|temple|mosque|synagogue|shrine|gallery|ruins|palace|basilica|chapel|convent|monastery|fortress|piazza|plaza|square|bridge|fountain|statue|memorial|lighthouse|old town|old city|historic|district|harbour|harbor|waterfront|promenade|parliament|opera|theatre|theater|amphitheat|colosseum|tower|city wall|gate|arch|pagoda|stupa|campanile|baptistry|crypt|abbey|citadel|acropolis)\b/i],
+  ['stay',/\b(hotel|hostel|airbnb|resort|guesthouse|inn|lodge|villa|apartment|rental|accommodation|campground|b&b|bed and breakfast)\b/i],
+  ['shopping',/\b(boutique|souvenir|bookstore|market(?! square| hall| place)|mall|shopping|design store|antique)\b/i],
+  ['transit',/\b(airport|train station|bus station|ferry|port|harbour|terminal|metro station|tram stop|parking|transfer)\b/i],
+];
 try { migrate(); } catch(e) { console.error('migrate() failed:', e); }
 try { migratePlaceCategories(); } catch(e) { console.error('migratePlaceCategories() failed:', e); }
 
@@ -3114,13 +3124,16 @@ async function mapInit(){
   mapRenderCountries();mapRenderStates();mapRenderPins();mapRenderHome();
 }
 async function mapLoadWorld(){
-  if(geoWorld)return;
+  if(geoWorld){console.log('[Map] mapLoadWorld: already cached,',geoWorld.features?.length,'features');return;}
+  // Natural Earth 110m — ~780 KB, ADMIN property matches our mapGeoToName() mapping
+  const URL='https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson';
+  console.log('[Map] mapLoadWorld: fetching',URL);
   try{
-    const r=await fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson');
-    if(!r.ok)throw new Error('HTTP '+r.status);
+    const r=await fetch(URL);
+    if(!r.ok)throw new Error('HTTP '+r.status+' from '+URL);
     geoWorld=await r.json();
-    console.log('[Wayfinder] World GeoJSON loaded:',geoWorld?.features?.length,'features');
-  }catch(e){console.warn('[Wayfinder] World GeoJSON fetch failed:',e.message);}
+    console.log('[Map] mapLoadWorld: OK —',geoWorld?.features?.length,'features, first ADMIN:',geoWorld?.features?.[0]?.properties?.ADMIN);
+  }catch(e){console.error('[Map] mapLoadWorld FAILED:',e.message);}
 }
 async function mapLoadStates(){
   if(geoUSStates)return;
@@ -3365,24 +3378,31 @@ function mapGeocodeGStr(q,cacheKey){
   });
 }
 async function mapInitGoogle(key){
+  console.log('[Map] mapInitGoogle: start');
   try{
+    console.log('[Map] mapInitGoogle: loading Maps JS API…');
     await loadGMapsAPI(key);
+    console.log('[Map] mapInitGoogle: Maps API ready');
     const el=document.getElementById('the-map');
-    if(!el)return;
+    if(!el){console.error('[Map] mapInitGoogle: #the-map element not found');return;}
+    // No custom styles — use default light Google Maps style
+    // (passing a styles array with the new Maps API versions causes "Custom style string" errors)
     gMap=new google.maps.Map(el,{
       center:{lat:20,lng:0},zoom:2,
-      styles:GMAP_STYLES,
       disableDefaultUI:true,
       zoomControl:true,
       gestureHandling:'greedy',
     });
+    console.log('[Map] mapInitGoogle: gMap created, loading GeoJSON…');
     await Promise.all([mapLoadWorld(),mapLoadStates()]);
+    console.log('[Map] mapInitGoogle: GeoJSON loaded — geoWorld:',!!geoWorld,'features:',geoWorld?.features?.length,'geoUSStates:',!!geoUSStates);
     mapRenderCountriesG();
     mapRenderStatesG();
     await mapRenderPinsG();
     mapRenderHomeG();
+    console.log('[Map] mapInitGoogle: complete');
   }catch(e){
-    console.error('Google Maps init error:',e);
+    console.error('[Map] mapInitGoogle ERROR:',e);
     const el=document.getElementById('the-map');
     if(el)el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:13px;flex-direction:column;gap:8px"><div>⚠️ Google Maps failed to load</div><div style="font-size:11px">Check your Maps API key in Settings</div></div>';
   }
@@ -3393,24 +3413,30 @@ function _gMapSvgIcon(emoji,color,size){
   return{url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),scaledSize:new google.maps.Size(s,s),anchor:new google.maps.Point(s/2,s/2)};
 }
 function mapRenderCountriesG(){
-  if(!gMap||!geoWorld)return;
+  console.log('[Map] mapRenderCountriesG: called — gMap:',!!gMap,'geoWorld:',!!geoWorld,'features:',geoWorld?.features?.length);
+  if(!gMap){console.error('[Map] mapRenderCountriesG: no gMap — aborting');return;}
+  if(!geoWorld){console.error('[Map] mapRenderCountriesG: geoWorld is null — GeoJSON fetch likely failed');return;}
 
   // Build place-level country data
   const countryData={};
   D.places.forEach(p=>{const c=normCountry(p.country);if(!c)return;if(!countryData[c])countryData[c]={vis:0,want:0};if(p.status==='visited')countryData[c].vis++;else if(p.status==='want'||p.status==='planned')countryData[c].want++;});
+  console.log('[Map] mapRenderCountriesG: place-country keys:',Object.keys(countryData).length,'e.g.',Object.keys(countryData).slice(0,5).join(', ')||'(none)');
 
   // Build visited-country set from past trip destinations
   const tripDestVisited=new Set();
   const _today=new Date().toISOString().slice(0,10);
-  D.trips.filter(t=>t.status==='past'||(t.endDate&&t.endDate<_today)).forEach(t=>{
+  const pastTrips=D.trips.filter(t=>t.status==='past'||(t.endDate&&t.endDate<_today));
+  console.log('[Map] mapRenderCountriesG: past trips:',pastTrips.length,'of',D.trips.length,'total',pastTrips.map(t=>t.name));
+  pastTrips.forEach(t=>{
     (t.destinations||[]).forEach(dest=>{const c=normCountry(dest);if(c&&c!=='United States')tripDestVisited.add(c);});
   });
-  console.log('[Wayfinder] Map visited countries ('+tripDestVisited.size+'):',[...tripDestVisited].sort().join(', ')||'(none — check trip destinations)');
+  console.log('[Map] mapRenderCountriesG: tripDestVisited ('+tripDestVisited.size+'):',[...tripDestVisited].sort().join(', ')||'(none — check trip destinations)');
 
   // Use the map's built-in data layer; clear then reload features on every render
-  gMap.data.forEach(f=>gMap.data.remove(f));
+  let removed=0;gMap.data.forEach(f=>{gMap.data.remove(f);removed++;});
+  console.log('[Map] mapRenderCountriesG: cleared',removed,'existing features, adding GeoJSON…');
   const features=gMap.data.addGeoJson(geoWorld);
-  console.log('[Wayfinder] Map GeoJSON: added',features.length,'country features to data layer');
+  console.log('[Map] mapRenderCountriesG: added',features.length,'features to gMap.data');
 
   // Apply style immediately after features are loaded
   gMap.data.setStyle(f=>{
@@ -3598,7 +3624,7 @@ function initDossierMapG(type,name){
   const center=pins.length===1?{lat:pins[0].coords.lat,lng:pins[0].coords.lng}:type==='state'?{lat:39.5,lng:-98.35}:{lat:20,lng:10};
   const zoom=pins.length===1?8:type==='state'?4:2;
   try{
-    dossierMap=new google.maps.Map(el,{center,zoom,styles:GMAP_STYLES,disableDefaultUI:true,gestureHandling:'none',zoomControl:false});
+    dossierMap=new google.maps.Map(el,{center,zoom,disableDefaultUI:true,gestureHandling:'none',zoomControl:false});
     _dossierMapIsGoogle=true;
     if(pins.length>1){
       const bounds=new google.maps.LatLngBounds();
@@ -3703,25 +3729,6 @@ async function mapDrawRoute(tripId){
 // PLACES
 // ══════════════════════════════════════════════
 let pf='all',pCat='all',pStatus='all',plSearch='',eid=null,pendVisitWishId=null,_atlasDestFilter=null;
-const MACRO_KEYS=['outdoors','food-drink','sights','stay','shopping','transit','other'];
-function getMacroCategory(p){
-  const c=p.category||'other';
-  // Already a macro key (including legacy 'culture' → 'sights')
-  if(MACRO_KEYS.includes(c))return c;
-  if(c==='culture')return'sights';
-  // Legacy micro → macro
-  const map={'nat-park':'outdoors','hiking':'outdoors','camp':'outdoors','viewpoint':'outdoors','swim':'outdoors','food':'food-drink','accommodation':'stay','city':'sights','road-trip':'transit','international':'sights','hidden-gem':'other'};
-  return map[c]||'other';
-}
-// Keyword patterns for smart category inference from place name + notes
-const CAT_RX=[
-  ['outdoors',/\b(trail|hiking|hike|park|national park|beach|lake|mountain|waterfall|falls|glacier|canyon|nature reserve|wildlife|forest|volcano|hot spring|geyser|tide pool|bluff|dune|ridge|peak|summit|fjord|bay|coast|cliff|reef|lagoon|scenic|gorge|ravine|spring|thermal|overlook|viewpoint|vista|valley|meadow|island|estuary|estuary|headland|cape|peninsula|desert|savanna|steppe)\b/i],
-  ['food-drink',/\b(restaurant|cafe|coffee|bar|pub|brewery|winery|bakery|market hall|food hall|gelato|ice cream|dessert|pastry|wine bar|cocktail|brunch|bistro|trattoria|pizzeria|ramen|sushi|taco|burger|pizza|ristorante|osteria|cantina|deli|tapas|brasserie|eatery|kebab|steakhouse|seafood|grill|tavern|patisserie|creperie|boulangerie)\b/i],
-  ['sights',/\b(museum|church|cathedral|castle|monument|temple|mosque|synagogue|shrine|gallery|ruins|palace|basilica|chapel|convent|monastery|fortress|piazza|plaza|square|bridge|fountain|statue|memorial|lighthouse|old town|old city|historic|district|harbour|harbor|waterfront|promenade|parliament|opera|theatre|theater|amphitheat|colosseum|tower|city wall|gate|arch|pagoda|stupa|campanile|baptistry|crypt|abbey|citadel|acropolis)\b/i],
-  ['stay',/\b(hotel|hostel|airbnb|resort|guesthouse|inn|lodge|villa|apartment|rental|accommodation|campground|b&b|bed and breakfast)\b/i],
-  ['shopping',/\b(boutique|souvenir|bookstore|market(?! square| hall| place)|mall|shopping|design store|antique)\b/i],
-  ['transit',/\b(airport|train station|bus station|ferry|port|harbour|terminal|metro station|tram stop|parking|transfer)\b/i],
-];
 function inferCategoryFromName(p){
   const s=((p.name||'')+' '+(p.notes||'')).toLowerCase();
   for(const[cat,rx] of CAT_RX){if(rx.test(s))return cat;}
