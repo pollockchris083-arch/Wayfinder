@@ -786,8 +786,17 @@ input,textarea,select{font-family:inherit;font-weight:400}
 [data-drag-stop].stop-drag-over{background:rgba(200,144,30,.08)!important;outline:1.5px dashed var(--plans-accent,#C8901E);outline-offset:-1px;border-radius:5px}
 .stop-drag-handle{display:flex;align-items:center;justify-content:center;width:22px;min-height:44px;cursor:grab;color:var(--muted2);font-size:14px;user-select:none;flex-shrink:0;opacity:.65;transition:opacity .15s,color .15s;touch-action:none;-webkit-touch-callout:none}
 .stop-drag-handle:hover{opacity:1;color:var(--plans-accent,#C8901E);cursor:grabbing}
-[data-day-drop-zone]{min-height:16px;transition:background .15s,outline .15s}
-[data-day-drop-zone].stop-drag-over-day{outline:2px dashed var(--plans-accent,#C8901E);outline-offset:4px;border-radius:6px;background:rgba(200,144,30,.06)}
+[data-day-drop-zone]{min-height:16px;transition:background .15s,outline .15s,min-height .2s}
+[data-day-drop-zone].stop-drag-over-day{outline:3px dashed var(--plans-accent,#C8901E);outline-offset:0;border-radius:8px;background:rgba(200,144,30,.1)}
+/* When a stop is being dragged — expand all drop zones into obvious landing pads */
+body.stop-dragging-active [data-day-drop-zone]{min-height:72px;border-radius:8px;background:rgba(200,144,30,.04);border:1.5px dashed rgba(200,144,30,.25);position:relative}
+body.stop-dragging-active [data-day-drop-zone]::after{content:'Drop here';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:rgba(200,144,30,.45);letter-spacing:.6px;text-transform:uppercase;pointer-events:none}
+body.stop-dragging-active [data-day-drop-zone]:not(:empty)::after{content:''}
+body.stop-dragging-active [data-day-drop-zone].stop-drag-over-day{background:rgba(200,144,30,.14);border-color:var(--plans-accent,#C8901E);border-style:solid;outline:none}
+body.stop-dragging-active [data-day-drop-zone].stop-drag-over-day::after{content:'↓ Drop here';color:var(--plans-accent,#C8901E);font-size:12px}
+body.stop-dragging-active .plans-unsched{min-height:72px;position:relative}
+body.stop-dragging-active .plans-unsched::after{content:'Drop here (Unscheduled)';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:rgba(200,144,30,.45);letter-spacing:.5px;pointer-events:none}
+body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ Park here';color:var(--plans-accent,#C8901E)}
 .plans-day-hdr{display:flex;align-items:center;padding:4px 8px;background:var(--card2);border-radius:6px;margin-bottom:4px;gap:4px;cursor:grab;user-select:none}
 .plans-day-hdr:active{cursor:grabbing}
 .plans-day-hdr button,.plans-day-hdr label,.plans-day-hdr input{cursor:pointer;user-select:auto}
@@ -5271,10 +5280,11 @@ function pdStopStart(e){
   _pd={kind:'stop',rt,id,di,si};
   e.dataTransfer.effectAllowed='move';
   e.dataTransfer.setData('text/plain','stop:'+di+':'+si);
-  setTimeout(()=>el.classList.add('stop-dragging'),0);
+  setTimeout(()=>{el.classList.add('stop-dragging');document.body.classList.add('stop-dragging-active');},0);
 }
 function pdStopEnd(e){
   e.currentTarget.classList.remove('stop-dragging');
+  document.body.classList.remove('stop-dragging-active');
   document.querySelectorAll('.stop-drag-over,.stop-drag-over-day').forEach(el=>el.classList.remove('stop-drag-over','stop-drag-over-day'));
   if(!_ptActive)_pd=null;
 }
@@ -5307,6 +5317,7 @@ function pdZoneLeave(e){e.stopPropagation();if(!e.currentTarget.contains(e.relat
 function pdZoneDrop(e){
   e.preventDefault();e.stopPropagation();
   const el=e.currentTarget;el.classList.remove('stop-drag-over-day');
+  document.body.classList.remove('stop-dragging-active');
   if(!_pd||_pd.kind!=='stop')return;
   const tDi=parseInt(el.dataset.dayIdx);
   if(tDi===_pd.di){_pd=null;return;}
