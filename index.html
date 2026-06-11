@@ -908,7 +908,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
     </div>
     <div id="sync-bar" style="display:none;align-items:center;justify-content:space-between;padding:5px 6px;border-top:1px solid var(--bdr);margin-top:3px">
       <span id="sync-status" style="font-size:10px;color:var(--muted);cursor:pointer;padding:2px 4px;border-radius:4px;transition:background .15s" onclick="manualCloudSync()" title="Tap to sync from cloud" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background='none'">☁️ Synced</span>
-      <button onclick="signOut()" style="background:none;border:none;font-size:10px;color:var(--muted);cursor:pointer;padding:2px 6px;border-radius:4px;font-family:inherit;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Sign out</button>
+      <button onclick="signOut()" style="background:none;border:none;font-size:10px;color:var(--muted);cursor:pointer;padding:8px 12px;border-radius:4px;font-family:inherit;transition:color .15s;min-height:36px" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Sign out</button>
     </div>
   </div>
 </div>
@@ -1959,15 +1959,15 @@ function signInGoogle(){
   SUPA.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.href.split('#')[0]}});
 }
 async function signOut(){
-  await SUPA.auth.signOut();
-  currentUser=null;
-  const ao=document.getElementById('auth-overlay');
-  const sign=document.getElementById('ao-signin');
-  const load=document.getElementById('ao-loading');
-  if(ao)ao.style.display='flex';
-  if(sign)sign.style.display='flex';
-  if(load)load.style.display='none';
-  document.getElementById('sync-bar').style.display='none';
+  sbClose(); // close sidebar first so overlay renders cleanly on mobile
+  // Clear all user data from localStorage before the Supabase call so that
+  // even if the network call fails the local session is gone.
+  Object.keys(localStorage).filter(k=>k.startsWith('wf_')).forEach(k=>localStorage.removeItem(k));
+  // Also clear Supabase's own auth storage (sb- prefixed keys)
+  Object.keys(localStorage).filter(k=>k.startsWith('sb-')).forEach(k=>localStorage.removeItem(k));
+  try{await SUPA.auth.signOut();}catch(e){console.warn('Supabase signOut error (ignored):', e);}
+  // Reload to guarantee a clean in-memory state on all browsers including mobile Safari
+  window.location.reload();
 }
 function setSyncStatus(msg,color){const el=document.getElementById('sync-status');if(el){el.textContent=msg;el.style.color=color||'var(--muted)';}}
 function setAoDetail(msg){const el=document.getElementById('ao-load-detail');if(el)el.textContent=msg;}
