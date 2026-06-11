@@ -779,14 +779,18 @@ input,textarea,select{font-family:inherit;font-weight:400}
 [data-drag-day].day-drag-over{outline:2px dashed var(--plans-accent,#C8901E);outline-offset:3px;border-radius:8px;background:rgba(239,159,39,.04)}
 .day-drag-handle{display:flex;align-items:center;justify-content:center;width:28px;min-height:44px;cursor:grab;color:var(--muted2);font-size:16px;user-select:none;flex-shrink:0;opacity:.7;transition:opacity .15s,color .15s;touch-action:none;-webkit-touch-callout:none}
 .day-drag-handle:hover{opacity:1;color:var(--plans-accent,#C8901E);cursor:grabbing}
-[data-drag-stop]{transition:background .1s}
+[data-drag-stop]{transition:background .1s;cursor:grab;user-select:none}
+[data-drag-stop]:active{cursor:grabbing}
+[data-drag-stop] button,[data-drag-stop] input,[data-drag-stop] a,[data-drag-stop] .stop-move-btn{cursor:pointer;user-select:auto}
 [data-drag-stop].stop-dragging{opacity:.38}
 [data-drag-stop].stop-drag-over{background:rgba(200,144,30,.08)!important;outline:1.5px dashed var(--plans-accent,#C8901E);outline-offset:-1px;border-radius:5px}
 .stop-drag-handle{display:flex;align-items:center;justify-content:center;width:22px;min-height:44px;cursor:grab;color:var(--muted2);font-size:14px;user-select:none;flex-shrink:0;opacity:.65;transition:opacity .15s,color .15s;touch-action:none;-webkit-touch-callout:none}
 .stop-drag-handle:hover{opacity:1;color:var(--plans-accent,#C8901E);cursor:grabbing}
 [data-day-drop-zone]{min-height:16px;transition:background .15s,outline .15s}
 [data-day-drop-zone].stop-drag-over-day{outline:2px dashed var(--plans-accent,#C8901E);outline-offset:4px;border-radius:6px;background:rgba(200,144,30,.06)}
-.plans-day-hdr{display:flex;align-items:center;padding:4px 8px;background:var(--card2);border-radius:6px;margin-bottom:4px;gap:4px}
+.plans-day-hdr{display:flex;align-items:center;padding:4px 8px;background:var(--card2);border-radius:6px;margin-bottom:4px;gap:4px;cursor:grab;user-select:none}
+.plans-day-hdr:active{cursor:grabbing}
+.plans-day-hdr button,.plans-day-hdr label,.plans-day-hdr input{cursor:pointer;user-select:auto}
 .plans-day-title{flex:1;font-size:12px;font-weight:600;color:var(--text);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .plans-day-acts{display:flex;align-items:center;gap:1px;opacity:0;transition:opacity .15s;flex-shrink:0}
 .plans-day-hdr:hover .plans-day-acts,.plans-day-hdr.acts-vis .plans-day-acts{opacity:1}
