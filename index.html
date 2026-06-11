@@ -2575,7 +2575,7 @@ let tt;function toast(m){const e=document.getElementById('toast');e.textContent=
 // MODALS
 // ══════════════════════════════════════════════
 function openM(id){document.getElementById(id).classList.add('on')}
-function closeM(id){document.getElementById(id).classList.remove('on')}
+function closeM(id){document.getElementById(id).classList.remove('on');if(id==='m-trip'||id==='m-camp')window._pendingTripType=null;}
 document.querySelectorAll('.mo').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('on')}));
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
@@ -6472,17 +6472,25 @@ const TRIP_TYPES={
   event:{icon:'🎪',label:'Event',color:'#C0634C',_store:'trips',_type:'domestic'},
 };
 function inferTripType(item,isAdv){
-  if(item.tripType)return item.tripType;
   if(isAdv){
+    // Camp records: campType is the primary classifier so stale tripType values (e.g. 'international'
+    // from a dismissed modal) cannot bleed into the wrong nav section.
     const ct=item.campType||'tent';
     if(ct==='backpacking')return'adventure';
-    if(['rv','van','trailer','overlanding'].includes(ct))return'road_trip';
+    if(['rv','van','trailer','overlanding','car'].includes(ct))return'road_trip';
     if(['cabin','hotel','hostel','airbnb','friends'].includes(ct))return'getaway';
+    // For remaining camp types (tent, glamping, dispersed…) tripType may refine within
+    // outdoor-valid categories only — never 'international' or 'event'.
+    const validCampTypes=new Set(['adventure','road_trip','camping','getaway']);
+    if(item.tripType&&validCampTypes.has(item.tripType))return item.tripType;
     return'camping';
   }
+  // Regular trips: explicit tripType (set at creation time from nav context) takes precedence.
+  if(item.tripType)return item.tripType;
   const t=item.type||'';
   if(t==='road-trip'||t==='road_trip')return'road_trip';
   if(t==='international')return'international';
+  if(t==='backpacking'||t==='adventure')return'adventure';
   return'getaway';
 }
 function openNewTrip(){openM('m-new-trip');}
