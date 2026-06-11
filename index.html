@@ -2966,64 +2966,6 @@ const MAP_COLORS={visited:'#4A7259',want:'#B8892A',planned:'#4A7EBA',saved:'#8A7
 let gMap=null,gMapCountryData=null,gMapStateData=null;
 let gMapMarkers=[],gMapHomeMarker=null,gMapRoutePolyline=null;
 let _gMapsLoaded=false,_gMapsLoading=false,_gCountryDataLoaded=false,_gStateDataLoaded=false;
-const GMAP_STYLES=[
-  // Base land
-  {elementType:'geometry',stylers:[{color:'#2a2f3a'}]},
-  {elementType:'labels.text.fill',stylers:[{color:'#d4d4d4'}]},
-  {elementType:'labels.text.stroke',stylers:[{color:'#1a1e28'}]},
-
-  // Administrative boundaries
-  {featureType:'administrative',elementType:'geometry.stroke',stylers:[{color:'#44505e'}]},
-  {featureType:'administrative.country',elementType:'geometry.stroke',stylers:[{color:'#60584a'}]},
-  {featureType:'administrative.country',elementType:'labels.text.fill',stylers:[{color:'#f0e8d8'}]},
-  {featureType:'administrative.country',elementType:'labels.text.stroke',stylers:[{color:'#1a1e28'}]},
-  {featureType:'administrative.province',elementType:'geometry.stroke',stylers:[{color:'#3a4050'}]},
-  {featureType:'administrative.locality',elementType:'labels.text.fill',stylers:[{color:'#e8e0d0'}]},
-  {featureType:'administrative.locality',elementType:'labels.text.stroke',stylers:[{color:'#1a1e28'}]},
-  {featureType:'administrative.neighborhood',elementType:'labels.text.fill',stylers:[{color:'#b8b0a0'}]},
-
-  // Landscape
-  {featureType:'landscape',elementType:'geometry',stylers:[{color:'#2e3440'}]},
-  {featureType:'landscape.natural',elementType:'geometry',stylers:[{color:'#1e3028'}]},
-  {featureType:'landscape.man_made',elementType:'geometry',stylers:[{color:'#30353e'}]},
-
-  // POI: icons off, text only at street zoom
-  {featureType:'poi',elementType:'geometry',stylers:[{color:'#232e26'}]},
-  {featureType:'poi',elementType:'labels.icon',stylers:[{visibility:'off'}]},
-  {featureType:'poi',elementType:'labels.text.fill',stylers:[{color:'#7a8870'}]},
-  {featureType:'poi',elementType:'labels.text.stroke',stylers:[{color:'#1a1e28'}]},
-  {featureType:'poi.park',elementType:'geometry',stylers:[{color:'#1e3028'}]},
-  {featureType:'poi.park',elementType:'labels.text.fill',stylers:[{color:'#507858'}]},
-
-  // Roads — base defaults (local streets)
-  {featureType:'road',elementType:'geometry',stylers:[{color:'#3d3d4d'}]},
-  {featureType:'road',elementType:'geometry.stroke',stylers:[{color:'#252535'}]},
-  {featureType:'road',elementType:'labels.text.fill',stylers:[{color:'#c0bab0'}]},
-  {featureType:'road',elementType:'labels.text.stroke',stylers:[{color:'#1a1e28'}]},
-  // Arterials: clearly visible medium grey-blue
-  {featureType:'road.arterial',elementType:'geometry',stylers:[{color:'#5a5a6e'}]},
-  {featureType:'road.arterial',elementType:'geometry.stroke',stylers:[{color:'#38384a'}]},
-  {featureType:'road.arterial',elementType:'labels.text.fill',stylers:[{color:'#c8c4bc'}]},
-  {featureType:'road.arterial',elementType:'labels.text.stroke',stylers:[{color:'#1a1e28'}]},
-  // Highways: warm amber/gold — prominent
-  {featureType:'road.highway',elementType:'geometry',stylers:[{color:'#7a6830'}]},
-  {featureType:'road.highway',elementType:'geometry.stroke',stylers:[{color:'#5a5020'}]},
-  {featureType:'road.highway',elementType:'labels.text.fill',stylers:[{color:'#ffffff'}]},
-  {featureType:'road.highway',elementType:'labels.text.stroke',stylers:[{color:'#3a3010'}]},
-  {featureType:'road.highway',elementType:'labels.icon',stylers:[{saturation:-20},{lightness:10}]},
-  {featureType:'road.highway.controlled_access',elementType:'geometry',stylers:[{color:'#c8a96e'}]},
-  {featureType:'road.highway.controlled_access',elementType:'geometry.stroke',stylers:[{color:'#8a7040'}]},
-  {featureType:'road.highway.controlled_access',elementType:'labels.text.fill',stylers:[{color:'#ffffff'}]},
-  {featureType:'road.highway.controlled_access',elementType:'labels.text.stroke',stylers:[{color:'#3a3010'}]},
-
-  // Transit: off
-  {featureType:'transit',stylers:[{visibility:'off'}]},
-
-  // Water: visible dark blue
-  {featureType:'water',elementType:'geometry',stylers:[{color:'#1a3347'}]},
-  {featureType:'water',elementType:'labels.text.fill',stylers:[{color:'#5898b0'}]},
-  {featureType:'water',elementType:'labels.text.stroke',stylers:[{color:'#0e1e2e'}]},
-];
 function loadGMapsAPI(key){
   return new Promise((res,rej)=>{
     if(_gMapsLoaded){res();return;}
@@ -3124,16 +3066,14 @@ async function mapInit(){
   mapRenderCountries();mapRenderStates();mapRenderPins();mapRenderHome();
 }
 async function mapLoadWorld(){
-  if(geoWorld){console.log('[Map] mapLoadWorld: already cached,',geoWorld.features?.length,'features');return;}
-  // Natural Earth 110m — ~780 KB, ADMIN property matches our mapGeoToName() mapping
-  const URL='https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson';
-  console.log('[Map] mapLoadWorld: fetching',URL);
+  if(geoWorld){return;}
+  const URL='https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson';
   try{
     const r=await fetch(URL);
-    if(!r.ok)throw new Error('HTTP '+r.status+' from '+URL);
+    if(!r.ok)throw new Error('HTTP '+r.status);
     geoWorld=await r.json();
-    console.log('[Map] mapLoadWorld: OK —',geoWorld?.features?.length,'features, first ADMIN:',geoWorld?.features?.[0]?.properties?.ADMIN);
-  }catch(e){console.error('[Map] mapLoadWorld FAILED:',e.message);}
+    console.log('[Map] world GeoJSON loaded:',geoWorld?.features?.length,'features');
+  }catch(e){console.error('[Map] mapLoadWorld failed:',e.message);}
 }
 async function mapLoadStates(){
   if(geoUSStates)return;
@@ -3413,42 +3353,35 @@ function _gMapSvgIcon(emoji,color,size){
   return{url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),scaledSize:new google.maps.Size(s,s),anchor:new google.maps.Point(s/2,s/2)};
 }
 function mapRenderCountriesG(){
-  console.log('[Map] mapRenderCountriesG: called — gMap:',!!gMap,'geoWorld:',!!geoWorld,'features:',geoWorld?.features?.length);
-  if(!gMap){console.error('[Map] mapRenderCountriesG: no gMap — aborting');return;}
-  if(!geoWorld){console.error('[Map] mapRenderCountriesG: geoWorld is null — GeoJSON fetch likely failed');return;}
+  if(!gMap||!geoWorld)return;
 
-  // Build place-level country data
-  const countryData={};
-  D.places.forEach(p=>{const c=normCountry(p.country);if(!c)return;if(!countryData[c])countryData[c]={vis:0,want:0};if(p.status==='visited')countryData[c].vis++;else if(p.status==='want'||p.status==='planned')countryData[c].want++;});
-  console.log('[Map] mapRenderCountriesG: place-country keys:',Object.keys(countryData).length,'e.g.',Object.keys(countryData).slice(0,5).join(', ')||'(none)');
-
-  // Build visited-country set from past trip destinations
-  const tripDestVisited=new Set();
+  // Build visited set from past trip destinations + individually visited places
+  const visited=new Set();
   const _today=new Date().toISOString().slice(0,10);
-  const pastTrips=D.trips.filter(t=>t.status==='past'||(t.endDate&&t.endDate<_today));
-  console.log('[Map] mapRenderCountriesG: past trips:',pastTrips.length,'of',D.trips.length,'total',pastTrips.map(t=>t.name));
-  pastTrips.forEach(t=>{
-    (t.destinations||[]).forEach(dest=>{const c=normCountry(dest);if(c&&c!=='United States')tripDestVisited.add(c);});
-  });
-  console.log('[Map] mapRenderCountriesG: tripDestVisited ('+tripDestVisited.size+'):',[...tripDestVisited].sort().join(', ')||'(none — check trip destinations)');
+  D.trips.filter(t=>t.status==='past'||(t.endDate&&t.endDate<_today))
+    .forEach(t=>(t.destinations||[]).forEach(d=>{const c=normCountry(d);if(c&&c!=='United States')visited.add(c);}));
+  D.places.filter(p=>p.status==='visited').forEach(p=>{const c=normCountry(p.country);if(c&&c!=='United States')visited.add(c);});
 
-  // Use the map's built-in data layer; clear then reload features on every render
-  let removed=0;gMap.data.forEach(f=>{gMap.data.remove(f);removed++;});
-  console.log('[Map] mapRenderCountriesG: cleared',removed,'existing features, adding GeoJSON…');
-  const features=gMap.data.addGeoJson(geoWorld);
-  console.log('[Map] mapRenderCountriesG: added',features.length,'features to gMap.data');
+  // Build want set from saved/planned places
+  const wanted=new Set();
+  D.places.filter(p=>p.status==='want'||p.status==='planned').forEach(p=>{const c=normCountry(p.country);if(c&&c!=='United States')wanted.add(c);});
 
-  // Apply style immediately after features are loaded
+  // Clear and reload country features
+  gMap.data.forEach(f=>gMap.data.remove(f));
+  gMap.data.addGeoJson(geoWorld);
+
   gMap.data.setStyle(f=>{
-    const raw=f.getProperty('ADMIN')||f.getProperty('name')||'';
-    const n=mapGeoToName(raw);
-    const d=countryData[n]||countryData[raw]||{vis:0,want:0};
-    const isTripDest=tripDestVisited.has(n)||tripDestVisited.has(raw);
-    const isHome=n==='United States'||raw==='United States of America';
-    if(isHome)return{fillColor:'#4A7259',fillOpacity:0.1,strokeColor:'#4A7259',strokeWeight:0.8,strokeOpacity:0.4,zIndex:1};
-    if(d.vis>0||isTripDest)return{fillColor:'#EF9F27',fillOpacity:0.4,strokeColor:'#C87A0A',strokeWeight:1.2,strokeOpacity:0.9,zIndex:2};
-    if(d.want>0)return{fillColor:'#B8892A',fillOpacity:0.05,strokeColor:'#B8892A',strokeWeight:1.5,strokeOpacity:0.65,zIndex:1};
-    return{fillColor:'transparent',fillOpacity:0,strokeColor:'#888',strokeWeight:0.4,strokeOpacity:0.5,zIndex:0};
+    const raw=f.getProperty('ADMIN')||'';
+    // Normalize the GeoJSON ADMIN name multiple ways to catch aliases
+    const byNorm=normCountry(raw);          // handles "Bosnia and Herzegovina" → "Bosnia", "Czechia" → "Czech Republic"
+    const byGeo=normCountry(mapGeoToName(raw)); // handles "Republic of Serbia" → "Serbia" etc.
+    const isHome=raw==='United States of America'||byNorm==='United States';
+    if(isHome)return{fillColor:'#4A7259',fillOpacity:0.1,strokeColor:'#4A7259',strokeWeight:0.8,strokeOpacity:0.4};
+    const isVisited=visited.has(raw)||visited.has(byNorm)||visited.has(byGeo);
+    if(isVisited)return{fillColor:'#EF9F27',fillOpacity:0.4,strokeColor:'#D4890A',strokeWeight:1};
+    const isWanted=wanted.has(raw)||wanted.has(byNorm)||wanted.has(byGeo);
+    if(isWanted)return{fillColor:'#B8892A',fillOpacity:0.05,strokeColor:'#B8892A',strokeWeight:1.5,strokeOpacity:0.65};
+    return{fillColor:'#888888',fillOpacity:0,strokeColor:'#888',strokeWeight:0.4,strokeOpacity:0.5};
   });
 
   // Wire click/hover on the data layer (only once per gMap instance)
@@ -3523,7 +3456,7 @@ function mapRenderStatesG(){
     if(d.vis>0){const op=_vm==='us'?0.75:0.5;const h=d.vis<=1?'#EDBA9E':d.vis<=3?'#D9885D':d.vis<=7?'#C27D5C':'#A66040';return{fillColor:h,fillOpacity:op,strokeColor:'#9C5535',strokeWeight:_vm==='us'?1.2:0.6,strokeOpacity:0.8,zIndex:3};}
     if(isHome)return{fillColor:'#4A7259',fillOpacity:0.15,strokeColor:'#4A7259',strokeWeight:1.2,strokeOpacity:0.5,zIndex:2};
     if(d.want>0)return{fillColor:'#B8892A',fillOpacity:0.05,strokeColor:'#B8892A',strokeWeight:1.2,strokeOpacity:0.6,zIndex:1};
-    return{fillColor:'transparent',fillOpacity:0,strokeColor:'#666',strokeWeight:0.4,strokeOpacity:_vm==='us'?0.5:0.15,zIndex:0};
+    return{fillColor:'#888888',fillOpacity:0,strokeColor:'#666',strokeWeight:0.4,strokeOpacity:_vm==='us'?0.5:0.15,zIndex:0};
   });
 }
 async function mapRenderPinsG(){
