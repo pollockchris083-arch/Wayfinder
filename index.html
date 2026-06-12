@@ -5467,9 +5467,11 @@ function delStop(tid,di,si){
   const s=t.itinerary[di]?.stops[si];
   if(s&&!confirm('Remove stop "'+s.name+'"?'))return;
   t.itinerary[di].stops.splice(si,1);
+  _clearDayDists(t.itinerary,[di]);
   autoHaversineItinerary(t);
   save('trips',D.trips);
   toast('🗑️ Stop removed');openTripD(tid);
+  _schedAutoRecalc(false,tid);
 }
 function toggleStopDone(tid,di,si,val){
   D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
@@ -5714,6 +5716,7 @@ function saveStop(){
       } else {
         if(c.itinerary[oldDi]?.stops)c.itinerary[oldDi].stops.splice(pendStop.si,1);
         c.itinerary[newDi].stops.push(stopData);
+        _clearDayDists(c.itinerary,[oldDi,newDi]);
       }
     } else {
       stopData.done=false;c.itinerary[newDi].stops.push(stopData);
@@ -5723,14 +5726,13 @@ function saveStop(){
     closeM('m-stop');
     if(pendStop.si!=null){toast('✅ Stop updated');openCampD(pendStop.cid);}
     else{toast('📍 Stop added');window._campDTab='daily';openCampD(pendStop.cid);}
-    if((D.settings?.mapsApiKey||'').trim())setTimeout(()=>recalcItineraryDriving(true,pendStop.cid,true),200);
+    _schedAutoRecalc(true,pendStop.cid);
   } else {
     D=load();const t=D.trips.find(x=>x.id===pendStop.tid);if(!t)return;
     const daySelect=document.getElementById('st-day');
     let newDi=daySelect&&daySelect.closest('#st-day-row')?.style.display!=='none'?parseInt(daySelect.value):(pendStop.di!=null?pendStop.di:0);
     if(isNaN(newDi))newDi=0;
     if(newDi===-1){
-      // Unscheduled: find or create a no-date day
       let ui=t.itinerary.findIndex(d=>!d.date);
       if(ui<0){t.itinerary.push({date:'',stops:[]});ui=t.itinerary.length-1;}
       newDi=ui;
@@ -5745,6 +5747,7 @@ function saveStop(){
       } else {
         if(t.itinerary[oldDi]?.stops)t.itinerary[oldDi].stops.splice(pendStop.si,1);
         t.itinerary[newDi].stops.push(stopData);
+        _clearDayDists(t.itinerary,[oldDi,newDi]);
       }
     } else {
       stopData.done=false;t.itinerary[newDi].stops.push(stopData);
@@ -5762,7 +5765,7 @@ function saveStop(){
     save('trips',D.trips);closeM('m-stop');
     if(pendStop.si!=null){toast('✅ Stop updated');openTripD(pendStop.tid);}
     else{toast('📍 Stop added');window._tripItinTab='plans';openTripD(pendStop.tid);}
-    if((D.settings?.mapsApiKey||'').trim())setTimeout(()=>recalcItineraryDriving(false,pendStop.tid,true),200);
+    _schedAutoRecalc(false,pendStop.tid);
   }
 }
 // ── Plans: unified drag-and-drop (HTML5 + Touch) ────────────────
@@ -5811,7 +5814,11 @@ function _pdDoReorderDay(rt,id,src,tgt){
   const ins=src<tgt?tgt-1:tgt;
   arr.splice(ins,0,moved);
   if(rec.startDate){let di2=0;arr.forEach(day=>{if(day.date){const d=new Date(rec.startDate+'T12:00:00');d.setDate(d.getDate()+di2);day.date=d.toISOString().split('T')[0];di2++;}});}
+  // Whole flat order changed — clear all stop distances and re-estimate
+  _clearDayDists(rec.itinerary);
+  autoHaversineItinerary(rec);
   _pdSave(rt);_pdRefresh(rt,id);_pdToast('Saved');
+  _schedAutoRecalc(rt==='camp',id);
 }
 
 // Stop HTML5 events
@@ -5887,8 +5894,12 @@ function _pdDoMoveStop(rt,id,srcDi,srcSi,toDi,toSi,append){
     const nd=rec.itinerary[realToDi]?.date||'';
     if(pl){pl.visitDate=nd||null;save('places',D.places);}
   }
+  // Clear distances for affected days so haversine re-estimates correctly
+  const affectedDays=srcDi===realToDi?[srcDi]:[srcDi,realToDi];
+  _clearDayDists(rec.itinerary,affectedDays);
   autoHaversineItinerary(rec);
   _pdSave(rt);_pdRefresh(rt,id);_pdToast('Saved');
+  _schedAutoRecalc(rt==='camp',id);
 }
 
 // Toast
@@ -5993,7 +6004,10 @@ function delDay(tid,di){
     t.itinerary[ui].stops.push(...day.stops);
   }
   t.itinerary.splice(di,1);
+  _clearDayDists(t.itinerary);
+  autoHaversineItinerary(t);
   save('trips',D.trips);toast('🗑️ Day removed');openTripD(tid);
+  _schedAutoRecalc(false,tid);
 }
 function setDayDate(tid,di,date){
   D=load();const t=D.trips.find(x=>x.id===tid);if(!t||!date)return;
@@ -6007,14 +6021,16 @@ function moveStop(tid,fromDi,si,toDi){
   t.itinerary[fromDi].stops.splice(si,1);
   if(!t.itinerary[toDi].stops)t.itinerary[toDi].stops=[];
   t.itinerary[toDi].stops.push(stop);
-  // If stop is linked to a place, update that place's visitDate
   if(stop.placeId){
     const pl=D.places.find(x=>x.id===stop.placeId);
     const newDate=t.itinerary[toDi].date;
     if(pl&&newDate)pl.visitDate=newDate;
     save('places',D.places);
   }
+  _clearDayDists(t.itinerary,[fromDi,toDi]);
+  autoHaversineItinerary(t);
   save('trips',D.trips);toast('↕ Moved to Day '+(toDi+1));openTripD(tid);
+  _schedAutoRecalc(false,tid);
 }
 function syncItineraryFromPlaces(tid){
   D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
@@ -6149,10 +6165,13 @@ function doMoveStopToDay(rt,id,fromDi,si,toDi){
     if(!itin[toDi].stops)itin[toDi].stops=[];
     itin[toDi].stops.push(stop);
   }
+  const realToDi=toDi<0?itin.findIndex(d=>!d.date):toDi;
+  _clearDayDists(itin,realToDi<0?[]:[fromDi,realToDi]);
   autoHaversineItinerary(obj);
   if(rt==='camp'){saveCamps();window._campDTab='daily';openCampD(id);}
   else{save('trips',D.trips);switchTripItinTab(id,'plans');}
   toast('↕ Stop moved');
+  _schedAutoRecalc(rt==='camp',id);
 }
 function expandStopNote(id,di,si,rt){
   const ta=document.getElementById('sn-ta-'+id+'-'+di+'-'+si);
@@ -9423,9 +9442,11 @@ function rAdvBudgetTab(c){
       </div>
       <div style="font-size:15px;font-weight:700;color:var(--text);margin-top:4px">${Math.round(effectiveMiles)} mi total${itinHasEst?' <span style="font-size:11px;font-weight:400;color:var(--muted2)">(est.)</span>':''}</div>
     </div>`:''}
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
       <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">MPG</label>
         <input class="fi" id="fuel-mpg-${c.id}" style="margin-top:3px" type="number" value="${rig.mpg||''}" placeholder="e.g. 20" oninput="updateFuelCalc('${c.id}')" onblur="saveAdvRig('${c.id}','mpg',this.value);window._campDTab='budget';openCampD('${c.id}')"/></div>
+      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Tank (gal)</label>
+        <input class="fi" id="fuel-tank-${c.id}" style="margin-top:3px" type="number" value="${rig.tankGal||''}" placeholder="e.g. 24" oninput="updateFuelCalc('${c.id}')" onblur="saveAdvRig('${c.id}','tankGal',this.value);window._campDTab='budget';openCampD('${c.id}')"/></div>
       <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Gas Price ($/gal)</label>
         <input class="fi" style="margin-top:3px" type="number" step="0.01" id="fuel-price-${c.id}" value="${defaultGasPrice}" placeholder="e.g. 4.25" oninput="updateFuelCalc('${c.id}')"/></div>
     </div>
@@ -9436,8 +9457,8 @@ function rAdvBudgetTab(c){
         <div style="font-size:10px;color:var(--muted2);margin-top:2px">Gallons needed</div>
       </div>
       <div style="background:var(--card2);border-radius:7px;padding:10px 6px">
-        <div style="font-size:16px;font-weight:700;color:var(--amber)">${Math.ceil(effectiveMiles/parseFloat(rig.mpg)/18)}</div>
-        <div style="font-size:10px;color:var(--muted2);margin-top:2px">Fill-ups (~18 gal)</div>
+        <div style="font-size:16px;font-weight:700;color:var(--amber)">${rig.tankGal?Math.ceil(effectiveMiles/parseFloat(rig.mpg)/parseFloat(rig.tankGal)):Math.ceil(effectiveMiles/parseFloat(rig.mpg)/18)}</div>
+        <div style="font-size:10px;color:var(--muted2);margin-top:2px">Fill-ups (${rig.tankGal?Math.round(parseFloat(rig.tankGal)*0.9)+'gal ea':'~18 gal'})</div>
       </div>
       <div style="background:var(--card2);border-radius:7px;padding:10px 6px">
         <div id="fuel-est-${c.id}" style="font-size:${defaultGasPrice?'16':'12'}px;font-weight:700;color:${defaultGasPrice?'var(--green3)':'var(--muted2)'}">${defaultGasPrice?'$'+(effectiveMiles/parseFloat(rig.mpg)*parseFloat(defaultGasPrice)).toFixed(0):'↑ add price'}</div>
@@ -9446,7 +9467,7 @@ function rAdvBudgetTab(c){
     </div>
     ${defaultGasPrice?`<div style="text-align:center;font-size:10px;color:var(--muted2);margin-top:5px">${Math.round(effectiveMiles)} mi ÷ ${rig.mpg} mpg × $${parseFloat(defaultGasPrice).toFixed(2)}/gal = <strong style="color:var(--green3)">$${fuelEst}</strong></div>`:''}
     <div style="margin-top:8px;padding:8px 10px;background:rgba(200,144,30,.07);border-radius:6px;border-left:3px solid var(--amber)">
-      <div style="font-size:11px;color:var(--text2);line-height:1.5">⛽ <strong>Before you leave:</strong> Top off the tank. At ${rig.mpg} MPG you'll need ~${(effectiveMiles/parseFloat(rig.mpg)).toFixed(0)} gal total — plan to fill up ${Math.ceil(effectiveMiles/parseFloat(rig.mpg)/18)===1?'once on the road':'every ~'+(Math.round(parseFloat(rig.mpg)*18))+' miles'}.</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.5">⛽ <strong>Before you leave:</strong> Top off the tank. At ${rig.mpg} MPG you'll need ~${(effectiveMiles/parseFloat(rig.mpg)).toFixed(0)} gal total${rig.tankGal?` — plan to fill up every ~${Math.round(parseFloat(rig.mpg)*parseFloat(rig.tankGal)*0.9)} miles`:', fill up when you drop below ¼ tank'}${itinHasEst?' <em>(distances estimated)</em>':''}.</div>
     </div>`:
     `<div style="margin-top:10px;font-size:11px;color:var(--muted2);padding:4px 0">${!c.startLocation&&!routeMiles?'Set your departure city above, then enter MPG and gas price to calculate fuel cost.':!rig.mpg?'Enter your MPG above to see gallons and cost.':!defaultGasPrice?'Enter gas price above to calculate fuel cost.':'📍 Route miles not calculated yet. Click Recalc (requires Maps API key in Settings), or enter total trip miles manually below.'}</div>`}
     ${!routeMiles?`<div style="margin-top:8px">
@@ -9490,17 +9511,19 @@ function updateFuelCalc(cid){
   const priceEl=document.getElementById('fuel-price-'+cid);
   const milesEl=document.getElementById('est-miles-'+cid);
   const mpgEl=document.getElementById('fuel-mpg-'+cid);
+  const tankEl=document.getElementById('fuel-tank-'+cid);
   const price=parseFloat(priceEl?.value)||0;
   const mpg=parseFloat(mpgEl?.value)||parseFloat((c.rig||{}).mpg)||0;
+  const tankGal=parseFloat(tankEl?.value)||parseFloat((c.rig||{}).tankGal)||18;
   const campStopMiles=(c.stops||[]).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
   const itinMiles=(c.itinerary||[]).flatMap(d=>d.stops||[]).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
   const calcMiles=campStopMiles||itinMiles;
   const startMi=parseFloat(c.startMiles)||0;
   const endMi=parseFloat(c.endMiles)||0;
   const manualMiles=milesEl?parseFloat(milesEl.value)||0:0;
-  // FIX: include outbound+return even when 0 stop-to-stop miles (single destination trip)
   const miles=(startMi+calcMiles+endMi)||manualMiles;
   if(price){c.fuelPrice=price;if(!D.settings)D.settings={};D.settings.gasPrice=price;localStorage.setItem(K.settings,JSON.stringify(D.settings));}
+  if(tankEl?.value&&parseFloat(tankEl.value)){if(!c.rig)c.rig={};c.rig.tankGal=parseFloat(tankEl.value);}
   if(manualMiles)c.estTripMiles=manualMiles;
   saveCamps();
   const estEl=document.getElementById('fuel-est-'+cid);
@@ -9891,10 +9914,11 @@ function delAdvItinStop(cid,di,si){
   if(!confirm('Remove this stop?'))return;
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   (c.itinerary[di]?.stops||[]).splice(si,1);
+  _clearDayDists(c.itinerary,[di]);
   autoHaversineItinerary(c);
   saveCamps();
   toast('🗑️ Stop removed');openCampD(cid);
-  if((D.settings?.mapsApiKey||'').trim())setTimeout(()=>recalcItineraryDriving(true,cid,true),200);
+  _schedAutoRecalc(true,cid);
 }
 function toggleAdvItinDone(cid,di,si,val){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
@@ -10087,6 +10111,20 @@ function haversineMiles(lat1,lon1,lat2,lon2){
   const R=3959,r=x=>x*Math.PI/180,dLat=r(lat2-lat1),dLon=r(lon2-lon1);
   const a=Math.sin(dLat/2)**2+Math.cos(r(lat1))*Math.cos(r(lat2))*Math.sin(dLon/2)**2;
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+// Clear milesPrev/driveSecs/milesEst from specific day indices (or all days if omitted)
+// so haversine can re-estimate fresh after stop mutations.
+function _clearDayDists(itin,dayIndices){
+  const days=dayIndices!=null?(Array.isArray(dayIndices)?dayIndices:[dayIndices]):itin.map((_,i)=>i);
+  days.forEach(di=>{(itin[di]?.stops||[]).forEach(s=>{delete s.milesPrev;delete s.driveSecs;delete s.milesEst;});});
+}
+// Debounced auto-recalc: fires recalcItineraryDriving ~1.5s after last mutation, if Maps key set.
+const _schedARTm={};
+function _schedAutoRecalc(isAdv,id){
+  if(!(D.settings?.mapsApiKey||'').trim())return;
+  const k=(isAdv?'c':'t')+id;
+  clearTimeout(_schedARTm[k]);
+  _schedARTm[k]=setTimeout(()=>recalcItineraryDriving(isAdv,id,true).catch(()=>{}),1500);
 }
 // Instantly compute haversine estimates for itinerary stop pairs that have coords.
 // Uses a 1.25 road factor. Only overwrites if milesPrev is absent or previously estimated.
