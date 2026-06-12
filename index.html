@@ -8174,11 +8174,14 @@ function rAdvBudgetTab(c){
     <div class="ch"><div class="ct">💰 Trip Budget</div></div>
     <div style="display:flex;gap:10px;align-items:center;margin-top:10px">
       <div style="flex:1"><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Total Budget ($)</label>
-        <input class="fi" style="margin-top:3px" type="number" value="${c.tripBudget||''}" placeholder="e.g. 2500" onblur="saveAdvField('${c.id}','tripBudget',this.value)"/></div>
-      <div style="text-align:right"><div style="font-size:20px;font-weight:700;color:${pct>90?'#c05050':pct>70?'#B8892A':'var(--green3)'}">$${totalSpent.toFixed(0)}</div><div style="font-size:11px;color:var(--muted2)">of $${budget||'—'}</div></div>
+        <input class="fi" style="margin-top:3px" type="number" value="${c.tripBudget||''}" placeholder="e.g. 2500" oninput="liveUpdateBudget('${c.id}',this.value)" onblur="saveAdvField('${c.id}','tripBudget',this.value)"/></div>
+      <div style="text-align:right">
+        <div id="bdg-spent-${c.id}" style="font-size:20px;font-weight:700;color:${pct>90?'#c05050':pct>70?'#B8892A':'var(--green3)'}">$${totalSpent.toFixed(0)}</div>
+        <div id="bdg-of-${c.id}" style="font-size:11px;color:var(--muted2)">of $${budget||'—'}</div>
+      </div>
     </div>
-    ${budget?`<div style="margin-top:10px;background:var(--card2);border-radius:4px;height:8px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct>90?'#c05050':pct>70?'#B8892A':'var(--green3)'};border-radius:4px;transition:width .3s"></div></div>
-    <div style="font-size:11px;color:var(--muted2);margin-top:4px">${pct}% spent · $${Math.max(0,budget-totalSpent).toFixed(0)} remaining${includeFuel?' (incl. est. fuel)':''}</div>`:''}
+    <div id="bdg-bar-wrap-${c.id}" style="margin-top:10px;background:var(--card2);border-radius:4px;height:8px;overflow:hidden;${budget?'':'display:none'}"><div id="bdg-bar-${c.id}" style="height:100%;width:${pct}%;background:${pct>90?'#c05050':pct>70?'#B8892A':'var(--green3)'};border-radius:4px;transition:width .2s"></div></div>
+    <div id="bdg-pct-${c.id}" style="font-size:11px;color:var(--muted2);margin-top:4px;${budget?'':'display:none'}">${pct}% spent · $${Math.max(0,budget-totalSpent).toFixed(0)} remaining${includeFuel?' (incl. est. fuel)':''}</div>
   </div>
   <div class="card" style="margin-bottom:12px;border-top:3px solid var(--amber)">
     <div class="ch" style="margin-bottom:0">
@@ -8296,6 +8299,28 @@ function toggleFuelInBudget(cid,val){
   localStorage.setItem('wf_camps',JSON.stringify(D.camps));
   window._campDTab='budget';openCampD(cid);
   toast(val?'⛽ Fuel added to budget':'⛽ Fuel removed from budget');
+}
+function liveUpdateBudget(cid,budgetVal){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  const budget=parseFloat(budgetVal)||0;
+  const expenses=c.expenses||[];
+  const expensesTotal=expenses.reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+  const rig=c.rig||{};
+  const startMi=parseFloat(c.startMiles)||0;const endMi=parseFloat(c.endMiles)||0;
+  const itinMi=(c.itinerary||[]).flatMap(d=>d.stops||[]).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  const campMi=(c.stops||[]).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  const effMi=(startMi+(campMi||itinMi)+endMi)||(parseFloat(c.estTripMiles)||0);
+  const gp=parseFloat(c.fuelPrice)||parseFloat(D.settings?.gasPrice)||0;
+  const fuelEst=(rig.mpg&&effMi&&gp)?Math.round(effMi/parseFloat(rig.mpg)*gp):0;
+  const incFuel=!!c.includeFuelInBudget&&fuelEst>0;
+  const spent=expensesTotal+(incFuel?fuelEst:0);
+  const pct=budget?Math.min(100,Math.round(spent/budget*100)):0;
+  const col=pct>90?'#c05050':pct>70?'#B8892A':'var(--green3)';
+  const spentEl=document.getElementById('bdg-spent-'+cid);if(spentEl){spentEl.style.color=col;}
+  const ofEl=document.getElementById('bdg-of-'+cid);if(ofEl)ofEl.textContent='of $'+(budget||'—');
+  const wrap=document.getElementById('bdg-bar-wrap-'+cid);if(wrap)wrap.style.display=budget?'':'none';
+  const bar=document.getElementById('bdg-bar-'+cid);if(bar){bar.style.width=pct+'%';bar.style.background=col;}
+  const pctEl=document.getElementById('bdg-pct-'+cid);if(pctEl){pctEl.style.display=budget?'':'none';pctEl.textContent=pct+'% spent · $'+Math.max(0,budget-spent).toFixed(0)+' remaining'+(incFuel?' (incl. est. fuel)':'');}
 }
 function openAdvExpense(cid){
   const CATS=['Fuel','Camping Fees','Food & Groceries','Dining Out','Activities','Gear','Propane','Park Passes','Dump Fees','Misc'];
