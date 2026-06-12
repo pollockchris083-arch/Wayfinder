@@ -73,20 +73,20 @@ input,textarea,select{font-family:inherit;font-weight:400}
 #shell{display:flex;height:100dvh;overflow:hidden}
 
 /* ── SIDEBAR ── */
-#sb{width:188px;flex-shrink:0;background:var(--card);border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden;box-shadow:1px 0 0 var(--bdr)}
+#sb{width:200px;flex-shrink:0;background:var(--card);border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden}
 .sb-logo{padding:14px 13px 13px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:10px;position:relative}
 .sb-logo svg{width:30px;height:30px;flex-shrink:0}
 .sb-name{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.4px;line-height:1}
 .sb-name em{font-style:normal;color:var(--gold2)}
 .sb-tag{font-size:9px;font-weight:500;color:var(--muted);letter-spacing:1.6px;text-transform:uppercase;margin-top:2px}
-.sb-nav{flex:1;overflow-y:auto;padding:8px 6px}
-.sb-sec{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;padding:12px 7px 4px}
-.ni{display:flex;align-items:center;gap:8px;padding:10px 8px;border-radius:7px;font-size:15px;font-weight:400;color:var(--text2);cursor:pointer;transition:background .15s,color .15s,box-shadow .15s;border:none;background:none;width:100%;text-align:left;margin-bottom:2px;min-height:48px;box-shadow:inset 3px 0 0 transparent}
-.ni .ico{font-size:16px;width:20px;text-align:center;opacity:.75}
-.ni:hover{background:rgba(239,159,39,.04);color:var(--text);box-shadow:inset 3px 0 0 rgba(239,159,39,.2)}
-.ni.on{background:rgba(239,159,39,.06);color:var(--gold);font-weight:600;box-shadow:inset 3px 0 0 #EF9F27}
-.ni.on .ico{opacity:1;filter:none}
-.nb{margin-left:auto;background:#EF9F27;color:#fff;font-size:12px;font-weight:700;border-radius:100px;padding:2px 7px;min-width:20px;text-align:center;line-height:1.3}
+.sb-nav{flex:1;overflow-y:auto;padding:6px 7px 10px}
+.sb-sec{font-size:9px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.14em;padding:16px 8px 5px;opacity:.7}
+.ni{display:flex;align-items:center;gap:8px;padding:8px 9px;border-radius:7px;font-size:13.5px;font-weight:400;color:var(--text2);cursor:pointer;transition:background .12s,color .12s,box-shadow .12s;border:none;background:none;width:100%;text-align:left;margin-bottom:1px;min-height:36px;box-shadow:inset 3px 0 0 transparent}
+.ni .ico{font-size:15px;width:19px;text-align:center;opacity:.6;flex-shrink:0}
+.ni:hover{background:rgba(239,159,39,.05);color:var(--text);box-shadow:inset 3px 0 0 rgba(239,159,39,.3)}
+.ni.on{background:rgba(239,159,39,.09);color:var(--gold);font-weight:600;box-shadow:inset 3px 0 0 #EF9F27}
+.ni.on .ico{opacity:1}
+.nb{margin-left:auto;background:var(--amber);color:#fff;font-size:10.5px;font-weight:700;border-radius:100px;padding:1px 6px;min-width:18px;text-align:center;line-height:1.5;flex-shrink:0}
 .sb-foot{padding:6px 10px 8px;border-top:1px solid var(--bdr)}
 .sb-prof{display:flex;align-items:center;gap:8px;padding:5px 4px;border-radius:7px;cursor:pointer;transition:background .15s}
 .sb-prof:hover{background:rgba(239,159,39,.05)}
@@ -553,10 +553,13 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .hlt-lbl{font-size:13px;color:var(--muted);margin-top:2px;line-height:1.3}
 
 /* ── SUB-NAV (Trips) ── */
-.ni-sub{padding-left:22px;font-size:14px}
-.trips-subnav{overflow:hidden;max-height:300px;transition:max-height .25s ease}
+.ni-sub{padding:5px 8px 5px 26px;font-size:12.5px;min-height:30px}
+.ni-sub .ico{font-size:13px;width:16px;opacity:.55}
+.ni-sub.on .ico{opacity:1}
+.trips-subnav{overflow:hidden;max-height:700px;transition:max-height .3s ease}
 .trips-subnav.collapsed{max-height:0}
 .sb-sec-btn{cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;padding-right:9px}
+.sb-sec-btn:hover{opacity:1}
 /* ── CAMP PAGE ── */
 .camp-card{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
 .camp-card:hover{border-color:var(--bdr2);box-shadow:var(--shadowm);transform:translateY(-1px)}
@@ -924,15 +927,14 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
     </div>
   </div>
   <nav class="sb-nav">
-    <div class="sb-sec">Main</div>
     <button class="ni on" data-p="home"><span class="ico">🏠</span>Dashboard</button>
-    <button class="ni" data-p="path"><span class="ico"><svg width="15" height="12" viewBox="0 0 15 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="1.8" cy="6" r="1.4"/><line x1="3.2" y1="6" x2="5.4" y2="6"/><circle cx="6.8" cy="3" r="1.4"/><line x1="6.8" y1="4.4" x2="6.8" y2="7.6"/><circle cx="6.8" cy="9" r="1.4"/><line x1="8.2" y1="6" x2="10.4" y2="6"/><circle cx="11.8" cy="6" r="1.4" fill="currentColor" fill-opacity=".2"/><line x1="13.2" y1="6" x2="14.5" y2="6"/></svg></span>The Path</button>
+    <button class="ni" data-p="path"><span class="ico"><svg width="14" height="11" viewBox="0 0 15 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="1.8" cy="6" r="1.4"/><line x1="3.2" y1="6" x2="5.4" y2="6"/><circle cx="6.8" cy="3" r="1.4"/><line x1="6.8" y1="4.4" x2="6.8" y2="7.6"/><circle cx="6.8" cy="9" r="1.4"/><line x1="8.2" y1="6" x2="10.4" y2="6"/><circle cx="11.8" cy="6" r="1.4" fill="currentColor" fill-opacity=".2"/><line x1="13.2" y1="6" x2="14.5" y2="6"/></svg></span>The Path</button>
     <div class="sb-sec">Explore</div>
     <button class="ni" data-p="map"><span class="ico">🗺️</span>World Map</button>
     <button class="ni" data-p="places"><span class="ico">📍</span>Places<span class="nb" id="b-places">0</span></button>
     <button class="ni" data-p="wishlist"><span class="ico">♡</span>Wishlist<span class="nb" id="b-wish">0</span></button>
     <button class="ni" data-p="planner"><span class="ico">✦</span>AI Planner</button>
-    <div class="sb-sec sb-sec-btn" onclick="toggleTripsNav()">Trips <span id="trips-nav-arr" style="font-size:10px;transition:transform .2s;display:inline-block">▾</span></div>
+    <div class="sb-sec sb-sec-btn" onclick="toggleTripsNav()">Trips<span id="trips-nav-arr" style="font-size:9px;transition:transform .2s;display:inline-block;opacity:.6">▾</span></div>
     <div id="trips-subnav" class="trips-subnav">
       <button class="ni ni-sub" data-p="trips" data-tf="all" onclick="goTrips('all')"><span class="ico">✈️</span>All Trips<span class="nb" id="b-trips">0</span></button>
       <button class="ni ni-sub" data-p="trips-road" data-tf="road_trip" onclick="goTrips('road_trip')"><span class="ico">🚗</span>Road Trips</button>
@@ -943,12 +945,11 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
       <button class="ni ni-sub" data-p="trips-event" data-tf="event" onclick="goTrips('event')"><span class="ico">🎪</span>Events</button>
       <button class="ni ni-sub" data-p="trips-solo" data-tf="solo" onclick="goTrips('solo')"><span class="ico">🧍</span>Solo</button>
       <button class="ni ni-sub" data-p="work" onclick="go('work')"><span class="ico">💼</span>Work<span class="nb" id="b-work">0</span></button>
-      <button class="ni ni-sub" data-p="camp" onclick="go('camp')" style="opacity:.65"><span class="ico">📍</span>Saved Spots<span class="nb" id="b-camp">0</span></button>
+      <button class="ni ni-sub" data-p="camp" onclick="go('camp')"><span class="ico">🗂️</span>Saved Spots<span class="nb" id="b-camp">0</span></button>
     </div>
-    <div class="sb-sec">Memoirs</div>
+    <div class="sb-sec">Journal &amp; Life</div>
     <button class="ni" data-p="journal"><span class="ico">📓</span>Memoirs</button>
-    <div class="sb-sec">Life</div>
-    <button class="ni" data-p="abroad"><span class="ico">🌍</span>Living Abroad</button>
+    <button class="ni" data-p="abroad"><span class="ico">🌏</span>Living Abroad</button>
     <button class="ni" data-p="docs"><span class="ico">📋</span>Documents<span class="nb" id="b-docs" style="display:none">!</span></button>
     <div class="sb-sec">Account</div>
     <button class="ni" data-p="settings"><span class="ico">⚙️</span>Settings</button>
