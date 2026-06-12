@@ -2533,8 +2533,22 @@ async function manualCloudSync(){
   if(btn){btn.textContent='⏳ Syncing…';btn.disabled=true;}
   if(rslt){rslt.style.display='none';}
   try{
+    D=load();
+    // Phase 1: push ALL local data to cloud so other devices get everything
+    setSyncStatus('⬆️ Uploading…','var(--gold2)');
+    await Promise.all([
+      cloudPush('places',D.places),
+      cloudPush('trips',D.trips),
+      cloudPush('wish',D.wish),
+      cloudPush('journal',D.journal),
+      cloudPushSettings(D.settings),
+      _upsertBlob('__camps_v1__',D.camps),
+      _upsertBlob('__work_v1__',D.work||[]),
+    ]);
+    // Phase 2: pull merged result from cloud
     await loadFromCloud();
-    const counts=`${D.places.length} places · ${D.trips.length} trips · ${D.wish.filter(w=>!w.graduated).length} wishlist`;
+    const advCount=(D.camps||[]).filter(c=>c.recordType!=='spot').length;
+    const counts=`${D.places.length} places · ${D.trips.length} trips · ${advCount} adventures · ${D.wish.filter(w=>!w.graduated).length} wishlist`;
     if(btn){btn.textContent='✅ Synced';btn.disabled=false;setTimeout(()=>{if(btn)btn.textContent=orig;},3000);}
     if(rslt){rslt.textContent='✅ Synced — '+counts;rslt.style.display='block';rslt.style.color='var(--green3)';}
   }catch(e){
@@ -9485,12 +9499,12 @@ function rAdvBudgetTab(c){
     ${effectiveMiles&&rig.mpg?`
     <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
       <div style="background:var(--card2);border-radius:7px;padding:10px 6px">
-        <div style="font-size:16px;font-weight:700;color:var(--amber)">${(effectiveMiles/parseFloat(rig.mpg)).toFixed(1)}</div>
+        <div id="fuel-gal-${c.id}" style="font-size:16px;font-weight:700;color:var(--amber)">${(effectiveMiles/parseFloat(rig.mpg)).toFixed(1)}</div>
         <div style="font-size:10px;color:var(--muted2);margin-top:2px">Gallons needed</div>
       </div>
       <div style="background:var(--card2);border-radius:7px;padding:10px 6px">
-        <div style="font-size:16px;font-weight:700;color:var(--amber)">${rig.tankGal?Math.ceil(effectiveMiles/parseFloat(rig.mpg)/parseFloat(rig.tankGal)):Math.ceil(effectiveMiles/parseFloat(rig.mpg)/18)}</div>
-        <div style="font-size:10px;color:var(--muted2);margin-top:2px">Fill-ups (${rig.tankGal?Math.round(parseFloat(rig.tankGal)*0.9)+'gal ea':'~18 gal'})</div>
+        <div id="fuel-fills-${c.id}" style="font-size:16px;font-weight:700;color:var(--amber)">${rig.tankGal?Math.ceil(effectiveMiles/parseFloat(rig.mpg)/parseFloat(rig.tankGal)):Math.ceil(effectiveMiles/parseFloat(rig.mpg)/18)}</div>
+        <div id="fuel-fills-lbl-${c.id}" style="font-size:10px;color:var(--muted2);margin-top:2px">Fill-ups (${rig.tankGal?Math.round(parseFloat(rig.tankGal)*0.9)+'gal ea':'~18 gal'})</div>
       </div>
       <div style="background:var(--card2);border-radius:7px;padding:10px 6px">
         <div id="fuel-est-${c.id}" style="font-size:${defaultGasPrice?'16':'12'}px;font-weight:700;color:${defaultGasPrice?'var(--green3)':'var(--muted2)'}">${defaultGasPrice?'$'+(effectiveMiles/parseFloat(rig.mpg)*parseFloat(defaultGasPrice)).toFixed(0):'↑ add price'}</div>
@@ -9555,11 +9569,20 @@ function updateFuelCalc(cid){
   const manualMiles=milesEl?parseFloat(milesEl.value)||0:0;
   const miles=(startMi+calcMiles+endMi)||manualMiles;
   if(price){c.fuelPrice=price;if(!D.settings)D.settings={};D.settings.gasPrice=price;localStorage.setItem(K.settings,JSON.stringify(D.settings));}
-  if(tankEl?.value&&parseFloat(tankEl.value)){if(!c.rig)c.rig={};c.rig.tankGal=parseFloat(tankEl.value);}
+  if(!c.rig)c.rig={};
+  if(mpgEl?.value&&parseFloat(mpgEl.value))c.rig.mpg=mpgEl.value;
+  if(tankEl?.value&&parseFloat(tankEl.value))c.rig.tankGal=parseFloat(tankEl.value);
   if(manualMiles)c.estTripMiles=manualMiles;
   saveCamps();
   const estEl=document.getElementById('fuel-est-'+cid);
-  if(estEl){const hasVal=price&&mpg&&miles;estEl.textContent=hasVal?'$'+(miles/mpg*price).toFixed(0):'↑ add price';estEl.style.fontSize=hasVal?'16px':'12px';estEl.style.color=hasVal?'var(--green3)':'var(--muted2)';}
+  const galEl=document.getElementById('fuel-gal-'+cid);
+  const fillsEl=document.getElementById('fuel-fills-'+cid);
+  const fillsLblEl=document.getElementById('fuel-fills-lbl-'+cid);
+  const hasVal=price&&mpg&&miles;
+  if(estEl){estEl.textContent=hasVal?'$'+(miles/mpg*price).toFixed(0):'↑ add price';estEl.style.fontSize=hasVal?'16px':'12px';estEl.style.color=hasVal?'var(--green3)':'var(--muted2)';}
+  if(galEl&&mpg&&miles){galEl.textContent=(miles/mpg).toFixed(1);}
+  if(fillsEl&&mpg&&miles){fillsEl.textContent=tankGal?Math.ceil(miles/mpg/tankGal):Math.ceil(miles/mpg/18);}
+  if(fillsLblEl&&mpg&&miles){fillsLblEl.textContent='Fill-ups ('+(tankGal?Math.round(tankGal*0.9)+'gal ea':'~18 gal')+')';}
   if(c.includeFuelInBudget){window._campDTab='budget';openCampD(cid);}
 }
 function toggleFuelInBudget(cid,val){
@@ -10148,7 +10171,12 @@ function haversineMiles(lat1,lon1,lat2,lon2){
 // so haversine can re-estimate fresh after stop mutations.
 function _clearDayDists(itin,dayIndices){
   const days=dayIndices!=null?(Array.isArray(dayIndices)?dayIndices:[dayIndices]):itin.map((_,i)=>i);
-  days.forEach(di=>{(itin[di]?.stops||[]).forEach(s=>{delete s.milesPrev;delete s.driveSecs;delete s.milesEst;});});
+  days.forEach(di=>{(itin[di]?.stops||[]).forEach(s=>{
+    // Only wipe distances on stops that have coords — haversine can immediately re-estimate those.
+    // Stops without coords keep their milesPrev so fuel calc doesn't lose route miles.
+    if(parseStopCoords(s)){delete s.milesPrev;delete s.driveSecs;delete s.milesEst;}
+    else{delete s.driveSecs;delete s.milesEst;}
+  });});
 }
 // Debounced auto-recalc: fires recalcItineraryDriving ~1.5s after last mutation, if Maps key set.
 const _schedARTm={};
