@@ -5766,7 +5766,10 @@ function rTripPlansTab(t){
         ${(day.stops||[]).length?(day.stops||[]).map((s,si)=>_rPlanStop('trip',t.id,di,si,s,accent)).join(''):`<div style="font-size:11px;color:var(--muted2);padding:6px 0;cursor:pointer;opacity:.7" onclick="openStop('${t.id}',${di})">No stops yet — tap to add a meal, sight, rest stop…</div>`}
       </div>
       <button class="add-stop" onclick="openStop('${t.id}',${di})" style="margin-top:5px">+ Add Stop</button>
-      <textarea class="ft" style="margin-top:6px;min-height:34px;font-size:12px" placeholder="Notes for this day…" onblur="saveDayNotes('${t.id}',${di},this.value)">${day.notes||''}</textarea>
+      ${day.notes
+        ?`<textarea class="ft" style="margin-top:6px;min-height:34px;font-size:12px" placeholder="Notes for this day…" onblur="saveDayNotes('${t.id}',${di},this.value)">${day.notes}</textarea>`
+        :`<div class="day-note-toggle" style="font-size:11px;color:var(--muted2);margin-top:5px;cursor:pointer;opacity:.6;padding:2px 0" onclick="this.style.display='none';this.nextElementSibling.style.display='block';this.nextElementSibling.focus()">📝 Add day notes</div><textarea class="ft" style="display:none;margin-top:6px;min-height:34px;font-size:12px" placeholder="Notes for this day…" onblur="saveDayNotes('${t.id}',${di},this.value)"></textarea>`
+      }
     </div>`;
   });
   const unschedStops=unschedDay?(unschedDay.stops||[]):[];
@@ -8159,9 +8162,13 @@ function rAdvBudgetTab(c){
   if(includeFuel)byCategory['Fuel']=(byCategory['Fuel']||0)+fuelEst;
   const isRound=c.isRoundTrip!==false;
   const D2=load();const homeCity=(D2.settings?.homeCity||'').trim();
-  // First named stop for route summary
-  const firstStop=itinStops.find(s=>s.name)||(c.stops||[])[0];
+  // Stop summary for route display
+  const namedItinStops=itinStops.filter(s=>s.name);
+  const stopCount=namedItinStops.length||(c.stops||[]).length;
+  const firstStop=namedItinStops[0]||(c.stops||[])[0];
   const firstStopCity=firstStop?(firstStop.name||'').split(',')[0].trim():'';
+  const lastStop=namedItinStops.length>1?namedItinStops[namedItinStops.length-1]:null;
+  const lastStopCity=lastStop?(lastStop.name||'').split(',')[0].trim():'';
   return`
   <div class="card" style="margin-bottom:12px">
     <div class="ch"><div class="ct">💰 Trip Budget</div></div>
@@ -8193,8 +8200,7 @@ function rAdvBudgetTab(c){
       <div style="font-size:11px;color:var(--muted2);display:flex;flex-wrap:wrap;align-items:center;gap:3px;line-height:1.8">
         <span>🏠 <strong>${c.startLocation||homeCity||'Start'}</strong></span>
         ${startMiles?`<span style="color:var(--amber)">→ ${Math.round(startMiles)} mi →</span>`:''}
-        ${firstStopCity?`<span><strong>${firstStopCity}</strong></span>`:''}
-        ${totalMiles?`<span style="color:var(--muted2)">+ ${Math.round(totalMiles)} mi stops</span>`:''}
+        ${stopCount>0?`<span><strong>${stopCount===1?(firstStopCity||'1 stop'):(firstStopCity?firstStopCity+' + '+(stopCount-1)+' more':stopCount+' stops')}</strong>${totalMiles?' ('+Math.round(totalMiles)+' mi)':''}</span>`:''}
         ${endMiles?`<span style="color:var(--amber)">→ ${Math.round(endMiles)} mi →</span>`:''}
         ${isRound&&c.startLocation?`<span>🏠 <strong>${c.startLocation}</strong></span>`:c.endLocation&&!isRound?`<span>🏁 <strong>${c.endLocation}</strong></span>`:''}
       </div>
@@ -8552,16 +8558,32 @@ function rAdvDailyTab(c){
       <div style="flex:1;font-size:11px;color:var(--text2)">${_advItinTotalMi?('<strong>'+_advItinTotalMi+' mi</strong>'+(_advItinTotalSecs?' · <strong>'+fDrive(_advItinTotalSecs)+'</strong>':'')+(_advItinHasEst?' <span style="color:var(--muted2)">(est.)</span>':'')):'Click Recalc to calculate driving distances'}</div>
       ${(_advItinHasCoords||_advItinHasAddresses||c.startLat)?`<button id="itin-recalc-btn" class="pbtn" onclick="recalcItineraryDriving(true,'${c.id}')" style="font-size:10px;padding:3px 8px">🔄 Recalc</button>`:''}
     </div>
-    ${(c.startLocation||c.endLocation)?`<div style="font-size:10px;color:var(--muted2);margin-top:4px;display:flex;align-items:center;gap:4px">${c.startLocation?'🏠 <strong>'+c.startLocation+'</strong>':''} ${_advStartMi?'→ <span>'+Math.round(_advStartMi)+' mi</span>':''} → stops → ${_advEndMi?'<span>'+Math.round(_advEndMi)+' mi</span> →':''} ${c.isRoundTrip!==false&&c.startLocation?'🏠 <strong>'+c.startLocation+'</strong>':c.endLocation?'🏁 <strong>'+c.endLocation+'</strong>':''}</div>`:''}
+    ${(c.startLocation||c.endLocation)?`<div style="font-size:10px;color:var(--muted2);margin-top:4px;display:flex;flex-wrap:wrap;align-items:center;gap:3px">${c.startLocation?'🏠 <strong>'+c.startLocation+'</strong>':''} ${_advStartMi?'→ '+Math.round(_advStartMi)+' mi →':''} ${_advItinStopMi?Math.round(_advItinStopMi)+' mi stops →':''} ${c.isRoundTrip!==false&&c.startLocation?'🏠 <strong>'+c.startLocation+'</strong>':c.endLocation?'🏁 <strong>'+c.endLocation+'</strong>':''}</div>`:''}
   </div>`:'';
+  const D3=load();const homeCity3=(D3.settings?.homeCity||'').trim();
+  const isRound3=c.isRoundTrip!==false;
+  const departureCity=c.startLocation||homeCity3;
+  const returnCity=isRound3?departureCity:(c.endLocation||'');
   let html=`<div style="--plans-accent:${accent}">${_advRouteBanner}`;
+  // Departure anchor — shows where the trip starts from
+  if(departureCity){
+    html+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(74,120,158,.08);border-radius:8px;margin-bottom:8px;border-left:3px solid var(--blue-acc,#4A789E)">
+      <span style="font-size:20px;line-height:1">🏠</span>
+      <div><div style="font-size:12px;font-weight:700;color:var(--text)">${departureCity}</div>
+      <div style="font-size:10px;color:var(--muted2)">Start of trip${_advStartMi?' · '+Math.round(_advStartMi)+' mi to first stop':''}</div></div>
+    </div>`;
+  }
   scheduled.forEach((day,schIdx)=>{
     const di=itin.indexOf(day);
+    const dayStops=day.stops||[];
+    const dayMi=dayStops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+    const daySecs=dayStops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0);
+    const dayMiLabel=dayMi?` <span style="font-size:10px;font-weight:400;color:var(--muted2)">· ${Math.round(dayMi)} mi${daySecs?' · '+fDrive(daySecs):''}</span>`:'';
     html+=`<div data-drag-day data-record-type="camp" data-record-id="${c.id}" data-day-idx="${di}" draggable="true"
       ondragstart="pdDayStart(event)" ondragover="pdOver(event)" ondragenter="pdDayEnter(event)" ondragleave="pdDayLeave(event)" ondragend="pdDayEnd(event)" ondrop="pdDayDrop(event)" style="margin-bottom:10px">
       <div class="plans-day-hdr" onmouseenter="this.classList.add('acts-vis')" onmouseleave="this.classList.remove('acts-vis')" ontouchstart="this.classList.add('acts-vis')" ontouchend="setTimeout(()=>this.classList.remove('acts-vis'),2000)">
         <span class="day-drag-handle" title="Drag to reorder day" ontouchstart="ptStart(event,'camp','${c.id}',${di})" ontouchmove="ptMove(event)" ontouchend="ptEnd(event)" ontouchcancel="ptCancel(event)">⠿</span>
-        <div class="plans-day-title">Day ${schIdx+1}${day.date?' — '+fd(day.date):''}</div>
+        <div class="plans-day-title">Day ${schIdx+1}${day.date?' — '+fd(day.date):''}${dayMiLabel}</div>
         <div class="plans-day-acts">
           <label class="plans-day-act" title="Edit date" style="cursor:pointer">✏️<input type="date" value="${day.date}" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;font-size:0;color-scheme:dark light" onchange="advSetDayDate('${c.id}',${di},this.value)"/></label>
           <button class="plans-day-act" title="Add stop" onclick="event.stopPropagation();openAdvItinStop('${c.id}',${di})">＋</button>
@@ -8570,12 +8592,23 @@ function rAdvDailyTab(c){
       </div>
       <div data-day-drop-zone data-record-type="camp" data-record-id="${c.id}" data-day-idx="${di}"
         ondragover="pdOver(event)" ondragenter="pdZoneEnter(event)" ondragleave="pdZoneLeave(event)" ondrop="pdZoneDrop(event)">
-        ${(day.stops||[]).length?(day.stops||[]).map((s,si)=>_rPlanStop('camp',c.id,di,si,s,accent)).join(''):`<div style="font-size:11px;color:var(--muted2);padding:6px 0;cursor:pointer;opacity:.7" onclick="openAdvItinStop('${c.id}',${di})">No stops yet — tap to add a meal, sight, rest stop…</div>`}
+        ${dayStops.length?dayStops.map((s,si)=>_rPlanStop('camp',c.id,di,si,s,accent)).join(''):`<div style="font-size:11px;color:var(--muted2);padding:6px 0;cursor:pointer;opacity:.7" onclick="openAdvItinStop('${c.id}',${di})">No stops yet — tap to add a meal, sight, rest stop…</div>`}
       </div>
       <button class="add-stop" onclick="openAdvItinStop('${c.id}',${di})" style="margin-top:5px">+ Add Stop</button>
-      <textarea class="ft" style="margin-top:6px;min-height:34px;font-size:12px" placeholder="Notes for this day…" onblur="setAdvItinDayNotes('${c.id}',${di},this.value)">${day.notes||''}</textarea>
+      ${day.notes
+        ?`<textarea class="ft" style="margin-top:6px;min-height:34px;font-size:12px" placeholder="Notes for this day…" onblur="setAdvItinDayNotes('${c.id}',${di},this.value)">${day.notes}</textarea>`
+        :`<div class="day-note-toggle" style="font-size:11px;color:var(--muted2);margin-top:5px;cursor:pointer;opacity:.6;padding:2px 0" onclick="expandDayNote(this,'${c.id}',${di})">📝 Add day notes</div><textarea class="ft" style="display:none;margin-top:6px;min-height:34px;font-size:12px" placeholder="Notes for this day…" onblur="setAdvItinDayNotes('${c.id}',${di},this.value)"></textarea>`
+      }
     </div>`;
   });
+  // Arrival anchor — shows where the trip returns to
+  if(returnCity&&scheduled.length>0){
+    html+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(74,120,158,.08);border-radius:8px;margin-bottom:8px;border-left:3px solid var(--blue-acc,#4A789E)">
+      <span style="font-size:20px;line-height:1">${isRound3?'🏠':'🏁'}</span>
+      <div><div style="font-size:12px;font-weight:700;color:var(--text)">${returnCity}</div>
+      <div style="font-size:10px;color:var(--muted2)">${isRound3?'Return home':'End of trip'}${_advEndMi?' · '+Math.round(_advEndMi)+' mi from last stop':''}</div></div>
+    </div>`;
+  }
   const unschedStops=unschedDay?(unschedDay.stops||[]):[];
   const realUnschedDi=unschedDi>=0?unschedDi:-1;
   html+=`<div class="plans-unsched" data-day-drop-zone data-record-type="camp" data-record-id="${c.id}" data-day-idx="-1"
@@ -8620,6 +8653,11 @@ function setAdvItinDayNotes(cid,di,val){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   if(c.itinerary?.[di])c.itinerary[di].notes=val;
   localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+}
+function expandDayNote(el,cid,di){
+  el.style.display='none';
+  const ta=el.nextElementSibling;
+  if(ta){ta.style.display='block';ta.focus();}
 }
 function advSetDayDate(cid,di,date){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c||!date)return;
