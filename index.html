@@ -3260,12 +3260,11 @@ function mapGeoToName(raw){
 function mapRenderCountries(){
   if(mapLayer_c){mapLayer_c.remove();mapLayer_c=null;}
   if(!geoWorld||!leafletMap)return;
+  const{visited:visitedSet,wanted:wantedSet}=_mapBuildCountryFilter();
+  const tripDestVisited=visitedSet;
   const countryData={};
-  D.places.forEach(p=>{const c=normCountry(p.country);if(!c)return;if(!countryData[c])countryData[c]={vis:0,want:0};if(p.status==='visited')countryData[c].vis++;else if(p.status==='want'||p.status==='planned')countryData[c].want++;});
-  // Countries from past trip destinations — highlighted even with no individually-logged places
-  const tripDestVisited=new Set();
-  const today=new Date().toISOString().slice(0,10);
-  D.trips.filter(t=>t.status==='past'||(t.endDate&&t.endDate<today)).forEach(t=>{(t.destinations||[]).forEach(dest=>{const c=normCountry(dest);if(c&&c!=='United States')tripDestVisited.add(c);});});
+  visitedSet.forEach(c=>{if(!countryData[c])countryData[c]={vis:1,want:0};else countryData[c].vis++;});
+  wantedSet.forEach(c=>{if(!countryData[c])countryData[c]={vis:0,want:1};else countryData[c].want++;});
   mapLayer_c=L.geoJSON(geoWorld,{
     style:f=>{
       const raw=f.properties.ADMIN||'';const n=mapGeoToName(raw);
@@ -3315,8 +3314,7 @@ function mapRenderCountries(){
 function mapRenderStates(){
   if(mapLayer_s){mapLayer_s.remove();mapLayer_s=null;}
   if(!geoUSStates||!leafletMap)return;
-  const stateData={};
-  D.places.filter(p=>normCountry(p.country)==='United States').forEach(p=>{if(!p.usState)return;if(!stateData[p.usState])stateData[p.usState]={vis:0,want:0};if(p.status==='visited')stateData[p.usState].vis++;else stateData[p.usState].want++;});
+  const stateData=_mapBuildStateFilter();
   const homeState=getHomeState();
   mapLayer_s=L.geoJSON(geoUSStates,{
     style:f=>{
@@ -3358,7 +3356,10 @@ function mapSetFilter(btn,f){
   mapTripFilter='all';mapYearFilter='all';
   const ts=document.getElementById('map-trip-sel');if(ts)ts.value='all';
   const ys=document.getElementById('map-year-sel');if(ys)ys.value='all';
-  mapUpdateClearBtn();if(gMap)mapRenderPinsG();else mapRenderPins();mapRenderStats();
+  mapUpdateClearBtn();
+  if(gMap){mapRenderCountriesG();mapRenderStatesG();mapRenderPinsG();}
+  else{mapRenderCountries();mapRenderStates();mapRenderPins();}
+  mapRenderStats();
 }
 function mapSetView(btn,v){
   document.querySelectorAll('#map-vb .fc').forEach(x=>x.classList.remove('on'));btn.classList.add('on');mapViewMode=v;
@@ -3529,20 +3530,56 @@ function _gMapSvgIcon(emoji,color,size){
   const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+s+'" height="'+s+'" viewBox="0 0 '+s+' '+s+'"><circle cx="'+s/2+'" cy="'+s/2+'" r="'+(s/2-1.5)+'" fill="'+color+'" stroke="white" stroke-width="2.5"/><text x="'+s/2+'" y="'+(s/2+Math.ceil(s*.15))+'" text-anchor="middle" font-size="'+Math.floor(s*.45)+'" font-family="Apple Color Emoji,Segoe UI Emoji,sans-serif">'+emoji+'</text></svg>';
   return{url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),scaledSize:new google.maps.Size(s,s),anchor:new google.maps.Point(s/2,s/2)};
 }
+function _mapBuildCountryFilter(){
+  const _today=new Date().toISOString().slice(0,10);
+  const visited=new Set(),wanted=new Set();
+  const showVis=mapFilter==='all'||mapFilter==='visited';
+  const showWant=mapFilter==='all'||mapFilter==='want'||mapFilter==='planned';
+  if(showVis){
+    if(mapTripFilter!=='all'){
+      D.places.filter(p=>(p.tripIds||[]).includes(mapTripFilter)&&p.status==='visited').forEach(p=>{const c=normCountry(p.country);if(c&&c!=='United States')visited.add(c);});
+      const ft=D.trips.find(x=>x.id===mapTripFilter);
+      if(ft)(ft.destinations||[]).forEach(d=>{const c=normCountry(d);if(c&&c!=='United States')visited.add(c);});
+    } else if(mapYearFilter!=='all'){
+      const yr=parseInt(mapYearFilter);
+      const idsInYear=new Set(D.trips.filter(t=>t.startDate&&new Date(t.startDate).getFullYear()===yr).map(t=>t.id));
+      D.places.filter(p=>p.status==='visited'&&(p.tripIds||[]).some(id=>idsInYear.has(id))).forEach(p=>{const c=normCountry(p.country);if(c&&c!=='United States')visited.add(c);});
+      D.trips.filter(t=>t.startDate&&new Date(t.startDate).getFullYear()===yr&&(t.status==='past'||(t.endDate&&t.endDate<_today))).forEach(t=>(t.destinations||[]).forEach(d=>{const c=normCountry(d);if(c&&c!=='United States')visited.add(c);}));
+    } else {
+      D.trips.filter(t=>t.status==='past'||(t.endDate&&t.endDate<_today)).forEach(t=>(t.destinations||[]).forEach(d=>{const c=normCountry(d);if(c&&c!=='United States')visited.add(c);}));
+      D.places.filter(p=>p.status==='visited').forEach(p=>{const c=normCountry(p.country);if(c&&c!=='United States')visited.add(c);});
+    }
+  }
+  if(showWant){
+    D.places.filter(p=>p.status==='want'||p.status==='planned').forEach(p=>{const c=normCountry(p.country);if(c&&c!=='United States')wanted.add(c);});
+  }
+  return{visited,wanted};
+}
+function _mapBuildStateFilter(){
+  const showVis=mapFilter==='all'||mapFilter==='visited';
+  const showWant=mapFilter==='all'||mapFilter==='want'||mapFilter==='planned';
+  let places=D.places.filter(p=>normCountry(p.country)==='United States');
+  if(mapTripFilter!=='all'){
+    places=places.filter(p=>(p.tripIds||[]).includes(mapTripFilter));
+  } else if(mapYearFilter!=='all'){
+    const yr=parseInt(mapYearFilter);
+    const idsInYear=new Set(D.trips.filter(t=>t.startDate&&new Date(t.startDate).getFullYear()===yr).map(t=>t.id));
+    places=places.filter(p=>(p.tripIds||[]).some(id=>idsInYear.has(id)));
+  }
+  const sd={};
+  places.forEach(p=>{
+    if(!p.usState)return;
+    if(!sd[p.usState])sd[p.usState]={vis:0,want:0};
+    if(p.status==='visited'&&showVis)sd[p.usState].vis++;
+    else if((p.status==='want'||p.status==='planned')&&showWant)sd[p.usState].want++;
+  });
+  return sd;
+}
+
 function mapRenderCountriesG(){
   if(!gMap||!geoWorld)return;
   const totalFeatures=geoWorld.features?.length||0;
-
-  // Build visited set from past trip destinations + individually visited places
-  const visited=new Set();
-  const _today=new Date().toISOString().slice(0,10);
-  D.trips.filter(t=>t.status==='past'||(t.endDate&&t.endDate<_today))
-    .forEach(t=>(t.destinations||[]).forEach(d=>{const c=normCountry(d);if(c&&c!=='United States')visited.add(c);}));
-  D.places.filter(p=>p.status==='visited').forEach(p=>{const c=normCountry(p.country);if(c&&c!=='United States')visited.add(c);});
-
-  // Build want set from saved/planned places
-  const wanted=new Set();
-  D.places.filter(p=>p.status==='want'||p.status==='planned').forEach(p=>{const c=normCountry(p.country);if(c&&c!=='United States')wanted.add(c);});
+  const{visited,wanted}=_mapBuildCountryFilter();
 
   // Clear and reload country features
   gMap.data.forEach(f=>gMap.data.remove(f));
@@ -3598,8 +3635,7 @@ function mapRenderCountriesG(){
 function mapRenderStatesG(){
   if(!gMap||!geoUSStates)return;
   if(!gMapStateData){gMapStateData=new google.maps.Data({map:gMap});}
-  const stateData={};
-  D.places.filter(p=>normCountry(p.country)==='United States').forEach(p=>{if(!p.usState)return;if(!stateData[p.usState])stateData[p.usState]={vis:0,want:0};if(p.status==='visited')stateData[p.usState].vis++;else stateData[p.usState].want++;});
+  const stateData=_mapBuildStateFilter();
   const homeState=getHomeState();
   if(!_gStateDataLoaded){
     gMapStateData.addGeoJson(geoUSStates);
@@ -3807,12 +3843,18 @@ function mapRenderStats(){
 function mapSetTrip(tripId){
   mapTripFilter=tripId;
   if(tripId!=='all'){mapYearFilter='all';const ys=document.getElementById('map-year-sel');if(ys)ys.value='all';}
-  mapUpdateClearBtn();if(gMap)mapRenderPinsG();else mapRenderPins();mapRenderStats();
+  mapUpdateClearBtn();
+  if(gMap){mapRenderCountriesG();mapRenderStatesG();mapRenderPinsG();mapDrawRouteG(tripId);}
+  else{mapRenderCountries();mapRenderStates();mapRenderPins();mapDrawRoute(tripId);}
+  mapRenderStats();
 }
 function mapSetYear(year){
   mapYearFilter=year;
   if(year!=='all'){mapTripFilter='all';const ts=document.getElementById('map-trip-sel');if(ts)ts.value='all';}
-  mapUpdateClearBtn();if(gMap)mapRenderPinsG();else mapRenderPins();mapRenderStats();
+  mapUpdateClearBtn();
+  if(gMap){mapRenderCountriesG();mapRenderStatesG();mapRenderPinsG();}
+  else{mapRenderCountries();mapRenderStates();mapRenderPins();}
+  mapRenderStats();
 }
 function mapUpdateClearBtn(){
   const btn=document.getElementById('map-clear-btn');
@@ -3825,7 +3867,10 @@ function mapClearFilters(){
   const fb=document.querySelector('#map-fb .fc');if(fb)fb.classList.add('on');
   const ts=document.getElementById('map-trip-sel');if(ts)ts.value='all';
   const ys=document.getElementById('map-year-sel');if(ys)ys.value='all';
-  mapUpdateClearBtn();if(gMap)mapRenderPinsG();else mapRenderPins();mapRenderStats();
+  mapUpdateClearBtn();
+  if(gMap){mapRenderCountriesG();mapRenderStatesG();mapRenderPinsG();}
+  else{mapRenderCountries();mapRenderStates();mapRenderPins();}
+  mapRenderStats();
 }
 async function mapDrawRoute(tripId){
   if(mapRouteLayer){mapRouteLayer.remove();mapRouteLayer=null;}
