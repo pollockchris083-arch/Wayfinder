@@ -158,10 +158,10 @@ input,textarea,select{font-family:inherit;font-weight:400}
 /* ── PLACE CARDS ── */
 /* Grid container */
 .places-ga{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.atlas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:9px;margin-bottom:20px}
-.atlas-tile{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:13px 15px;cursor:pointer;transition:border-color .15s,background .15s;user-select:none}
-.atlas-tile:hover,.atlas-tile:active{border-color:var(--green3);background:var(--card2)}
-.atlas-sec{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin:4px 0 10px;padding-bottom:5px;border-bottom:1px solid var(--bdr)}
+.atlas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:10px;margin-bottom:22px}
+.atlas-tile{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:14px 15px 12px;cursor:pointer;transition:border-color .18s,background .18s,box-shadow .18s,transform .12s;user-select:none;position:relative;overflow:hidden}
+.atlas-tile:hover,.atlas-tile:active{border-color:var(--bdr2);background:var(--card2);box-shadow:var(--shadowm);transform:translateY(-2px)}
+.atlas-sec{display:flex;align-items:center;gap:11px;padding:11px 15px;border-radius:var(--r);margin:0 0 12px;border-left:3px solid;border-top:1px solid;border-right:1px solid;border-bottom:1px solid}
 /* Collapsed card */
 .pc{background:var(--card);border:1px solid var(--bdr);border-left:3px solid rgba(74,128,96,.25);border-radius:var(--r);transition:all .15s,transform .12s;box-shadow:var(--shadow);overflow:hidden}
 .pc:hover{border-color:var(--bdr2);box-shadow:var(--shadowm);transform:translateY(-1px)}
@@ -984,11 +984,11 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
     <div class="page" id="page-map"><div id="map-in"></div></div>
 
     <div class="page" id="page-places">
-      <div id="places-hdr" style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-        <div>
-          <h2 style="font-size:18px;font-weight:700;color:var(--text);margin:0;display:flex;align-items:center;gap:8px">Places<span id="pl-count-badge" style="font-size:12px;font-weight:500;padding:1px 8px;background:var(--card2);border:1px solid var(--bdr);border-radius:100px;color:var(--muted)">0</span></h2>
-          <div id="pl-summary" style="font-size:11px;color:var(--muted);margin-top:3px"></div>
+      <div id="places-hdr" style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <h2 style="font-size:18px;font-weight:700;color:var(--text);margin:0;display:flex;align-items:center;gap:8px">Places<span id="pl-count-badge" style="font-size:12px;font-weight:500;padding:2px 9px;background:rgba(200,144,30,.1);border:1px solid rgba(200,144,30,.25);border-radius:100px;color:var(--gold)">0</span></h2>
         </div>
+        <div id="pl-summary" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px"></div>
       </div>
       <div style="position:relative;margin-bottom:8px">
         <input class="fi" id="places-search" placeholder="🔍  Search by name, city, country, notes, trip name…" oninput="plSearch=this.value;rPlaces()" autocomplete="off" style="padding-right:32px"/>
@@ -4172,11 +4172,12 @@ function rPlaces(){
     const vis=all.filter(p=>p.status==='visited').length;
     const countries=[...new Set(all.filter(p=>p.country&&normCountry(p.country)!=='United States').map(p=>normCountry(p.country)))].filter(Boolean);
     const usStates=[...new Set(all.filter(p=>normCountry(p.country)==='United States'&&p.usState).map(p=>p.usState))].filter(Boolean);
-    const parts=[`${vis} visited`];
-    if(countries.length)parts.push(`${countries.length} countr${countries.length!==1?'ies':'y'}`);
-    if(usStates.length)parts.push(`${usStates.length} US state${usStates.length!==1?'s':''}`);
-    smry.textContent=parts.join(' · ');
-  }else if(smry){smry.textContent='';}
+    const chip=(txt,bg,clr)=>`<span style="font-size:11px;font-weight:600;padding:3px 10px;background:${bg};color:${clr};border-radius:100px;white-space:nowrap">${txt}</span>`;
+    let chips=chip(`${vis} visited`,'rgba(62,102,68,.1)','var(--green)');
+    if(countries.length)chips+=chip(`${countries.length} countr${countries.length!==1?'ies':'y'}`,'rgba(200,144,30,.1)','var(--gold)');
+    if(usStates.length)chips+=chip(`${usStates.length} US state${usStates.length!==1?'s':''}`,'rgba(74,120,160,.1)','#4A789E');
+    smry.innerHTML=chips;
+  }else if(smry){smry.innerHTML='';}
   // View sync
   ['atlas','grid','list','group','trip'].forEach(v=>{const el=document.getElementById('pv-'+v);if(el)el.classList.toggle('on',placeView===v);});
   if(placeView==='group'){g.className='';rPlacesGrouped(list);return;}
@@ -4275,26 +4276,50 @@ function rPlacesAtlas(){
   const byState={};
   us.forEach(p=>{const s=p.usState||'Other';if(!byState[s])byState[s]=[];byState[s].push(p);});
   const stateEntries=Object.entries(byState).sort((a,b)=>b[1].length-a[1].length);
-  function tile(label,places,onclick,emoji){
+  function tile(label,places,onclick,emoji,rgb){
     const vis=places.filter(p=>p.status==='visited').length;
     const want=places.filter(p=>p.status==='want'||p.status==='planned').length;
-    const sub=[vis?`${vis} visited`:'',want?`${want} want to go`:''].filter(Boolean).join(' · ');
-    return`<div onclick="${onclick}" class="atlas-tile"><div style="font-size:22px;margin-bottom:5px;line-height:1">${emoji}</div><div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;line-height:1.3">${label}</div><div style="font-size:11px;color:var(--muted);margin-bottom:3px">${places.length} place${places.length!==1?'s':''}</div>${sub?`<div style="font-size:10px;color:var(--muted2);line-height:1.4">${sub}</div>`:''}</div>`;
+    const total=places.length;
+    const pct=total?Math.round(vis/total*100):0;
+    return`<div onclick="${onclick}" class="atlas-tile" style="border-left:3px solid rgba(${rgb},1)">
+      <div style="font-size:26px;margin-bottom:7px;line-height:1">${emoji}</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:3px">${label}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:9px">${total} place${total!==1?'s':''}</div>
+      <div style="height:3px;background:var(--bdr2);border-radius:2px;overflow:hidden;margin-bottom:5px">
+        <div style="height:100%;width:${pct}%;background:rgba(${rgb},1);border-radius:2px"></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;min-height:14px">
+        <span style="font-size:10px;color:var(--muted2)">${vis} visited</span>
+        ${want?`<span style="font-size:10px;color:var(--gold);font-weight:600">${want} want</span>`:''}
+      </div>
+    </div>`;
+  }
+  function secHdr(emoji,title,subtitle,rgb){
+    return`<div style="display:flex;align-items:center;gap:11px;padding:11px 15px;background:linear-gradient(90deg,rgba(${rgb},.08) 0%,var(--card) 55%);border:1px solid rgba(${rgb},.2);border-left:3px solid rgba(${rgb},1);border-radius:var(--r);margin:0 0 12px">
+      <span style="font-size:22px;line-height:1">${emoji}</span>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700;color:var(--text);letter-spacing:.04em;text-transform:uppercase">${title}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:1px">${subtitle}</div>
+      </div>
+    </div>`;
   }
   let html='';
   if(countryEntries.length){
-    html+=`<div class="atlas-sec">International</div><div class="atlas-grid">`;
-    countryEntries.forEach(([c,ps])=>{html+=tile(c,ps,`setAtlasDest('country','${c.replace(/'/g,"\\'")}')`,getCountryFlag(c));});
+    html+=secHdr('🌍','International',`${countryEntries.length} countr${countryEntries.length!==1?'ies':'y'} · ${intl.length} place${intl.length!==1?'s':''}`, '200,144,30');
+    html+=`<div class="atlas-grid">`;
+    countryEntries.forEach(([c,ps])=>{html+=tile(c,ps,`setAtlasDest('country','${c.replace(/'/g,"\\'")}')`,getCountryFlag(c),'200,144,30');});
     html+=`</div>`;
   }
   if(stateEntries.length){
-    html+=`<div class="atlas-sec">🇺🇸 United States</div><div class="atlas-grid">`;
-    stateEntries.forEach(([s,ps])=>{html+=tile(s,ps,`setAtlasDest('us_state','${s.replace(/'/g,"\\'")}')`,stateEmoji(s));});
+    html+=secHdr('🇺🇸','United States',`${stateEntries.length} state${stateEntries.length!==1?'s':''} · ${us.length} place${us.length!==1?'s':''}`, '62,102,68');
+    html+=`<div class="atlas-grid">`;
+    stateEntries.forEach(([s,ps])=>{html+=tile(s,ps,`setAtlasDest('us_state','${s.replace(/'/g,"\\'")}')`,stateEmoji(s),'62,102,68');});
     html+=`</div>`;
   }
   if(noloc.length){
+    html+=secHdr('📍','No Location',`${noloc.length} place${noloc.length!==1?'s':''}`, '138,122,98');
     html+=`<div class="atlas-grid">`;
-    html+=tile('No location',noloc,`setAtlasDest('noloc','')`,`📍`);
+    html+=tile('No location',noloc,`setAtlasDest('noloc','')`,`📍`,'138,122,98');
     html+=`</div>`;
   }
   g.innerHTML=html;
