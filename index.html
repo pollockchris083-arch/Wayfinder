@@ -8087,35 +8087,29 @@ function rAdvOverviewTab(c){
       <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--amber) 0%,rgba(200,144,30,0) 100%)"></div>
       <div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Days</div>
       <div style="font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1;color:var(--text)">${duration||'—'}</div>
-      <div style="font-size:9px;color:var(--muted2);margin-top:4px">${daysUntil!==null&&daysUntil>0?daysUntil+' to go':daysUntil===0?'Starts today!':duration?'trip duration':'dates not set'}</div>
+      <div style="font-size:9px;color:var(--muted);margin-top:4px">${daysUntil!==null&&daysUntil>0?daysUntil+' to go':daysUntil===0?'Starts today!':duration?'trip duration':'dates not set'}</div>
       <div style="position:absolute;bottom:8px;right:10px;font-size:20px;opacity:.07;pointer-events:none;line-height:1">📅</div>
     </div>
     <div style="padding:15px 13px 13px;cursor:pointer;position:relative;border-right:1px solid var(--bdr2);transition:background .15s" onclick="window._campDTab='daily';openCampD('${c.id}')" onmouseover="this.style.background='rgba(62,102,68,.05)'" onmouseout="this.style.background=''">
       <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--green) 0%,rgba(62,102,68,0) 100%)"></div>
       <div style="font-size:10px;font-weight:700;color:var(--green3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Stops</div>
       <div style="font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1;color:var(--text)">${stopCount||'—'}</div>
-      <div style="font-size:9px;color:var(--muted2);margin-top:4px">${stopCount?daysPlanned+' day'+(daysPlanned!==1?'s':'')+' planned':'tap to plan →'}</div>
+      <div style="font-size:9px;color:var(--muted);margin-top:4px">${stopCount?daysPlanned+' day'+(daysPlanned!==1?'s':'')+' planned':'tap to plan →'}</div>
       <div style="position:absolute;bottom:8px;right:10px;font-size:20px;opacity:.07;pointer-events:none;line-height:1">📍</div>
     </div>
     <div style="padding:15px 13px 13px;position:relative;border-right:1px solid var(--bdr2)">
       <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#6B8876 0%,rgba(107,136,118,0) 100%)"></div>
       <div style="font-size:10px;font-weight:700;color:#6B8876;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Miles</div>
       <div style="font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1;color:var(--text)">${totalMiAll||'—'}</div>
-      <div style="font-size:9px;color:var(--muted2);margin-top:4px">${(startMi||endMi)?Math.round(startMi+endMi)+' mi home legs':c.startLocation?'calculating…':'set start city'}</div>
+      <div style="font-size:9px;color:var(--muted);margin-top:4px">${(startMi||endMi)?Math.round(startMi+endMi)+' mi home legs':c.startLocation?'calculating…':'set start city'}</div>
       <div style="position:absolute;bottom:8px;right:10px;font-size:20px;opacity:.07;pointer-events:none;line-height:1">🛣️</div>
     </div>
-    <div style="padding:15px 13px 13px;position:relative;cursor:pointer;transition:background .15s" onclick="(function(el){el.classList.toggle('open');document.getElementById('travelers-panel-${c.id}').style.display=el.classList.contains('open')?'block':'none';})(this)" onmouseover="this.style.background='rgba(74,120,158,.05)'" onmouseout="this.style.background=''">
-      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#4A789E 0%,rgba(74,120,158,0) 100%)"></div>
-      <div style="font-size:10px;font-weight:700;color:#4A789E;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Travelers</div>
-      <div style="font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1;color:var(--text)">${travelers.length||'—'}</div>
-      <div style="font-size:9px;color:var(--muted2);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${travelers.length?travelers.slice(0,2).join(', ')+(travelers.length>2?' +'+(travelers.length-2)+' more':''):'tap to add'}</div>
-      <div style="position:absolute;bottom:8px;right:10px;font-size:20px;opacity:.07;pointer-events:none;line-height:1">👥</div>
-    </div>
-  </div>
-  <div id="travelers-panel-${c.id}" style="display:none;background:var(--card);border:1px solid var(--bdr);border-top:none;border-radius:0 0 var(--r) var(--r);padding:10px 14px 12px;margin-top:-2px;margin-bottom:10px;box-shadow:var(--shadow)">
-    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px">
-      ${travelers.map((t,i)=>`<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(74,120,158,.07);border:1px solid rgba(74,120,158,.2);border-radius:20px;padding:4px 10px 4px 6px;font-size:12px;font-weight:500;color:var(--text)"><span style="width:18px;height:18px;border-radius:50%;background:#4A789E;color:#fff;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${t.charAt(0).toUpperCase()}</span>${t}<button onclick="removeAdvTraveler('${c.id}',${i})" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--muted2);padding:0 0 0 3px;line-height:1" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button></span>`).join('')}
-      <button onclick="addAdvTraveler('${c.id}')" style="display:inline-flex;align-items:center;gap:4px;background:none;border:1px dashed var(--bdr2);border-radius:20px;padding:4px 11px;font-size:11px;color:var(--muted2);cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.color='var(--text)';this.style.borderColor='var(--bdr)'" onmouseout="this.style.color='var(--muted2)';this.style.borderColor='var(--bdr2)'">+ Add</button>
+    <div style="padding:15px 13px 13px;position:relative;cursor:pointer;transition:background .15s" onclick="window._campDTab='budget';openCampD('${c.id}')" onmouseover="this.style.background='rgba(200,144,30,.05)'" onmouseout="this.style.background=''">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--amber) 0%,rgba(200,144,30,0) 100%)"></div>
+      <div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Budget</div>
+      <div style="font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1;color:var(--text)">${budgetSet?'$'+budgetSet.toLocaleString(undefined,{maximumFractionDigits:0}):'—'}</div>
+      <div style="font-size:9px;color:var(--muted);margin-top:4px">${budgetSet?(spent?'$'+Math.round(spent)+' tracked':'nothing tracked yet'):'tap to set →'}</div>
+      <div style="position:absolute;bottom:8px;right:10px;font-size:20px;opacity:.07;pointer-events:none;line-height:1">💰</div>
     </div>
   </div>
 
@@ -8135,8 +8129,8 @@ function rAdvOverviewTab(c){
         <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap">
             <div style="font-size:12px;font-weight:600;color:var(--text)">${new Date(day.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</div>
-            <div style="font-size:10px;color:var(--muted2)">${ds.length} stop${ds.length!==1?'s':''}</div>
-            ${dayMi?`<div style="font-size:10px;color:var(--muted2)">${Math.round(dayMi)} mi${daySecs?' · '+fDrive(daySecs):''}</div>`:''}
+            <div style="font-size:10px;color:var(--muted)">${ds.length} stop${ds.length!==1?'s':''}</div>
+            ${dayMi?`<div style="font-size:10px;color:var(--muted);font-weight:500">${Math.round(dayMi)} mi${daySecs?' · '+fDrive(daySecs):''}</div>`:''}
           </div>
           ${names?`<div style="font-size:11px;color:var(--text2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${names}</div>`:''}
         </div>
@@ -8153,7 +8147,7 @@ function rAdvOverviewTab(c){
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${crumbParts.length>0||startMi||endMi?'8':'0'}px">
       <div style="font-size:10px;font-weight:700;color:#4A789E;text-transform:uppercase;letter-spacing:.7px">Route</div>
       <div style="display:flex;align-items:center;gap:8px">
-        ${(startMi||endMi)?`<span style="font-size:10px;color:var(--muted2)">${Math.round(startMi+endMi)} mi home${c.startSecs||c.endSecs?' · '+fDrive((c.startSecs||0)+(c.endSecs||0)):''}${c.startMilesEst||c.endMilesEst?' (est.)':''}</span>`:''}
+        ${(startMi||endMi)?`<span style="font-size:10px;font-weight:500;color:var(--muted)">${Math.round(startMi+endMi)} mi home${c.startSecs||c.endSecs?' · '+fDrive((c.startSecs||0)+(c.endSecs||0)):''}${c.startMilesEst||c.endMilesEst?' (est.)':''}</span>`:''}
         <button id="route-edit-btn-${c.id}" onclick="(function(btn){const s=document.getElementById('route-edit-form-${c.id}');const open=s.style.display!=='none';s.style.display=open?'none':'block';btn.textContent=open?'⚙ Edit':'▲ Hide';})(this)" style="font-size:10px;color:var(--muted2);background:none;border:1px solid var(--bdr2);border-radius:100px;padding:2px 9px;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.color='var(--text)';this.style.borderColor='var(--bdr)'" onmouseout="this.style.color='var(--muted2)';this.style.borderColor='var(--bdr2)'">⚙ Edit</button>
       </div>
     </div>
@@ -8190,8 +8184,8 @@ function rAdvOverviewTab(c){
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
     <div style="background:var(--card);border:1px solid var(--bdr);border-top:2px solid var(--amber);border-radius:var(--r);padding:12px;cursor:pointer;transition:background .15s;box-shadow:var(--shadow)" onclick="window._campDTab='budget';openCampD('${c.id}')" onmouseover="this.style.background='rgba(200,144,30,.04)'" onmouseout="this.style.background='var(--card)'">
       <div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px">Budget</div>
-      ${budgetSet?`<div style="font-size:16px;font-weight:700;color:var(--text)">$${budgetSet.toLocaleString(undefined,{maximumFractionDigits:0})}<span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:3px">set</span></div><div style="font-size:10px;color:var(--muted2);margin-top:2px">${spent?'$'+Math.round(spent)+' tracked':'No expenses logged yet'}</div>`:
-      `<div style="font-size:12px;color:var(--muted2);font-style:italic">Set your trip budget →</div>`}
+      ${budgetSet?`<div style="font-size:16px;font-weight:700;color:var(--text)">$${budgetSet.toLocaleString(undefined,{maximumFractionDigits:0})}<span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:3px">set</span></div><div style="font-size:10px;color:var(--muted);margin-top:2px">${spent?'$'+Math.round(spent)+' tracked':'No expenses logged yet'}</div>`:
+      `<div style="font-size:12px;color:var(--muted);font-style:italic">Set your trip budget →</div>`}
     </div>
     <div style="background:var(--card);border:1px solid var(--bdr);border-top:2px solid var(--earth);border-radius:var(--r);padding:12px;cursor:pointer;transition:background .15s;box-shadow:var(--shadow)" onclick="window._campDTab='gear';openCampD('${c.id}')" onmouseover="this.style.background='rgba(155,116,32,.04)'" onmouseout="this.style.background='var(--card)'">
       <div style="font-size:10px;font-weight:700;color:var(--earth);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px">Gear</div>
