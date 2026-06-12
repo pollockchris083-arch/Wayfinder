@@ -588,6 +588,17 @@ input,textarea,select{font-family:inherit;font-weight:400}
 #sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:90;-webkit-tap-highlight-color:transparent}
 #sb-menu{display:none;background:none;border:none;cursor:pointer;font-size:20px;color:var(--text);padding:5px 8px;border-radius:6px;line-height:1;flex-shrink:0;transition:background .15s}
 #sb-menu:hover{background:var(--card2)}
+
+/* ── Map page — full-bleed flex (all screen sizes) ── */
+#page-map{padding:0!important}
+#page-map.on{display:flex!important;flex-direction:column!important;animation:none}
+#map-in{display:flex;flex-direction:column;flex:1;min-height:0}
+#the-map{flex:1;min-height:300px;border-radius:var(--r);overflow:hidden;border:1px solid var(--bdr);box-shadow:var(--shadow)}
+#content.map-mode{overflow:hidden!important;padding:0!important;display:flex!important;flex-direction:column!important}
+#content.map-mode #page-map.on{flex:1!important;overflow:hidden!important}
+#content.map-mode #map-in{overflow:hidden!important}
+#content.map-mode #the-map{border-radius:0!important;border:none!important;box-shadow:none!important}
+
 @media (max-width:699px){
   /* ── Bottom nav ── */
   #mob-nav{display:flex;height:calc(54px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -649,25 +660,26 @@ input,textarea,select{font-family:inherit;font-weight:400}
   .fc{min-height:44px;padding:10px 14px;font-size:15px}
   label,.fl{font-size:13px}
 
-  /* ── Map page ── */
-  #content.map-mode{overflow:hidden!important;padding:0!important}
-  #content.map-mode #page-map.on{height:100%!important;display:flex!important;flex-direction:column!important;padding:0!important}
-  #content.map-mode #map-in{flex:1!important;display:flex!important;flex-direction:column!important;min-height:0!important;overflow:hidden!important}
-  #content.map-mode #the-map{flex:1!important;height:auto!important;min-height:200px!important}
-  #page-map,#page-map.on{padding:0!important;display:flex!important;flex-direction:column}
-  #map-in{flex:1;display:flex;flex-direction:column;min-height:0}
-  #the-map{height:calc(100dvh - 50px - 54px - 205px)!important;min-height:220px!important;border-radius:0!important;border:none!important}
-  #map-fb{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  /* ── Map page mobile overrides ── */
+  /* Controls: stack vertically, compact */
+  #map-ctrl-card{border-radius:0!important;border-left:none!important;border-right:none!important;border-top:none!important;margin-bottom:0!important;padding:8px 10px!important}
+  #map-fb{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-bottom:0!important;gap:4px!important}
   #map-fb::-webkit-scrollbar{display:none}
-  #map-ctrl-row{gap:6px!important}
-  #map-ctrl-row>div:first-child{min-width:0!important;width:100%}
-  #map-when-where{flex-wrap:nowrap!important;gap:6px!important}
-  #map-trip-sel{min-width:0!important;flex:1!important;font-size:14px!important}
-  #map-year-sel{min-width:0!important;width:68px!important;flex-shrink:0!important;font-size:14px!important}
+  #map-fb .fc{flex-shrink:0;font-size:11px!important;padding:5px 10px!important;white-space:nowrap}
+  #map-ctrl-row{gap:5px!important;flex-direction:column!important}
+  #map-ctrl-row>div:first-child{min-width:0!important;width:100%!important}
+  #map-when-where{gap:5px!important;flex-wrap:nowrap!important;width:100%}
+  #map-trip-sel{min-width:0!important;flex:1!important;font-size:13px!important}
+  #map-year-sel{min-width:0!important;width:64px!important;flex-shrink:0!important;font-size:13px!important}
+  #map-vb{margin-bottom:0!important}
+  #map-vb .fc{font-size:11px!important;padding:5px 10px!important}
+  #map-summary{border-radius:0!important;border-left:none!important;border-right:none!important;margin-bottom:0!important}
   #map-legend-row{display:none!important}
-  #map-stats-row{display:flex!important;overflow-x:auto;scrollbar-width:none;gap:8px;padding-bottom:2px;grid-template-columns:unset!important}
-  #map-stats-row::-webkit-scrollbar{display:none}
-  #map-stats-row .sc{min-width:88px;flex:0 0 auto;padding:10px 11px}
+  #map-stats-row{display:none!important}
+  /* API key banner: compact */
+  #map-in>[style*="border-radius:8px"]{border-radius:0!important;margin-bottom:0!important;padding:7px 10px!important;font-size:11px!important}
+  /* Mobile map min-height override */
+  #the-map{min-height:200px!important}
 
   /* ── The Path ── */
   .pipe-col{width:84vw;min-width:280px}
@@ -2287,7 +2299,14 @@ async function _blockingSync(uid){
     const[p,t,w,j,s]=await Promise.race([_fetch,_timeout]);
     if(s.data){const local=JSON.parse(localStorage.getItem(K.settings)||'{}');const cloud=stripRow(s.data);const merged={...cloud,apiKey:local.apiKey,googleClientId:local.googleClientId,driveFolderId:local.driveFolderId,mapsApiKey:local.mapsApiKey||cloud.mapsApiKey||'',abroadNotes:local.abroadNotes};localStorage.setItem(K.settings,JSON.stringify(merged));}
     if(p.data?.length)localStorage.setItem(K.places,JSON.stringify(p.data.map(stripRow)));
-    if(t.data?.length)localStorage.setItem(K.trips,JSON.stringify(t.data.map(stripRow)));
+    if(t.data?.length){
+      const allT=t.data.map(stripRow);
+      const campsBlob=allT.find(x=>x.id==='__camps_v1__');
+      const workBlob=allT.find(x=>x.id==='__work_v1__');
+      if(campsBlob?.notes){try{localStorage.setItem('wf_camps',campsBlob.notes);}catch(e){}}
+      if(workBlob?.notes){try{localStorage.setItem('wf_work',workBlob.notes);}catch(e){}}
+      localStorage.setItem(K.trips,JSON.stringify(allT.filter(x=>x.type!=='__system__')));
+    }
     if(w.data?.length)localStorage.setItem(K.wish,JSON.stringify(w.data.map(stripRow)));
     if(j.data?.length)localStorage.setItem(K.journal,JSON.stringify(j.data.map(stripRow)));
     D=load();
@@ -2322,13 +2341,22 @@ async function _bgSync(uid){
         cloudPush('places',D.places),cloudPush('trips',D.trips),
         cloudPush('wish',D.wish),cloudPush('journal',D.journal),
         cloudPushSettings(D.settings),
+        _upsertBlob('__camps_v1__',D.camps),
+        _upsertBlob('__work_v1__',D.work||[]),
       ]);
       setSyncStatus('☁️ Synced','var(--green3)');
       toast('☁️ Data synced to your account!');
       return;
     }
     if(s.data){const local=JSON.parse(localStorage.getItem(K.settings)||'{}');const cloud=stripRow(s.data);const merged={...cloud,apiKey:local.apiKey,googleClientId:local.googleClientId,driveFolderId:local.driveFolderId,mapsApiKey:local.mapsApiKey||cloud.mapsApiKey||'',abroadNotes:local.abroadNotes};localStorage.setItem(K.settings,JSON.stringify(merged));}
-    if(t.data?.length)localStorage.setItem(K.trips,JSON.stringify(t.data.map(stripRow)));
+    if(t.data?.length){
+      const allT=t.data.map(stripRow);
+      const campsBlob=allT.find(x=>x.id==='__camps_v1__');
+      const workBlob=allT.find(x=>x.id==='__work_v1__');
+      if(campsBlob?.notes){try{localStorage.setItem('wf_camps',campsBlob.notes);}catch(e){}}
+      if(workBlob?.notes){try{localStorage.setItem('wf_work',workBlob.notes);}catch(e){}}
+      localStorage.setItem(K.trips,JSON.stringify(allT.filter(x=>x.type!=='__system__')));
+    }
     D=load();loadSettings();rHome();
     // Phase 2: wishlist + journal
     t0=Date.now();
@@ -2379,7 +2407,10 @@ async function manualCloudSync(){
 async function cloudPush(collection,items){
   if(!currentUser||!items)return;
   const rows=items.map(item=>{const row={user_id:currentUser.id};Object.entries(item).forEach(([k,v])=>{row[k==='visitDate'?k:k.replace(/[A-Z]/g,c=>'_'+c.toLowerCase())]=v;});return row;});
-  const{error:delErr}=await SUPA.from('wf_'+collection).delete().eq('user_id',currentUser.id);
+  // When re-syncing trips, preserve __system__ blob rows (camps/work data)
+  let delQ=SUPA.from('wf_'+collection).delete().eq('user_id',currentUser.id);
+  if(collection==='trips')delQ=delQ.neq('type','__system__');
+  const{error:delErr}=await delQ;
   if(delErr)throw new Error('[Sync] delete '+collection+': '+delErr.message);
   if(rows.length){
     const{error:insErr}=await SUPA.from('wf_'+collection).insert(rows);
@@ -2389,6 +2420,14 @@ async function cloudPush(collection,items){
     }
   }
 }
+async function _upsertBlob(blobId,data){
+  if(!currentUser)return;
+  const row={user_id:currentUser.id,id:blobId,name:'__system__',type:'__system__',notes:JSON.stringify(data),added_at:new Date().toISOString()};
+  const{error}=await SUPA.from('wf_trips').upsert(row,{onConflict:'id'});
+  if(error)console.warn('[Sync] blob upsert',blobId,error.message);
+}
+function saveCamps(){localStorage.setItem('wf_camps',JSON.stringify(D.camps));scheduledSync('camps',D.camps);}
+function _syncWork(){localStorage.setItem('wf_work',JSON.stringify(D.work));scheduledSync('work',D.work);}
 async function cloudPushSettings(cfg){
   if(!currentUser)return;
   // Strip secrets — apiKey (Anthropic), OAuth credentials, and notes are local-only
@@ -2585,6 +2624,8 @@ function scheduledSync(k,items){
     setSyncStatus('⬆️ Saving…');
     try{
       if(k==='settings')await cloudPushSettings(items);
+      else if(k==='camps')await _upsertBlob('__camps_v1__',items);
+      else if(k==='work')await _upsertBlob('__work_v1__',items);
       else await cloudPush(k,items);
       setSyncStatus('☁️ Synced');
     }catch(e){console.warn('Sync failed:',e);setSyncStatus('⚠️ Sync failed');}
@@ -2775,6 +2816,11 @@ function _mbnSync(p){
 }
 function go(p){
   sbClose();
+  // Destroy Leaflet when navigating away from map to prevent ghost tiles/glitch
+  if(cur==='map'&&p!=='map'&&leafletMap){
+    leafletMap.remove();leafletMap=null;
+    mapLayer_c=null;mapLayer_s=null;mapLayer_p=null;mapRouteLayer=null;
+  }
   if(p!==cur){const s=document.getElementById('srch');if(s)s.value='';pipeCloseDetail();}
   if(p==='trips')tripTypeFilter='all';
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
@@ -3347,7 +3393,7 @@ function rMap(){
       </div>
     </div>
     <div id="map-summary" style="display:none;font-size:11px;color:var(--text2);padding:6px 10px;background:rgba(74,114,89,.06);border:1px solid rgba(74,114,89,.2);border-radius:6px;margin-bottom:6px"></div>
-    <div id="the-map" style="height:calc(100vh - 320px);min-height:370px;border-radius:var(--r);overflow:hidden;border:1px solid var(--bdr);box-shadow:var(--shadow)"></div>
+    <div id="the-map" style="min-height:370px;border-radius:var(--r);overflow:hidden;border:1px solid var(--bdr);box-shadow:var(--shadow)"></div>
     <div id="map-legend-row" style="display:flex;flex-wrap:wrap;gap:13px;padding:9px 2px;align-items:center">
       <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:14px;height:9px;background:#C8901E;border-radius:2px;opacity:.85"></div>Visited</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:14px;height:9px;background:transparent;border:2px dashed #B8892A;border-radius:2px"></div>Want to Go</div>
@@ -5325,13 +5371,13 @@ function toggleStopDone(tid,di,si,val){
 function delAdvWaypoint(cid,di,wi){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c||!c.dailyPlans?.[di])return;
   c.dailyPlans[di].waypoints=(c.dailyPlans[di].waypoints||[]).filter((_,i)=>i!==wi);
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   window._campDTab='daily';openCampD(cid);
 }
 function toggleAdvWaypointDone(cid,di,wi,val){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   const wp=c.dailyPlans?.[di]?.waypoints?.[wi];if(wp)wp.done=val;
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
 }
 function unlinkPlace(placeId,tid){
   const p=D.places.find(x=>x.id===placeId);if(!p)return;
@@ -5562,7 +5608,7 @@ function saveStop(){
       stopData.done=false;c.itinerary[newDi].stops.push(stopData);
     }
     autoHaversineItinerary(c);
-    localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+    saveCamps();
     closeM('m-stop');
     if(pendStop.si!=null){toast('✅ Stop updated');openCampD(pendStop.cid);}
     else{toast('📍 Stop added');window._campDTab='daily';openCampD(pendStop.cid);}
@@ -5613,7 +5659,7 @@ let _pd=null; // {kind:'day'|'stop', rt:'trip'|'camp', id, di, si?}
 let _ptTimer=null,_ptActive=false,_ptClone=null,_ptOriginEl=null,_ptLastHL=null;
 
 function _pdRec(rt,id){D=load();return rt==='camp'?(D.camps||[]).find(x=>x.id===id):D.trips.find(x=>x.id===id);}
-function _pdSave(rt){if(rt==='camp'){localStorage.setItem('wf_camps',JSON.stringify(D.camps));scheduledSync('camps',D.camps);}else save('trips',D.trips);}
+function _pdSave(rt){if(rt==='camp'){saveCamps();}else save('trips',D.trips);}
 function _pdRefresh(rt,id){if(rt==='camp'){window._campDTab='daily';openCampD(id);}else{window._tripItinTab='plans';openTripD(id);}}
 function _pdUnsched(rec){let ui=rec.itinerary.findIndex(d=>!d.date);if(ui<0){rec.itinerary.push({date:'',stops:[]});ui=rec.itinerary.length-1;}return ui;}
 
@@ -5991,7 +6037,7 @@ function doMoveStopToDay(rt,id,fromDi,si,toDi){
     itin[toDi].stops.push(stop);
   }
   autoHaversineItinerary(obj);
-  if(rt==='camp'){localStorage.setItem('wf_camps',JSON.stringify(D.camps));window._campDTab='daily';openCampD(id);}
+  if(rt==='camp'){saveCamps();window._campDTab='daily';openCampD(id);}
   else{save('trips',D.trips);switchTripItinTab(id,'plans');}
   toast('↕ Stop moved');
 }
@@ -6013,7 +6059,7 @@ function saveStopNoteInline(ta,rt,id,di,si){
   const stop=(obj.itinerary||[])[di]?.stops?.[si];
   if(!stop)return;
   stop.note=val;
-  if(rt==='camp')localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  if(rt==='camp')saveCamps();
   else save('trips',D.trips);
   ta.dataset.orig=val;
   const viewEl=document.getElementById('sn-view-'+id+'-'+di+'-'+si);
@@ -7312,14 +7358,14 @@ function saveSpot(){
     D.camps.push({id:uid(),...data,addedAt:Date.now()});
     toast('📍 Spot saved!');
   }
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   _spotEdit=null;closeM('m-spot');
   window._campTab='spots';rCamp();badges();
 }
 function delSpot(id){
   if(!confirm('Delete this spot?'))return;
   D=load();D.camps=(D.camps||[]).filter(c=>c.id!==id);
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   toast('🗑️ Deleted');window._campTab='spots';rCamp();badges();
 }
 function _spotType(s){return s.spotType||'other';}
@@ -7549,7 +7595,7 @@ function rTripStaysSection(t){
 }
 let _stayTid=null,_staySid=null,_stayIsAdv=false;
 function _findTripLike(id){const t=D.trips.find(x=>x.id===id);if(t)return{obj:t,isAdv:false};const c=(D.camps||[]).find(x=>x.id===id);if(c)return{obj:c,isAdv:true};return null;}
-function _saveTripLike(isAdv,data){if(isAdv){localStorage.setItem('wf_camps',JSON.stringify(D.camps));}else{save('trips',D.trips);}}
+function _saveTripLike(isAdv,data){if(isAdv){saveCamps();}else{save('trips',D.trips);}}
 function _reopenTripLike(isAdv,id){if(isAdv){window._campDTab='overview';openCampD(id);}else{openTripD(id);}}
 function openStayModal(tid,sid){
   D=load();
@@ -8049,7 +8095,7 @@ async function aiGuideSingleStop(rt,id,di,si){
     const dest=(obj.destinations||obj.stops||[]).join(', ')||obj.location||obj.name;
     const raw=await callAI(`Write a 2-3 sentence travel description for a stop called "${s.name}"${s.address?' at '+s.address:''}${dest?' during a trip to '+dest:''}. Highlight what to expect, atmosphere, or tips. Plain text only.`,130);
     s.description=raw.trim();
-    if(rt==='camp'){localStorage.setItem('wf_camps',JSON.stringify(D.camps));window._campDTab='guide';openCampD(id);}
+    if(rt==='camp'){saveCamps();window._campDTab='guide';openCampD(id);}
     else{save('trips',D.trips);switchTripItinTab(id,'guide');}
     toast('✅ Description added');
   }catch(e){toast('⚠️ AI fill failed');}
@@ -8068,7 +8114,7 @@ async function aiGuideDay(rt,id,di){
       const raw=await callAI(`2-3 sentence travel description for "${s.name}"${s.address?' at '+s.address:''}${dest?' on a trip to '+dest:''}. Warm, informative. Plain text.`,120);
       s.description=raw.trim();
     }
-    if(rt==='camp'){localStorage.setItem('wf_camps',JSON.stringify(D.camps));window._campDTab='guide';openCampD(id);}
+    if(rt==='camp'){saveCamps();window._campDTab='guide';openCampD(id);}
     else{save('trips',D.trips);switchTripItinTab(id,'guide');}
     toast('✅ Day descriptions filled');
   }catch(e){toast('⚠️ AI fill failed');}
@@ -8087,7 +8133,7 @@ async function aiGuideAllStops(rt,id){
       const raw=await callAI(`2-3 sentence travel description for "${s.name}"${s.address?' at '+s.address:''}${dest?' on a trip to '+dest:''}. Plain text.`,120);
       s.description=raw.trim();
     }
-    if(rt==='camp'){localStorage.setItem('wf_camps',JSON.stringify(D.camps));window._campDTab='guide';openCampD(id);}
+    if(rt==='camp'){saveCamps();window._campDTab='guide';openCampD(id);}
     else{save('trips',D.trips);switchTripItinTab(id,'guide');}
     toast('✅ All descriptions filled');
   }catch(e){toast('⚠️ AI fill failed — some stops may be incomplete');}
@@ -8180,7 +8226,7 @@ function saveCamp(){
     D.camps.push({id:_createdCampId,...data,tripType:pendingType,stops:[],checklist:[],links:[],addedAt:Date.now()});
     toast('🧭 Adventure saved!');
   }
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   ceid=null;closeM('m-camp');
   if(rtype==='spot'){window._campTab='spots';rCamp();}
   else if(wasInTrips&&savedId){go('trips');openCampDInTrips(savedId);}
@@ -8194,7 +8240,7 @@ function delCamp(id){
   D=load();
   const wasAdv=(D.camps||[]).find(c=>c.id===id&&c.recordType!=='spot');
   D.camps=(D.camps||[]).filter(c=>c.id!==id);
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   toast('🗑️ Deleted');
   if(window._campInTrips){closeCampDInTrips();}
   else if(wasAdv){go('trips');rTrips();}
@@ -8222,7 +8268,7 @@ function closeCampDInTrips(){
 function openCampD(id){
   D=load();
   const c=(D.camps||[]).find(x=>x.id===id);if(!c)return;
-  if(ensureAdvItinerary(c))localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  if(ensureAdvItinerary(c))saveCamps();
   window._campDid=id;
   const tab=window._campDTab||'overview';
   const typeInfo=ADV_TYPES[c.campType]||{icon:'🏕️',label:'Tent Camping'};
@@ -8656,7 +8702,7 @@ function rAdvOverviewTab(c){
 }
 function saveAdvField(cid,field,value){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
-  c[field]=value;localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  c[field]=value;saveCamps();
 }
 async function geocodeAndSaveStart(cid){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
@@ -8676,7 +8722,7 @@ async function geocodeAndSaveStart(cid){
     }));
   }
   autoHaversineStartEnd(c);
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   openCampD(cid);
 }
 async function geocodeAndSaveEnd(cid){
@@ -8692,7 +8738,7 @@ async function geocodeAndSaveEnd(cid){
     }));
   }
   autoHaversineStartEnd(c);
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   openCampD(cid);
 }
 function toggleRoundTrip(cid,isRound){
@@ -8700,7 +8746,7 @@ function toggleRoundTrip(cid,isRound){
   c.isRoundTrip=isRound;
   if(isRound){c.endLocation=c.startLocation;c.endLat=c.startLat;c.endLng=c.startLng;}
   autoHaversineStartEnd(c);
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   const row=document.getElementById('end-loc-row-'+cid);
   if(row)row.style.display=isRound?'none':'';
   openCampD(cid);
@@ -8708,20 +8754,20 @@ function toggleRoundTrip(cid,isRound){
 function saveAdvRig(cid,field,value){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   if(!c.rig)c.rig={};c.rig[field]=value;
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
 }
 function addAdvTraveler(cid){
   const name=prompt('Traveler name:');if(!name||!name.trim())return;
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   if(!c.travelers)c.travelers=[];
   c.travelers.push(name.trim());
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   window._campDTab='overview';openCampD(cid);
 }
 function removeAdvTraveler(cid,idx){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   (c.travelers||[]).splice(idx,1);
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   window._campDTab='overview';openCampD(cid);
 }
 
@@ -8881,7 +8927,7 @@ function updateFuelCalc(cid){
   const miles=(startMi+calcMiles+endMi)||manualMiles;
   if(price){c.fuelPrice=price;if(!D.settings)D.settings={};D.settings.gasPrice=price;localStorage.setItem(K.settings,JSON.stringify(D.settings));}
   if(manualMiles)c.estTripMiles=manualMiles;
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   const estEl=document.getElementById('fuel-est-'+cid);
   if(estEl){const hasVal=price&&mpg&&miles;estEl.textContent=hasVal?'$'+(miles/mpg*price).toFixed(0):'↑ add price';estEl.style.fontSize=hasVal?'16px':'12px';estEl.style.color=hasVal?'var(--green3)':'var(--muted2)';}
   if(c.includeFuelInBudget){window._campDTab='budget';openCampD(cid);}
@@ -8889,7 +8935,7 @@ function updateFuelCalc(cid){
 function toggleFuelInBudget(cid,val){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   c.includeFuelInBudget=val;
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   window._campDTab='budget';openCampD(cid);
   toast(val?'⛽ Fuel added to budget':'⛽ Fuel removed from budget');
 }
@@ -8925,13 +8971,13 @@ function openAdvExpense(cid){
   if(!c.expenses)c.expenses=[];
   const matched=CATS.find(k=>k.toLowerCase()===cat.toLowerCase().trim())||'Misc';
   c.expenses.push({id:uid(),category:matched,description:desc||'',amount:parseFloat(amt),date:dateStr||''});
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   window._campDTab='budget';openCampD(cid);toast('💰 Expense added');
 }
 function delAdvExpense(cid,idx){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   (c.expenses||[]).splice(idx,1);
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   window._campDTab='budget';openCampD(cid);
 }
 
@@ -9267,20 +9313,20 @@ function delAdvItinStop(cid,di,si){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   (c.itinerary[di]?.stops||[]).splice(si,1);
   autoHaversineItinerary(c);
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   toast('🗑️ Stop removed');openCampD(cid);
   if((D.settings?.mapsApiKey||'').trim())setTimeout(()=>recalcItineraryDriving(true,cid,true),200);
 }
 function toggleAdvItinDone(cid,di,si,val){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   if(c.itinerary?.[di]?.stops?.[si])c.itinerary[di].stops[si].done=val;
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   window._campDTab='daily';openCampD(cid);
 }
 function setAdvItinDayNotes(cid,di,val){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   if(c.itinerary?.[di])c.itinerary[di].notes=val;
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
 }
 function expandDayNote(el,cid,di){
   el.style.display='none';
@@ -9291,7 +9337,7 @@ function advSetDayDate(cid,di,date){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c||!date)return;
   c.itinerary[di].date=date;
   c.itinerary.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   toast('📅 Date updated');window._campDTab='daily';openCampD(cid);
 }
 function addAdvItinDay(cid){
@@ -9302,7 +9348,7 @@ function addAdvItinDay(cid){
   let nextDate='';
   if(lastDate){const nd=new Date(lastDate+'T12:00:00');nd.setDate(nd.getDate()+1);nextDate=nd.toISOString().split('T')[0];}
   c.itinerary.push({date:nextDate,notes:'',stops:[]});
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   window._campDTab='daily';openCampD(cid);
 }
 function delAdvItinDay(cid,di){
@@ -9310,7 +9356,7 @@ function delAdvItinDay(cid,di){
   const day=c.itinerary?.[di];
   if(day&&(day.stops||[]).length&&!confirm('Delete this day and all its stops?'))return;
   (c.itinerary||[]).splice(di,1);
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   window._campDTab='daily';openCampD(cid);
 }
 
@@ -9339,26 +9385,26 @@ function loadAdvGearTemplate(cid){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   const tmpl=ADV_GEAR[c.campType||'tent']||ADV_GEAR.tent;
   c.checklist=[...(c.checklist||[]),...tmpl.map(text=>({text,done:false}))];
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   window._campDTab='gear';openCampD(cid);
 }
 function addAdvGearItem(cid){
   const text=prompt('Gear item:');if(!text||!text.trim())return;
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   c.checklist=c.checklist||[];c.checklist.push({text:text.trim(),done:false});
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   window._campDTab='gear';openCampD(cid);
 }
 function toggleCampCheck(id,idx){
   D=load();const c=(D.camps||[]).find(x=>x.id===id);if(!c||!c.checklist)return;
   c.checklist[idx].done=!c.checklist[idx].done;
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
 }
 function addCampCheckItem(id){addAdvGearItem(id);}
 function delCampCheckItem(id,idx){
   D=load();const c=(D.camps||[]).find(x=>x.id===id);if(!c)return;
   c.checklist=(c.checklist||[]).filter((_,i)=>i!==idx);
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   window._campDTab='gear';openCampD(id);
 }
 
@@ -9391,13 +9437,13 @@ function addAdvLink(cid){
   const type=url.includes('youtube')||url.includes('youtu.be')?'youtube':url.includes('instagram')?'instagram':'web';
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   if(!c.links)c.links=[];c.links.push({url,title,type});
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   window._campDTab='links';openCampD(cid);
 }
 function delAdvLink(cid,i){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   c.links=(c.links||[]).filter((_,j)=>j!==i);
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   window._campDTab='links';openCampD(cid);
 }
 
@@ -9427,16 +9473,16 @@ function rAdvSummaryTab(c){
 function setAdvRating(cid,n){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   c.rating=(c.rating===n?0:n);
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   window._campDTab='summary';openCampD(cid);
 }
 function setAdvReturn(cid,val){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
-  c.wouldReturn=val;localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  c.wouldReturn=val;saveCamps();
 }
 function saveAdvNotes(cid,text){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
-  c.summaryNotes=text;localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  c.summaryNotes=text;saveCamps();
 }
 
 // ── Stop Modal ───────────────────────────────────────────
@@ -9549,7 +9595,7 @@ async function recalcItineraryDriving(isAdv,id,silent=false){
       }
     }
     if(geocodedAny){
-      if(isAdv)localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+      if(isAdv)saveCamps();
       else save('trips',D.trips);
     }
   }
@@ -9582,7 +9628,7 @@ async function recalcItineraryDriving(isAdv,id,silent=false){
     const lc=parseStopCoords(lastSt);
     if(lc){try{const r=await getRouteDrivingInfo(lc.lat,lc.lng,parseFloat(obj.endLat),parseFloat(obj.endLng),mapsKey);obj.endMiles=parseFloat(r.miles.toFixed(1));obj.endSecs=r.secs;obj.endMilesEst=false;updated++;}catch(e){console.warn('[end-leg]',e.message);}}
   }
-  if(isAdv){localStorage.setItem('wf_camps',JSON.stringify(D.camps));openCampD(id);}
+  if(isAdv){saveCamps();openCampD(id);}
   else{save('trips',D.trips);openTripD(id);}
   if(!silent)toast(updated>0?`✅ ${updated} driving distance${updated!==1?'s':''} updated!`:'⚠️ Calculation failed — check Maps API key');
 }
@@ -9650,7 +9696,7 @@ async function recalcAdvTripDriving(cid){
       console.log(`[recalc] stop ${i}: ${r.miles.toFixed(0)} mi, ${r.secs}s`);
     }catch(e){console.warn(`[route] stop ${i} failed:`,e.message);}
   }
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   window._campDTab='stops';openCampD(cid);
   toast(updated>0?`✅ Updated ${updated} driving distance${updated!==1?'s':''}!`:'⚠️ No GPS-coord pairs found');
 }
@@ -10061,7 +10107,7 @@ function saveAdvStop(){
       D.camps.push({id:uid(),recordType:'spot',name,location:name,lat:stop.lat,lng:stop.lng,mapsUrl:stop.mapsUrl,website:stop.website,notes:stop.notes,hookups,maxRigLength:stop.maxRigLength,addedAt:Date.now(),visited:true});
     }
   }
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   closeM('m-adv-stop');window._campDTab='stops';openCampD(cid);toast('📍 Stop saved!');
 }
 function addReturnHomeStop(cid){
@@ -10092,7 +10138,7 @@ function addDayExcursion(cid){
 function delAdvStop(cid,idx){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   c.stops=(c.stops||[]).filter((_,i)=>i!==idx);
-  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  saveCamps();
   window._campDTab='stops';openCampD(cid);toast('🗑️ Stop removed');
 }
 
@@ -10199,13 +10245,13 @@ function saveWork(){
   const data={name,client:document.getElementById('wk-client').value.trim(),destination:document.getElementById('wk-dest').value.trim(),startDate:document.getElementById('wk-start').value,endDate:document.getElementById('wk-end').value,status:document.getElementById('wk-status').value,transport:document.getElementById('wk-transport').value,hotel:document.getElementById('wk-hotel').value.trim(),confirmation:document.getElementById('wk-conf').value.trim(),notes:document.getElementById('wk-notes').value.trim(),excludeFromTrips:document.getElementById('wk-exclude-trips').checked};
   if(wkeid){const i=D.work.findIndex(x=>x.id===wkeid);if(i>=0){D.work[i]={...D.work[i],...data};toast('✅ Updated!');}}
   else{D.work.push({id:uid(),...data,expenses:[],addedAt:Date.now()});toast('💼 Trip saved!');}
-  localStorage.setItem('wf_work',JSON.stringify(D.work));
+  _syncWork();
   wkeid=null;closeM('m-work');rWork();badges();
 }
 function delWork(id){
   if(!confirm('Delete this work trip? Expenses will also be deleted.'))return;
   D=load();D.work=(D.work||[]).filter(w=>w.id!==id);
-  localStorage.setItem('wf_work',JSON.stringify(D.work));
+  _syncWork();
   toast('🗑️ Deleted');rWork();badges();
 }
 function openWorkD(id){
@@ -10256,13 +10302,13 @@ function openAddExpense(wid){
   const w=(D.work||[]).find(x=>x.id===wid);if(!w)return;
   w.expenses=w.expenses||[];
   w.expenses.push({id:uid(),category:cat.toLowerCase().trim(),description:desc.trim(),amount,date});
-  localStorage.setItem('wf_work',JSON.stringify(D.work));
+  _syncWork();
   toast('✅ Expense added');openWorkD(wid);
 }
 function delExpense(wid,idx){
   D=load();const w=(D.work||[]).find(x=>x.id===wid);if(!w)return;
   w.expenses=(w.expenses||[]).filter((_,i)=>i!==idx);
-  localStorage.setItem('wf_work',JSON.stringify(D.work));
+  _syncWork();
   toast('🗑️ Removed');openWorkD(wid);
 }
 
@@ -10453,7 +10499,7 @@ function pipeMoveCard(cardId,toCol,silent){
       else if(toCol==='planning-booking')c.status='planning';
       else if(toCol==='researching')c.status='research';
       else c.status='dream';
-      localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+      saveCamps();
     }
   }
   if(!silent)rPath();
@@ -11933,7 +11979,7 @@ function tripSetStage(id,newStatus){
 function advSetStage(id,newStatus){
   if(!newStatus)return;
   D=load();const c=(D.camps||[]).find(x=>x.id===id);if(!c)return;
-  c.status=newStatus;localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  c.status=newStatus;saveCamps();
   const state=pipeStateLoad();state[id]=pipeAutoCol({id,type:'adventure',data:c});pipeStateSave(state);
   window._campDTab='overview';openCampD(id);toast('Stage: '+tsl(newStatus));
 }
