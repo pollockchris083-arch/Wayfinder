@@ -8070,12 +8070,18 @@ function rAdvOverviewTab(c){
       <div style="font-size:9px;color:var(--muted2);margin-top:4px">${(startMi||endMi)?Math.round(startMi+endMi)+' mi home legs':c.startLocation?'calculating…':'set start city'}</div>
       <div style="position:absolute;bottom:8px;right:10px;font-size:20px;opacity:.07;pointer-events:none;line-height:1">🛣️</div>
     </div>
-    <div style="padding:15px 13px 13px;position:relative">
+    <div style="padding:15px 13px 13px;position:relative;cursor:pointer;transition:background .15s" onclick="(function(el){el.classList.toggle('open');document.getElementById('travelers-panel-${c.id}').style.display=el.classList.contains('open')?'block':'none';})(this)" onmouseover="this.style.background='rgba(74,120,158,.05)'" onmouseout="this.style.background=''">
       <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#4A789E 0%,rgba(74,120,158,0) 100%)"></div>
       <div style="font-size:10px;font-weight:700;color:#4A789E;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Travelers</div>
       <div style="font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1;color:var(--text)">${travelers.length||'—'}</div>
-      <div style="font-size:9px;color:var(--muted2);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${travelers.length?travelers.slice(0,2).join(', ')+(travelers.length>2?' +'+(travelers.length-2)+' more':''):'solo trip'}</div>
+      <div style="font-size:9px;color:var(--muted2);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${travelers.length?travelers.slice(0,2).join(', ')+(travelers.length>2?' +'+(travelers.length-2)+' more':''):'tap to add'}</div>
       <div style="position:absolute;bottom:8px;right:10px;font-size:20px;opacity:.07;pointer-events:none;line-height:1">👥</div>
+    </div>
+  </div>
+  <div id="travelers-panel-${c.id}" style="display:none;background:var(--card);border:1px solid var(--bdr);border-top:none;border-radius:0 0 var(--r) var(--r);padding:10px 14px 12px;margin-top:-2px;margin-bottom:10px;box-shadow:var(--shadow)">
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px">
+      ${travelers.map((t,i)=>`<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(74,120,158,.07);border:1px solid rgba(74,120,158,.2);border-radius:20px;padding:4px 10px 4px 6px;font-size:12px;font-weight:500;color:var(--text)"><span style="width:18px;height:18px;border-radius:50%;background:#4A789E;color:#fff;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${t.charAt(0).toUpperCase()}</span>${t}<button onclick="removeAdvTraveler('${c.id}',${i})" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--muted2);padding:0 0 0 3px;line-height:1" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button></span>`).join('')}
+      <button onclick="addAdvTraveler('${c.id}')" style="display:inline-flex;align-items:center;gap:4px;background:none;border:1px dashed var(--bdr2);border-radius:20px;padding:4px 11px;font-size:11px;color:var(--muted2);cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.color='var(--text)';this.style.borderColor='var(--bdr)'" onmouseout="this.style.color='var(--muted2)';this.style.borderColor='var(--bdr2)'">+ Add</button>
     </div>
   </div>
 
@@ -8117,17 +8123,7 @@ function rAdvOverviewTab(c){
         <button id="route-edit-btn-${c.id}" onclick="(function(btn){const s=document.getElementById('route-edit-form-${c.id}');const open=s.style.display!=='none';s.style.display=open?'none':'block';btn.textContent=open?'⚙ Edit':'▲ Hide';})(this)" style="font-size:10px;color:var(--muted2);background:none;border:1px solid var(--bdr2);border-radius:100px;padding:2px 9px;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.color='var(--text)';this.style.borderColor='var(--bdr)'" onmouseout="this.style.color='var(--muted2)';this.style.borderColor='var(--bdr2)'">⚙ Edit</button>
       </div>
     </div>
-    ${crumbParts.length>1?`<div style="display:flex;align-items:center;flex-wrap:wrap;gap:3px;padding:9px 11px;background:var(--card2);border-radius:8px;margin-bottom:${(startMi||endMi)?'8':'0'}px">${crumbParts.map((name,i)=>`<span style="font-size:12px;${i===0||i===crumbParts.length-1?'font-weight:600;color:var(--text)':'color:var(--text2)'}">${name}</span>${i<crumbParts.length-1?'<span style="font-size:10px;color:var(--muted);opacity:.4;margin:0 2px">›</span>':''}`).join('')}</div>`:`<div style="font-size:12px;color:var(--muted2);font-style:italic;margin-bottom:4px">No route yet — tap ⚙ Edit to set your departure city</div>`}
-    ${(startMi||endMi)?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
-      <div style="background:var(--card2);border-radius:7px;padding:8px 10px">
-        <div style="font-size:13px;font-weight:700;color:#4A789E">${startMi?Math.round(startMi)+' mi':'—'}</div>
-        <div style="font-size:10px;color:var(--muted2);margin-top:1px">Outbound${c.startSecs?' · '+fDrive(c.startSecs):''}${c.startMilesEst?' (est.)':''}</div>
-      </div>
-      <div style="background:var(--card2);border-radius:7px;padding:8px 10px">
-        <div style="font-size:13px;font-weight:700;color:#4A789E">${endMi?Math.round(endMi)+' mi':'—'}</div>
-        <div style="font-size:10px;color:var(--muted2);margin-top:1px">Return${c.endSecs?' · '+fDrive(c.endSecs):''}${c.endMilesEst?' (est.)':''}</div>
-      </div>
-    </div>`:''}
+    ${crumbParts.length>1?`<div style="display:flex;align-items:center;flex-wrap:wrap;gap:3px;padding:9px 11px;background:var(--card2);border-radius:8px">${crumbParts.map((name,i)=>`<span style="font-size:12px;${i===0||i===crumbParts.length-1?'font-weight:600;color:var(--text)':'color:var(--text2)'}">${name}</span>${i<crumbParts.length-1?'<span style="font-size:10px;color:var(--muted);opacity:.4;margin:0 2px">›</span>':''}`).join('')}</div>`:`<div style="font-size:12px;color:var(--muted2);font-style:italic">No route yet — tap ⚙ Edit to set your departure city</div>`}
     <div id="route-edit-form-${c.id}" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr2)">
       <div>
         <label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Departing From</label>
@@ -8155,15 +8151,6 @@ function rAdvOverviewTab(c){
     <span style="font-size:12px;color:var(--muted2);font-style:italic">Add trip notes, goals, vibes…</span>
     <span style="font-size:11px;color:var(--muted2)">+ Add →</span>
   </div>`}
-
-  <!-- ── Who's Going ─────────────────────────── -->
-  <div style="background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:var(--shadow)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${travelers.length?'10':'0'}px">
-      <div style="font-size:10px;font-weight:700;color:#4A789E;text-transform:uppercase;letter-spacing:.7px">Who's Going</div>
-      <button onclick="addAdvTraveler('${c.id}')" style="font-size:11px;color:var(--muted2);background:none;border:1px solid var(--bdr2);border-radius:100px;padding:3px 11px;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.color='var(--text)';this.style.borderColor='var(--bdr)'" onmouseout="this.style.color='var(--muted2)';this.style.borderColor='var(--bdr2)'">+ Add</button>
-    </div>
-    ${travelers.length?`<div style="display:flex;flex-wrap:wrap;gap:6px">${travelers.map((t,i)=>`<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(74,120,158,.07);border:1px solid rgba(74,120,158,.2);border-radius:20px;padding:5px 12px 5px 7px;font-size:12px;font-weight:500;color:var(--text)"><span style="width:20px;height:20px;border-radius:50%;background:#4A789E;color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${t.charAt(0).toUpperCase()}</span>${t}<button onclick="removeAdvTraveler('${c.id}',${i})" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted2);padding:0 0 0 4px;line-height:1" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button></span>`).join('')}</div>`:`<div style="font-size:12px;color:var(--muted2);font-style:italic">Solo trip — or add who's coming along</div>`}
-  </div>
 
   <!-- ── Budget + Gear snippet ──────────────── -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
