@@ -5763,8 +5763,9 @@ function rTripPlansTab(t){
       </div>
       <div data-day-drop-zone data-record-type="trip" data-record-id="${t.id}" data-day-idx="${di}"
         ondragover="pdOver(event)" ondragenter="pdZoneEnter(event)" ondragleave="pdZoneLeave(event)" ondrop="pdZoneDrop(event)">
-        ${(day.stops||[]).length?(day.stops||[]).map((s,si)=>_rPlanStop('trip',t.id,di,si,s,accent)).join(''):`<div style="font-size:11px;color:var(--muted2);padding:5px 0;pointer-events:none">No stops yet — add meals, sights, rest stops…</div>`}
+        ${(day.stops||[]).length?(day.stops||[]).map((s,si)=>_rPlanStop('trip',t.id,di,si,s,accent)).join(''):`<div style="font-size:11px;color:var(--muted2);padding:6px 0;cursor:pointer;opacity:.7" onclick="openStop('${t.id}',${di})">No stops yet — tap to add a meal, sight, rest stop…</div>`}
       </div>
+      <button class="add-stop" onclick="openStop('${t.id}',${di})" style="margin-top:5px">+ Add Stop</button>
       <textarea class="ft" style="margin-top:6px;min-height:34px;font-size:12px" placeholder="Notes for this day…" onblur="saveDayNotes('${t.id}',${di},this.value)">${day.notes||''}</textarea>
     </div>`;
   });
@@ -8107,7 +8108,7 @@ function rAdvBudgetTab(c){
         <div style="font-size:10px;color:var(--muted2);margin-top:2px">Fill-ups (~18 gal)</div>
       </div>
       <div style="background:var(--card2);border-radius:7px;padding:8px 6px">
-        <div id="fuel-est-${c.id}" style="font-size:15px;font-weight:700;color:var(--green3)">${c.fuelPrice?'$'+(effectiveMiles/parseFloat(rig.mpg)*parseFloat(c.fuelPrice)).toFixed(0):'—'}</div>
+        <div id="fuel-est-${c.id}" style="font-size:${c.fuelPrice?'15':'12'}px;font-weight:700;color:${c.fuelPrice?'var(--green3)':'var(--muted2)'}">${c.fuelPrice?'$'+(effectiveMiles/parseFloat(rig.mpg)*parseFloat(c.fuelPrice)).toFixed(0):'↑ add price'}</div>
         <div style="font-size:10px;color:var(--muted2);margin-top:2px">Est. fuel cost</div>
       </div>
     </div>
@@ -8163,7 +8164,7 @@ function updateFuelCalc(cid){
   if(manualMiles&&!calcMiles)c.estTripMiles=manualMiles;
   localStorage.setItem('wf_camps',JSON.stringify(D.camps));
   const estEl=document.getElementById('fuel-est-'+cid);
-  if(estEl)estEl.textContent=price&&mpg&&miles?'$'+(miles/mpg*price).toFixed(0):'—';
+  if(estEl){const hasVal=price&&mpg&&miles;estEl.textContent=hasVal?'$'+(miles/mpg*price).toFixed(0):'↑ add price';estEl.style.fontSize=hasVal?'15px':'12px';estEl.style.color=hasVal?'var(--green3)':'var(--muted2)';}
   if(c.includeFuelInBudget){window._campDTab='budget';openCampD(cid);}
 }
 function toggleFuelInBudget(cid,val){
@@ -8446,8 +8447,9 @@ function rAdvDailyTab(c){
       </div>
       <div data-day-drop-zone data-record-type="camp" data-record-id="${c.id}" data-day-idx="${di}"
         ondragover="pdOver(event)" ondragenter="pdZoneEnter(event)" ondragleave="pdZoneLeave(event)" ondrop="pdZoneDrop(event)">
-        ${(day.stops||[]).length?(day.stops||[]).map((s,si)=>_rPlanStop('camp',c.id,di,si,s,accent)).join(''):`<div style="font-size:11px;color:var(--muted2);padding:5px 0;pointer-events:none">No stops yet — add meals, sights, rest stops…</div>`}
+        ${(day.stops||[]).length?(day.stops||[]).map((s,si)=>_rPlanStop('camp',c.id,di,si,s,accent)).join(''):`<div style="font-size:11px;color:var(--muted2);padding:6px 0;cursor:pointer;opacity:.7" onclick="openAdvItinStop('${c.id}',${di})">No stops yet — tap to add a meal, sight, rest stop…</div>`}
       </div>
+      <button class="add-stop" onclick="openAdvItinStop('${c.id}',${di})" style="margin-top:5px">+ Add Stop</button>
       <textarea class="ft" style="margin-top:6px;min-height:34px;font-size:12px" placeholder="Notes for this day…" onblur="setAdvItinDayNotes('${c.id}',${di},this.value)">${day.notes||''}</textarea>
     </div>`;
   });
