@@ -5749,12 +5749,16 @@ function rTripPlansTab(t){
   let html=`<div style="--plans-accent:${accent}">${_routeBanner}`;
   scheduled.forEach((day,schIdx)=>{
     const di=itin.indexOf(day);
+    const dayStops=day.stops||[];
+    const dayMi=dayStops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+    const daySecs=dayStops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0);
+    const dayMiLabel=dayMi?` <span style="font-size:10px;font-weight:400;color:var(--muted2)">· ${Math.round(dayMi)} mi${daySecs?' · '+fDrive(daySecs):''}</span>`:'';
     const wk=(scheduled.length>=8&&schIdx%7===0)?`<div style="display:flex;align-items:center;gap:8px;margin:${schIdx>0?'16px':'-2px'} 0 6px"><div style="flex:1;height:1px;background:var(--bdr)"></div><span style="font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap">Week ${Math.floor(schIdx/7)+1}</span><div style="flex:1;height:1px;background:var(--bdr)"></div></div>`:'';
     html+=`${wk}<div style="margin-bottom:10px" data-drag-day data-record-type="trip" data-record-id="${t.id}" data-day-idx="${di}" draggable="true"
       ondragstart="pdDayStart(event)" ondragover="pdOver(event)" ondragenter="pdDayEnter(event)" ondragleave="pdDayLeave(event)" ondragend="pdDayEnd(event)" ondrop="pdDayDrop(event)">
       <div class="plans-day-hdr" onmouseenter="this.classList.add('acts-vis')" onmouseleave="this.classList.remove('acts-vis')" ontouchstart="this.classList.add('acts-vis')" ontouchend="setTimeout(()=>this.classList.remove('acts-vis'),2000)">
         <span class="day-drag-handle" title="Drag to reorder day" ontouchstart="ptStart(event,'trip','${t.id}',${di})" ontouchmove="ptMove(event)" ontouchend="ptEnd(event)" ontouchcancel="ptCancel(event)">⠿</span>
-        <div class="plans-day-title">Day ${schIdx+1}${day.date?' — '+fd(day.date):''}</div>
+        <div class="plans-day-title">Day ${schIdx+1}${day.date?' — '+fd(day.date):''}${dayMiLabel}</div>
         <div class="plans-day-acts">
           <label class="plans-day-act" title="Edit date" style="cursor:pointer">✏️<input type="date" value="${day.date}" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;font-size:0;color-scheme:dark light" onchange="setDayDate('${t.id}',${di},this.value)"/></label>
           <button class="plans-day-act" title="Add stop" onclick="event.stopPropagation();openStop('${t.id}',${di})">＋</button>
@@ -8110,7 +8114,7 @@ function toggleRoundTrip(cid,isRound){
   localStorage.setItem('wf_camps',JSON.stringify(D.camps));
   const row=document.getElementById('end-loc-row-'+cid);
   if(row)row.style.display=isRound?'none':'';
-  window._campDTab='overview';openCampD(cid);
+  openCampD(cid);
 }
 function saveAdvRig(cid,field,value){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
@@ -8976,7 +8980,7 @@ async function recalcItineraryDriving(isAdv,id){
     const lc=parseStopCoords(lastSt);
     if(lc){try{const r=await getRouteDrivingInfo(lc.lat,lc.lng,parseFloat(obj.endLat),parseFloat(obj.endLng),mapsKey);obj.endMiles=parseFloat(r.miles.toFixed(1));obj.endSecs=r.secs;obj.endMilesEst=false;updated++;}catch(e){console.warn('[end-leg]',e.message);}}
   }
-  if(isAdv){localStorage.setItem('wf_camps',JSON.stringify(D.camps));window._campDTab='budget';openCampD(id);}
+  if(isAdv){localStorage.setItem('wf_camps',JSON.stringify(D.camps));openCampD(id);}
   else{save('trips',D.trips);openTripD(id);}
   toast(updated>0?`✅ ${updated} driving distance${updated!==1?'s':''} updated!`:'⚠️ Calculation failed — check Maps API key');
 }
