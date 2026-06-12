@@ -261,6 +261,14 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .wp-type-btn{font-size:13px;padding:6px 12px;border-radius:100px;border:1px solid var(--bdr);background:var(--card2);color:var(--text2);cursor:pointer;transition:background .15s,color .15s,border-color .15s;min-height:36px}
 .wp-type-btn[data-active="1"]{background:var(--amber)!important;color:#fff!important;border-color:var(--amber)!important}
 .wp-type-btn{white-space:nowrap;flex-shrink:0}
+.st-tab-btn{flex:1;padding:8px 10px;border:none;background:var(--bg2);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:background .15s,color .15s;font-family:inherit;letter-spacing:.2px}
+.st-tab-btn.on{background:var(--green);color:#fff}
+.st-tab-btn:first-child{border-radius:6px 0 0 6px}
+.st-tab-btn:last-child{border-radius:0 6px 6px 0}
+#st-myplaces-list{border-radius:7px;overflow:hidden}
+.st-myplace-row{padding:10px 13px;cursor:pointer;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:10px;transition:background .1s}
+.st-myplace-row:last-child{border-bottom:none}
+.st-myplace-row:hover{background:var(--bg2)}
 #wp-type-pills{scrollbar-width:none}
 #wp-type-pills::-webkit-scrollbar{display:none}
 .add-stop{display:flex;align-items:center;gap:6px;background:none;border:1px dashed rgba(239,159,39,.35);border-radius:7px;padding:10px 14px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .15s;width:100%;margin-top:8px;min-height:48px}
@@ -1193,7 +1201,9 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
   <div class="modal" style="width:500px">
     <button class="mcl" onclick="closeM('m-place')">✕</button>
     <h2 id="pm-title">Add Place</h2>
-    <div class="fg"><label class="fl">Place Name *</label><input class="fi" id="p-name" placeholder="e.g. Zion National Park, Trattoria Sostanza…"/></div>
+    <div class="fg" style="position:relative"><label class="fl">Place Name *</label><input class="fi" id="p-name" placeholder="🔍  Search or type a place name…" autocomplete="off" oninput="pNameInput(this.value)"/>
+      <div id="p-name-suggestions" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:9999;background:var(--card);border:1px solid var(--bdr2);border-top:none;border-radius:0 0 8px 8px;box-shadow:var(--shadowm);max-height:220px;overflow-y:auto"></div>
+    </div>
     <div class="fg" style="margin-bottom:10px">
       <label class="fl">Category</label>
       <div id="p-cat-btns" style="display:flex;flex-wrap:wrap;gap:6px">
@@ -1220,8 +1230,11 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
       <div class="fg"><label class="fl">State / Province</label><input class="fi" id="p-state" placeholder="Utah"/></div>
     </div>
     <div class="fg"><label class="fl">City / Area <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(optional)</span></label><input class="fi" id="p-region" placeholder="e.g. Zion Canyon, Oltrarno District"/></div>
+    <div class="fg" style="margin-bottom:10px"><label class="fl">Add to Trip <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(optional)</span></label>
+      <select class="fs" id="p-trip"><option value="">— No trip —</option></select>
+    </div>
     <button type="button" id="p-more-btn" onclick="togglePlaceMore()" style="background:none;border:none;color:var(--muted2);font-size:11px;cursor:pointer;padding:4px 0 8px;display:flex;align-items:center;gap:5px;font-family:inherit;width:100%">
-      <span id="p-more-arrow" style="font-size:9px;display:inline-block;transition:transform .15s">▶</span> More details (rating, notes, tags, trip)
+      <span id="p-more-arrow" style="font-size:9px;display:inline-block;transition:transform .15s">▶</span> More details (rating, notes, tags)
     </button>
     <div id="p-more-fields" style="display:none">
       <div class="fr">
@@ -1246,9 +1259,6 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
             <option value="own">✨ We found it</option>
           </select>
         </div>
-      </div>
-      <div class="fg" style="margin-bottom:0"><label class="fl">Link to Trip <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(optional)</span></label>
-        <select class="fs" id="p-trip"><option value="">— No trip —</option></select>
       </div>
     </div>
     <div class="fa"><button class="btn-s" onclick="closeM('m-place')">Cancel</button><button class="btn-p" onclick="savePlace()">Save Place</button></div>
@@ -1376,8 +1386,16 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
         <span id="st-place-chip-name" style="font-weight:600;font-size:13px;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
         <button type="button" onclick="_stopClearSearch()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:14px;padding:2px 4px;line-height:1;flex-shrink:0" title="Clear and search again">✕</button>
       </div>
+      <div id="st-tab-bar" style="display:flex;border-radius:7px;overflow:hidden;border:1px solid var(--bdr2);margin-bottom:8px">
+        <button type="button" id="st-tab-search" class="st-tab-btn on" onclick="switchStopTab('search')">🌐 Search</button>
+        <button type="button" id="st-tab-myplaces" class="st-tab-btn" onclick="switchStopTab('myplaces')">📍 My Places</button>
+      </div>
       <div id="st-search-input-wrap">
-        <input class="fi" id="st-place-search" placeholder="🔍  Search for a place…" autocomplete="off"/>
+        <input class="fi" id="st-place-search" placeholder="🔍  Search Google for a place…" autocomplete="off"/>
+      </div>
+      <div id="st-myplaces-wrap" style="display:none">
+        <input class="fi" id="st-myplaces-filter" placeholder="Filter my saved places…" oninput="filterStopMyPlaces(this.value)" autocomplete="off"/>
+        <div id="st-myplaces-list" style="max-height:210px;overflow-y:auto;margin-top:6px;border:1px solid var(--bdr);border-radius:7px;overflow:hidden"></div>
       </div>
       <div style="text-align:right;margin-top:5px">
         <button type="button" onclick="toggleStopManual(true)" style="background:none;border:none;color:var(--muted2);font-size:11px;cursor:pointer;padding:0;font-family:inherit;text-decoration:underline">Enter manually</button>
@@ -3831,6 +3849,89 @@ function togglePlaceMore(){
   f.style.display=open?'none':'block';
   if(a)a.style.transform=open?'':'rotate(90deg)';
 }
+// Place modal autocomplete
+let _placeAutoSess=null;
+function pNameInput(val){
+  const sug=document.getElementById('p-name-suggestions');
+  if(!sug)return;
+  if(!val||val.length<2){sug.style.display='none';return;}
+  const key=(D.settings.mapsApiKey||'').trim();
+  if(!key||!window.google?.maps?.places){sug.style.display='none';return;}
+  if(!_placeAutoSess)_placeAutoSess=new google.maps.places.AutocompleteSessionToken();
+  const svc=new google.maps.places.AutocompleteService();
+  svc.getPlacePredictions({input:val,sessionToken:_placeAutoSess},(preds,status)=>{
+    if(status!==google.maps.places.PlacesServiceStatus.OK||!preds){sug.style.display='none';return;}
+    sug.innerHTML=preds.slice(0,5).map(p=>`<div class="p-name-sug-item" data-plid="${p.place_id}" data-desc="${(p.description||'').replace(/"/g,'&quot;')}" onclick="_pSugClick(this)" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''" style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--bdr)"><span style="font-weight:600">${p.structured_formatting?.main_text||p.description}</span><span style="color:var(--muted);font-size:11px;margin-left:6px">${p.structured_formatting?.secondary_text||''}</span></div>`).join('');
+    sug.style.display='block';
+  });
+}
+function _pSugClick(el){pNamePick(el.dataset.plid,el.dataset.desc);}
+function pNamePick(placeId,desc){
+  const sug=document.getElementById('p-name-suggestions');
+  if(sug)sug.style.display='none';
+  const nameEl=document.getElementById('p-name');
+  const key=(D.settings.mapsApiKey||'').trim();
+  if(!window.google?.maps?.places||!key){if(nameEl)nameEl.value=(desc||'').split(',')[0];return;}
+  const dummy=document.createElement('div');document.body.appendChild(dummy);
+  const svc=new google.maps.places.PlacesService(dummy);
+  svc.getDetails({placeId,fields:['name','address_components'],sessionToken:_placeAutoSess},(place,status)=>{
+    dummy.remove();_placeAutoSess=null;
+    if(status!==google.maps.places.PlacesServiceStatus.OK||!place){if(nameEl)nameEl.value=(desc||'').split(',')[0];return;}
+    if(nameEl)nameEl.value=place.name||(desc||'').split(',')[0];
+    const comps=place.address_components||[];
+    const get=type=>(comps.find(c=>c.types.includes(type))||{}).long_name||'';
+    const country=get('country');const state=get('administrative_area_level_1');
+    const city=get('locality')||get('sublocality')||get('administrative_area_level_2');
+    const ce=document.getElementById('p-country');if(country&&ce)ce.value=country;
+    const se=document.getElementById('p-state');if(state&&se)se.value=state;
+    const re=document.getElementById('p-region');if(city&&re)re.value=city;
+  });
+}
+// Stop modal — My Places tab
+function switchStopTab(tab){
+  const searchWrap=document.getElementById('st-search-input-wrap');
+  const myWrap=document.getElementById('st-myplaces-wrap');
+  const tabSrch=document.getElementById('st-tab-search');
+  const tabMy=document.getElementById('st-tab-myplaces');
+  if(tab==='myplaces'){
+    if(searchWrap)searchWrap.style.display='none';
+    if(myWrap)myWrap.style.display='block';
+    if(tabSrch)tabSrch.classList.remove('on');
+    if(tabMy)tabMy.classList.add('on');
+    filterStopMyPlaces('');
+    setTimeout(()=>document.getElementById('st-myplaces-filter')?.focus(),80);
+  } else {
+    if(searchWrap)searchWrap.style.display='block';
+    if(myWrap)myWrap.style.display='none';
+    if(tabSrch)tabSrch.classList.add('on');
+    if(tabMy)tabMy.classList.remove('on');
+  }
+}
+function filterStopMyPlaces(q){
+  const list=document.getElementById('st-myplaces-list');
+  if(!list)return;
+  const places=(D.places||[]).filter(p=>p.name);
+  const lq=(q||'').toLowerCase().trim();
+  const filtered=lq?places.filter(p=>(p.name||'').toLowerCase().includes(lq)||(p.country||'').toLowerCase().includes(lq)||(p.region||'').toLowerCase().includes(lq)||(p.usState||'').toLowerCase().includes(lq)):places;
+  const CAT_ICONS={outdoors:'🥾','food-drink':'🍽️',sights:'🏛️',stay:'🛏️',shopping:'🛍️',transit:'🚗',other:'📍'};
+  const STATUS_DOT={visited:'✅',want:'⭐',saved:'💾',planned:'📋'};
+  if(!filtered.length){list.innerHTML=`<div style="color:var(--muted);font-size:12px;padding:14px;text-align:center">${lq?'No matches':'No saved places yet'}</div>`;return;}
+  list.innerHTML=filtered.slice(0,40).map(p=>`<div class="st-myplace-row" onclick="_stopApplyMyPlace('${p.id}')"><span style="font-size:17px;flex-shrink:0">${CAT_ICONS[p.category]||'📍'}</span><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div><div style="font-size:11px;color:var(--muted)">${[p.region,p.usState,p.country].filter(Boolean).join(', ')||'—'}</div></div><span style="font-size:12px;flex-shrink:0">${STATUS_DOT[p.status]||''}</span></div>`).join('');
+}
+function _stopApplyMyPlace(placeId){
+  const p=(D.places||[]).find(x=>x.id===placeId);
+  if(!p)return;
+  const CAT_TO_TYPE={outdoors:'park','food-drink':'food',sights:'sight',stay:'sleep',shopping:'other',transit:'drive',other:'other'};
+  const addrStr=[p.region,p.usState,p.country].filter(Boolean).join(', ');
+  _stopApplyPlace({name:p.name,address:addrStr,mapsUrl:'',lat:null,lng:null,types:[]});
+  const plEl=document.getElementById('st-place');
+  if(plEl){if(!plEl.querySelector(`option[value="${p.id}"]`)){const o=document.createElement('option');o.value=p.id;o.textContent=p.name;plEl.appendChild(o);}plEl.value=p.id;}
+  const tabBar=document.getElementById('st-tab-bar');
+  const myWrap=document.getElementById('st-myplaces-wrap');
+  if(tabBar)tabBar.style.display='none';
+  if(myWrap)myWrap.style.display='none';
+  _buildWpTypePills(CAT_TO_TYPE[p.category]||'other');
+}
 function togglePCard(id){
   const el=document.getElementById('pc-'+id);
   if(el)el.classList.toggle('expanded');
@@ -3866,7 +3967,7 @@ function openPlace(id){
   document.getElementById('p-rating').value=p?.rating||'';
   document.getElementById('p-visit-date').value=p?.visitDate||'';
   // If editing with optional data, open the section
-  if(p&&(p.notes||p.rating||p.visitDate||(p.tags||[]).length||p.source||((p.tripIds||[]).length))){
+  if(p&&(p.notes||p.rating||p.visitDate||(p.tags||[]).length||p.source)){
     if(mf)mf.style.display='block';if(ma)ma.style.transform='rotate(90deg)';
   }
   const allTags=[...new Set(D.places.flatMap(x=>x.tags||[]))].sort();
@@ -5084,6 +5185,15 @@ function _openStopModal(isAdv,tid,cid,di,si,existing){
     if(chip)chip.style.display='none';
     if(inputWrap)inputWrap.style.display='';
     if(searchInput)searchInput.value='';
+    // Reset to search tab
+    const tabBar=document.getElementById('st-tab-bar');
+    const myWrap=document.getElementById('st-myplaces-wrap');
+    const tabSrch=document.getElementById('st-tab-search');
+    const tabMy=document.getElementById('st-tab-myplaces');
+    if(tabBar)tabBar.style.display='flex';
+    if(myWrap)myWrap.style.display='none';
+    if(tabSrch){tabSrch.classList.add('on');}
+    if(tabMy){tabMy.classList.remove('on');}
     const key=(D.settings.mapsApiKey||'').trim();
     if(key){
       if(_gMapsLoaded)_initStopAutocomplete();
@@ -8192,8 +8302,16 @@ function _stopClearSearch(){
   const chip=document.getElementById('st-place-chip');
   const inputWrap=document.getElementById('st-search-input-wrap');
   const searchInput=document.getElementById('st-place-search');
+  const tabBar=document.getElementById('st-tab-bar');
+  const myWrap=document.getElementById('st-myplaces-wrap');
+  const tabSrch=document.getElementById('st-tab-search');
+  const tabMy=document.getElementById('st-tab-myplaces');
   if(chip)chip.style.display='none';
+  if(tabBar)tabBar.style.display='flex';
   if(inputWrap)inputWrap.style.display='';
+  if(myWrap)myWrap.style.display='none';
+  if(tabSrch)tabSrch.classList.add('on');
+  if(tabMy)tabMy.classList.remove('on');
   if(searchInput){searchInput.value='';searchInput.focus();}
   _buildWpTypePills('other');
   if(_gMapsLoaded)_initStopAutocomplete();
