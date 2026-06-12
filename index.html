@@ -7701,7 +7701,7 @@ function openCampD(id){
   if(tab==='overview') tabBody=rAdvOverviewTab(c);
   else if(tab==='stops') tabBody=rAdvStopsTab(c);
   else if(tab==='daily') tabBody=rAdvDailyTab(c);
-  else if(tab==='budget') tabBody=rAdvBudgetTab(c);
+  else if(tab==='budget'){tabBody=rAdvBudgetTab(c);if(c.startLocation&&!c.startLat)setTimeout(()=>geocodeAndSaveStart(id),80);}
   else if(tab==='gear') tabBody=rAdvGearTab(c);
   else if(tab==='links') tabBody=rAdvLinksTab(c);
   else tabBody=rAdvSummaryTab(c);
@@ -8238,10 +8238,10 @@ function rAdvBudgetTab(c){
     <div style="margin-top:8px;padding:8px 10px;background:rgba(200,144,30,.07);border-radius:6px;border-left:3px solid var(--amber)">
       <div style="font-size:11px;color:var(--text2);line-height:1.5">⛽ <strong>Before you leave:</strong> Top off the tank. At ${rig.mpg} MPG you'll need ~${(effectiveMiles/parseFloat(rig.mpg)).toFixed(0)} gal total — plan to fill up ${Math.ceil(effectiveMiles/parseFloat(rig.mpg)/18)===1?'once on the road':'every ~'+(Math.round(parseFloat(rig.mpg)*18))+' miles'}.</div>
     </div>`:
-    `<div style="margin-top:10px;font-size:11px;color:var(--muted2);padding:4px 0">${!c.startLocation&&!routeMiles?'Set your departure city above, then enter MPG and gas price to calculate fuel cost.':!rig.mpg?'Enter your MPG above to see gallons and cost.':'Enter gas price above to calculate fuel cost.'}</div>`}
+    `<div style="margin-top:10px;font-size:11px;color:var(--muted2);padding:4px 0">${!c.startLocation&&!routeMiles?'Set your departure city above, then enter MPG and gas price to calculate fuel cost.':!rig.mpg?'Enter your MPG above to see gallons and cost.':!defaultGasPrice?'Enter gas price above to calculate fuel cost.':'📍 Route miles not calculated yet. Click Recalc (requires Maps API key in Settings), or enter total trip miles manually below.'}</div>`}
     ${!routeMiles?`<div style="margin-top:8px">
-      <label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Manual Miles Override</label>
-      <input class="fi" style="margin-top:3px;opacity:.7" type="number" id="est-miles-${c.id}" value="${c.estTripMiles||''}" placeholder="Enter total trip miles manually" oninput="updateFuelCalc('${c.id}')"/>
+      <label style="font-size:10px;font-weight:600;color:var(--amber);text-transform:uppercase;letter-spacing:.5px">Total Trip Miles (enter manually)</label>
+      <input class="fi" style="margin-top:3px;border-color:rgba(200,144,30,.4)" type="number" id="est-miles-${c.id}" value="${c.estTripMiles||''}" placeholder="e.g. 520 — bypasses GPS, calculates instantly" oninput="updateFuelCalc('${c.id}')" onblur="saveAdvField('${c.id}','estTripMiles',parseFloat(this.value)||0)"/>
     </div>`:''}
     <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr2);display:flex;align-items:center;gap:8px">
       <label style="display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none">
@@ -8291,7 +8291,7 @@ function updateFuelCalc(cid){
   // FIX: include outbound+return even when 0 stop-to-stop miles (single destination trip)
   const miles=(startMi+calcMiles+endMi)||manualMiles;
   if(price){c.fuelPrice=price;if(!D.settings)D.settings={};D.settings.gasPrice=price;localStorage.setItem(K.settings,JSON.stringify(D.settings));}
-  if(manualMiles&&!calcMiles&&!startMi&&!endMi)c.estTripMiles=manualMiles;
+  if(manualMiles)c.estTripMiles=manualMiles;
   localStorage.setItem('wf_camps',JSON.stringify(D.camps));
   const estEl=document.getElementById('fuel-est-'+cid);
   if(estEl){const hasVal=price&&mpg&&miles;estEl.textContent=hasVal?'$'+(miles/mpg*price).toFixed(0):'↑ add price';estEl.style.fontSize=hasVal?'16px':'12px';estEl.style.color=hasVal?'var(--green3)':'var(--muted2)';}
