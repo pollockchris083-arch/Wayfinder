@@ -941,6 +941,7 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
       <button class="ni ni-sub" data-p="trips-getaway" data-tf="getaway" onclick="goTrips('getaway')"><span class="ico">🌆</span>Getaways</button>
       <button class="ni ni-sub" data-p="trips-intl" data-tf="international" onclick="goTrips('international')"><span class="ico">🌍</span>International</button>
       <button class="ni ni-sub" data-p="trips-event" data-tf="event" onclick="goTrips('event')"><span class="ico">🎪</span>Events</button>
+      <button class="ni ni-sub" data-p="trips-solo" data-tf="solo" onclick="goTrips('solo')"><span class="ico">🧍</span>Solo</button>
       <button class="ni ni-sub" data-p="work" onclick="go('work')"><span class="ico">💼</span>Work<span class="nb" id="b-work">0</span></button>
       <button class="ni ni-sub" data-p="camp" onclick="go('camp')" style="opacity:.65"><span class="ico">📍</span>Saved Spots<span class="nb" id="b-camp">0</span></button>
     </div>
@@ -1052,17 +1053,7 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
 
     <div class="page" id="page-trips">
       <div id="trips-lv">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:13px;flex-wrap:wrap">
-          <button class="fc on" data-ttf="all" onclick="tripTypeFlt(this,'all')">All</button>
-          <button class="fc" data-ttf="road_trip" onclick="tripTypeFlt(this,'road_trip')">🚗 Road Trips</button>
-          <button class="fc" data-ttf="camping" onclick="tripTypeFlt(this,'camping')">🏕️ Camping</button>
-          <button class="fc" data-ttf="adventure" onclick="tripTypeFlt(this,'adventure')">🎒 Adventures</button>
-          <button class="fc" data-ttf="getaway" onclick="tripTypeFlt(this,'getaway')">🌆 Getaways</button>
-          <button class="fc" data-ttf="international" onclick="tripTypeFlt(this,'international')">🌍 International</button>
-          <button class="fc" data-ttf="event" onclick="tripTypeFlt(this,'event')">🎪 Events</button>
-          <button class="fc" data-ttf="solo" onclick="tripTypeFlt(this,'solo')">🧍 Solo</button>
-          <div style="flex:1"></div>
-          <button class="tb-btn" style="background:var(--card2);border-color:var(--bdr);color:var(--muted);font-size:11px;padding:5px 10px" onclick="go('camp')" title="Saved Spots library">📍 Spots</button>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:13px;flex-wrap:wrap;justify-content:flex-end">
           <button class="tb-btn" style="background:var(--gold);font-size:11px;padding:5px 10px;gap:4px" onclick="openImport()">📄 Import</button>
         </div>
         <div id="trips-grid"></div>
@@ -1153,6 +1144,14 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
             <div style="padding-top:14px;border-top:1px solid var(--bdr);display:flex;align-items:center;gap:12px;margin-top:4px">
               <button id="s-profile-save" class="btn-p" onclick="saveProfileSettings()" style="padding:9px 22px">Save Changes</button>
               <span id="s-profile-msg" style="font-size:12px;display:none"></span>
+            </div>
+          </div>
+        </div>
+        <div class="ss"><h3>Appearance</h3>
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div><div style="font-size:12px;font-weight:600;color:var(--text)">Dark Mode</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Switch between light and dark theme</div></div>
+              <button id="s-dark-btn" onclick="toggleDark();loadSettings()" style="background:var(--card3);border:1px solid var(--bdr2);border-radius:100px;padding:4px 14px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .2s">OFF</button>
             </div>
           </div>
         </div>
@@ -10351,6 +10350,7 @@ function saveProfileSettings(){
 function loadSettings(){D=load();const s=D.settings;document.getElementById('s-name').value=s.name||'';document.getElementById('s-partner').value=s.partner||'';document.getElementById('s-city').value=s.homeCity||'';document.getElementById('s-since').value=s.since||'';document.getElementById('s-apikey').value=s.apiKey||'';document.getElementById('s-maps-api-key').value=s.mapsApiKey||'';document.getElementById('s-google-client-id').value=s.googleClientId||'';document.getElementById('s-drive-folder').value=s.driveFolderId||'';document.getElementById('s-abroad-notes').value=s.abroadNotes||'';document.getElementById('pn').textContent=s.name||'You';document.getElementById('av').textContent=(s.name||'Y')[0].toUpperCase();const pl=document.getElementById('pl-partner');if(pl)pl.textContent=s.partner?'& '+s.partner:'';const wbtn=document.getElementById('s-work-stats-btn');if(wbtn){wbtn.textContent=s.workIncludeInStats?'ON':'OFF';wbtn.style.background=s.workIncludeInStats?'var(--green)':'var(--card3)';wbtn.style.color=s.workIncludeInStats?'#fff':'var(--text2)';}
 const advTBtn=document.getElementById('s-adv-trips-btn');if(advTBtn){const on=s.tripsShowAdventures!==false;advTBtn.textContent=on?'ON':'OFF';advTBtn.style.background=on?'var(--green)':'var(--card3)';advTBtn.style.color=on?'#fff':'var(--text2)';}
 const wkTBtn=document.getElementById('s-work-trips-btn');if(wkTBtn){wkTBtn.textContent=s.tripsShowWork?'ON':'OFF';wkTBtn.style.background=s.tripsShowWork?'var(--green)':'var(--card3)';wkTBtn.style.color=s.tripsShowWork?'#fff':'var(--text2)';}
+const darkBtn=document.getElementById('s-dark-btn');if(darkBtn){const on=document.body.classList.contains('dark');darkBtn.textContent=on?'ON':'OFF';darkBtn.style.background=on?'var(--green)':'var(--card3)';darkBtn.style.color=on?'#fff':'var(--text2)';}
 // Pre-warm Google Maps + Places library so it's ready before any modal opens
 const mk=(s.mapsApiKey||'').trim();if(mk&&!_gMapsLoaded&&!_gMapsLoading)loadGMapsAPI(mk).catch(()=>{});}
 function exportData(){const b=new Blob([JSON.stringify(load(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='wayfinder-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('📥 Exported!')}
@@ -11584,6 +11584,8 @@ function toggleDark(){
   localStorage.setItem('wf_dark',dark?'1':'');
   const btn=document.getElementById('dark-toggle');
   if(btn)btn.textContent=dark?'☀️':'🌙';
+  const sBtn=document.getElementById('s-dark-btn');
+  if(sBtn){sBtn.textContent=dark?'ON':'OFF';sBtn.style.background=dark?'var(--green)':'var(--card3)';sBtn.style.color=dark?'#fff':'var(--text2)';}
 }
 if(localStorage.getItem('wf_dark')==='1'){
   document.body.classList.add('dark');
