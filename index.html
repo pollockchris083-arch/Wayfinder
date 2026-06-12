@@ -8937,6 +8937,8 @@ async function recalcItineraryDriving(isAdv,id,silent=false){
   if(!obj)return;
   const mapsKey=(D.settings?.mapsApiKey||'').trim();
   if(!mapsKey){if(!silent){toast('⚠️ Add Maps API key in Settings first');go('settings');}return;}
+  // Ensure Maps JS API is loaded so DirectionsService is available
+  if(!window.google?.maps?.DirectionsService){try{await loadGMapsAPI(mapsKey);}catch(e){console.warn('[recalc] Maps JS load failed:',e.message);}}
   const itin=obj.itinerary||[];
   const flat=[];
   itin.forEach((day,di)=>(day.stops||[]).forEach((_,si)=>flat.push({di,si})));
@@ -8996,6 +8998,24 @@ async function recalcItineraryDriving(isAdv,id,silent=false){
   if(!silent)toast(updated>0?`✅ ${updated} driving distance${updated!==1?'s':''} updated!`:'⚠️ Calculation failed — check Maps API key');
 }
 async function getRouteDrivingInfo(lat1,lng1,lat2,lng2,mapsKey){
+  // Prefer google.maps.DirectionsService (already loaded with Maps JS API, no extra enablement needed)
+  if(window.google?.maps?.DirectionsService){
+    return new Promise((resolve,reject)=>{
+      new google.maps.DirectionsService().route({
+        origin:new google.maps.LatLng(lat1,lng1),
+        destination:new google.maps.LatLng(lat2,lng2),
+        travelMode:google.maps.TravelMode.DRIVING,
+      },(result,status)=>{
+        if(status==='OK'&&result?.routes?.[0]?.legs?.[0]){
+          const leg=result.routes[0].legs[0];
+          resolve({miles:leg.distance.value/1609.34,secs:leg.duration.value});
+        } else {
+          reject(new Error('DirectionsService '+status));
+        }
+      });
+    });
+  }
+  // Fallback: Routes API v2 (requires Routes API enabled in Google Cloud Console)
   const resp=await fetch('https://routes.googleapis.com/directions/v2:computeRoutes',{
     method:'POST',
     headers:{'Content-Type':'application/json','X-Goog-Api-Key':mapsKey,'X-Goog-FieldMask':'routes.distanceMeters,routes.duration'},
