@@ -252,6 +252,8 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .stop-row:last-child{border-bottom:none;padding-bottom:9px}
 .stop-row.wp-done .stopname{text-decoration:line-through;opacity:.45}
 .stop-row:hover{background:rgba(239,159,39,.04);box-shadow:inset 3px 0 0 rgba(239,159,39,.55)}
+.sn-add-btn{opacity:0;transition:opacity .15s}
+.stop-row:hover .sn-add-btn,.stop-row:focus-within .sn-add-btn{opacity:.55}
 .stopnum{width:18px;height:18px;border-radius:50%;background:var(--green);color:#fff;font-size:9px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
 .stopname{font-size:14px;font-weight:600;color:var(--text)}
 .stopnote{font-size:13px;color:var(--muted);margin-top:2px;line-height:1.4}
@@ -5716,7 +5718,7 @@ function _rPlanStop(rt,id,di,si,s,accentColor){
       ${rt==='trip'?`<input class="stopname-edit" value="${safeName}" onkeydown="if(event.key==='Enter'){plansInlineEditSave(this,'${id}',${di},${si})}else if(event.key==='Escape'){plansInlineEditCancel(this)}" onblur="plansInlineEditSave(this,'${id}',${di},${si})"/>`:''}
       ${s.address?`<div class="stopnote">📍 ${s.address}</div>`:''}
       ${s.milesPrev?`<div class="stopnote" style="color:var(--muted2)">🛣️ ${s.milesPrev} mi${s.driveSecs?' · '+fDrive(s.driveSecs):''}${s.milesEst?' (est.)':''}</div>`:''}
-      ${s.note?`<div class="stopnote">${s.note}</div>`:''}
+      <div style="margin-top:1px"><div id="sn-view-${id}-${di}-${si}" class="stopnote" style="${s.note?'cursor:pointer':'display:none'}" onclick="expandStopNote('${id}',${di},${si},'${rt}')">${s.note||''}</div><button id="sn-add-${id}-${di}-${si}" class="sn-add-btn" onclick="expandStopNote('${id}',${di},${si},'${rt}')" style="${s.note?'display:none;':''}font-size:10px;color:var(--muted2);background:none;border:none;cursor:pointer;padding:1px 0;font-family:inherit;line-height:1">📝 note</button><textarea id="sn-ta-${id}-${di}-${si}" style="display:none;width:100%;min-height:32px;resize:none;font-size:11px;color:var(--text2);background:var(--card2);border:1px solid var(--bdr);border-radius:5px;padding:5px 7px;font-family:inherit;line-height:1.4;margin-top:3px;box-sizing:border-box" placeholder="Note for this stop…" onblur="saveStopNoteInline(this,'${rt}','${id}',${di},${si})" onkeydown="if(event.key==='Escape')this.blur()">${s.note||''}</textarea></div>
     </div>
     <div style="display:flex;gap:2px;flex-shrink:0;align-items:center">
       ${s.mapsUrl?`<a href="${s.mapsUrl}" target="_blank" class="wp-nav" title="Navigate">🗺️</a>`:''}
@@ -5769,6 +5771,38 @@ function doMoveStopToDay(rt,id,fromDi,si,toDi){
   if(rt==='camp'){localStorage.setItem('wf_camps',JSON.stringify(D.camps));window._campDTab='daily';openCampD(id);}
   else{save('trips',D.trips);switchTripItinTab(id,'plans');}
   toast('↕ Stop moved');
+}
+function expandStopNote(id,di,si,rt){
+  const ta=document.getElementById('sn-ta-'+id+'-'+di+'-'+si);
+  if(!ta)return;
+  ta.style.display='block';
+  ta.dataset.orig=ta.value.trim();
+  requestAnimationFrame(()=>{ta.focus();const l=ta.value.length;ta.setSelectionRange(l,l);});
+}
+function saveStopNoteInline(ta,rt,id,di,si){
+  const val=ta.value.trim();
+  const orig=ta.dataset.orig||'';
+  ta.style.display='none';
+  if(val===orig)return;
+  D=load();
+  const obj=rt==='camp'?(D.camps||[]).find(x=>x.id===id):D.trips.find(x=>x.id===id);
+  if(!obj)return;
+  const stop=(obj.itinerary||[])[di]?.stops?.[si];
+  if(!stop)return;
+  stop.note=val;
+  if(rt==='camp')localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  else save('trips',D.trips);
+  ta.dataset.orig=val;
+  const viewEl=document.getElementById('sn-view-'+id+'-'+di+'-'+si);
+  const addBtn=document.getElementById('sn-add-'+id+'-'+di+'-'+si);
+  if(val){
+    if(viewEl){viewEl.textContent=val;viewEl.style.display='';}
+    if(addBtn)addBtn.style.display='none';
+  }else{
+    if(viewEl)viewEl.style.display='none';
+    if(addBtn){addBtn.style.display='';addBtn.style.removeProperty('display');}
+  }
+  if(val)toast('📝 Saved');
 }
 function rTripPlansTab(t){
   const itin=t.itinerary||[];
@@ -8705,17 +8739,23 @@ function rAdvDailyTab(c){
       <div style="font-size:10px;color:var(--muted2)">Start of trip${_advStartMi?' · '+Math.round(_advStartMi)+' mi to first stop':''}</div></div>
     </div>`;
   }
+  const DAY_COLORS=['#4A789E','#3E6644','#C8901E','#7B5A3E','#5B7A6A','#8B6B9B','#9B7420'];
   scheduled.forEach((day,schIdx)=>{
     const di=itin.indexOf(day);
+    const dc=DAY_COLORS[schIdx%DAY_COLORS.length];
     const dayStops=day.stops||[];
     const dayMi=dayStops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
     const daySecs=dayStops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0);
-    const dayMiLabel=dayMi?` <span style="font-size:10px;font-weight:400;color:var(--muted2)">· ${Math.round(dayMi)} mi${daySecs?' · '+fDrive(daySecs):''}</span>`:'';
     html+=`<div data-drag-day data-record-type="camp" data-record-id="${c.id}" data-day-idx="${di}" draggable="true"
-      ondragstart="pdDayStart(event)" ondragover="pdOver(event)" ondragenter="pdDayEnter(event)" ondragleave="pdDayLeave(event)" ondragend="pdDayEnd(event)" ondrop="pdDayDrop(event)" style="margin-bottom:10px">
-      <div class="plans-day-hdr" onmouseenter="this.classList.add('acts-vis')" onmouseleave="this.classList.remove('acts-vis')" ontouchstart="this.classList.add('acts-vis')" ontouchend="setTimeout(()=>this.classList.remove('acts-vis'),2000)">
+      ondragstart="pdDayStart(event)" ondragover="pdOver(event)" ondragenter="pdDayEnter(event)" ondragleave="pdDayLeave(event)" ondragend="pdDayEnd(event)" ondrop="pdDayDrop(event)"
+      style="--plans-accent:${dc};margin-bottom:14px;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.07);border-top:3px solid ${dc}">
+      <div class="plans-day-hdr" onmouseenter="this.classList.add('acts-vis')" onmouseleave="this.classList.remove('acts-vis')" ontouchstart="this.classList.add('acts-vis')" ontouchend="setTimeout(()=>this.classList.remove('acts-vis'),2000)" style="background:${dc}1a;border-bottom:1px solid ${dc}30;border-radius:0;padding:7px 8px 7px 4px;margin-bottom:0">
         <span class="day-drag-handle" title="Drag to reorder day" ontouchstart="ptStart(event,'camp','${c.id}',${di})" ontouchmove="ptMove(event)" ontouchend="ptEnd(event)" ontouchcancel="ptCancel(event)">⠿</span>
-        <div class="plans-day-title">Day ${schIdx+1}${day.date?' — '+fd(day.date):''}${dayMiLabel}</div>
+        <div style="display:flex;align-items:center;gap:7px;flex:1;min-width:0">
+          <span style="background:${dc};color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0;letter-spacing:.3px">Day ${schIdx+1}</span>
+          ${day.date?`<span style="font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fd(day.date)}</span>`:`<span style="font-size:11px;color:var(--muted2);font-style:italic">No date set</span>`}
+          ${dayMi?`<span style="font-size:10px;color:var(--muted2);white-space:nowrap;flex-shrink:0">${Math.round(dayMi)} mi${daySecs?' · '+fDrive(daySecs):''}</span>`:''}
+        </div>
         <div class="plans-day-acts">
           <label class="plans-day-act" title="Edit date" style="cursor:pointer">✏️<input type="date" value="${day.date}" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;font-size:0;color-scheme:dark light" onchange="advSetDayDate('${c.id}',${di},this.value)"/></label>
           <button class="plans-day-act" title="Add stop" onclick="event.stopPropagation();openAdvItinStop('${c.id}',${di})">＋</button>
@@ -8723,14 +8763,17 @@ function rAdvDailyTab(c){
         </div>
       </div>
       <div data-day-drop-zone data-record-type="camp" data-record-id="${c.id}" data-day-idx="${di}"
-        ondragover="pdOver(event)" ondragenter="pdZoneEnter(event)" ondragleave="pdZoneLeave(event)" ondrop="pdZoneDrop(event)">
-        ${dayStops.length?dayStops.map((s,si)=>_rPlanStop('camp',c.id,di,si,s,accent)).join(''):`<div style="font-size:11px;color:var(--muted2);padding:6px 0;cursor:pointer;opacity:.7" onclick="openAdvItinStop('${c.id}',${di})">No stops yet — tap to add a meal, sight, rest stop…</div>`}
+        ondragover="pdOver(event)" ondragenter="pdZoneEnter(event)" ondragleave="pdZoneLeave(event)" ondrop="pdZoneDrop(event)"
+        style="background:var(--card);padding:0 10px">
+        ${dayStops.length?dayStops.map((s,si)=>_rPlanStop('camp',c.id,di,si,s,dc)).join(''):`<div style="font-size:11px;color:var(--muted2);padding:12px 0 8px;cursor:pointer;text-align:center" onclick="openAdvItinStop('${c.id}',${di})">No stops yet — tap ＋ to add one</div>`}
       </div>
-      <button class="add-stop" onclick="openAdvItinStop('${c.id}',${di})" style="margin-top:5px">+ Add Stop</button>
-      ${day.notes
-        ?`<textarea class="ft" style="margin-top:6px;min-height:34px;font-size:12px" placeholder="Notes for this day…" onblur="setAdvItinDayNotes('${c.id}',${di},this.value)">${day.notes}</textarea>`
-        :`<div class="day-note-toggle" style="font-size:11px;color:var(--muted2);margin-top:5px;cursor:pointer;opacity:.6;padding:2px 0" onclick="expandDayNote(this,'${c.id}',${di})">📝 Add day notes</div><textarea class="ft" style="display:none;margin-top:6px;min-height:34px;font-size:12px" placeholder="Notes for this day…" onblur="setAdvItinDayNotes('${c.id}',${di},this.value)"></textarea>`
-      }
+      <div style="padding:6px 10px 10px;background:var(--card);border-top:1px solid var(--bdr2)">
+        <button class="add-stop" onclick="openAdvItinStop('${c.id}',${di})" style="margin-top:0;border-color:${dc}35" onmouseover="this.style.borderColor='${dc}';this.style.color='${dc}'" onmouseout="this.style.borderColor='${dc}35';this.style.color=''">+ Add Stop</button>
+        ${day.notes
+          ?`<textarea class="ft" style="margin-top:8px;min-height:34px;font-size:12px" placeholder="Notes for this day…" onblur="setAdvItinDayNotes('${c.id}',${di},this.value)">${day.notes}</textarea>`
+          :`<div class="day-note-toggle" style="font-size:11px;color:var(--muted2);margin-top:7px;cursor:pointer;opacity:.5;padding:2px 0;transition:opacity .15s" onclick="expandDayNote(this,'${c.id}',${di})" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.5'">📝 Add day notes</div><textarea class="ft" style="display:none;margin-top:6px;min-height:34px;font-size:12px" placeholder="Notes for this day…" onblur="setAdvItinDayNotes('${c.id}',${di},this.value)"></textarea>`
+        }
+      </div>
     </div>`;
   });
   // Arrival anchor — shows where the trip returns to
