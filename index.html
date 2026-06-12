@@ -970,6 +970,7 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
   .guide-hdr>div:last-child{width:100%}
 }
 
+@keyframes spin{to{transform:rotate(360deg)}}
 /* ── Trail system ── */
 .trail-diff{display:inline-flex;align-items:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 9px;border-radius:100px;flex-shrink:0;white-space:nowrap}
 .trail-diff.easy{background:rgba(62,130,68,.14);color:#2e6636}
@@ -1577,7 +1578,7 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
   <div class="modal" style="max-width:500px;max-height:88vh;display:flex;flex-direction:column">
     <button class="mcl" onclick="closeM('m-trail-search')">✕</button>
     <h2 style="margin-bottom:4px">🥾 Find a Trail</h2>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:14px">Search OpenStreetMap trail data or enter details manually.</p>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:14px">AI-powered trail lookup — search any trail worldwide by name.</p>
     <!-- Tab bar -->
     <div style="display:flex;gap:6px;margin-bottom:14px">
       <button class="ts-tab on" id="ts-tab-search" onclick="_tsTab('search')">🔍 Search</button>
@@ -1586,12 +1587,13 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
     <!-- Search panel -->
     <div id="ts-panel-search" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:0;min-height:0">
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
-        <input class="fi" id="ts-query" placeholder="Trail name (e.g. Mist Trail, PCT, Half Dome…)" onkeydown="if(event.key==='Enter')tsSearch()"/>
+        <input class="fi" id="ts-query" placeholder="Trail name — e.g. Winnemucca Lake, Half Dome, Angels Landing…" onkeydown="if(event.key==='Enter')tsSearch()" style="font-size:13px"/>
         <div style="display:flex;gap:7px">
-          <input class="fi" id="ts-location" placeholder="Near location (e.g. Yosemite, Denver, CO)" style="flex:1" onkeydown="if(event.key==='Enter')tsSearch()"/>
+          <input class="fi" id="ts-location" placeholder="Location / park — e.g. Hope Valley CA, Zion, Yosemite" style="flex:1;font-size:13px" onkeydown="if(event.key==='Enter')tsSearch()"/>
           <button class="pbtn" style="flex-shrink:0;font-size:11px;padding:0 10px;white-space:nowrap" onclick="tsNearMe()" title="Use my GPS location">📍 GPS</button>
         </div>
-        <button class="btn-p" style="width:100%" onclick="tsSearch()">Search Trails</button>
+        <button class="btn-p" style="width:100%;font-size:14px;font-weight:700;padding:11px" onclick="tsSearch()">✦ Find Trail with AI</button>
+        <div style="font-size:11px;color:var(--muted2);text-align:center;margin-top:-4px;line-height:1.4">Works for any named trail — US parks, forests, world trails</div>
       </div>
       <div id="ts-results" style="flex:1;overflow-y:auto;min-height:0"></div>
     </div>
@@ -6093,7 +6095,9 @@ function _rPlanStop(rt,id,di,si,s,accentColor){
     <div style="flex:1;min-width:0">
       <div class="stopname" ${inlineEdit}>${s.name}${lp?` <span style="font-size:9px;color:var(--green3);cursor:pointer" onclick="go('places');setTimeout(()=>openPlaceD('${lp.id}'),10)">↗</span>`:''}</div>
       ${rt==='trip'?`<input class="stopname-edit" value="${safeName}" onkeydown="if(event.key==='Enter'){plansInlineEditSave(this,'${id}',${di},${si})}else if(event.key==='Escape'){plansInlineEditCancel(this)}" onblur="plansInlineEditSave(this,'${id}',${di},${si})"/>`:''}
-      ${s.address?`<div class="stopnote">📍 ${s.address}</div>`:''}
+      ${s.type==='hike'&&s.trailData?`<div class="stopnote" style="color:var(--green3);font-weight:500">${[s.trailData.distanceMi?s.trailData.distanceMi+' mi':'',s.trailData.elevGainFt?'↑'+s.trailData.elevGainFt.toLocaleString()+'ft':'',s.trailData.difficulty?(s.trailData.difficulty.charAt(0).toUpperCase()+s.trailData.difficulty.slice(1)):'',s.trailData.estTimeHrs||''].filter(Boolean).join(' · ')}</div>`:''}
+      ${s.address&&s.type!=='hike'?`<div class="stopnote">📍 ${s.address}</div>`:''}
+      ${s.type==='hike'&&s.trailData?.startPoint?`<div class="stopnote">📍 ${s.trailData.startPoint}</div>`:''}
       ${s.milesPrev?`<div class="stopnote" style="color:var(--text2);font-weight:500">🛣️ ${s.milesPrev} mi${s.driveSecs?' · '+fDrive(s.driveSecs):''}${s.milesEst?' <span style="font-size:10px;opacity:.65">(est.)</span>':''}</div>`:''}
       <div style="margin-top:1px"><div id="sn-view-${id}-${di}-${si}" class="stopnote" style="${s.note?'cursor:pointer':'display:none'}" onclick="expandStopNote('${id}',${di},${si},'${rt}')">${s.note||''}</div><button id="sn-add-${id}-${di}-${si}" class="sn-add-btn" onclick="expandStopNote('${id}',${di},${si},'${rt}')" style="${s.note?'display:none;':''}font-size:10px;color:var(--muted2);background:none;border:none;cursor:pointer;padding:1px 0;font-family:inherit;line-height:1">📝 note</button><textarea id="sn-ta-${id}-${di}-${si}" style="display:none;width:100%;min-height:32px;resize:none;font-size:11px;color:var(--text2);background:var(--card2);border:1px solid var(--bdr);border-radius:5px;padding:5px 7px;font-family:inherit;line-height:1.4;margin-top:3px;box-sizing:border-box" placeholder="Note for this stop…" onblur="saveStopNoteInline(this,'${rt}','${id}',${di},${si})" onkeydown="if(event.key==='Escape')this.blur()">${s.note||''}</textarea></div>
     </div>
@@ -8171,90 +8175,93 @@ async function tsSearch(){
   const q=(document.getElementById('ts-query').value||'').trim();
   const loc=(document.getElementById('ts-location').value||'').trim();
   const res=document.getElementById('ts-results');
-  res.innerHTML='<div style="text-align:center;padding:24px 16px;font-size:12px;color:var(--muted2)">🔍 Searching OpenStreetMap trails…</div>';
+  if(!q&&!loc){
+    res.innerHTML='<div style="padding:20px 0;text-align:center;font-size:12px;color:var(--muted2)">Enter a trail name above to search.</div>';
+    return;
+  }
+  res.innerHTML=`<div style="text-align:center;padding:32px 16px">
+    <div style="font-size:28px;margin-bottom:10px;animation:spin 1.5s linear infinite;display:inline-block">⟳</div>
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">Looking up trail data…</div>
+    <div style="font-size:11px;color:var(--muted2)">AI is searching its trail database</div>
+  </div>`;
   try{
-    let lat=null,lng=null;
-    if(loc){
-      const gr=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(loc)}&format=json&limit=1`,
-        {headers:{'Accept-Language':'en','User-Agent':'WayfinderApp/1.0'}});
-      const gd=await gr.json();
-      if(gd[0]){lat=parseFloat(gd[0].lat);lng=parseFloat(gd[0].lon);}
-    }
-    if(!q&&lat===null){res.innerHTML='<div style="text-align:center;padding:24px 16px;font-size:12px;color:var(--muted2)">Enter a trail name or location to search.</div>';return;}
-    _tsLastResults=await _searchTrailsOSM(q,lat,lng);
+    _tsLastResults=await _searchTrailsAI(q,loc);
     if(!_tsLastResults.length){
-      res.innerHTML=`<div style="text-align:center;padding:24px 16px;font-size:12px;color:var(--muted2)">No trails found — try a broader search, different spelling, or <button onclick="_tsTab('manual')" style="background:none;border:none;color:var(--amber);cursor:pointer;font-family:inherit;font-size:12px;text-decoration:underline;padding:0">enter details manually</button>.</div>`;
+      res.innerHTML=`<div style="text-align:center;padding:28px 16px">
+        <div style="font-size:32px;margin-bottom:10px">🌲</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">Trail not found</div>
+        <div style="font-size:12px;color:var(--muted2);margin-bottom:16px;line-height:1.55">Try the full official name or include the park name.<br>You can also enter trail details yourself.</div>
+        <button onclick="_tsTab('manual')" class="btn-p" style="font-size:12px;padding:8px 18px">✏️ Enter Trail Manually</button>
+      </div>`;
       return;
     }
-    res.innerHTML=`<div style="font-size:11px;color:var(--muted2);margin-bottom:10px">${_tsLastResults.length} trail${_tsLastResults.length!==1?'s':''} found via OpenStreetMap</div>`+
+    res.innerHTML=`<div style="font-size:11px;color:var(--muted2);margin-bottom:10px;display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;background:var(--green3);border-radius:50%;display:inline-block;flex-shrink:0"></span>${_tsLastResults.length} trail${_tsLastResults.length!==1?'s':''} found — tap to add to your day</div>`+
       _tsLastResults.map((t,i)=>_rTrailCard(t,i)).join('');
   }catch(e){
     console.warn('[trails]',e);
-    res.innerHTML=`<div style="text-align:center;padding:20px;font-size:12px;color:#c05050">Search error — check connection or <button onclick="_tsTab('manual')" style="background:none;border:none;color:var(--amber);cursor:pointer;font-family:inherit;font-size:12px;text-decoration:underline;padding:0">enter manually</button>.</div>`;
+    res.innerHTML=`<div style="text-align:center;padding:28px 16px">
+      <div style="font-size:32px;margin-bottom:10px">⚙️</div>
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">AI search unavailable</div>
+      <div style="font-size:12px;color:var(--muted2);margin-bottom:16px;line-height:1.55">Add your Anthropic API key in Settings to enable AI trail lookup, or enter trail details manually below.</div>
+      <button onclick="_tsTab('manual')" class="btn-p" style="font-size:12px;padding:8px 18px">✏️ Enter Trail Manually</button>
+    </div>`;
   }
 }
 
 function tsNearMe(){
   if(!navigator.geolocation){toast('⚠️ Geolocation not available');return;}
+  toast('📍 Getting location…');
   navigator.geolocation.getCurrentPosition(pos=>{
-    const lat=pos.coords.latitude.toFixed(5),lng=pos.coords.longitude.toFixed(5);
+    const lat=pos.coords.latitude.toFixed(4),lng=pos.coords.longitude.toFixed(4);
     document.getElementById('ts-location').value=`${lat}, ${lng}`;
-    toast('📍 Location set — search now');
-  },()=>toast('⚠️ Could not get location'));
+    toast('📍 Location set');
+  },()=>toast('⚠️ Could not get location — enter manually'));
 }
 
-async function _searchTrailsOSM(query,lat,lng){
-  const area=(lat!==null&&lng!==null)?`(around:60000,${lat.toFixed(4)},${lng.toFixed(4)})`:'';
-  const nameFilt=query?`["name"~"${query.replace(/["\\/[\]()]/g,'')}",i]`:'["name"]';
-  // Search hiking routes and named footpaths
-  const ql=`[out:json][timeout:22];(\nrelation["route"="hiking"]${nameFilt}${area};\nrelation["route"="foot"]${nameFilt}${area};\n);\nout body 35;`;
-  const r=await fetch('https://overpass-api.de/api/interpreter',{
-    method:'POST',
-    body:'data='+encodeURIComponent(ql),
-    headers:{'Content-Type':'application/x-www-form-urlencoded'}
-  });
-  const d=await r.json();
-  const seen=new Set();
-  return(d.elements||[])
-    .map(_parseOSMTrail)
-    .filter(t=>{if(!t.name||seen.has(t.name))return false;seen.add(t.name);return true;})
-    .slice(0,25);
+async function _searchTrailsAI(query,location){
+  const ctx=[query,location?'near '+location:''].filter(Boolean).join(' ');
+  const prompt=`You are an expert hiking trail database with knowledge of trails worldwide.
+Search for: "${ctx}"
+
+Return ONLY a JSON array (no markdown fences, no explanation, just the array) of 1–5 matching trails.
+Each trail object must have ALL these exact fields:
+[
+  {
+    "name": "Full official trail name",
+    "parkArea": "Park, forest, or wilderness area name",
+    "distanceMi": 5.4,
+    "elevGainFt": 1700,
+    "highPointFt": 9800,
+    "difficulty": "easy",
+    "trailType": "out-and-back",
+    "estTimeHrs": "3–5 hours",
+    "startPoint": "Trailhead name and access road",
+    "permitRequired": false,
+    "dogFriendly": true,
+    "bestMonths": "July – October",
+    "gearList": ["sturdy boots","2–3L water","sun protection","layers","trekking poles"],
+    "warnings": "Key safety note or empty string",
+    "description": "2–3 vivid sentences about terrain, scenery, and why it's worth doing"
+  }
+]
+difficulty must be exactly one of: easy, moderate, hard, strenuous, expert
+trailType must be exactly one of: out-and-back, loop, point-to-point
+If no trails match, return exactly: []`;
+  const raw=await callAI(prompt,750);
+  return _extractTrailArray(raw);
 }
 
-function _parseOSMTrail(el){
-  const t=el.tags||{};
-  const distKm=parseFloat(t.distance||t.length||'0')||0;
-  const distMi=distKm?Math.round(distKm*0.6214*10)/10:null;
-  const gainM=parseFloat(t.ascent||t.ele_gain||t['ele:gain']||'0')||0;
-  const gainFt=gainM?Math.round(gainM*3.281):null;
-  const lossM=parseFloat(t.descent||t.ele_loss||'0')||0;
-  const lossFt=lossM?Math.round(lossM*3.281):null;
-  const sacMap={hiking:'easy',mountain_hiking:'moderate',demanding_mountain_hiking:'hard',alpine_hiking:'strenuous',demanding_alpine_hiking:'strenuous',difficult_alpine_hiking:'expert'};
-  const diff=sacMap[t.sac_scale]||(t.difficulty||'');
-  return{
-    name:t.name||t['name:en']||'Unnamed Trail',
-    osmId:`${el.type}/${el.id}`,
-    source:'osm',
-    distanceMi:distMi,
-    elevGainFt:gainFt,
-    elevLossFt:lossFt,
-    difficulty:diff,
-    trailType:t.roundtrip==='yes'?'loop':'out-and-back',
-    operator:t.operator||t['operator:en']||t.network_operator||'',
-    description:t.description||t.note||'',
-    website:t.website||t.url||'',
-    surface:t.surface||t.trail_visibility||'',
-    permitRequired:false,
-    dogFriendly:false,
-    gearList:[],
-    warnings:'',
-    bestMonths:'',
-    estTimeHrs:'',
-    highPointFt:null,
-    parkArea:'',
-    startPoint:'',
-    aiEnriched:false
-  };
+function _extractTrailArray(raw){
+  if(!raw)return[];
+  const clean=t=>{if(!t||typeof t!=='object')return null;return{name:t.name||'Unnamed Trail',parkArea:t.parkArea||'',distanceMi:parseFloat(t.distanceMi)||null,elevGainFt:parseInt(t.elevGainFt)||null,highPointFt:parseInt(t.highPointFt)||null,difficulty:t.difficulty||'',trailType:t.trailType||'out-and-back',estTimeHrs:t.estTimeHrs||'',startPoint:t.startPoint||'',permitRequired:!!t.permitRequired,dogFriendly:t.dogFriendly===true,bestMonths:t.bestMonths||'',gearList:Array.isArray(t.gearList)?t.gearList:[],warnings:t.warnings||'',description:t.description||'',source:'ai',osmId:'',elevLossFt:null,aiEnriched:true};};
+  // Try direct JSON parse
+  try{const a=JSON.parse(raw.trim());if(Array.isArray(a))return a.map(clean).filter(Boolean);}catch(e){}
+  // Extract JSON array from text (handles markdown fences, leading text)
+  const m=raw.match(/\[[\s\S]*\]/);
+  if(m){try{const a=JSON.parse(m[0]);if(Array.isArray(a))return a.map(clean).filter(Boolean);}catch(e){}}
+  // Try safeJsonExtract in case it wraps the array
+  try{const obj=safeJsonExtract(raw);if(Array.isArray(obj))return obj.map(clean).filter(Boolean);if(obj?.trails)return(obj.trails||[]).map(clean).filter(Boolean);}catch(e){}
+  return[];
 }
 
 function _trailDiffBadge(diff){
@@ -8268,27 +8275,33 @@ function _trailTypeLabel(t){
 }
 
 function _rTrailCard(trail,idx){
-  const dist=trail.distanceMi?`📏 ${trail.distanceMi} mi`:'';
-  const gain=trail.elevGainFt?`↑ ${trail.elevGainFt.toLocaleString()} ft`:'';
-  const type=trail.trailType?_trailTypeLabel(trail.trailType):'';
   const badge=_trailDiffBadge(trail.difficulty);
-  return`<div class="trail-search-card" onclick="tsSelectTrail(${idx})">
+  const stats=[
+    trail.distanceMi?`📏 ${trail.distanceMi} mi`:'',
+    trail.elevGainFt?`↑ ${trail.elevGainFt.toLocaleString()} ft`:'',
+    trail.estTimeHrs?`⏱ ${trail.estTimeHrs}`:'',
+    trail.trailType?_trailTypeLabel(trail.trailType):'',
+  ].filter(Boolean);
+  const meta=[
+    trail.permitRequired?`<span style="color:#9a6200;font-weight:600">🎫 Permit req.</span>`:'',
+    trail.dogFriendly===true?`<span style="color:var(--green3)">🐕 Dogs OK</span>`:'',
+    trail.bestMonths?`<span>📅 ${trail.bestMonths}</span>`:'',
+  ].filter(Boolean);
+  return`<div class="trail-search-card">
     <div class="trail-search-card-hdr">
-      <span style="font-size:20px;flex-shrink:0;margin-top:1px">🥾</span>
       <div style="flex:1;min-width:0">
         <div class="trail-search-card-name">${trail.name}</div>
-        ${trail.operator?`<div class="trail-search-card-sub">${trail.operator}</div>`:''}
+        ${trail.parkArea?`<div class="trail-search-card-sub">🏞️ ${trail.parkArea}</div>`:''}
       </div>
       ${badge}
     </div>
-    <div class="trail-search-card-meta">
-      ${dist?`<span>${dist}</span>`:''}
-      ${gain?`<span>${gain}</span>`:''}
-      ${type?`<span>${type}</span>`:''}
-    </div>
-    <div class="trail-search-card-footer">
-      ${trail.description?`<div style="font-size:11px;color:var(--muted2);flex:1;margin-right:10px;line-height:1.4">${trail.description.slice(0,80)}${trail.description.length>80?'…':''}</div>`:'<div></div>'}
-      <button class="trail-add-btn" onclick="event.stopPropagation();tsSelectTrail(${idx})">Add to Day →</button>
+    ${stats.length?`<div class="trail-search-card-meta">${stats.map(s=>`<span>${s}</span>`).join('')}</div>`:''}
+    ${trail.description?`<div style="font-size:12px;color:var(--text2);padding:4px 13px 10px;line-height:1.6">${trail.description}</div>`:''}
+    ${trail.startPoint?`<div style="font-size:11px;color:var(--muted2);padding:0 13px 6px">📍 ${trail.startPoint}</div>`:''}
+    ${trail.warnings?`<div style="font-size:11px;color:#9a6200;background:rgba(200,144,30,.08);padding:6px 13px;border-top:1px solid rgba(200,144,30,.2)">⚠️ ${trail.warnings}</div>`:''}
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 13px;border-top:1px solid var(--bdr);background:rgba(62,102,68,.03)">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted2)">${meta.join('')}</div>
+      <button class="btn-p" style="font-size:12px;padding:7px 16px;flex-shrink:0" onclick="tsSelectTrail(${idx})">＋ Add to Day</button>
     </div>
   </div>`;
 }
@@ -8331,36 +8344,18 @@ function tmSave(){
 async function tmAiFill(){
   const name=(document.getElementById('tm-name').value||'').trim();
   if(!name){toast('⚠️ Enter trail name first');return;}
-  const dist=document.getElementById('tm-dist').value;
-  const gain=document.getElementById('tm-gain').value;
-  const diff=document.getElementById('tm-diff').value;
-  const park=document.getElementById('tm-park').value;
-  toast('✦ AI researching trail details…');
+  const park=document.getElementById('tm-park').value.trim();
+  const btn=document.querySelector('[onclick="tmAiFill()"]');
+  if(btn){btn.textContent='⏳ Researching…';btn.disabled=true;}
   try{
-    const prompt=`You are a hiking expert. For the trail "${name}"${park?' in '+park:''}, fill in these details as JSON:
-{
-  "difficulty": "easy|moderate|hard|strenuous|expert",
-  "distanceMi": number_or_null,
-  "elevGainFt": integer_or_null,
-  "highPointFt": integer_or_null,
-  "trailType": "out-and-back|loop|point-to-point",
-  "estTimeHrs": "e.g. 3-5 hours",
-  "parkArea": "park or wilderness name",
-  "startPoint": "trailhead name and road",
-  "bestMonths": "e.g. May – October",
-  "permitRequired": true|false,
-  "dogFriendly": true|false,
-  "gearList": ["item1","item2","item3","item4","item5"],
-  "warnings": "Key hazards, conditions, or advice",
-  "description": "2-3 sentence vivid description of what the hike is like, highlights, what to expect"
-}
-Only include fields you are confident about. Return valid JSON only.`;
-    const raw=await callAI(prompt,400);
+    const prompt=`You are a hiking expert with encyclopedic knowledge of trails. For the trail "${name}"${park?' in '+park:''}, return ONLY valid JSON (no markdown) with these fields:
+{"difficulty":"easy|moderate|hard|strenuous|expert","distanceMi":5.4,"elevGainFt":1700,"highPointFt":9800,"trailType":"out-and-back|loop|point-to-point","estTimeHrs":"3–5 hours","parkArea":"full park name","startPoint":"trailhead and road","bestMonths":"June – October","permitRequired":false,"dogFriendly":true,"gearList":["sturdy boots","2–3L water","sun protection","layers","snacks"],"warnings":"key hazard or empty string","description":"2–3 vivid sentences about terrain, scenery, highlights"}`;
+    const raw=await callAI(prompt,450);
     const obj=safeJsonExtract(raw);
     if(!obj)throw new Error('no JSON');
     if(obj.difficulty)document.getElementById('tm-diff').value=obj.difficulty;
-    if(obj.distanceMi&&!dist)document.getElementById('tm-dist').value=obj.distanceMi;
-    if(obj.elevGainFt&&!gain)document.getElementById('tm-gain').value=obj.elevGainFt;
+    if(obj.distanceMi)document.getElementById('tm-dist').value=obj.distanceMi;
+    if(obj.elevGainFt)document.getElementById('tm-gain').value=obj.elevGainFt;
     if(obj.highPointFt)document.getElementById('tm-high').value=obj.highPointFt;
     if(obj.trailType)document.getElementById('tm-type').value=obj.trailType;
     if(obj.estTimeHrs)document.getElementById('tm-time').value=obj.estTimeHrs;
@@ -8371,10 +8366,10 @@ Only include fields you are confident about. Return valid JSON only.`;
     if(obj.dogFriendly!=null)document.getElementById('tm-dogs').checked=!!obj.dogFriendly;
     if(obj.gearList?.length)document.getElementById('tm-gear').value=obj.gearList.join(', ');
     if(obj.warnings)document.getElementById('tm-warn').value=obj.warnings;
-    // Store description for after save
-    document.getElementById('tm-warn').dataset.aiDesc=obj.description||'';
-    toast('✅ Trail details filled — review and save');
-  }catch(e){toast('⚠️ AI fill failed — fill manually');}
+    window._tmAiDescription=obj.description||'';
+    toast('✅ Trail filled — review and save');
+  }catch(e){toast('⚠️ AI fill failed — add an API key in Settings or fill manually');}
+  finally{if(btn){btn.textContent='✦ AI Fill';btn.disabled=false;}}
 }
 
 function _addTrailStop(rt,id,di,trailData){
@@ -8391,7 +8386,8 @@ function _addTrailStop(rt,id,di,trailData){
   }
   if(!obj.itinerary[targetDi])obj.itinerary.push({date:'',notes:'',stops:[]});
   if(!obj.itinerary[targetDi].stops)obj.itinerary[targetDi].stops=[];
-  const aiDesc=document.getElementById('tm-warn')?.dataset?.aiDesc||'';
+  const aiDesc=window._tmAiDescription||'';
+  window._tmAiDescription='';
   const newStop={
     name:trailData.name,
     type:'hike',
@@ -8400,12 +8396,11 @@ function _addTrailStop(rt,id,di,trailData){
     note:trailData.startPoint||'',
     description:trailData.description||(aiDesc||''),
     address:trailData.startPoint||'',
-    mapsUrl:trailData.website?'':'',
+    mapsUrl:'',
     photo:'',
     done:false,
     trailData:{...trailData}
   };
-  if(aiDesc&&document.getElementById('tm-warn'))document.getElementById('tm-warn').dataset.aiDesc='';
   obj.itinerary[targetDi].stops.push(newStop);
   if(rt==='camp'){saveCamps();window._campDTab='daily';openCampD(id);}
   else{save('trips',D.trips);window._tripItinTab='plans';openTripD(id);}
