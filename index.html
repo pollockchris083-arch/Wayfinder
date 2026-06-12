@@ -7966,7 +7966,42 @@ function rAdvOverviewTab(c){
   const showRig=['rv','van','trailer','overlanding'].includes(c.campType);
   const rig=c.rig||{};
   const RIG_TYPES=['Class A','Class B','Class C','Travel Trailer','5th Wheel','Van','Truck Camper','Pop-up'];
+  const D2=load();
+  const homeCity=(D2.settings?.homeCity||'').trim();
+  const isRound=c.isRoundTrip!==false;
+  const startMi=parseFloat(c.startMiles)||0;
+  const endMi=parseFloat(c.endMiles)||0;
   return`
+  <div class="card" style="margin-bottom:12px;border-top:3px solid var(--blue-acc,#4A789E)">
+    <div class="ch">
+      <div>
+        <div class="ct">📍 Trip Route</div>
+        <div class="cs">${c.startLocation?c.startLocation+(isRound?' → round trip':c.endLocation?' → '+c.endLocation:''):'Set your start city below'}${(startMi||endMi)?' · '+Math.round(startMi+endMi)+' mi home legs':''}</div>
+      </div>
+    </div>
+    <div style="margin-top:10px">
+      <label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Departing From</label>
+      <input id="start-loc-${c.id}" class="fi" style="margin-top:3px" value="${c.startLocation||''}" placeholder="${homeCity||'Home city or departure address'}" onblur="geocodeAndSaveStart('${c.id}')"/>
+    </div>
+    <label style="display:flex;align-items:center;gap:7px;margin-top:10px;cursor:pointer;font-size:13px;color:var(--text2)">
+      <input type="checkbox" id="rt-chk-${c.id}" ${isRound?'checked':''} style="accent-color:var(--green);width:15px;height:15px;flex-shrink:0" onchange="toggleRoundTrip('${c.id}',this.checked)"/>
+      Round trip — return to departure city
+    </label>
+    <div id="end-loc-row-${c.id}" style="margin-top:8px${isRound?';display:none':''}">
+      <label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Returning To</label>
+      <input id="end-loc-${c.id}" class="fi" style="margin-top:3px" value="${c.endLocation||''}" placeholder="Different end destination" onblur="geocodeAndSaveEnd('${c.id}')"/>
+    </div>
+    ${(startMi||endMi)?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+      <div style="background:var(--card2);border-radius:7px;padding:8px 10px">
+        <div style="font-size:13px;font-weight:700;color:var(--blue-acc,#4A789E)">${startMi?Math.round(startMi)+' mi':'—'}</div>
+        <div style="font-size:10px;color:var(--muted2);margin-top:1px">Outbound${c.startSecs?' · '+fDrive(c.startSecs):''}${c.startMilesEst?' (est.)':''}</div>
+      </div>
+      <div style="background:var(--card2);border-radius:7px;padding:8px 10px">
+        <div style="font-size:13px;font-weight:700;color:var(--blue-acc,#4A789E)">${endMi?Math.round(endMi)+' mi':'—'}</div>
+        <div style="font-size:10px;color:var(--muted2);margin-top:1px">Return${c.endSecs?' · '+fDrive(c.endSecs):''}${c.endMilesEst?' (est.)':''}</div>
+      </div>
+    </div>`:''}
+  </div>
   <div class="card" style="margin-bottom:12px">
     <div class="ch"><div class="ct">📝 Notes / Description</div></div>
     <textarea class="ft" style="margin-top:8px;min-height:80px" placeholder="What's the plan? Goals, vibes, why this trip…" onblur="saveAdvField('${c.id}','notes',this.value)">${c.notes||''}</textarea>
@@ -8027,6 +8062,53 @@ function saveAdvField(cid,field,value){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   c[field]=value;localStorage.setItem('wf_camps',JSON.stringify(D.camps));
 }
+async function geocodeAndSaveStart(cid){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  const el=document.getElementById('start-loc-'+cid);
+  const val=(el?el.value.trim():'')||c.startLocation||'';
+  if(!val)return;
+  c.startLocation=val;
+  if(c.isRoundTrip!==false)c.endLocation=val;
+  if(window.google?.maps?.Geocoder){
+    await new Promise(res=>new google.maps.Geocoder().geocode({address:val},(r,s)=>{
+      if(s==='OK'&&r?.[0]){
+        c.startLat=String(r[0].geometry.location.lat());
+        c.startLng=String(r[0].geometry.location.lng());
+        if(c.isRoundTrip!==false){c.endLat=c.startLat;c.endLng=c.startLng;}
+      }
+      res();
+    }));
+  }
+  autoHaversineStartEnd(c);
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  window._campDTab='overview';openCampD(cid);
+}
+async function geocodeAndSaveEnd(cid){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  const el=document.getElementById('end-loc-'+cid);
+  const val=(el?el.value.trim():'')||c.endLocation||'';
+  if(!val)return;
+  c.endLocation=val;
+  if(window.google?.maps?.Geocoder){
+    await new Promise(res=>new google.maps.Geocoder().geocode({address:val},(r,s)=>{
+      if(s==='OK'&&r?.[0]){c.endLat=String(r[0].geometry.location.lat());c.endLng=String(r[0].geometry.location.lng());}
+      res();
+    }));
+  }
+  autoHaversineStartEnd(c);
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  window._campDTab='overview';openCampD(cid);
+}
+function toggleRoundTrip(cid,isRound){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  c.isRoundTrip=isRound;
+  if(isRound){c.endLocation=c.startLocation;c.endLat=c.startLat;c.endLng=c.startLng;}
+  autoHaversineStartEnd(c);
+  localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+  const row=document.getElementById('end-loc-row-'+cid);
+  if(row)row.style.display=isRound?'none':'';
+  window._campDTab='overview';openCampD(cid);
+}
 function saveAdvRig(cid,field,value){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   if(!c.rig)c.rig={};c.rig[field]=value;
@@ -8060,8 +8142,10 @@ function rAdvBudgetTab(c){
   const totalMiles=campStopMiles||itinMiles;
   const itinHasCoords=itinStops.some(s=>s.lat||s.lng);
   const itinHasEst=itinStops.some(s=>s.milesEst);
-  const itinTotalDriveSecs=itinStops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0);
-  const effectiveMiles=totalMiles||(parseFloat(c.estTripMiles)||0);
+  const itinTotalDriveSecs=(parseInt(c.startSecs)||0)+itinStops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0)+(parseInt(c.endSecs)||0);
+  const startMiles=parseFloat(c.startMiles)||0;
+  const endMiles=parseFloat(c.endMiles)||0;
+  const effectiveMiles=(totalMiles?startMiles+totalMiles+endMiles:0)||(parseFloat(c.estTripMiles)||0);
   const fuelEst=(rig.mpg&&effectiveMiles&&c.fuelPrice)?Math.round(effectiveMiles/parseFloat(rig.mpg)*parseFloat(c.fuelPrice)):0;
   const includeFuel=!!c.includeFuelInBudget&&fuelEst>0;
   const totalSpent=expensesTotal+(includeFuel?fuelEst:0);
@@ -8084,8 +8168,10 @@ function rAdvBudgetTab(c){
   <div class="card" style="margin-bottom:12px;border-top:3px solid var(--amber)">
     <div class="ch">
       <div><div class="ct">⛽ Fuel Calculator</div><div class="cs">${rig.mpg?rig.mpg+' mpg':'Set MPG below'}${effectiveMiles?' · '+Math.round(effectiveMiles)+' mi'+(itinTotalDriveSecs?' · '+fDrive(itinTotalDriveSecs):'')+(itinHasEst?' (est.)':''):''}</div></div>
-      ${(itinHasCoords||itinStops.some(s=>s.address))?`<button id="itin-recalc-btn" class="pbtn" onclick="recalcItineraryDriving(true,'${c.id}')" style="font-size:10px;padding:4px 9px;flex-shrink:0">🔄 Recalc Route</button>`:''}
+      ${(itinHasCoords||itinStops.some(s=>s.address)||c.startLat)?`<button id="itin-recalc-btn" class="pbtn" onclick="recalcItineraryDriving(true,'${c.id}')" style="font-size:10px;padding:4px 9px;flex-shrink:0">🔄 Recalc Route</button>`:''}
     </div>
+    ${(startMiles||endMiles)?`<div style="font-size:10px;color:var(--muted2);padding:4px 0">📍 ${startMiles?Math.round(startMiles)+' mi outbound':''} · ${Math.round(totalMiles)} mi between stops${endMiles?' · '+Math.round(endMiles)+' mi return':''}</div>`:''}
+    ${!c.startLocation?`<div style="font-size:10px;color:var(--gold);padding:4px 0">💡 Set a departure city in the Overview tab to include home legs in total miles</div>`:''}
     ${itinMiles&&campStopMiles?`<div style="font-size:10px;color:var(--muted2);padding:4px 0">Route: ${itinMiles} mi from daily plan · ${campStopMiles} mi from campsite stops</div>`:''}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
       <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">MPG</label>
@@ -8094,8 +8180,9 @@ function rAdvBudgetTab(c){
         <input class="fi" style="margin-top:3px" type="number" step="0.01" id="fuel-price-${c.id}" value="${c.fuelPrice||''}" placeholder="e.g. 4.25" oninput="updateFuelCalc('${c.id}')"/></div>
     </div>
     <div style="margin-top:10px">
-      <label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Est. Trip Miles${totalMiles?` <span style="color:${itinHasEst?'var(--gold)':'var(--green3)'}">● ${itinHasEst?'est. from GPS':'auto'}</span>`:''}</label>
+      <label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Miles Between Stops${totalMiles?` <span style="color:${itinHasEst?'var(--gold)':'var(--green3)'}">● ${itinHasEst?'est.':'auto'}</span>`:''}</label>
       <input class="fi" style="margin-top:3px" type="number" id="est-miles-${c.id}" value="${totalMiles||c.estTripMiles||''}" placeholder="e.g. 350" ${totalMiles?'readonly style="margin-top:3px;opacity:.65"':''} oninput="updateFuelCalc('${c.id}')"/>
+      ${effectiveMiles&&effectiveMiles!==(totalMiles||parseFloat(c.estTripMiles)||0)?`<div style="font-size:10px;color:var(--green3);margin-top:3px">Total with home legs: <strong>${Math.round(effectiveMiles)} mi</strong></div>`:''}
     </div>
     ${effectiveMiles&&rig.mpg?`
     <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
@@ -8158,8 +8245,10 @@ function updateFuelCalc(cid){
   const campStopMiles=(c.stops||[]).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
   const itinMiles=(c.itinerary||[]).flatMap(d=>d.stops||[]).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
   const calcMiles=campStopMiles||itinMiles;
+  const startMi=parseFloat(c.startMiles)||0;
+  const endMi=parseFloat(c.endMiles)||0;
   const manualMiles=milesEl&&!milesEl.readOnly?parseFloat(milesEl.value)||0:0;
-  const miles=calcMiles||manualMiles;
+  const miles=(calcMiles?startMi+calcMiles+endMi:0)||manualMiles;
   if(price)c.fuelPrice=price;
   if(manualMiles&&!calcMiles)c.estTripMiles=manualMiles;
   localStorage.setItem('wf_camps',JSON.stringify(D.camps));
@@ -8421,15 +8510,21 @@ function rAdvDailyTab(c){
     </div></div>`;
   }
   const _advItinAllStops=itin.flatMap(d=>d.stops||[]);
-  const _advItinTotalMi=_advItinAllStops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
-  const _advItinTotalSecs=_advItinAllStops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0);
+  const _advItinStopMi=_advItinAllStops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  const _advStartMi=parseFloat(c.startMiles)||0;
+  const _advEndMi=parseFloat(c.endMiles)||0;
+  const _advItinTotalMi=_advItinStopMi?_advStartMi+_advItinStopMi+_advEndMi:0;
+  const _advItinTotalSecs=(parseInt(c.startSecs)||0)+_advItinAllStops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0)+(parseInt(c.endSecs)||0);
   const _advItinHasCoords=_advItinAllStops.some(s=>s.lat||s.lng);
   const _advItinHasAddresses=_advItinAllStops.some(s=>(s.address||'').trim());
-  const _advItinHasEst=_advItinAllStops.some(s=>s.milesEst);
-  const _advRouteBanner=(_advItinTotalMi||(_advItinHasAddresses&&_advItinAllStops.length>1))?`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(200,144,30,.07);border-radius:7px;margin-bottom:10px;border-left:3px solid var(--amber)">
-    <span style="font-size:12px">🛣️</span>
-    <div style="flex:1;font-size:11px;color:var(--text2)">${_advItinTotalMi?('<strong>'+_advItinTotalMi+' mi</strong>'+(_advItinTotalSecs?' · <strong>'+fDrive(_advItinTotalSecs)+'</strong> drive time':'')+(_advItinHasEst?' <span style="color:var(--muted2)">(est. from GPS)</span>':'')):'Click Recalc to calculate driving distances between stops'}</div>
-    ${(_advItinHasCoords||_advItinHasAddresses)?`<button id="itin-recalc-btn" class="pbtn" onclick="recalcItineraryDriving(true,'${c.id}')" style="font-size:10px;padding:3px 8px">🔄 Recalc</button>`:''}
+  const _advItinHasEst=_advItinAllStops.some(s=>s.milesEst)||c.startMilesEst||c.endMilesEst;
+  const _advRouteBanner=(_advItinTotalMi||(_advItinHasAddresses&&_advItinAllStops.length>1))?`<div style="padding:8px 10px;background:rgba(200,144,30,.07);border-radius:7px;margin-bottom:10px;border-left:3px solid var(--amber)">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:12px">🛣️</span>
+      <div style="flex:1;font-size:11px;color:var(--text2)">${_advItinTotalMi?('<strong>'+_advItinTotalMi+' mi</strong>'+(_advItinTotalSecs?' · <strong>'+fDrive(_advItinTotalSecs)+'</strong>':'')+(_advItinHasEst?' <span style="color:var(--muted2)">(est.)</span>':'')):'Click Recalc to calculate driving distances'}</div>
+      ${(_advItinHasCoords||_advItinHasAddresses||c.startLat)?`<button id="itin-recalc-btn" class="pbtn" onclick="recalcItineraryDriving(true,'${c.id}')" style="font-size:10px;padding:3px 8px">🔄 Recalc</button>`:''}
+    </div>
+    ${(c.startLocation||c.endLocation)?`<div style="font-size:10px;color:var(--muted2);margin-top:4px;display:flex;align-items:center;gap:4px">${c.startLocation?'🏠 <strong>'+c.startLocation+'</strong>':''} ${_advStartMi?'→ <span>'+Math.round(_advStartMi)+' mi</span>':''} → stops → ${_advEndMi?'<span>'+Math.round(_advEndMi)+' mi</span> →':''} ${c.isRoundTrip!==false&&c.startLocation?'🏠 <strong>'+c.startLocation+'</strong>':c.endLocation?'🏁 <strong>'+c.endLocation+'</strong>':''}</div>`:''}
   </div>`:'';
   let html=`<div style="--plans-accent:${accent}">${_advRouteBanner}`;
   scheduled.forEach((day,schIdx)=>{
@@ -8693,6 +8788,41 @@ function autoHaversineItinerary(obj){
       delete itin[flat[i].di].stops[flat[i].si].driveSecs;
     }
   }
+  autoHaversineStartEnd(obj);
+}
+function autoHaversineStartEnd(obj){
+  if(!obj)return;
+  const itin=obj.itinerary||[];
+  const flat=[];
+  itin.forEach((day,di)=>(day.stops||[]).forEach((_,si)=>flat.push({di,si})));
+  // First stop with coords → start leg
+  if(obj.startLat&&obj.startLng){
+    for(let i=0;i<flat.length;i++){
+      const s=itin[flat[i].di].stops[flat[i].si];
+      const sc=parseStopCoords(s);
+      if(sc){
+        const d=haversineMiles(parseFloat(obj.startLat),parseFloat(obj.startLng),sc.lat,sc.lng);
+        obj.startMiles=Math.round(d*1.25);
+        obj.startMilesEst=true;
+        delete obj.startSecs;
+        break;
+      }
+    }
+  }
+  // Last stop with coords → end leg
+  if(obj.endLat&&obj.endLng){
+    for(let i=flat.length-1;i>=0;i--){
+      const s=itin[flat[i].di].stops[flat[i].si];
+      const sc=parseStopCoords(s);
+      if(sc){
+        const d=haversineMiles(sc.lat,sc.lng,parseFloat(obj.endLat),parseFloat(obj.endLng));
+        obj.endMiles=Math.round(d*1.25);
+        obj.endMilesEst=true;
+        delete obj.endSecs;
+        break;
+      }
+    }
+  }
 }
 // Recalculate driving distances via Google Routes API for all consecutive itinerary stop pairs.
 async function recalcItineraryDriving(isAdv,id){
@@ -8743,6 +8873,17 @@ async function recalcItineraryDriving(isAdv,id){
       itin[flat[i].di].stops[flat[i].si].milesEst=false;
       updated++;
     }catch(e){console.warn('[itin-route]',e.message);}
+  }
+  // Compute start → first stop and last stop → end legs
+  if(isAdv&&obj.startLat&&obj.startLng&&flat.length>0){
+    const firstSt=itin[flat[0].di].stops[flat[0].si];
+    const fc=parseStopCoords(firstSt);
+    if(fc){try{const r=await getRouteDrivingInfo(parseFloat(obj.startLat),parseFloat(obj.startLng),fc.lat,fc.lng,mapsKey);obj.startMiles=parseFloat(r.miles.toFixed(1));obj.startSecs=r.secs;obj.startMilesEst=false;updated++;}catch(e){console.warn('[start-leg]',e.message);}}
+  }
+  if(isAdv&&obj.endLat&&obj.endLng&&flat.length>0){
+    const lastSt=itin[flat[flat.length-1].di].stops[flat[flat.length-1].si];
+    const lc=parseStopCoords(lastSt);
+    if(lc){try{const r=await getRouteDrivingInfo(lc.lat,lc.lng,parseFloat(obj.endLat),parseFloat(obj.endLng),mapsKey);obj.endMiles=parseFloat(r.miles.toFixed(1));obj.endSecs=r.secs;obj.endMilesEst=false;updated++;}catch(e){console.warn('[end-leg]',e.message);}}
   }
   if(isAdv){localStorage.setItem('wf_camps',JSON.stringify(D.camps));window._campDTab='budget';openCampD(id);}
   else{save('trips',D.trips);openTripD(id);}
