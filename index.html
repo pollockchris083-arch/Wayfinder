@@ -365,6 +365,17 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .btn-google:hover{border-color:var(--green);background:var(--card2);transform:translateY(-1px)}
 .auth-note{font-size:13px;color:var(--muted2);margin-top:14px;line-height:1.5}
 .ao-spinner{width:36px;height:36px;border:3px solid var(--bdr2);border-top-color:var(--green);border-radius:50%;animation:ao-spin .9s linear infinite}
+/* Budget Tab */
+.fuel-slider{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;background:var(--bdr2);outline:none;cursor:pointer;display:block}
+.fuel-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:var(--amber);cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.22);border:2px solid var(--card);transition:transform .1s}
+.fuel-slider::-webkit-slider-thumb:active{transform:scale(1.2)}
+.fuel-slider::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--amber);cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.22);border:2px solid var(--card)}
+.cat-chip{display:inline-flex;align-items:center;gap:4px;padding:5px 11px;background:var(--card);border:1.5px solid var(--bdr2);border-radius:16px;cursor:pointer;font-size:11px;font-family:inherit;color:var(--text2);transition:all .15s;white-space:nowrap;line-height:1.3}
+.cat-chip:hover{border-color:var(--amber);background:rgba(200,144,30,.07);color:var(--text)}
+.cat-chip.sel{border-color:var(--amber);background:rgba(200,144,30,.13);color:var(--text);font-weight:700}
+.bdg-stat{text-align:center;flex:1;min-width:0}
+.bdg-stat-num{font-size:22px;font-weight:800;color:var(--text);line-height:1}
+.bdg-stat-lbl{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
 @keyframes ao-spin{to{transform:rotate(360deg)}}
 
 /* ── MAP PAGE ── */
@@ -9688,68 +9699,106 @@ function removeAdvTraveler(cid,idx){
 
 // ── Tab: Budget & Expenses ────────────────────────────
 function rAdvBudgetTab(c){
+  const stops=c.stops||[];
   const budget=parseFloat(c.tripBudget)||0;
   const expenses=c.expenses||[];
   const expensesTotal=expenses.reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
-  const stops=c.stops||[];
   const rig=c.rig||{};
   const campStopMiles=stops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
-  const itinStops=(c.itinerary||[]).flatMap(d=>d.stops||[]);
+  const itinDays=c.itinerary||[];
+  const itinStops=itinDays.flatMap(d=>d.stops||[]);
   const itinMiles=itinStops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
   const totalMiles=campStopMiles||itinMiles;
-  // Detect obviously corrupted distance data (any single value > 600 mi per leg)
   const hasCorruptMiles=parseFloat(c.startMiles)>600||parseFloat(c.endMiles)>600||itinStops.some(s=>parseFloat(s.milesPrev)>600);
-  const itinHasCoords=itinStops.some(s=>s.lat||s.lng);
   const itinHasEst=itinStops.some(s=>s.milesEst)||c.startMilesEst||c.endMilesEst;
   const itinTotalDriveSecs=(parseInt(c.startSecs)||0)+itinStops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0)+(parseInt(c.endSecs)||0);
   const startMiles=parseFloat(c.startMiles)||0;
   const endMiles=parseFloat(c.endMiles)||0;
-  // FIX: don't gate on totalMiles — outbound+return alone is valid (e.g. single destination)
   const routeMiles=startMiles+totalMiles+endMiles;
   const effectiveMiles=routeMiles||(parseFloat(c.estTripMiles)||0);
-  const defaultGasPrice=c.fuelPrice||(D.settings?.gasPrice)||'';
-  const fuelEst=(rig.mpg&&effectiveMiles&&defaultGasPrice)?Math.round(effectiveMiles/parseFloat(rig.mpg)*parseFloat(defaultGasPrice)):0;
+  const defaultMpg=parseFloat(rig.mpg)||0;
+  const defaultGasPrice=parseFloat(c.fuelPrice)||parseFloat(D.settings?.gasPrice)||0;
+  const gallonsNeeded=(defaultMpg&&effectiveMiles)?effectiveMiles/defaultMpg:0;
+  const fuelEst=(gallonsNeeded&&defaultGasPrice)?Math.round(gallonsNeeded*defaultGasPrice):0;
   const includeFuel=!!c.includeFuelInBudget&&fuelEst>0;
   const totalSpent=expensesTotal+(includeFuel?fuelEst:0);
-  const pct=budget?Math.min(100,Math.round(totalSpent/budget*100)):0;
+  const remaining=Math.max(0,budget-totalSpent);
+  const overBudget=budget>0&&totalSpent>budget;
+  const fuelPct=budget&&includeFuel?Math.min(100,Math.round(fuelEst/budget*100)):0;
+  const expPct=budget?Math.min(100-fuelPct,Math.round(expensesTotal/budget*100)):0;
+  const remPct=Math.max(0,100-fuelPct-expPct);
   const CATS=['Fuel','Camping Fees','Food & Groceries','Dining Out','Activities','Gear','Propane','Park Passes','Dump Fees','Misc'];
   const byCategory={};CATS.forEach(k=>{byCategory[k]=0;});
   expenses.forEach(e=>{if(byCategory[e.category]!==undefined)byCategory[e.category]+=(parseFloat(e.amount)||0);else byCategory['Misc']+=(parseFloat(e.amount)||0);});
   if(includeFuel)byCategory['Fuel']=(byCategory['Fuel']||0)+fuelEst;
+  const maxCat=Math.max(1,...Object.values(byCategory));
   const isRound=c.isRoundTrip!==false;
   const D2=load();const homeCity=(D2.settings?.homeCity||'').trim();
-  // Stop summary for route display
   const namedItinStops=itinStops.filter(s=>s.name);
-  const stopCount=namedItinStops.length||(c.stops||[]).length;
-  const firstStop=namedItinStops[0]||(c.stops||[])[0];
-  const firstStopCity=firstStop?(firstStop.name||'').split(',')[0].trim():'';
-  const lastStop=namedItinStops.length>1?namedItinStops[namedItinStops.length-1]:null;
-  const lastStopCity=lastStop?(lastStop.name||'').split(',')[0].trim():'';
+  const stopCount=namedItinStops.length||stops.length;
+  const dayCount=itinDays.length||0;
+  const tankGal=parseFloat(rig.tankGal)||18;
+  const fillUps=gallonsNeeded?Math.ceil(gallonsNeeded/(tankGal*0.9)):0;
+  const itinHasCoords=itinStops.some(s=>s.lat||s.lng);
+  const mpgVal=defaultMpg||20;
+  const gpVal=defaultGasPrice||3.50;
+  const dayMap={};
+  itinDays.forEach(d=>{if(d.date)dayMap[d.date]=d.label||fd(d.date);});
+  const expByDay={};const expUngrouped=[];
+  expenses.forEach((e,i)=>{
+    if(e.date&&dayMap[e.date]){if(!expByDay[e.date])expByDay[e.date]=[];expByDay[e.date].push({...e,_i:i});}
+    else expUngrouped.push({...e,_i:i});
+  });
   return`
-  <div class="card" style="margin-bottom:12px">
-    <div class="ch"><div class="ct">💰 Trip Budget</div></div>
-    <div style="display:flex;gap:10px;align-items:center;margin-top:10px">
-      <div style="flex:1"><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Total Budget ($)</label>
-        <input class="fi" style="margin-top:3px" type="number" value="${c.tripBudget||''}" placeholder="e.g. 2500" oninput="liveUpdateBudget('${c.id}',this.value)" onblur="saveAdvField('${c.id}','tripBudget',this.value)"/></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+    ${effectiveMiles?`<div class="bdg-stat" style="background:var(--card);border:1.5px solid var(--bdr2);border-radius:10px;padding:10px 8px"><div class="bdg-stat-num">${Math.round(effectiveMiles)}</div><div class="bdg-stat-lbl">miles${itinHasEst?' est.':''}</div></div>`:''}
+    ${itinTotalDriveSecs?`<div class="bdg-stat" style="background:var(--card);border:1.5px solid var(--bdr2);border-radius:10px;padding:10px 8px"><div class="bdg-stat-num">${fDrive(itinTotalDriveSecs)}</div><div class="bdg-stat-lbl">drive time</div></div>`:''}
+    ${stopCount?`<div class="bdg-stat" style="background:var(--card);border:1.5px solid var(--bdr2);border-radius:10px;padding:10px 8px"><div class="bdg-stat-num">${stopCount}</div><div class="bdg-stat-lbl">stops</div></div>`:''}
+    ${dayCount?`<div class="bdg-stat" style="background:var(--card);border:1.5px solid var(--bdr2);border-radius:10px;padding:10px 8px"><div class="bdg-stat-num">${dayCount}</div><div class="bdg-stat-lbl">days</div></div>`:''}
+  </div>
+  <div class="card" style="margin-bottom:12px;border-top:3px solid var(--green3)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px">
+      <div>
+        <div style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Total Budget</div>
+        <input class="fi" style="width:140px;font-size:17px;font-weight:700;padding:4px 8px" type="number" value="${c.tripBudget||''}" placeholder="Set budget…" oninput="liveUpdateBudget('${c.id}',this.value)" onblur="saveAdvField('${c.id}','tripBudget',this.value)"/>
+      </div>
       <div style="text-align:right">
-        <div id="bdg-spent-${c.id}" style="font-size:20px;font-weight:700;color:${pct>90?'#c05050':pct>70?'#B8892A':'var(--green3)'}">$${totalSpent.toFixed(0)}</div>
-        <div id="bdg-of-${c.id}" style="font-size:11px;color:var(--muted2)">of $${budget||'—'}</div>
+        <div id="bdg-spent-${c.id}" style="font-size:24px;font-weight:800;color:${overBudget?'#c05050':totalSpent>0?'var(--text)':'var(--muted2)'}">${totalSpent?'$'+totalSpent.toFixed(0):'$0'}</div>
+        <div id="bdg-of-${c.id}" style="font-size:11px;color:var(--muted2)">${budget?'of $'+budget.toFixed(0)+' · '+(overBudget?'<span style="color:#c05050;font-weight:700">over by $'+(totalSpent-budget).toFixed(0)+'</span>':'<span style="color:var(--green3)">$'+remaining.toFixed(0)+' left</span>'):''}</div>
       </div>
     </div>
-    <div id="bdg-bar-wrap-${c.id}" style="margin-top:10px;background:var(--card2);border-radius:4px;height:8px;overflow:hidden;${budget?'':'display:none'}"><div id="bdg-bar-${c.id}" style="height:100%;width:${pct}%;background:${pct>90?'#c05050':pct>70?'#B8892A':'var(--green3)'};border-radius:4px;transition:width .2s"></div></div>
-    <div id="bdg-pct-${c.id}" style="font-size:11px;color:var(--muted2);margin-top:4px;${budget?'':'display:none'}">${pct}% spent · $${Math.max(0,budget-totalSpent).toFixed(0)} remaining${includeFuel?' (incl. est. fuel)':''}</div>
+    ${budget?`<div id="bdg-bar-wrap-${c.id}" style="background:var(--card2);border-radius:6px;height:14px;overflow:hidden;display:flex;gap:1px">
+      ${fuelPct?`<div id="bdg-bar-fuel-${c.id}" style="width:${fuelPct}%;background:var(--amber);height:100%;border-radius:4px 0 0 4px;transition:width .2s;min-width:3px"></div>`:''}
+      ${expPct?`<div id="bdg-bar-exp-${c.id}" style="width:${expPct}%;background:var(--green3);height:100%;border-radius:${fuelPct?'0':'4px 0 0 4px'}${remPct?'':' 4px 4px'};transition:width .2s;min-width:3px"></div>`:''}
+      ${remPct>0?`<div id="bdg-bar-rem-${c.id}" style="flex:1;background:var(--bdr2);height:100%;border-radius:0 4px 4px 0;min-width:4px"></div>`:''}
+    </div>
+    <div style="display:flex;gap:12px;margin-top:6px;flex-wrap:wrap">
+      ${includeFuel?`<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted2)"><span style="width:8px;height:8px;border-radius:2px;background:var(--amber);display:inline-block"></span>Fuel $${fuelEst}</div>`:''}
+      ${expensesTotal?`<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted2)"><span style="width:8px;height:8px;border-radius:2px;background:var(--green3);display:inline-block"></span>Expenses $${expensesTotal.toFixed(0)}</div>`:''}
+      ${remaining&&!overBudget?`<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted2)"><span style="width:8px;height:8px;border-radius:2px;background:var(--bdr2);display:inline-block"></span>Remaining $${remaining.toFixed(0)}</div>`:''}
+    </div>`:'<div style="font-size:11px;color:var(--muted2);font-style:italic;padding:4px 0">Set a budget above to see your spending breakdown</div>'}
   </div>
   <div class="card" style="margin-bottom:12px;border-top:3px solid var(--amber)">
-    <div class="ch" style="margin-bottom:0">
-      <div><div class="ct">⛽ Fuel Calculator</div>${effectiveMiles&&rig.mpg?`<div class="cs">${Math.round(effectiveMiles)} mi · ${rig.mpg} mpg${fuelEst?' · <strong style="color:var(--green3)">$'+fuelEst+'</strong>':''}${itinTotalDriveSecs?' · '+fDrive(itinTotalDriveSecs):''}${itinHasEst?' (est.)':''}</div>`:''}</div>
-      ${(itinHasCoords||itinStops.some(s=>s.address)||c.startLat)?`<button id="itin-recalc-btn" class="pbtn" onclick="recalcItineraryDriving(true,'${c.id}')" style="font-size:10px;padding:4px 9px;flex-shrink:0">🔄 Recalc</button>`:''}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="ct">⛽ Fuel</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        ${(itinHasCoords||itinStops.some(s=>s.address)||c.startLat)?`<button class="pbtn" onclick="recalcItineraryDriving(true,'${c.id}')" style="font-size:10px;padding:3px 8px">🔄 Recalc Route</button>`:''}
+        ${fuelEst?`<span style="font-size:13px;font-weight:700;color:var(--green3)">$${fuelEst} est.</span>`:''}
+      </div>
     </div>
-    ${hasCorruptMiles?`<div style="display:flex;align-items:center;gap:10px;margin-top:10px;background:rgba(192,80,80,.07);border:1px solid rgba(192,80,80,.22);border-radius:7px;padding:9px 12px">
-      <span style="font-size:12px;color:#9a3030;flex:1">⚠️ Distance data looks corrupted (a leg shows over 600 mi). Reset to fix the mileage and fuel estimate.</span>
-      <button onclick="resetTripMiles('${c.id}',true)" class="pbtn" style="font-size:11px;padding:4px 10px;flex-shrink:0;color:#9a3030;border-color:rgba(192,80,80,.3);background:rgba(192,80,80,.07)">Reset Miles</button>
-    </div>`:''}
-    ${rig.mpg&&parseFloat(rig.mpg)<8?`<div style="font-size:11px;color:#9a6200;background:rgba(200,144,30,.08);border:1px solid rgba(200,144,30,.25);border-radius:6px;padding:6px 10px;margin-top:8px">⚠️ ${rig.mpg} MPG seems very low — is this correct? Most vehicles get 15–35 MPG.</div>`:''}
-    <div style="margin-top:10px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end">
+    ${hasCorruptMiles?`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;background:rgba(192,80,80,.07);border:1px solid rgba(192,80,80,.22);border-radius:7px;padding:9px 12px"><span style="font-size:12px;color:#9a3030;flex:1">⚠️ Distance data looks corrupted (a leg shows over 600 mi). Reset to fix mileage.</span><button onclick="resetTripMiles('${c.id}',true)" class="pbtn" style="font-size:11px;padding:4px 10px;color:#9a3030;border-color:rgba(192,80,80,.3);background:rgba(192,80,80,.07)">Reset Miles</button></div>`:''}
+    ${rig.mpg&&parseFloat(rig.mpg)<8?`<div style="font-size:11px;color:#9a6200;background:rgba(200,144,30,.08);border:1px solid rgba(200,144,30,.25);border-radius:6px;padding:6px 10px;margin-bottom:8px">⚠️ ${rig.mpg} MPG seems very low — most vehicles get 15–35 MPG.</div>`:''}
+    <div style="margin-bottom:12px;padding:8px 10px;background:var(--card2);border-radius:8px">
+      <div style="font-size:11px;color:var(--muted2);display:flex;flex-wrap:wrap;align-items:center;gap:4px;line-height:2">
+        <span>🏠 <strong>${c.startLocation||homeCity||'Home'}</strong></span>
+        ${startMiles?`<span style="font-size:10px;color:var(--amber);white-space:nowrap">→ ${Math.round(startMiles)} mi →</span>`:'<span style="color:var(--muted2)">→</span>'}
+        ${stopCount?`<span><strong>${namedItinStops[0]?(namedItinStops[0].name||'').split(',')[0]:'Stop 1'}</strong>${stopCount>1?' + '+(stopCount-1)+' more':''}</span>`:'<span style="color:var(--muted2);font-style:italic">No stops yet</span>'}
+        ${endMiles?`<span style="font-size:10px;color:var(--amber);white-space:nowrap">→ ${Math.round(endMiles)} mi →</span>`:'<span style="color:var(--muted2)">→</span>'}
+        ${isRound&&c.startLocation?`<span>🏠 <strong>${c.startLocation.split(',')[0]}</strong></span>`:c.endLocation&&!isRound?`<span>🏁 <strong>${c.endLocation.split(',')[0]}</strong></span>`:''}
+      </div>
+      ${effectiveMiles?`<div style="font-size:15px;font-weight:700;color:var(--text);margin-top:4px">${Math.round(effectiveMiles)} mi total${itinHasEst?' <span style="font-size:11px;font-weight:400;color:var(--muted2)">(est.)</span>':''} ${itinTotalDriveSecs?'· '+fDrive(itinTotalDriveSecs):''}</div>`:`<div style="font-size:11px;color:var(--muted2);margin-top:4px">Set departure city and run Recalc to get route miles</div>`}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:14px">
       <div>
         <label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Driving From</label>
         <input id="fuel-start-loc-${c.id}" class="fi" style="margin-top:3px" value="${c.startLocation||''}" placeholder="${homeCity||'Start city — e.g. Aptos, CA'}" onblur="window._campDTab='budget';geocodeAndSaveStart('${c.id}')"/>
@@ -9759,112 +9808,145 @@ function rAdvBudgetTab(c){
         Round trip
       </label>
     </div>
-    ${effectiveMiles?`
-    <div style="margin-top:10px;padding:8px 10px;background:var(--card2);border-radius:7px">
-      <div style="font-size:11px;color:var(--muted2);display:flex;flex-wrap:wrap;align-items:center;gap:3px;line-height:1.8">
-        <span>🏠 <strong>${c.startLocation||homeCity||'Start'}</strong></span>
-        ${startMiles?`<span style="color:var(--amber)">→ ${Math.round(startMiles)} mi →</span>`:''}
-        ${stopCount>0?`<span><strong>${stopCount===1?(firstStopCity||'1 stop'):(firstStopCity?firstStopCity+' + '+(stopCount-1)+' more':stopCount+' stops')}</strong>${totalMiles?' ('+Math.round(totalMiles)+' mi)':''}</span>`:''}
-        ${endMiles?`<span style="color:var(--amber)">→ ${Math.round(endMiles)} mi →</span>`:''}
-        ${isRound&&c.startLocation?`<span>🏠 <strong>${c.startLocation}</strong></span>`:c.endLocation&&!isRound?`<span>🏁 <strong>${c.endLocation}</strong></span>`:''}
+    <div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+        <label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Vehicle MPG</label>
+        <span style="font-size:15px;font-weight:700;color:var(--amber)" id="mpg-val-${c.id}">${mpgVal}</span>
       </div>
-      <div style="font-size:15px;font-weight:700;color:var(--text);margin-top:4px">${Math.round(effectiveMiles)} mi total${itinHasEst?' <span style="font-size:11px;font-weight:400;color:var(--muted2)">(est.)</span>':''}</div>
-    </div>`:''}
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
-      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">MPG</label>
-        <input class="fi" id="fuel-mpg-${c.id}" style="margin-top:3px" type="number" value="${rig.mpg||''}" placeholder="e.g. 20" oninput="updateFuelCalc('${c.id}')" onblur="saveAdvRig('${c.id}','mpg',this.value);window._campDTab='budget';openCampD('${c.id}')"/></div>
-      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Tank (gal)</label>
-        <input class="fi" id="fuel-tank-${c.id}" style="margin-top:3px" type="number" value="${rig.tankGal||''}" placeholder="e.g. 24" oninput="updateFuelCalc('${c.id}')" onblur="saveAdvRig('${c.id}','tankGal',this.value);window._campDTab='budget';openCampD('${c.id}')"/></div>
-      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Gas Price ($/gal)</label>
-        <input class="fi" style="margin-top:3px" type="number" step="0.01" id="fuel-price-${c.id}" value="${defaultGasPrice}" placeholder="e.g. 4.25" oninput="updateFuelCalc('${c.id}')"/></div>
+      <input type="range" class="fuel-slider" id="mpg-slider-${c.id}" min="5" max="60" step="1" value="${mpgVal}"
+        oninput="document.getElementById('mpg-val-${c.id}').textContent=this.value;updateFuelSliders('${c.id}')"
+        onchange="saveAdvRig('${c.id}','mpg',this.value)"/>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted2);margin-top:2px"><span>5</span><span>Trucks/RVs 10-18 · Cars/Vans 20-35 · Hybrids 40+</span><span>60</span></div>
     </div>
-    ${effectiveMiles&&rig.mpg?`
-    <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
-      <div style="background:var(--card2);border-radius:7px;padding:10px 6px">
-        <div id="fuel-gal-${c.id}" style="font-size:16px;font-weight:700;color:var(--amber)">${(effectiveMiles/parseFloat(rig.mpg)).toFixed(1)}</div>
-        <div style="font-size:10px;color:var(--muted2);margin-top:2px">Gallons needed</div>
+    <div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+        <label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Gas Price ($/gal)</label>
+        <span style="font-size:15px;font-weight:700;color:var(--amber)" id="gp-val-${c.id}">$${gpVal.toFixed(2)}</span>
       </div>
-      <div style="background:var(--card2);border-radius:7px;padding:10px 6px">
-        <div id="fuel-fills-${c.id}" style="font-size:16px;font-weight:700;color:var(--amber)">${rig.tankGal?Math.ceil(effectiveMiles/parseFloat(rig.mpg)/parseFloat(rig.tankGal)):Math.ceil(effectiveMiles/parseFloat(rig.mpg)/18)}</div>
-        <div id="fuel-fills-lbl-${c.id}" style="font-size:10px;color:var(--muted2);margin-top:2px">Fill-ups (${rig.tankGal?Math.round(parseFloat(rig.tankGal)*0.9)+'gal ea':'~18 gal'})</div>
+      <input type="range" class="fuel-slider" id="gp-slider-${c.id}" min="2.00" max="8.00" step="0.05" value="${gpVal}"
+        oninput="document.getElementById('gp-val-${c.id}').textContent='$'+parseFloat(this.value).toFixed(2);updateFuelSliders('${c.id}')"
+        onchange="saveFuelPrice('${c.id}',this.value)"/>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted2);margin-top:2px"><span>$2.00</span><span></span><span>$8.00</span></div>
+    </div>
+    <div style="margin-bottom:12px;display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">
+      <div>
+        <label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Tank Size (gal)</label>
+        <input class="fi" id="fuel-tank-${c.id}" style="margin-top:3px;width:100px" type="number" value="${rig.tankGal||''}" placeholder="e.g. 24" oninput="updateFuelSliders('${c.id}')" onblur="saveAdvRig('${c.id}','tankGal',this.value)"/>
       </div>
-      <div style="background:var(--card2);border-radius:7px;padding:10px 6px">
-        <div id="fuel-est-${c.id}" style="font-size:${defaultGasPrice?'16':'12'}px;font-weight:700;color:${defaultGasPrice?'var(--green3)':'var(--muted2)'}">${defaultGasPrice?'$'+(effectiveMiles/parseFloat(rig.mpg)*parseFloat(defaultGasPrice)).toFixed(0):'↑ add price'}</div>
-        <div style="font-size:10px;color:var(--muted2);margin-top:2px">Est. fuel cost</div>
+      ${!routeMiles?`<div style="flex:1;min-width:120px">
+        <label style="font-size:10px;font-weight:600;color:var(--amber);text-transform:uppercase;letter-spacing:.5px">Total Miles (manual)</label>
+        <input class="fi" id="est-miles-${c.id}" style="margin-top:3px;border-color:rgba(200,144,30,.4)" type="number" value="${c.estTripMiles||''}" placeholder="e.g. 520" oninput="updateFuelSliders('${c.id}')" onblur="saveAdvField('${c.id}','estTripMiles',parseFloat(this.value)||0)"/>
+      </div>`:''}
+    </div>
+    ${effectiveMiles&&defaultMpg?`
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+      <div style="background:var(--card2);border-radius:8px;padding:10px 8px;text-align:center">
+        <div id="fuel-gal-${c.id}" style="font-size:18px;font-weight:800;color:var(--amber)">${gallonsNeeded.toFixed(1)}</div>
+        <div style="font-size:10px;color:var(--muted2);margin-top:2px">gallons needed</div>
+      </div>
+      <div style="background:var(--card2);border-radius:8px;padding:10px 8px;text-align:center">
+        <div id="fuel-fills-${c.id}" style="font-size:18px;font-weight:800;color:var(--amber)">${fillUps}</div>
+        <div id="fuel-fills-lbl-${c.id}" style="font-size:10px;color:var(--muted2);margin-top:2px">fill-ups (~${Math.round(tankGal*0.9)} gal ea)</div>
+      </div>
+      <div style="background:var(--card2);border-radius:8px;padding:10px 8px;text-align:center">
+        <div id="fuel-cost-${c.id}" style="font-size:18px;font-weight:800;color:${fuelEst?'var(--green3)':'var(--muted2)'}">${fuelEst?'$'+fuelEst:'—'}</div>
+        <div style="font-size:10px;color:var(--muted2);margin-top:2px">est. fuel cost</div>
       </div>
     </div>
-    ${defaultGasPrice?`<div style="text-align:center;font-size:10px;color:var(--muted2);margin-top:5px">${Math.round(effectiveMiles)} mi ÷ ${rig.mpg} mpg × $${parseFloat(defaultGasPrice).toFixed(2)}/gal = <strong style="color:var(--green3)">$${fuelEst}</strong></div>`:''}
-    <div style="margin-top:8px;padding:8px 10px;background:rgba(200,144,30,.07);border-radius:6px;border-left:3px solid var(--amber)">
-      <div style="font-size:11px;color:var(--text2);line-height:1.5">⛽ <strong>Before you leave:</strong> Top off the tank. At ${rig.mpg} MPG you'll need ~${(effectiveMiles/parseFloat(rig.mpg)).toFixed(0)} gal total${rig.tankGal?` — plan to fill up every ~${Math.round(parseFloat(rig.mpg)*parseFloat(rig.tankGal)*0.9)} miles`:', fill up when you drop below ¼ tank'}${itinHasEst?' <em>(distances estimated)</em>':''}.</div>
-    </div>`:
-    `<div style="margin-top:10px;font-size:11px;color:var(--muted2);padding:4px 0">${!c.startLocation&&!routeMiles?'Set your departure city above, then enter MPG and gas price to calculate fuel cost.':!rig.mpg?'Enter your MPG above to see gallons and cost.':!defaultGasPrice?'Enter gas price above to calculate fuel cost.':'📍 Route miles not calculated yet. Click Recalc (requires Maps API key in Settings), or enter total trip miles manually below.'}</div>`}
-    ${!routeMiles?`<div style="margin-top:8px">
-      <label style="font-size:10px;font-weight:600;color:var(--amber);text-transform:uppercase;letter-spacing:.5px">Total Trip Miles (enter manually)</label>
-      <input class="fi" style="margin-top:3px;border-color:rgba(200,144,30,.4)" type="number" id="est-miles-${c.id}" value="${c.estTripMiles||''}" placeholder="e.g. 520 — bypasses GPS, calculates instantly" oninput="updateFuelCalc('${c.id}')" onblur="saveAdvField('${c.id}','estTripMiles',parseFloat(this.value)||0)"/>
-    </div>`:''}
-    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr2);display:flex;align-items:center;gap:8px">
-      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none">
+    ${defaultGasPrice?`<div style="font-size:10px;color:var(--muted2);text-align:center;margin-bottom:8px">${Math.round(effectiveMiles)} mi ÷ ${defaultMpg} mpg × $${defaultGasPrice.toFixed(2)}/gal = <strong style="color:var(--green3)">$${fuelEst}</strong></div>`:''}
+    <div style="padding:8px 10px;background:rgba(200,144,30,.07);border-radius:6px;border-left:3px solid var(--amber);margin-bottom:10px">
+      <div style="font-size:11px;color:var(--text2);line-height:1.5">⛽ <strong>Before you leave:</strong> Top off the tank. At ${defaultMpg} MPG you'll need ~${gallonsNeeded.toFixed(0)} gal total${rig.tankGal?` — fill up every ~${Math.round(defaultMpg*tankGal*0.9)} miles`:', fill when below ¼ tank'}${itinHasEst?' <em>(distances estimated)</em>':''}.</div>
+    </div>`:`<div style="font-size:11px;color:var(--muted2);font-style:italic;margin-bottom:10px">${!defaultMpg?'Set MPG with the slider above to see fuel estimates.':!effectiveMiles?'Add a start location or enter miles manually to calculate fuel.':''}</div>`}
+    <div style="padding-top:10px;border-top:1px solid var(--bdr2);display:flex;align-items:center;gap:8px">
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;flex:1">
         <input type="checkbox" id="fuel-in-budget-${c.id}" ${c.includeFuelInBudget?'checked':''} style="width:15px;height:15px;cursor:pointer;accent-color:var(--green3)" onchange="toggleFuelInBudget('${c.id}',this.checked)">
         <span style="font-size:12px;color:var(--text2)">Include fuel estimate in budget</span>
       </label>
-      ${c.includeFuelInBudget&&fuelEst?`<span style="font-size:11px;color:var(--green3);font-weight:700;margin-left:auto">+$${fuelEst} counted</span>`:`<span style="font-size:11px;color:var(--muted2);margin-left:auto">off — not in budget</span>`}
+      ${fuelEst?`<span style="font-size:11px;color:${includeFuel?'var(--amber)':'var(--muted2)'};font-weight:700">${includeFuel?'+$'+fuelEst+' added':'$'+fuelEst+' (off)'}</span>`:''}
     </div>
   </div>
   <div class="card" style="margin-bottom:12px">
-    <div class="ch"><div class="ct">📊 By Category</div></div>
-    <div style="margin-top:10px">
-      ${CATS.filter(k=>byCategory[k]>0).map(k=>`
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bdr2)">
-          <span style="font-size:12px;color:var(--text2)">${k}</span>
-          <span style="font-size:13px;font-weight:600;color:var(--text)">$${byCategory[k].toFixed(0)}</span>
-        </div>`).join('')||'<div style="font-size:12px;color:var(--muted2);text-align:center;padding:10px 0">No expenses yet</div>'}
+    <div class="ch" style="margin-bottom:10px">
+      <div class="ct">🧾 Expenses${expenses.length?' ('+expenses.length+')':''}</div>
+      <button class="pbtn" id="exp-form-toggle-${c.id}" onclick="toggleExpenseForm('${c.id}')">+ Add Expense</button>
     </div>
+    <div id="exp-form-${c.id}" style="display:none;background:var(--card2);border-radius:8px;padding:12px;margin-bottom:12px;border:1.5px solid var(--amber)">
+      <div style="margin-bottom:10px">
+        <div style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Category</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px" id="cat-chips-${c.id}">
+          ${CATS.map(cat=>`<button class="cat-chip" onclick="selectExpCat('${c.id}','${cat}')" data-cat="${cat}">${cat}</button>`).join('')}
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Description</label>
+        <input class="fi" id="exp-desc-${c.id}" style="margin-top:3px" placeholder="e.g. Campsite at Big Sur" type="text"/></div>
+        <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Amount ($)</label>
+        <input class="fi" id="exp-amt-${c.id}" style="margin-top:3px" placeholder="0.00" type="number" step="0.01" min="0"/></div>
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Date</label>
+        <input class="fi" id="exp-date-${c.id}" style="margin-top:3px;width:160px" type="date" value="${itinDays[0]?.date||''}"/>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="pbtn" onclick="addExpenseInline('${c.id}')" style="flex:1;font-weight:700">Save Expense</button>
+        <button onclick="toggleExpenseForm('${c.id}')" style="background:none;border:1.5px solid var(--bdr2);border-radius:7px;padding:6px 14px;cursor:pointer;font-size:12px;color:var(--muted2)">Cancel</button>
+      </div>
+    </div>
+    ${expenses.length?`<div id="exp-list-${c.id}">
+      ${Object.entries(expByDay).sort((a,b)=>a[0]>b[0]?1:-1).map(([date,exps])=>`<div style="margin-bottom:10px">
+        <div style="font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;padding:4px 0;border-bottom:1px solid var(--bdr2);margin-bottom:6px">${dayMap[date]||fd(date)}</div>
+        ${exps.map(e=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;gap:8px"><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.description||e.category}</div><div style="font-size:11px;color:var(--muted2)">${e.category}</div></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0"><span style="font-size:13px;font-weight:700;color:var(--text)">$${parseFloat(e.amount||0).toFixed(2)}</span><button onclick="delAdvExpense('${c.id}',${e._i})" style="background:none;border:none;cursor:pointer;font-size:15px;line-height:1;color:var(--muted2);padding:0;width:18px">×</button></div></div>`).join('')}
+      </div>`).join('')}
+      ${expUngrouped.length?`<div style="margin-bottom:6px">${expUngrouped.length<expenses.length?`<div style="font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;padding:4px 0;border-bottom:1px solid var(--bdr2);margin-bottom:6px">Other</div>`:''}${expUngrouped.map(e=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;gap:8px"><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.description||e.category}</div><div style="font-size:11px;color:var(--muted2)">${e.category}${e.date?' · '+fd(e.date):''}</div></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0"><span style="font-size:13px;font-weight:700;color:var(--text)">$${parseFloat(e.amount||0).toFixed(2)}</span><button onclick="delAdvExpense('${c.id}',${e._i})" style="background:none;border:none;cursor:pointer;font-size:15px;line-height:1;color:var(--muted2);padding:0;width:18px">×</button></div></div>`).join('')}</div>`:''}
+    </div>
+    <div style="padding-top:8px;border-top:1px solid var(--bdr2);display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:11px;color:var(--muted2)">${expenses.length} expense${expenses.length===1?'':'s'}</span>
+      <span style="font-size:14px;font-weight:700;color:var(--text)">$${expensesTotal.toFixed(2)} total</span>
+    </div>`:`<div style="font-size:12px;color:var(--muted2);text-align:center;padding:16px 0">No expenses yet — hit <strong>+ Add Expense</strong> to start tracking.</div>`}
   </div>
-  <div class="card">
-    <div class="ch"><div class="ct">🧾 Expenses (${expenses.length})</div><button class="pbtn" onclick="openAdvExpense('${c.id}')">+ Add</button></div>
-    ${expenses.length?`<div style="margin-top:8px">${expenses.slice().reverse().map((e,ri)=>{const i=expenses.length-1-ri;return`<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--bdr2);gap:8px">
-      <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:600;color:var(--text)">${e.description||e.category}</div>
-        <div style="font-size:11px;color:var(--muted2)">${e.category}${e.date?' · '+fd(e.date):''}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-        <span style="font-size:13px;font-weight:700;color:var(--text)">$${parseFloat(e.amount||0).toFixed(2)}</span>
-        <button onclick="delAdvExpense('${c.id}',${i})" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);padding:0" title="Delete">×</button>
-      </div>
-    </div>`;}).join('')}</div>`:`<div style="font-size:12px;color:var(--muted2);text-align:center;padding:12px 0">No expenses logged yet</div>`}
-  </div>`;
+  ${(expenses.length||includeFuel)?`<div class="card">
+    <div class="ct" style="margin-bottom:10px">📊 By Category</div>
+    ${CATS.filter(k=>byCategory[k]>0).map(k=>{const barW=Math.round(byCategory[k]/maxCat*100);const isFuel=k==='Fuel';return`<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px"><span style="font-size:12px;color:var(--text2)">${k}${isFuel&&includeFuel?' (est.)':''}</span><span style="font-size:13px;font-weight:700;color:var(--text)">$${byCategory[k].toFixed(0)}</span></div><div style="background:var(--card2);border-radius:4px;height:6px;overflow:hidden"><div style="width:${barW}%;height:100%;background:${isFuel?'var(--amber)':'var(--green3)'};border-radius:4px;transition:width .3s"></div></div></div>`;}).join('')}
+    <div style="padding-top:8px;border-top:1px solid var(--bdr2);display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+      <span style="font-size:11px;color:var(--muted2)">Total tracked</span>
+      <span style="font-size:14px;font-weight:700;color:var(--text)">$${totalSpent.toFixed(2)}</span>
+    </div>
+  </div>`:''}`;
 }
-function updateFuelCalc(cid){
+function updateFuelSliders(cid){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
-  const priceEl=document.getElementById('fuel-price-'+cid);
-  const milesEl=document.getElementById('est-miles-'+cid);
-  const mpgEl=document.getElementById('fuel-mpg-'+cid);
+  const mpgEl=document.getElementById('mpg-slider-'+cid);
+  const gpEl=document.getElementById('gp-slider-'+cid);
   const tankEl=document.getElementById('fuel-tank-'+cid);
-  const price=parseFloat(priceEl?.value)||0;
+  const manEl=document.getElementById('est-miles-'+cid);
   const mpg=parseFloat(mpgEl?.value)||parseFloat((c.rig||{}).mpg)||0;
+  const gp=parseFloat(gpEl?.value)||parseFloat(c.fuelPrice)||parseFloat(D.settings?.gasPrice)||0;
   const tankGal=parseFloat(tankEl?.value)||parseFloat((c.rig||{}).tankGal)||18;
-  const campStopMiles=(c.stops||[]).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
-  const itinMiles=(c.itinerary||[]).flatMap(d=>d.stops||[]).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
-  const calcMiles=campStopMiles||itinMiles;
-  const startMi=parseFloat(c.startMiles)||0;
-  const endMi=parseFloat(c.endMiles)||0;
-  const manualMiles=milesEl?parseFloat(milesEl.value)||0:0;
-  const miles=(startMi+calcMiles+endMi)||manualMiles;
-  if(price){c.fuelPrice=price;if(!D.settings)D.settings={};D.settings.gasPrice=price;localStorage.setItem(K.settings,JSON.stringify(D.settings));}
-  if(!c.rig)c.rig={};
-  if(mpgEl?.value&&parseFloat(mpgEl.value))c.rig.mpg=mpgEl.value;
-  if(tankEl?.value&&parseFloat(tankEl.value))c.rig.tankGal=parseFloat(tankEl.value);
-  if(manualMiles)c.estTripMiles=manualMiles;
-  saveCamps();
-  const estEl=document.getElementById('fuel-est-'+cid);
+  const campMi=(c.stops||[]).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  const itinMi=(c.itinerary||[]).flatMap(d=>d.stops||[]).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  const startMi=parseFloat(c.startMiles)||0;const endMi=parseFloat(c.endMiles)||0;
+  const manMi=manEl?parseFloat(manEl.value)||0:0;
+  const miles=(startMi+(campMi||itinMi)+endMi)||manMi||(parseFloat(c.estTripMiles)||0);
+  const gal=mpg&&miles?miles/mpg:0;
+  const cost=gal&&gp?Math.round(gal*gp):0;
+  const fills=gal&&tankGal?Math.ceil(gal/(tankGal*0.9)):0;
   const galEl=document.getElementById('fuel-gal-'+cid);
+  const costEl=document.getElementById('fuel-cost-'+cid);
   const fillsEl=document.getElementById('fuel-fills-'+cid);
   const fillsLblEl=document.getElementById('fuel-fills-lbl-'+cid);
-  const hasVal=price&&mpg&&miles;
-  if(estEl){estEl.textContent=hasVal?'$'+(miles/mpg*price).toFixed(0):'↑ add price';estEl.style.fontSize=hasVal?'16px':'12px';estEl.style.color=hasVal?'var(--green3)':'var(--muted2)';}
-  if(galEl&&mpg&&miles){galEl.textContent=(miles/mpg).toFixed(1);}
-  if(fillsEl&&mpg&&miles){fillsEl.textContent=tankGal?Math.ceil(miles/mpg/tankGal):Math.ceil(miles/mpg/18);}
-  if(fillsLblEl&&mpg&&miles){fillsLblEl.textContent='Fill-ups ('+(tankGal?Math.round(tankGal*0.9)+'gal ea':'~18 gal')+')';}
+  if(galEl)galEl.textContent=gal?gal.toFixed(1):'—';
+  if(costEl){costEl.textContent=cost?'$'+cost:'—';costEl.style.color=cost?'var(--green3)':'var(--muted2)';}
+  if(fillsEl)fillsEl.textContent=fills||'—';
+  if(fillsLblEl)fillsLblEl.textContent='fill-ups (~'+Math.round(tankGal*0.9)+' gal ea)';
+}
+function saveFuelPrice(cid,val){
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  const price=parseFloat(val)||0;if(!price)return;
+  c.fuelPrice=price;
+  if(!D.settings)D.settings={};
+  D.settings.gasPrice=price;
+  localStorage.setItem(K.settings,JSON.stringify(D.settings));
+  saveCamps();
   if(c.includeFuelInBudget){window._campDTab='budget';openCampD(cid);}
 }
 function toggleFuelInBudget(cid,val){
@@ -9879,33 +9961,53 @@ function liveUpdateBudget(cid,budgetVal){
   const budget=parseFloat(budgetVal)||0;
   const expenses=c.expenses||[];
   const expensesTotal=expenses.reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
-  const rig=c.rig||{};
   const startMi=parseFloat(c.startMiles)||0;const endMi=parseFloat(c.endMiles)||0;
   const itinMi=(c.itinerary||[]).flatMap(d=>d.stops||[]).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
   const campMi=(c.stops||[]).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
   const effMi=(startMi+(campMi||itinMi)+endMi)||(parseFloat(c.estTripMiles)||0);
   const gp=parseFloat(c.fuelPrice)||parseFloat(D.settings?.gasPrice)||0;
-  const fuelEst=(rig.mpg&&effMi&&gp)?Math.round(effMi/parseFloat(rig.mpg)*gp):0;
+  const mpg=parseFloat((c.rig||{}).mpg)||0;
+  const fuelEst=(mpg&&effMi&&gp)?Math.round(effMi/mpg*gp):0;
   const incFuel=!!c.includeFuelInBudget&&fuelEst>0;
   const spent=expensesTotal+(incFuel?fuelEst:0);
-  const pct=budget?Math.min(100,Math.round(spent/budget*100)):0;
-  const col=pct>90?'#c05050':pct>70?'#B8892A':'var(--green3)';
-  const spentEl=document.getElementById('bdg-spent-'+cid);if(spentEl){spentEl.style.color=col;}
-  const ofEl=document.getElementById('bdg-of-'+cid);if(ofEl)ofEl.textContent='of $'+(budget||'—');
-  const wrap=document.getElementById('bdg-bar-wrap-'+cid);if(wrap)wrap.style.display=budget?'':'none';
-  const bar=document.getElementById('bdg-bar-'+cid);if(bar){bar.style.width=pct+'%';bar.style.background=col;}
-  const pctEl=document.getElementById('bdg-pct-'+cid);if(pctEl){pctEl.style.display=budget?'':'none';pctEl.textContent=pct+'% spent · $'+Math.max(0,budget-spent).toFixed(0)+' remaining'+(incFuel?' (incl. est. fuel)':'');}
+  const remaining=Math.max(0,budget-spent);
+  const overBudget=budget>0&&spent>budget;
+  const fuelPct=budget&&incFuel?Math.min(100,Math.round(fuelEst/budget*100)):0;
+  const expPct=budget?Math.min(100-fuelPct,Math.round(expensesTotal/budget*100)):0;
+  const spentEl=document.getElementById('bdg-spent-'+cid);
+  if(spentEl){spentEl.textContent='$'+spent.toFixed(0);spentEl.style.color=overBudget?'#c05050':spent>0?'var(--text)':'var(--muted2)';}
+  const ofEl=document.getElementById('bdg-of-'+cid);
+  if(ofEl)ofEl.innerHTML=budget?'of $'+budget.toFixed(0)+' · '+(overBudget?'<span style="color:#c05050;font-weight:700">over by $'+(spent-budget).toFixed(0)+'</span>':'<span style="color:var(--green3)">$'+remaining.toFixed(0)+' left</span>'):'';
+  const fuelBar=document.getElementById('bdg-bar-fuel-'+cid);if(fuelBar)fuelBar.style.width=fuelPct+'%';
+  const expBar=document.getElementById('bdg-bar-exp-'+cid);if(expBar)expBar.style.width=expPct+'%';
 }
-function openAdvExpense(cid){
-  const CATS=['Fuel','Camping Fees','Food & Groceries','Dining Out','Activities','Gear','Propane','Park Passes','Dump Fees','Misc'];
-  const cat=prompt('Category:\n'+CATS.join(', '));if(!cat)return;
-  const desc=prompt('Description (optional):');
-  const amt=prompt('Amount ($):');if(!amt||isNaN(parseFloat(amt)))return;
-  const dateStr=prompt('Date (YYYY-MM-DD, or leave blank):');
+function toggleExpenseForm(cid){
+  const form=document.getElementById('exp-form-'+cid);if(!form)return;
+  const open=form.style.display==='none';
+  form.style.display=open?'block':'none';
+  const btn=document.getElementById('exp-form-toggle-'+cid);
+  if(btn)btn.textContent=open?'✕ Cancel':'+ Add Expense';
+  if(open){
+    const chips=document.querySelectorAll('#cat-chips-'+cid+' .cat-chip');
+    if(chips.length&&!document.querySelector('#cat-chips-'+cid+' .cat-chip.sel'))chips[1].click();
+    const amtEl=document.getElementById('exp-amt-'+cid);
+    if(amtEl)setTimeout(()=>amtEl.focus(),50);
+  }
+}
+function selectExpCat(cid,cat){
+  document.querySelectorAll('#cat-chips-'+cid+' .cat-chip').forEach(ch=>ch.classList.toggle('sel',ch.dataset.cat===cat));
+}
+function addExpenseInline(cid){
+  const selCat=document.querySelector('#cat-chips-'+cid+' .cat-chip.sel');
+  const descEl=document.getElementById('exp-desc-'+cid);
+  const amtEl=document.getElementById('exp-amt-'+cid);
+  const dateEl=document.getElementById('exp-date-'+cid);
+  if(!selCat){toast('Pick a category first','warn');return;}
+  const amt=parseFloat(amtEl?.value);
+  if(!amt||amt<=0){toast('Enter an amount','warn');return;}
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   if(!c.expenses)c.expenses=[];
-  const matched=CATS.find(k=>k.toLowerCase()===cat.toLowerCase().trim())||'Misc';
-  c.expenses.push({id:uid(),category:matched,description:desc||'',amount:parseFloat(amt),date:dateStr||''});
+  c.expenses.push({id:uid(),category:selCat.dataset.cat,description:(descEl?.value||'').trim(),amount:amt,date:dateEl?.value||''});
   saveCamps();
   window._campDTab='budget';openCampD(cid);toast('💰 Expense added');
 }
