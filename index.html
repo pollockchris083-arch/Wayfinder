@@ -8017,16 +8017,17 @@ function rAdvOverviewTab(c){
   const travelers=c.travelers||[];
   const showRig=['rv','van','trailer','overlanding'].includes(c.campType);
   const rig=c.rig||{};
-  const RIG_TYPES=['Class A','Class B','Class C','Travel Trailer','5th Wheel','Van','Truck Camper','Pop-up'];
   const D2=load();
   const homeCity=(D2.settings?.homeCity||'').trim();
   const isRound=c.isRoundTrip!==false;
   const startMi=parseFloat(c.startMiles)||0;
   const endMi=parseFloat(c.endMiles)||0;
-  // Computed stats — only from confirmed data
-  const allStops=(c.itinerary||[]).flatMap(d=>d.stops||[]);
+  // Stats from confirmed data only
+  const itin=c.itinerary||[];
+  const allStops=itin.flatMap(d=>d.stops||[]);
   const stopCount=allStops.length;
-  const daysPlanned=(c.itinerary||[]).filter(d=>d.date).length;
+  const daysWithDates=itin.filter(d=>d.date).sort((a,b)=>a.date.localeCompare(b.date));
+  const daysPlanned=daysWithDates.length;
   const duration=c.startDate&&c.endDate?Math.round((new Date(c.endDate)-new Date(c.startDate))/86400000)+1:null;
   const today2=new Date();today2.setHours(0,0,0,0);
   const daysUntil=c.startDate?Math.ceil((new Date(c.startDate)-today2)/86400000):null;
@@ -8034,10 +8035,17 @@ function rAdvOverviewTab(c){
   const totalMiAll=Math.round(startMi+totalStopMi+endMi);
   const gearItems=(c.gear||[]).length;
   const gearPacked=(c.gear||[]).filter(g=>g.packed||g.done).length;
+  const gearPct=gearItems?Math.round(gearPacked/gearItems*100):0;
+  const stayCount=(c.stays||[]).length;
   const memoirCount=(D2.journal||[]).filter(j=>j.tripId===c.id).length;
+  const budgetSet=parseFloat(c.budget)||0;
+  const expenses=itin.flatMap(d=>(d.expenses||[])).concat(c.expenses||[]);
+  const spent=expenses.reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
   // Route breadcrumb — only confirmed stop names
   const stopNames=allStops.map(s=>s.name).filter(Boolean);
-  const crumbParts=[c.startLocation||null,...stopNames.slice(0,3),...(stopNames.length>3?['+'+String(stopNames.length-3)+' more']:[]),...(isRound&&c.startLocation?['home']:c.endLocation?[c.endLocation]:[])].filter(Boolean);
+  const extra=stopNames.length>4?['+'+String(stopNames.length-4)+' more']:[];
+  const tail=isRound&&c.startLocation?['home']:c.endLocation?[c.endLocation]:[];
+  const crumbParts=[c.startLocation||null,...stopNames.slice(0,4),...extra,...tail].filter(Boolean);
   return`
   <!-- ── Signal Board ─────────────────────────── -->
   <div style="display:grid;grid-template-columns:repeat(4,1fr);margin-bottom:10px;background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)">
@@ -8052,7 +8060,7 @@ function rAdvOverviewTab(c){
       <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--green) 0%,rgba(62,102,68,0) 100%)"></div>
       <div style="font-size:10px;font-weight:700;color:var(--green3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Stops</div>
       <div style="font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1;color:var(--text)">${stopCount||'—'}</div>
-      <div style="font-size:9px;color:var(--muted2);margin-top:4px">${stopCount?daysPlanned+' day'+(daysPlanned!==1?'s':'')+' mapped':'tap to plan →'}</div>
+      <div style="font-size:9px;color:var(--muted2);margin-top:4px">${stopCount?daysPlanned+' day'+(daysPlanned!==1?'s':'')+' planned':'tap to plan →'}</div>
       <div style="position:absolute;bottom:8px;right:10px;font-size:20px;opacity:.07;pointer-events:none;line-height:1">📍</div>
     </div>
     <div style="padding:15px 13px 13px;position:relative;border-right:1px solid var(--bdr2)">
@@ -8071,50 +8079,46 @@ function rAdvOverviewTab(c){
     </div>
   </div>
 
-  <!-- ── Quick Nav Dock ──────────────────────── -->
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">
-    <button onclick="window._campDTab='daily';openCampD('${c.id}')" style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:13px 8px 11px;background:var(--card);border:1px solid var(--bdr);border-top:3px solid var(--green);border-radius:var(--r);cursor:pointer;font-family:inherit;width:100%;transition:transform .18s,box-shadow .18s,background .18s;box-shadow:var(--shadow)" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 16px rgba(62,102,68,.16)';this.style.background='rgba(62,102,68,.04)'" onmouseout="this.style.transform='';this.style.boxShadow='var(--shadow)';this.style.background='var(--card)'">
-      <div style="font-size:22px;line-height:1">📅</div>
-      <div style="font-size:11px;font-weight:700;color:var(--text);line-height:1.2;margin-top:2px">Plans</div>
-      <div style="font-size:9px;color:var(--muted2)">${stopCount?stopCount+' stop'+(stopCount!==1?'s':''):'Plan route'}</div>
-    </button>
-    <button onclick="window._campDTab='budget';openCampD('${c.id}')" style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:13px 8px 11px;background:var(--card);border:1px solid var(--bdr);border-top:3px solid var(--amber);border-radius:var(--r);cursor:pointer;font-family:inherit;width:100%;transition:transform .18s,box-shadow .18s,background .18s;box-shadow:var(--shadow)" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 16px rgba(200,144,30,.16)';this.style.background='rgba(200,144,30,.04)'" onmouseout="this.style.transform='';this.style.boxShadow='var(--shadow)';this.style.background='var(--card)'">
-      <div style="font-size:22px;line-height:1">💰</div>
-      <div style="font-size:11px;font-weight:700;color:var(--text);line-height:1.2;margin-top:2px">Budget</div>
-      <div style="font-size:9px;color:var(--muted2)">${c.budget?'$'+parseFloat(c.budget).toLocaleString(undefined,{maximumFractionDigits:0}):'Set budget'}</div>
-    </button>
-    <button onclick="window._campDTab='gear';openCampD('${c.id}')" style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:13px 8px 11px;background:var(--card);border:1px solid var(--bdr);border-top:3px solid var(--earth);border-radius:var(--r);cursor:pointer;font-family:inherit;width:100%;transition:transform .18s,box-shadow .18s,background .18s;box-shadow:var(--shadow)" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 16px rgba(155,116,32,.14)';this.style.background='rgba(155,116,32,.04)'" onmouseout="this.style.transform='';this.style.boxShadow='var(--shadow)';this.style.background='var(--card)'">
-      <div style="font-size:22px;line-height:1">🎒</div>
-      <div style="font-size:11px;font-weight:700;color:var(--text);line-height:1.2;margin-top:2px">Gear</div>
-      <div style="font-size:9px;color:var(--muted2)">${gearItems?gearPacked+'/'+gearItems+' packed':'Build list'}</div>
-    </button>
-    <button onclick="window._campDTab='summary';openCampD('${c.id}')" style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:13px 8px 11px;background:var(--card);border:1px solid var(--bdr);border-top:3px solid var(--slate-acc);border-radius:var(--r);cursor:pointer;font-family:inherit;width:100%;transition:transform .18s,box-shadow .18s,background .18s;box-shadow:var(--shadow)" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 16px rgba(74,96,120,.14)';this.style.background='rgba(74,96,120,.04)'" onmouseout="this.style.transform='';this.style.boxShadow='var(--shadow)';this.style.background='var(--card)'">
-      <div style="font-size:22px;line-height:1">📓</div>
-      <div style="font-size:11px;font-weight:700;color:var(--text);line-height:1.2;margin-top:2px">Memoirs</div>
-      <div style="font-size:9px;color:var(--muted2)">${memoirCount?memoirCount+' entr'+(memoirCount!==1?'ies':'y'):'Write memories'}</div>
-    </button>
-  </div>
-
-  <!-- ── Route Card ──────────────────────────── -->
-  <div style="background:var(--card);border:1px solid var(--bdr);border-top:3px solid #4A789E;border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:var(--shadow)">
+  <!-- ── Itinerary Timeline (only if days planned) ── -->
+  ${daysWithDates.length?`<div style="background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:var(--shadow)">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:10px;font-weight:700;color:var(--green3);text-transform:uppercase;letter-spacing:.7px">Itinerary</div>
+      <button onclick="window._campDTab='daily';openCampD('${c.id}')" style="font-size:11px;color:var(--green3);background:none;border:none;cursor:pointer;font-family:inherit;padding:0;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">Full plans →</button>
+    </div>
+    ${daysWithDates.map((day)=>{
+      const ds=day.stops||[];
+      const names=ds.slice(0,2).map(s=>s.name).filter(Boolean).join(', ')+(ds.length>2?' +'+(ds.length-2)+' more':'');
+      const dayMi=ds.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+      const daySecs=ds.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0);
+      return`<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--bdr2)">
+        <div style="flex-shrink:0;width:3px;border-radius:2px;background:var(--green);opacity:.35;align-self:stretch;min-height:18px;margin-top:2px"></div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap">
+            <div style="font-size:12px;font-weight:600;color:var(--text)">${new Date(day.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</div>
+            <div style="font-size:10px;color:var(--muted2)">${ds.length} stop${ds.length!==1?'s':''}</div>
+            ${dayMi?`<div style="font-size:10px;color:var(--muted2)">${Math.round(dayMi)} mi${daySecs?' · '+fDrive(daySecs):''}</div>`:''}
+          </div>
+          ${names?`<div style="font-size:11px;color:var(--text2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${names}</div>`:''}
+        </div>
+      </div>`;
+    }).join('')}
+    ${duration&&daysPlanned<duration?`<div style="padding:8px 0;font-size:11px;color:var(--muted2);font-style:italic">${duration-daysPlanned} more day${duration-daysPlanned!==1?'s':''} not yet planned…</div>`:!daysWithDates.length?`<div style="padding:8px 0;font-size:11px;color:var(--muted2);font-style:italic">Add days in the Plans tab to build your itinerary</div>`:''}
+  </div>`:stopCount?`<div style="background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .15s;box-shadow:var(--shadow)" onclick="window._campDTab='daily';openCampD('${c.id}')" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background='var(--card)'">
+    <span style="font-size:12px;color:var(--muted2)">${stopCount} stop${stopCount!==1?'s':''} added — assign dates to see your itinerary timeline</span>
+    <span style="font-size:11px;color:var(--green3)">Plans →</span>
+  </div>`:``}
+
+  <!-- ── Route (read-only + collapsible edit) ── -->
+  <div style="background:var(--card);border:1px solid var(--bdr);border-top:3px solid #4A789E;border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:var(--shadow)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${crumbParts.length>0||startMi||endMi?'8':'0'}px">
       <div style="font-size:10px;font-weight:700;color:#4A789E;text-transform:uppercase;letter-spacing:.7px">Route</div>
-      ${(startMi||endMi)?`<div style="font-size:10px;color:var(--muted2)">${Math.round(startMi+endMi)} mi home${c.startSecs||c.endSecs?' · '+fDrive((c.startSecs||0)+(c.endSecs||0)):''}${c.startMilesEst||c.endMilesEst?' (est.)':''}</div>`:''}
+      <div style="display:flex;align-items:center;gap:8px">
+        ${(startMi||endMi)?`<span style="font-size:10px;color:var(--muted2)">${Math.round(startMi+endMi)} mi home${c.startSecs||c.endSecs?' · '+fDrive((c.startSecs||0)+(c.endSecs||0)):''}${c.startMilesEst||c.endMilesEst?' (est.)':''}</span>`:''}
+        <button id="route-edit-btn-${c.id}" onclick="(function(btn){const s=document.getElementById('route-edit-form-${c.id}');const open=s.style.display!=='none';s.style.display=open?'none':'block';btn.textContent=open?'⚙ Edit':'▲ Hide';})(this)" style="font-size:10px;color:var(--muted2);background:none;border:1px solid var(--bdr2);border-radius:100px;padding:2px 9px;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.color='var(--text)';this.style.borderColor='var(--bdr)'" onmouseout="this.style.color='var(--muted2)';this.style.borderColor='var(--bdr2)'">⚙ Edit</button>
+      </div>
     </div>
-    ${crumbParts.length>1?`<div style="display:flex;align-items:center;flex-wrap:wrap;gap:3px;margin-bottom:12px;padding:9px 11px;background:var(--card2);border-radius:8px">${crumbParts.map((name,i)=>`<span style="font-size:12px;${i===0||i===crumbParts.length-1?'font-weight:600;color:var(--text)':'color:var(--text2)'}">${name}</span>${i<crumbParts.length-1?'<span style="font-size:10px;color:var(--muted);opacity:.45;margin:0 2px">›</span>':''}`).join('')}</div>`:''}
-    <div>
-      <label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Departing From</label>
-      <input id="start-loc-${c.id}" class="fi" style="margin-top:3px" value="${c.startLocation||''}" placeholder="${homeCity||'Home city or departure address'}" onblur="geocodeAndSaveStart('${c.id}')"/>
-    </div>
-    <label style="display:flex;align-items:center;gap:7px;margin-top:10px;cursor:pointer;font-size:13px;color:var(--text2)">
-      <input type="checkbox" id="rt-chk-${c.id}" ${isRound?'checked':''} style="accent-color:var(--green);width:15px;height:15px;flex-shrink:0" onchange="toggleRoundTrip('${c.id}',this.checked)"/>
-      Round trip — return to departure city
-    </label>
-    <div id="end-loc-row-${c.id}" style="margin-top:8px${isRound?';display:none':''}">
-      <label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Returning To</label>
-      <input id="end-loc-${c.id}" class="fi" style="margin-top:3px" value="${c.endLocation||''}" placeholder="Different end destination" onblur="geocodeAndSaveEnd('${c.id}')"/>
-    </div>
-    ${(startMi||endMi)?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+    ${crumbParts.length>1?`<div style="display:flex;align-items:center;flex-wrap:wrap;gap:3px;padding:9px 11px;background:var(--card2);border-radius:8px;margin-bottom:${(startMi||endMi)?'8':'0'}px">${crumbParts.map((name,i)=>`<span style="font-size:12px;${i===0||i===crumbParts.length-1?'font-weight:600;color:var(--text)':'color:var(--text2)'}">${name}</span>${i<crumbParts.length-1?'<span style="font-size:10px;color:var(--muted);opacity:.4;margin:0 2px">›</span>':''}`).join('')}</div>`:`<div style="font-size:12px;color:var(--muted2);font-style:italic;margin-bottom:4px">No route yet — tap ⚙ Edit to set your departure city</div>`}
+    ${(startMi||endMi)?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
       <div style="background:var(--card2);border-radius:7px;padding:8px 10px">
         <div style="font-size:13px;font-weight:700;color:#4A789E">${startMi?Math.round(startMi)+' mi':'—'}</div>
         <div style="font-size:10px;color:var(--muted2);margin-top:1px">Outbound${c.startSecs?' · '+fDrive(c.startSecs):''}${c.startMilesEst?' (est.)':''}</div>
@@ -8124,6 +8128,20 @@ function rAdvOverviewTab(c){
         <div style="font-size:10px;color:var(--muted2);margin-top:1px">Return${c.endSecs?' · '+fDrive(c.endSecs):''}${c.endMilesEst?' (est.)':''}</div>
       </div>
     </div>`:''}
+    <div id="route-edit-form-${c.id}" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr2)">
+      <div>
+        <label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Departing From</label>
+        <input id="start-loc-${c.id}" class="fi" style="margin-top:3px" value="${c.startLocation||''}" placeholder="${homeCity||'Home city or departure address'}" onblur="geocodeAndSaveStart('${c.id}')"/>
+      </div>
+      <label style="display:flex;align-items:center;gap:7px;margin-top:10px;cursor:pointer;font-size:13px;color:var(--text2)">
+        <input type="checkbox" id="rt-chk-${c.id}" ${isRound?'checked':''} style="accent-color:var(--green);width:15px;height:15px;flex-shrink:0" onchange="toggleRoundTrip('${c.id}',this.checked)"/>
+        Round trip — return to departure city
+      </label>
+      <div id="end-loc-row-${c.id}" style="margin-top:8px${isRound?';display:none':''}">
+        <label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Returning To</label>
+        <input id="end-loc-${c.id}" class="fi" style="margin-top:3px" value="${c.endLocation||''}" placeholder="Different end destination" onblur="geocodeAndSaveEnd('${c.id}')"/>
+      </div>
+    </div>
   </div>
 
   <!-- ── Notes ───────────────────────────────── -->
@@ -8147,51 +8165,21 @@ function rAdvOverviewTab(c){
     ${travelers.length?`<div style="display:flex;flex-wrap:wrap;gap:6px">${travelers.map((t,i)=>`<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(74,120,158,.07);border:1px solid rgba(74,120,158,.2);border-radius:20px;padding:5px 12px 5px 7px;font-size:12px;font-weight:500;color:var(--text)"><span style="width:20px;height:20px;border-radius:50%;background:#4A789E;color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${t.charAt(0).toUpperCase()}</span>${t}<button onclick="removeAdvTraveler('${c.id}',${i})" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted2);padding:0 0 0 4px;line-height:1" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'">×</button></span>`).join('')}</div>`:`<div style="font-size:12px;color:var(--muted2);font-style:italic">Solo trip — or add who's coming along</div>`}
   </div>
 
-  ${rTripStaysSection(c)}
-  ${showRig?rTripFuelSection(c):''}
-  ${showRig?`
-  <div class="card" style="margin-bottom:12px;border-top:3px solid var(--earth)">
-    <div class="ch coll-toggle${rig.name||rig.mpg||rig.length?'':' coll-open'}" onclick="this.classList.toggle('coll-open');this.nextElementSibling.classList.toggle('coll-open')">
-      <div>
-        <div class="ct">🚐 Rig Info</div>
-        <div class="cs">${[rig.name,rig.type,rig.length?rig.length+'ft':null,rig.mpg?rig.mpg+' mpg':null].filter(Boolean).join(' · ')||'Tap to add your rig details'}</div>
-      </div>
-      <span class="coll-arrow">▾</span>
+  <!-- ── Budget + Gear snippet ──────────────── -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+    <div style="background:var(--card);border:1px solid var(--bdr);border-top:2px solid var(--amber);border-radius:var(--r);padding:12px;cursor:pointer;transition:background .15s;box-shadow:var(--shadow)" onclick="window._campDTab='budget';openCampD('${c.id}')" onmouseover="this.style.background='rgba(200,144,30,.04)'" onmouseout="this.style.background='var(--card)'">
+      <div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px">Budget</div>
+      ${budgetSet?`<div style="font-size:16px;font-weight:700;color:var(--text)">$${budgetSet.toLocaleString(undefined,{maximumFractionDigits:0})}<span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:3px">set</span></div><div style="font-size:10px;color:var(--muted2);margin-top:2px">${spent?'$'+Math.round(spent)+' tracked':'No expenses logged yet'}</div>`:
+      `<div style="font-size:12px;color:var(--muted2);font-style:italic">Set your trip budget →</div>`}
     </div>
-    <div class="coll-body${rig.name||rig.mpg||rig.length?'':' coll-open'}">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
-      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Rig Name</label>
-        <input class="fi" style="margin-top:3px" value="${rig.name||''}" placeholder="e.g. Big Red" onblur="saveAdvRig('${c.id}','name',this.value)"/></div>
-      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Type</label>
-        <select class="fi" style="margin-top:3px" onchange="saveAdvRig('${c.id}','type',this.value)">
-          <option value="">— Select —</option>
-          ${RIG_TYPES.map(t=>`<option${rig.type===t?' selected':''}>${t}</option>`).join('')}
-        </select></div>
-      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Length (ft)</label>
-        <input class="fi" style="margin-top:3px" type="number" value="${rig.length||''}" placeholder="e.g. 25" onblur="saveAdvRig('${c.id}','length',this.value)"/></div>
-      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Height (ft)</label>
-        <input class="fi" style="margin-top:3px" type="number" value="${rig.height||''}" placeholder="e.g. 11.5" onblur="saveAdvRig('${c.id}','height',this.value)"/></div>
-      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Tow Vehicle</label>
-        <input class="fi" style="margin-top:3px" value="${rig.towVehicle||''}" placeholder="e.g. F-250" onblur="saveAdvRig('${c.id}','towVehicle',this.value)"/></div>
-      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">MPG (fuel calc)</label>
-        <input class="fi" style="margin-top:3px" type="number" value="${rig.mpg||''}" placeholder="e.g. 10" onblur="saveAdvRig('${c.id}','mpg',this.value)"/></div>
+    <div style="background:var(--card);border:1px solid var(--bdr);border-top:2px solid var(--earth);border-radius:var(--r);padding:12px;cursor:pointer;transition:background .15s;box-shadow:var(--shadow)" onclick="window._campDTab='gear';openCampD('${c.id}')" onmouseover="this.style.background='rgba(155,116,32,.04)'" onmouseout="this.style.background='var(--card)'">
+      <div style="font-size:10px;font-weight:700;color:var(--earth);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px">Gear</div>
+      ${gearItems?`<div style="font-size:16px;font-weight:700;color:var(--text)">${gearPacked}<span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:3px">/ ${gearItems} packed</span></div><div style="margin-top:6px;height:3px;background:var(--bdr2);border-radius:2px;overflow:hidden"><div style="height:100%;background:var(--earth);width:${gearPct}%;border-radius:2px;transition:width .5s"></div></div>`:
+      `<div style="font-size:12px;color:var(--muted2);font-style:italic">Build your gear list →</div>`}
     </div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
-      ${[['slides','Slide-outs'],['generator','Generator'],['solar','Solar'],['awning','Awning']].map(([k,l])=>`
-        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:var(--text2)">
-          <input type="checkbox" ${rig[k]?'checked':''} style="accent-color:var(--green);width:14px;height:14px" onchange="saveAdvRig('${c.id}','${k}',this.checked)"/>${l}
-        </label>`).join('')}
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
-      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Fresh Water (gal)</label>
-        <input class="fi" style="margin-top:3px" type="number" value="${rig.freshWater||''}" onblur="saveAdvRig('${c.id}','freshWater',this.value)"/></div>
-      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Grey Tank (gal)</label>
-        <input class="fi" style="margin-top:3px" type="number" value="${rig.greyTank||''}" onblur="saveAdvRig('${c.id}','greyTank',this.value)"/></div>
-      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Black Tank (gal)</label>
-        <input class="fi" style="margin-top:3px" type="number" value="${rig.blackTank||''}" onblur="saveAdvRig('${c.id}','blackTank',this.value)"/></div>
-    </div>
-    </div>
-  </div>`:''}`;
+  </div>
+
+  ${rTripStaysSection(c)}`;
 }
 function saveAdvField(cid,field,value){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
