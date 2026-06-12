@@ -2593,9 +2593,10 @@ async function manualCloudSync(){
   if(rslt){rslt.style.display='none';}
   try{
     D=load();
-    // Phase 1: push ALL local data to cloud so other devices get everything
+    // Phase 1: push ALL local data to cloud so other devices get everything.
+    // Use allSettled so a single collection failure does NOT abort the pull phase.
     setSyncStatus('⬆️ Uploading…','var(--gold2)');
-    await Promise.all([
+    const pushResults=await Promise.allSettled([
       cloudPush('places',D.places),
       cloudPush('trips',D.trips),
       cloudPush('wish',D.wish),
@@ -2604,22 +2605,39 @@ async function manualCloudSync(){
       _upsertBlob('__camps_v1__',D.camps),
       _upsertBlob('__work_v1__',D.work||[]),
     ]);
-    // Phase 2: pull merged result from cloud
+    const pushFailures=pushResults.filter(r=>r.status==='rejected').map(r=>r.reason?.message||String(r.reason));
+    if(pushFailures.length)console.warn('[Sync] push partial failures:',pushFailures);
+    // Phase 2: ALWAYS pull merged result from cloud regardless of push failures
     await loadFromCloud();
     const advCount=(D.camps||[]).filter(c=>c.recordType!=='spot').length;
     const counts=`${D.places.length} places · ${D.trips.length} trips · ${advCount} adventures · ${D.wish.filter(w=>!w.graduated).length} wishlist`;
+    const warnNote=pushFailures.length?` (${pushFailures.length} push error${pushFailures.length>1?'s':''})':'';
     if(btn){btn.textContent='✅ Synced';btn.disabled=false;setTimeout(()=>{if(btn)btn.textContent=orig;},3000);}
-    if(rslt){rslt.textContent='✅ Synced — '+counts;rslt.style.display='block';rslt.style.color='var(--green3)';}
+    if(rslt){rslt.textContent='✅ Synced — '+counts+warnNote;rslt.style.display='block';rslt.style.color=pushFailures.length?'#9a6200':'var(--green3)';}
   }catch(e){
     if(btn){btn.textContent=orig;btn.disabled=false;}
-    if(rslt){rslt.textContent='⚠️ Sync failed — check your connection';rslt.style.display='block';rslt.style.color='#c05050';}
+    if(rslt){rslt.textContent='⚠️ Sync failed — '+e.message;rslt.style.display='block';rslt.style.color='#c05050';}
     toast('⚠️ Sync failed');
   }
 }
 
+// Explicit field whitelists per collection — only these camelCase app fields are serialized.
+// Any extra field (e.g. placeId on graduated wishlist items) is stripped before the insert,
+// preventing PGRST204 "column not found" errors when the DB schema doesn't have that column.
+const _SYNC_FIELDS={
+  wish:['id','name','type','priority','season','notes','addedAt','graduated'],
+  // trips/places/journal: no whitelist — push all converted fields (schemas accommodate them)
+};
+
 async function cloudPush(collection,items){
   if(!currentUser||!items)return;
-  const rows=items.map(item=>{const row={user_id:currentUser.id};Object.entries(item).forEach(([k,v])=>{row[k==='visitDate'?k:k.replace(/[A-Z]/g,c=>'_'+c.toLowerCase())]=v;});return row;});
+  const allowed=_SYNC_FIELDS[collection]||null;
+  const rows=items.map(item=>{
+    const src=allowed?Object.fromEntries(allowed.filter(k=>k in item).map(k=>[k,item[k]])):item;
+    const row={user_id:currentUser.id};
+    Object.entries(src).forEach(([k,v])=>{row[k==='visitDate'?k:k.replace(/[A-Z]/g,c=>'_'+c.toLowerCase())]=v;});
+    return row;
+  });
   // When re-syncing trips, preserve __system__ blob rows (camps/work data)
   let delQ=SUPA.from('wf_'+collection).delete().eq('user_id',currentUser.id);
   if(collection==='trips')delQ=delQ.neq('type','__system__');
@@ -2633,11 +2651,16 @@ async function cloudPush(collection,items){
     }
   }
 }
+
 async function _upsertBlob(blobId,data){
   if(!currentUser)return;
   const row={user_id:currentUser.id,id:blobId,name:'__system__',type:'__system__',notes:JSON.stringify(data),added_at:new Date().toISOString()};
-  const{error}=await SUPA.from('wf_trips').upsert(row,{onConflict:'id'});
-  if(error)console.warn('[Sync] blob upsert',blobId,error.message);
+  // Use delete+insert to bypass ON CONFLICT unique-constraint requirement.
+  // wf_trips.id is a primary key but PostgREST upsert needs an explicit unique constraint; delete+insert is always safe.
+  const{error:delErr}=await SUPA.from('wf_trips').delete().eq('user_id',currentUser.id).eq('id',blobId);
+  if(delErr){console.warn('[Sync] blob delete failed',blobId,delErr.message);return;}
+  const{error:insErr}=await SUPA.from('wf_trips').insert(row);
+  if(insErr)console.warn('[Sync] blob insert failed',blobId,insErr.message);
 }
 function saveCamps(){localStorage.setItem('wf_camps',JSON.stringify(D.camps));scheduledSync('camps',D.camps);}
 function _syncWork(){localStorage.setItem('wf_work',JSON.stringify(D.work));scheduledSync('work',D.work);}
