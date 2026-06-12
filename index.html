@@ -2375,6 +2375,10 @@ function saveAbroad(){localStorage.setItem('wf_abroad',JSON.stringify(D.abroad))
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
 function tripDays(t){return t.startDate&&t.endDate?Math.round((new Date(t.endDate)-new Date(t.startDate))/86400000)+1:(t.itinerary||[]).length||0;}
 let D=load();
+// Auto-fix corrupted milesPrev/startMiles/endMiles on every load (idempotent).
+// Any single-leg value > 600 mi is clearly wrong for a road trip stop — wipe and let haversine re-estimate.
+_fixCorruptedMiles();
+D=load();
 
 // ══════════════════════════════════════════════
 // SUPABASE — Auth + Cloud Sync
@@ -8869,7 +8873,7 @@ async function aiDayNarrative(rt,id,di){
       baseStop?`Home base tonight: ${baseStop.name}`:'',
     ].filter(Boolean).join('. ');
     const raw=await callAI(`You are a personal tour guide writing a vivid, warm daily briefing for a traveler. Write exactly 3 engaging sentences for this day:\n${ctx}\n\nTone: enthusiastic but practical, like a knowledgeable friend. Tell them what to look forward to, what makes this day special, and one insider tip. Use "you" and "your" — speak to the traveler directly. Plain text only, no bullet points.`,230);
-    day.narrative=raw.trim();
+    day.narrative=_stripMd(raw.trim());
     if(rt==='camp'){saveCamps();window._campDTab='guide';openCampD(id);}
     else{save('trips',D.trips);switchTripItinTab(id,'guide');}
     toast('✅ Day narrative written');
@@ -8918,7 +8922,7 @@ function rGuideStop(rt,id,di,si,s,accent,baseSi,oabMi){
             </div>
           </div>
           <div style="margin-top:3px;margin-bottom:5px">${baseBtnHtml}</div>
-          ${s.description?`<div class="guide-stop-desc">${s.description}</div>`:`<div style="font-size:11px;color:var(--muted2);font-style:italic;margin-bottom:4px">Tap ✦ Trail to AI-fill description and gear list</div>`}
+          ${s.description?`<div class="guide-stop-desc">${_stripMd(s.description)}</div>`:`<div style="font-size:11px;color:var(--muted2);font-style:italic;margin-bottom:4px">Tap ✦ Trail to AI-fill description and gear list</div>`}
         </div>
         ${statsBar}
         ${gearHtml}
@@ -8946,7 +8950,7 @@ function rGuideStop(rt,id,di,si,s,accent,baseSi,oabMi){
         </div>
       </div>
       <div style="margin-top:3px;margin-bottom:5px">${baseBtnHtml}</div>
-      ${s.description?`<div class="guide-stop-desc">${s.description}</div>`:''}
+      ${s.description?`<div class="guide-stop-desc">${_stripMd(s.description)}</div>`:''}
       ${s.note&&s.note!==s.description?`<div class="guide-stop-note">${s.note}</div>`:''}
       <div class="guide-stop-meta">
         ${s.address?`<span>📍 ${s.address}</span>`:''}
@@ -8967,7 +8971,7 @@ async function aiGuideSingleStop(rt,id,di,si){
   try{
     const dest=(obj.destinations||obj.stops||[]).join(', ')||obj.location||obj.name;
     const raw=await callAI(`Write a 2-3 sentence travel description for a stop called "${s.name}"${s.address?' at '+s.address:''}${dest?' during a trip to '+dest:''}. Highlight what to expect, atmosphere, or tips. Plain text only.`,130);
-    s.description=raw.trim();
+    s.description=_stripMd(raw.trim());
     if(rt==='camp'){saveCamps();window._campDTab='guide';openCampD(id);}
     else{save('trips',D.trips);switchTripItinTab(id,'guide');}
     toast('✅ Description added');
@@ -8986,7 +8990,7 @@ async function aiGuideDay(rt,id,di){
       const s=day.stops[si];
       if(!s.name||s.description)continue;
       const raw=await callAI(`2-3 sentence travel description for "${s.name}"${s.address?' at '+s.address:''}${dest?' on a trip to '+dest:''}. Warm, informative. Plain text.`,120);
-      s.description=raw.trim();
+      s.description=_stripMd(raw.trim());
     }
     // Write day narrative if missing
     if(!day.narrative){
@@ -8996,7 +9000,7 @@ async function aiGuideDay(rt,id,di){
       const baseStop=day.stops.find(s=>s.isBase);
       const ctx=[`Day ${dayNum} of a ${dest} trip`,`Stops: ${stopNames}`,dayMi>0?`About ${Math.round(dayMi)} miles of driving`:'',baseStop?`Home base: ${baseStop.name}`:''].filter(Boolean).join('. ');
       const raw=await callAI(`You are a personal tour guide. Write exactly 3 vivid, warm sentences briefing a traveler on:\n${ctx}\n\nSpeak directly to them ("you will…", "your day…"). Highlight what makes this day great and give one tip. Plain text only.`,220);
-      day.narrative=raw.trim();
+      day.narrative=_stripMd(raw.trim());
     }
     if(rt==='camp'){saveCamps();window._campDTab='guide';openCampD(id);}
     else{save('trips',D.trips);switchTripItinTab(id,'guide');}
@@ -9015,7 +9019,7 @@ async function aiGuideAllStops(rt,id){
   try{
     for(const s of missing){
       const raw=await callAI(`2-3 sentence travel description for "${s.name}"${s.address?' at '+s.address:''}${dest?' on a trip to '+dest:''}. Plain text.`,120);
-      s.description=raw.trim();
+      s.description=_stripMd(raw.trim());
     }
     if(rt==='camp'){saveCamps();window._campDTab='guide';openCampD(id);}
     else{save('trips',D.trips);switchTripItinTab(id,'guide');}
@@ -9666,6 +9670,8 @@ function rAdvBudgetTab(c){
   const itinStops=(c.itinerary||[]).flatMap(d=>d.stops||[]);
   const itinMiles=itinStops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
   const totalMiles=campStopMiles||itinMiles;
+  // Detect obviously corrupted distance data (any single value > 600 mi per leg)
+  const hasCorruptMiles=parseFloat(c.startMiles)>600||parseFloat(c.endMiles)>600||itinStops.some(s=>parseFloat(s.milesPrev)>600);
   const itinHasCoords=itinStops.some(s=>s.lat||s.lng);
   const itinHasEst=itinStops.some(s=>s.milesEst)||c.startMilesEst||c.endMilesEst;
   const itinTotalDriveSecs=(parseInt(c.startSecs)||0)+itinStops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0)+(parseInt(c.endSecs)||0);
@@ -9711,6 +9717,11 @@ function rAdvBudgetTab(c){
       <div><div class="ct">⛽ Fuel Calculator</div>${effectiveMiles&&rig.mpg?`<div class="cs">${Math.round(effectiveMiles)} mi · ${rig.mpg} mpg${fuelEst?' · <strong style="color:var(--green3)">$'+fuelEst+'</strong>':''}${itinTotalDriveSecs?' · '+fDrive(itinTotalDriveSecs):''}${itinHasEst?' (est.)':''}</div>`:''}</div>
       ${(itinHasCoords||itinStops.some(s=>s.address)||c.startLat)?`<button id="itin-recalc-btn" class="pbtn" onclick="recalcItineraryDriving(true,'${c.id}')" style="font-size:10px;padding:4px 9px;flex-shrink:0">🔄 Recalc</button>`:''}
     </div>
+    ${hasCorruptMiles?`<div style="display:flex;align-items:center;gap:10px;margin-top:10px;background:rgba(192,80,80,.07);border:1px solid rgba(192,80,80,.22);border-radius:7px;padding:9px 12px">
+      <span style="font-size:12px;color:#9a3030;flex:1">⚠️ Distance data looks corrupted (a leg shows over 600 mi). Reset to fix the mileage and fuel estimate.</span>
+      <button onclick="resetTripMiles('${c.id}',true)" class="pbtn" style="font-size:11px;padding:4px 10px;flex-shrink:0;color:#9a3030;border-color:rgba(192,80,80,.3);background:rgba(192,80,80,.07)">Reset Miles</button>
+    </div>`:''}
+    ${rig.mpg&&parseFloat(rig.mpg)<8?`<div style="font-size:11px;color:#9a6200;background:rgba(200,144,30,.08);border:1px solid rgba(200,144,30,.25);border-radius:6px;padding:6px 10px;margin-top:8px">⚠️ ${rig.mpg} MPG seems very low — is this correct? Most vehicles get 15–35 MPG.</div>`:''}
     <div style="margin-top:10px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end">
       <div>
         <label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Driving From</label>
@@ -10430,6 +10441,49 @@ function _schedAutoRecalc(isAdv,id){
   clearTimeout(_schedARTm[k]);
   _schedARTm[k]=setTimeout(()=>recalcItineraryDriving(isAdv,id,true).catch(()=>{}),1500);
 }
+// Strip markdown heading prefixes and bold/italic markers from AI-generated text.
+// AI often returns "# Stop Name\n\nDescription" even when prompted for plain text.
+function _stripMd(t){if(!t)return t;return t.replace(/^#+\s*/gm,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').trim();}
+
+// Clear corrupted distance data (values that exceed a single-leg plausibility cap).
+// Called on every page load — idempotent, fast, and safe for any trip size.
+function _fixCorruptedMiles(){
+  const MAX=600;let campsFix=false,tripsFix=false;
+  const rawC=JSON.parse(localStorage.getItem('wf_camps')||'[]');
+  rawC.forEach(c=>{
+    let leg=false;
+    (c.itinerary||[]).forEach(d=>(d.stops||[]).forEach(s=>{if(parseFloat(s.milesPrev)>MAX){delete s.milesPrev;delete s.milesEst;delete s.driveSecs;leg=campsFix=true;}}));
+    if(parseFloat(c.startMiles)>MAX){delete c.startMiles;delete c.startSecs;delete c.startMilesEst;campsFix=true;}
+    if(parseFloat(c.endMiles)>MAX){delete c.endMiles;delete c.endSecs;delete c.endMilesEst;campsFix=true;}
+    if(leg)autoHaversineItinerary(c);
+  });
+  if(campsFix){localStorage.setItem('wf_camps',JSON.stringify(rawC));console.log('[Wayfinder] Cleared corrupted camp milesPrev (>'+MAX+'mi)');}
+  const rawT=JSON.parse(localStorage.getItem('wf_trips')||'[]');
+  rawT.forEach(t=>{
+    let leg=false;
+    (t.itinerary||[]).forEach(d=>(d.stops||[]).forEach(s=>{if(parseFloat(s.milesPrev)>MAX){delete s.milesPrev;delete s.milesEst;delete s.driveSecs;leg=tripsFix=true;}}));
+    if(parseFloat(t.startMiles)>MAX){delete t.startMiles;delete t.startSecs;tripsFix=true;}
+    if(parseFloat(t.endMiles)>MAX){delete t.endMiles;delete t.endSecs;tripsFix=true;}
+    if(leg)autoHaversineItinerary(t);
+  });
+  if(tripsFix){localStorage.setItem('wf_trips',JSON.stringify(rawT));console.log('[Wayfinder] Cleared corrupted trip milesPrev (>'+MAX+'mi)');}
+}
+
+// Reset ALL distance data for one adventure or trip, then re-estimate from coordinates.
+function resetTripMiles(cid,isAdv){
+  D=load();
+  const obj=isAdv?(D.camps||[]).find(x=>x.id===cid):D.trips.find(x=>x.id===cid);
+  if(!obj)return;
+  (obj.itinerary||[]).forEach(d=>(d.stops||[]).forEach(s=>{delete s.milesPrev;delete s.milesEst;delete s.driveSecs;}));
+  delete obj.startMiles;delete obj.startSecs;delete obj.startMilesEst;
+  delete obj.endMiles;delete obj.endSecs;delete obj.endMilesEst;
+  delete obj.estTripMiles;
+  autoHaversineItinerary(obj);
+  if(isAdv){saveCamps();window._campDTab='budget';openCampD(cid);}
+  else{save('trips',D.trips);switchTripItinTab(cid,'budget');}
+  toast('✅ Distances reset — tap Recalc for accurate Google Maps routing');
+}
+
 // Instantly compute haversine estimates for itinerary stop pairs that have coords.
 // Uses a 1.25 road factor. Only overwrites if milesPrev is absent or previously estimated.
 function autoHaversineItinerary(obj){
@@ -10444,7 +10498,9 @@ function autoHaversineItinerary(obj){
     if(!pc||!cc)continue;
     if(!cur.milesPrev||cur.milesEst){
       const d=haversineMiles(pc.lat,pc.lng,cc.lat,cc.lng);
-      itin[flat[i].di].stops[flat[i].si].milesPrev=Math.round(d*1.25).toString();
+      const est=Math.round(d*1.25);
+      if(est>600){console.warn('[haversine] Skipping implausible leg',est,'mi between',prev.name,'→',cur.name,'— coords may be wrong');continue;}
+      itin[flat[i].di].stops[flat[i].si].milesPrev=est.toString();
       itin[flat[i].di].stops[flat[i].si].milesEst=true;
       delete itin[flat[i].di].stops[flat[i].si].driveSecs;
     }
@@ -10463,7 +10519,9 @@ function autoHaversineStartEnd(obj){
       const sc=parseStopCoords(s);
       if(sc){
         const d=haversineMiles(parseFloat(obj.startLat),parseFloat(obj.startLng),sc.lat,sc.lng);
-        obj.startMiles=Math.round(d*1.25);
+        const est=Math.round(d*1.25);
+        if(est>600){console.warn('[haversine] Skipping implausible start leg',est,'mi — check start coords');break;}
+        obj.startMiles=est;
         obj.startMilesEst=true;
         delete obj.startSecs;
         break;
@@ -10477,7 +10535,9 @@ function autoHaversineStartEnd(obj){
       const sc=parseStopCoords(s);
       if(sc){
         const d=haversineMiles(sc.lat,sc.lng,parseFloat(obj.endLat),parseFloat(obj.endLng));
-        obj.endMiles=Math.round(d*1.25);
+        const est=Math.round(d*1.25);
+        if(est>600){console.warn('[haversine] Skipping implausible end leg',est,'mi — check end coords');break;}
+        obj.endMiles=est;
         obj.endMilesEst=true;
         delete obj.endSecs;
         break;
