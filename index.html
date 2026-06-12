@@ -680,6 +680,8 @@ input,textarea,select{font-family:inherit;font-weight:400}
   #map-in>[style*="border-radius:8px"]{border-radius:0!important;margin-bottom:0!important;padding:7px 10px!important;font-size:11px!important}
   /* Mobile map min-height override */
   #the-map{min-height:200px!important}
+  /* Map mode: account for fixed bottom nav bar so map doesn't hide behind it */
+  #content.map-mode{padding-bottom:calc(54px + env(safe-area-inset-bottom,0px))!important}
 
   /* ── The Path ── */
   .pipe-col{width:84vw;min-width:280px}
@@ -2413,6 +2415,8 @@ async function _blockingSync(uid){
       const workBlob=allT.find(x=>x.id==='__work_v1__');
       if(campsBlob?.notes){try{localStorage.setItem('wf_camps',campsBlob.notes);}catch(e){}}
       if(workBlob?.notes){try{localStorage.setItem('wf_work',workBlob.notes);}catch(e){}}
+      if(!campsBlob){const lc=JSON.parse(localStorage.getItem('wf_camps')||'[]');if(lc.length)_upsertBlob('__camps_v1__',lc).catch(()=>{});}
+      if(!workBlob){const lw=JSON.parse(localStorage.getItem('wf_work')||'[]');if(lw.length)_upsertBlob('__work_v1__',lw).catch(()=>{});}
       localStorage.setItem(K.trips,JSON.stringify(allT.filter(x=>x.type!=='__system__')));
     }
     if(w.data?.length)localStorage.setItem(K.wish,JSON.stringify(w.data.map(stripRow)));
@@ -2423,6 +2427,7 @@ async function _blockingSync(uid){
     try{migratePlaceCategories();}catch(e){}
     pipeAutoAdvance();
     loadSettings();rHome();badges();
+    if(cur==='map'&&!gMap&&(D.settings.mapsApiKey||'').trim())rMap();
     hideAuthOverlay();
   }catch(e){
     console.warn('Cloud load error:',e);
@@ -2463,9 +2468,12 @@ async function _bgSync(uid){
       const workBlob=allT.find(x=>x.id==='__work_v1__');
       if(campsBlob?.notes){try{localStorage.setItem('wf_camps',campsBlob.notes);}catch(e){}}
       if(workBlob?.notes){try{localStorage.setItem('wf_work',workBlob.notes);}catch(e){}}
+      if(!campsBlob){const lc=JSON.parse(localStorage.getItem('wf_camps')||'[]');if(lc.length)_upsertBlob('__camps_v1__',lc).catch(()=>{});}
+      if(!workBlob){const lw=JSON.parse(localStorage.getItem('wf_work')||'[]');if(lw.length)_upsertBlob('__work_v1__',lw).catch(()=>{});}
       localStorage.setItem(K.trips,JSON.stringify(allT.filter(x=>x.type!=='__system__')));
     }
     D=load();loadSettings();rHome();
+    if(cur==='map'&&!gMap&&(D.settings.mapsApiKey||'').trim())rMap();
     // Phase 2: wishlist + journal
     t0=Date.now();
     const[w,j]=await Promise.all([
@@ -3461,7 +3469,7 @@ function rMap(){
   const legendPins=Object.entries(MAP_COLORS).map(([k,c])=>'<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:9px;height:9px;border-radius:50%;background:'+c+';border:1.5px solid #fff;box-shadow:0 0 0 1px '+c+'40"></div>'+(k==='wishlist'?'Wishlist':sl(k))+'</div>').join('');
   const mapsKey=(D.settings.mapsApiKey||'').trim();
   document.getElementById('map-in').innerHTML=`
-    ${!mapsKey?`<div style="background:rgba(155,116,32,.08);border:1px solid rgba(155,116,32,.3);border-radius:8px;padding:9px 13px;margin-bottom:8px;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--gold2)"><span>🗺️</span><span>Showing basic map — <strong style="cursor:pointer;text-decoration:underline" onclick="go('settings')">add your Google Maps API key in Settings</strong> for satellite imagery, dark style, and full features.</span></div>`:''}
+    ${(!mapsKey&&!currentUser)?`<div style="background:rgba(155,116,32,.08);border:1px solid rgba(155,116,32,.3);border-radius:8px;padding:9px 13px;margin-bottom:8px;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--gold2)"><span>🗺️</span><span>Showing basic map — <strong style="cursor:pointer;text-decoration:underline" onclick="go('settings')">add your Google Maps API key in Settings</strong> for satellite imagery, dark style, and full features.</span></div>`:''}
     <div id="map-ctrl-card" style="background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:10px 12px;margin-bottom:6px">
       <div id="map-ctrl-row" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
         <div style="flex:1;min-width:220px">
