@@ -972,6 +972,65 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
   .guide-hdr>div:last-child{width:100%}
 }
 
+/* ── Guide Day Tab Navigation ── */
+.guide-day-tabs{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding-bottom:1px}
+.guide-day-tabs::-webkit-scrollbar{display:none}
+.guide-day-tab{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:0;padding:7px 12px;border:1.5px solid var(--bdr);border-radius:9px;cursor:pointer;background:var(--card);font-family:inherit;transition:all .15s;min-width:58px;line-height:1}
+.guide-day-tab:hover{border-color:var(--muted2)}
+.guide-day-tab.on{border-color:var(--guide-accent,#C8901E);background:rgba(200,144,30,.08)}
+.guide-day-tab-num{font-size:9px;font-weight:800;color:var(--guide-accent,#C8901E);text-transform:uppercase;letter-spacing:.07em}
+.guide-day-tab-date{font-size:10px;color:var(--text2);font-weight:500;margin-top:3px}
+.guide-day-tab-mi{font-size:9px;color:var(--muted2);margin-top:2px}
+.guide-day-tab-dot{width:5px;height:5px;border-radius:50%;background:var(--guide-accent,#C8901E);margin:3px auto 0;opacity:.4}
+.guide-day-tab.on .guide-day-tab-dot{opacity:1}
+/* ── Day Sheet ── */
+.guide-sheet{border:1.5px solid var(--bdr);border-left:4px solid var(--guide-accent,#C8901E);border-radius:var(--r);overflow:hidden;background:var(--card)}
+.guide-sheet-hdr{padding:14px 16px;background:var(--card2);border-bottom:1px solid var(--bdr);display:flex;align-items:flex-start;gap:12px}
+.guide-sheet-daynum{font-size:28px;font-weight:900;color:var(--guide-accent,#C8901E);line-height:1;letter-spacing:-.5px;flex-shrink:0;margin-top:2px}
+.guide-sheet-info{flex:1;min-width:0}
+.guide-sheet-date{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.25px;line-height:1.2}
+.guide-sheet-meta{font-size:11px;color:var(--muted2);margin-top:5px;display:flex;gap:10px;flex-wrap:wrap}
+.guide-sheet-meta-item{display:flex;align-items:center;gap:3px}
+.guide-sheet-acts{display:flex;gap:5px;align-items:flex-start;flex-shrink:0;flex-wrap:wrap}
+/* ── AI Day Narrative ── */
+.guide-narrative{padding:12px 16px;background:rgba(200,144,30,.03);border-bottom:1px solid var(--bdr)}
+.guide-narrative-text{font-size:12.5px;color:var(--text2);line-height:1.68;font-style:italic}
+.guide-narrative-empty{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.guide-narrative-empty-lbl{font-size:11.5px;color:var(--muted2);font-style:italic}
+/* ── Drive Connectors ── */
+.guide-drive-row{display:flex;align-items:center;gap:0;padding:0 16px;min-height:28px}
+.guide-drive-line{flex:1;border-top:1.5px dashed var(--bdr);margin:0 7px;opacity:.7}
+.guide-drive-badge{display:flex;align-items:center;gap:5px;background:var(--card2);border:1px solid var(--bdr);border-radius:100px;padding:3px 11px;font-size:10.5px;color:var(--muted2);white-space:nowrap;flex-shrink:0}
+.guide-drive-arrow{color:var(--muted2);font-size:12px;flex-shrink:0;opacity:.5}
+/* ── Base / Sleep Designation ── */
+.guide-base-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--guide-accent,#C8901E);background:rgba(200,144,30,.12);border:1px solid rgba(200,144,30,.3);border-radius:100px;padding:2px 7px;vertical-align:middle;margin-left:5px}
+.guide-base-btn{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;color:var(--muted2);background:var(--card2);border:1px solid var(--bdr);border-radius:6px;padding:3px 9px;cursor:pointer;font-family:inherit;transition:all .15s;flex-shrink:0;white-space:nowrap}
+.guide-base-btn:hover{border-color:var(--muted2);color:var(--text2)}
+.guide-base-btn.on{color:var(--guide-accent,#C8901E);background:rgba(200,144,30,.08);border-color:rgba(200,144,30,.3)}
+/* ── Out-and-Back Tag ── */
+.guide-oab{display:flex;align-items:center;gap:6px;font-size:11px;color:#2a5abe;background:rgba(42,90,190,.055);border:1px solid rgba(42,90,190,.14);border-radius:6px;padding:4px 10px;margin:3px 14px 6px}
+.guide-oab-mi{font-weight:700}
+/* ── Stop with base style ── */
+.guide-stop-isbase{background:rgba(200,144,30,.025)!important}
+/* ── Day pager ── */
+.guide-day-pager{display:flex;gap:4px;flex-shrink:0}
+.guide-day-pager-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:var(--card2);border:1px solid var(--bdr);border-radius:6px;cursor:pointer;font-size:14px;color:var(--muted2);font-family:inherit;transition:all .15s;line-height:1}
+.guide-day-pager-btn:hover:not([disabled]){background:var(--card);color:var(--text);border-color:var(--muted2)}
+.guide-day-pager-btn[disabled]{opacity:.3;cursor:default}
+/* ── Day out-and-back summary bar ── */
+.guide-day-summary{display:flex;align-items:center;gap:8px;padding:8px 16px;background:rgba(42,90,190,.04);border-top:1px solid rgba(42,90,190,.12);font-size:11px;color:#2a5abe;flex-wrap:wrap}
+/* ── Guide sheet mobile ── */
+@media(max-width:699px){
+  .guide-day-tabs{gap:4px}
+  .guide-day-tab{min-width:50px;padding:6px 8px}
+  .guide-sheet-hdr{padding:11px 13px;gap:9px}
+  .guide-sheet-daynum{font-size:22px}
+  .guide-sheet-date{font-size:13px}
+  .guide-narrative{padding:10px 13px}
+  .guide-drive-row{padding:0 13px}
+  .guide-oab{margin:3px 11px 5px}
+}
+
 @keyframes spin{to{transform:rotate(360deg)}}
 /* ── Trail system ── */
 .trail-diff{display:inline-flex;align-items:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 9px;border-radius:100px;flex-shrink:0;white-space:nowrap}
@@ -2324,7 +2383,7 @@ const SUPA=supabase.createClient(
   'https://fkfwjbdnezvwtjzenxgo.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZrZndqYmRuZXp2d3RqemVueGdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2ODA0MjAsImV4cCI6MjA5NjI1NjQyMH0.mS66UY7MaaxKRBLkqrJicgnxlXwLgbawEmb5B-eF_bQ'
 );
-let currentUser=null, _syncTimers={}, _aoSkipTimers=[];
+let currentUser=null, _syncTimers={}, _aoSkipTimers=[], _guideDayIdx={};
 
 function signInGoogle(){
   SUPA.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.href.split('#')[0]}});
@@ -8608,56 +8667,203 @@ function _rTrailStatsBar(td){
 function rGuideTab(rt,obj){
   const itin=obj.itinerary||[];
   const scheduled=itin.filter(d=>d.date);
-  const tt=rt==='camp'?ADV_TYPES[obj.campType]?.icon||'🧭':'✈️';
   const accent=rt==='trip'?(TRIP_TYPES[inferTripType(obj,false)]?.color||'#C8901E'):'#C8901E';
   if(!scheduled.length&&!itin.length){
     return`<div class="guide-empty"><div style="font-size:36px;margin-bottom:12px">📖</div><h3 style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px">No itinerary yet</h3><p style="font-size:12px;color:var(--muted2);margin-bottom:16px">Build your day-by-day plans and this Guide will come to life.</p><button class="btn-p" style="font-size:12px" onclick="${rt==='camp'?`window._campDTab='daily';openCampD('${obj.id}')`:`window._tripItinTab='plans';openTripD('${obj.id}')`}">📅 Start Planning</button></div>`;
   }
+  // Resolve active day
+  const storedDi=_guideDayIdx[obj.id];
+  let activeDi=(typeof storedDi==='number'&&itin[storedDi]?.date)?storedDi:itin.indexOf(scheduled[0]);
+  _guideDayIdx[obj.id]=activeDi;
+
   const totalStops=scheduled.reduce((s,d)=>s+(d.stops||[]).length,0);
   const hasDriving=scheduled.some(d=>(d.stops||[]).some(s=>s.milesPrev));
-  let html=`<div class="guide-root">
+
+  // Day tab strip
+  const dayTabs=scheduled.map((day,idx)=>{
+    const di=itin.indexOf(day);
+    const dayMi=Math.round((day.stops||[]).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0));
+    const isActive=di===activeDi;
+    const dStr=day.date?new Date(day.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):`Day ${idx+1}`;
+    return`<button class="guide-day-tab${isActive?' on':''}" onclick="setGuideDay('${rt}','${obj.id}',${di})">
+      <span class="guide-day-tab-num">Day ${idx+1}</span>
+      <span class="guide-day-tab-date">${dStr}</span>
+      ${dayMi?`<span class="guide-day-tab-mi">🛣 ${dayMi}mi</span>`:`<div class="guide-day-tab-dot"></div>`}
+    </button>`;
+  }).join('');
+
+  return`<div class="guide-root" style="--guide-accent:${accent}">
     <div class="guide-hdr">
       <div>
         <div class="guide-hdr-title">${obj.name}</div>
         <div class="guide-hdr-meta">${scheduled.length} day${scheduled.length!==1?'s':''} · ${totalStops} stop${totalStops!==1?'s':''}${hasDriving?' · driving route':''}</div>
       </div>
-      <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">
-        <button class="pbtn" style="font-size:11px;padding:5px 10px;background:rgba(239,159,39,.1);border-color:rgba(239,159,39,.35);color:var(--amber)" onclick="aiGuideAllStops('${rt}','${obj.id}')">✦ AI Fill All</button>
+      <div style="display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap;align-items:center">
+        <button class="pbtn" style="font-size:11px;padding:5px 10px;background:rgba(239,159,39,.1);border-color:rgba(239,159,39,.35);color:var(--amber)" onclick="aiGuideAllStops('${rt}','${obj.id}')">✦ Fill All</button>
         <button class="pbtn" style="font-size:11px;padding:5px 10px" onclick="printTripShare('${obj.id}','${rt}')">🖨️ Print</button>
       </div>
-    </div>`;
-
-  scheduled.forEach((day,idx)=>{
-    const di=itin.indexOf(day);
-    const dayStops=day.stops||[];
-    const dayMi=dayStops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
-    html+=`<div class="guide-day" style="--guide-accent:${accent}">
-      <div class="guide-day-hdr">
-        <div class="guide-day-num">Day ${idx+1}</div>
-        <div class="guide-day-info">
-          <span class="guide-day-date">${fd(day.date)}</span>
-          ${dayStops.length?`<span class="guide-day-stops">${dayStops.length} stop${dayStops.length!==1?'s':''}</span>`:''}
-          ${dayMi?`<span class="guide-day-mi">🛣️ ${Math.round(dayMi)} mi</span>`:''}
-        </div>
-        <button class="guide-ai-btn" onclick="aiGuideDay('${rt}','${obj.id}',${di})" title="AI fill descriptions for all stops today">✦ AI Day</button>
-      </div>
-      ${day.notes?`<div class="guide-day-notes">${day.notes}</div>`:''}
-      ${dayStops.length?`<div class="guide-stops-list">
-        ${dayStops.map((s,si)=>rGuideStop(rt,obj.id,di,si,s,accent)).join('')}
-      </div>`:`<div style="font-size:12px;color:var(--muted2);padding:14px 0;text-align:center;font-style:italic">No stops planned for this day</div>`}
-    </div>`;
-  });
-  html+=`</div>`;
-  return html;
+    </div>
+    <div class="guide-day-tabs">${dayTabs}</div>
+    ${rGuideDaySheet(rt,obj,activeDi,accent)}
+  </div>`;
 }
-function rGuideStop(rt,id,di,si,s,accent){
+
+function rGuideDaySheet(rt,obj,di,accent){
+  const itin=obj.itinerary||[];
+  const day=itin[di];if(!day)return'';
+  const scheduled=itin.filter(d=>d.date);
+  const dayNum=scheduled.indexOf(day)+1;
+  const dayStops=day.stops||[];
+  const dayMi=dayStops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  const dayDriveSecs=dayStops.reduce((s,st)=>s+(parseFloat(st.driveSecs)||0),0);
+  const totalTrailMi=dayStops.reduce((s,st)=>s+(parseFloat(st.trailData?.distanceMi||0)),0);
+  const fmtLongDay=d=>{try{return new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}catch{return fd(d)}};
+
+  // Prev/next navigation within scheduled days
+  const schedIdx=scheduled.indexOf(day);
+  const prevDay=scheduled[schedIdx-1];const nextDay=scheduled[schedIdx+1];
+  const prevDi=prevDay?itin.indexOf(prevDay):null;const nextDi=nextDay?itin.indexOf(nextDay):null;
+
+  // Base stop for out-and-back calcs (only forward from base)
+  const baseSi=dayStops.findIndex(s=>s.isBase);
+  const baseStop=baseSi>=0?dayStops[baseSi]:null;
+  const cumFromBase={};
+  if(baseSi>=0){
+    let acc=0;
+    for(let i=baseSi+1;i<dayStops.length;i++){
+      acc+=parseFloat(dayStops[i]?.milesPrev||0);
+      cumFromBase[i]=acc;
+    }
+  }
+
+  // Narrative
+  const narrativeHtml=day.narrative
+    ?`<div class="guide-narrative"><div class="guide-narrative-text">${day.narrative}</div><button style="display:block;margin-top:8px;background:none;border:none;font-size:10px;color:var(--muted2);cursor:pointer;padding:0;font-family:inherit;text-decoration:underline" onclick="aiDayNarrative('${rt}','${obj.id}',${di})">✦ Rewrite</button></div>`
+    :`<div class="guide-narrative"><div class="guide-narrative-empty">
+        <span class="guide-narrative-empty-lbl">Your personal tour guide for the day — AI writes it for you</span>
+        <button class="guide-ai-btn" onclick="aiDayNarrative('${rt}','${obj.id}',${di})">✦ Write Guide</button>
+      </div></div>`;
+
+  // Build stop rows with drive connectors between each
+  let stopsHtml='';
+  for(let si=0;si<dayStops.length;si++){
+    const s=dayStops[si];
+    const oabMi=(baseSi>=0&&si!==baseSi&&cumFromBase[si]>0)?Math.round(cumFromBase[si]*2):null;
+    stopsHtml+=rGuideStop(rt,obj.id,di,si,s,accent,baseSi,oabMi);
+    if(si<dayStops.length-1){
+      const nxt=dayStops[si+1];
+      const cMi=parseFloat(nxt?.milesPrev||0);
+      const cSecs=parseFloat(nxt?.driveSecs||0);
+      stopsHtml+=`<div class="guide-drive-row">
+        <span class="guide-drive-arrow">↓</span>
+        <div class="guide-drive-line"></div>
+        <div class="guide-drive-badge">
+          ${cMi?`🛣️ ${cMi} mi`:''}${cMi&&cSecs?' · ':''}${cSecs?fDrive(cSecs):''}${!cMi&&!cSecs?`<span style="font-style:italic;opacity:.6">next stop</span>`:'<span style="font-size:9px;opacity:.7;margin-left:2px">drive</span>'}
+        </div>
+        <div class="guide-drive-line"></div>
+        <span class="guide-drive-arrow">↓</span>
+      </div>`;
+    }
+  }
+
+  // Out-and-back summary when base is set
+  let oabSummary='';
+  if(baseStop&&dayMi>0){
+    const farthestCum=Object.values(cumFromBase).length?Math.max(...Object.values(cumFromBase)):0;
+    const oabRound=Math.round(farthestCum*2);
+    oabSummary=`<div class="guide-day-summary">
+      <span>🌙 Base: <strong>${baseStop.name}</strong></span>
+      <span style="opacity:.4">·</span>
+      <span>One-way: <strong>${Math.round(dayMi)} mi</strong></span>
+      <span style="opacity:.4">·</span>
+      <span>Est. round-trip: <strong>~${oabRound||Math.round(dayMi*2)} mi</strong></span>
+    </div>`;
+  }
+
+  return`<div class="guide-sheet" style="--guide-accent:${accent}">
+    <div class="guide-sheet-hdr">
+      <div class="guide-sheet-daynum">${dayNum}</div>
+      <div class="guide-sheet-info">
+        <div class="guide-sheet-date">${fmtLongDay(day.date)}</div>
+        <div class="guide-sheet-meta">
+          ${dayStops.length?`<span class="guide-sheet-meta-item">📍 ${dayStops.length} stop${dayStops.length!==1?'s':''}</span>`:''}
+          ${dayMi?`<span class="guide-sheet-meta-item">🛣️ ${Math.round(dayMi)} mi</span>`:''}
+          ${dayDriveSecs?`<span class="guide-sheet-meta-item">⏱️ ${fDrive(dayDriveSecs)}</span>`:''}
+          ${totalTrailMi?`<span class="guide-sheet-meta-item">🥾 ${totalTrailMi.toFixed(1)} mi trail</span>`:''}
+          ${baseStop?`<span class="guide-sheet-meta-item" style="color:var(--guide-accent,#C8901E)">🌙 ${baseStop.name}</span>`:''}
+        </div>
+      </div>
+      <div class="guide-sheet-acts">
+        <div class="guide-day-pager">
+          <button class="guide-day-pager-btn" ${prevDi===null?'disabled':''} onclick="${prevDi!==null?`setGuideDay('${rt}','${obj.id}',${prevDi})`:''}" title="Previous day">‹</button>
+          <button class="guide-day-pager-btn" ${nextDi===null?'disabled':''} onclick="${nextDi!==null?`setGuideDay('${rt}','${obj.id}',${nextDi})`:''}" title="Next day">›</button>
+        </div>
+        <button class="guide-ai-btn" onclick="aiGuideDay('${rt}','${obj.id}',${di})" title="AI fill stops + write day narrative">✦ AI Day</button>
+      </div>
+    </div>
+    ${narrativeHtml}
+    ${dayStops.length
+      ?`<div class="guide-stops-list">${stopsHtml}</div>${oabSummary}`
+      :`<div style="font-size:12px;color:var(--muted2);padding:22px 0;text-align:center;font-style:italic">No stops planned for this day</div>`
+    }
+  </div>`;
+}
+
+function setGuideDay(rt,id,di){
+  _guideDayIdx[id]=di;
+  if(rt==='camp'){window._campDTab='guide';openCampD(id);}
+  else{switchTripItinTab(id,'guide');}
+}
+
+function setDayBase(rt,id,di,si){
+  D=load();
+  const obj=rt==='camp'?(D.camps||[]).find(x=>x.id===id):D.trips.find(x=>x.id===id);
+  if(!obj)return;
+  const day=obj.itinerary?.[di];if(!day)return;
+  const wasBase=!!(day.stops||[])[si]?.isBase;
+  (day.stops||[]).forEach((s,i)=>{s.isBase=!wasBase&&i===si;});
+  if(rt==='camp'){saveCamps();window._campDTab='guide';openCampD(id);}
+  else{save('trips',D.trips);switchTripItinTab(id,'guide');}
+}
+
+async function aiDayNarrative(rt,id,di){
+  D=load();
+  const obj=rt==='camp'?(D.camps||[]).find(x=>x.id===id):D.trips.find(x=>x.id===id);
+  if(!obj)return;
+  const day=obj.itinerary?.[di];
+  if(!day||(day.stops||[]).length===0){toast('No stops on this day');return;}
+  const stopNames=(day.stops||[]).map(s=>s.name).filter(Boolean).join(', ');
+  const dest=(obj.destinations||[]).join(', ')||obj.location||obj.name;
+  const dayNum=(obj.itinerary||[]).filter(d=>d.date).indexOf(day)+1;
+  const dayMi=(day.stops||[]).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  const baseStop=(day.stops||[]).find(s=>s.isBase);
+  toast('✦ Writing tour guide narrative…');
+  try{
+    const ctx=[
+      `Day ${dayNum} of a ${dest} trip`,
+      `Stops: ${stopNames}`,
+      dayMi>0?`About ${Math.round(dayMi)} miles of driving`:'',
+      baseStop?`Home base tonight: ${baseStop.name}`:'',
+    ].filter(Boolean).join('. ');
+    const raw=await callAI(`You are a personal tour guide writing a vivid, warm daily briefing for a traveler. Write exactly 3 engaging sentences for this day:\n${ctx}\n\nTone: enthusiastic but practical, like a knowledgeable friend. Tell them what to look forward to, what makes this day special, and one insider tip. Use "you" and "your" — speak to the traveler directly. Plain text only, no bullet points.`,230);
+    day.narrative=raw.trim();
+    if(rt==='camp'){saveCamps();window._campDTab='guide';openCampD(id);}
+    else{save('trips',D.trips);switchTripItinTab(id,'guide');}
+    toast('✅ Day narrative written');
+  }catch(e){toast('⚠️ AI narrative failed');}
+}
+
+function rGuideStop(rt,id,di,si,s,accent,baseSi,oabMi){
+  if(typeof baseSi==='undefined')baseSi=-1;
   const wt=WP_TYPES[s.type||'other']||WP_TYPES.other;
   const editFn=rt==='camp'?`openAdvItinStopEdit('${id}',${di},${si})`:`openStopEdit('${id}',${di},${si})`;
   const isTrail=s.type==='hike'&&s.trailData;
   const td=isTrail?s.trailData:null;
+  const isBase=!!s.isBase;
+  const baseBtnHtml=`<button class="guide-base-btn${isBase?' on':''}" onclick="setDayBase('${rt}','${id}',${di},${si})" title="${isBase?`Clear base`:`Set as tonight's base`}">🌙 ${isBase?`Tonight's Base ✓`:`Set as Base`}</button>`;
+  const oabHtml=oabMi?`<div class="guide-oab">↩ Round trip from base: <span class="guide-oab-mi">~${oabMi} mi</span></div>`:'';
 
   if(isTrail){
-    // Full trail card layout
     const statsBar=_rTrailStatsBar(td);
     const gearHtml=td.gearList?.length?`<div class="trail-gear-row">${td.gearList.map(g=>`<span class="trail-gear-tag">${g}</span>`).join('')}</div>`:'';
     const warnHtml=td.warnings?`<div class="trail-warn">⚠️ ${td.warnings}</div>`:'';
@@ -8673,14 +8879,14 @@ function rGuideStop(rt,id,di,si,s,accent){
     ].filter(Boolean);
     const skKey=`${rt}|${id}|${di}|${si}`;
     if(!s.photo)setTimeout(()=>_autoFetchTrailPhoto(s.name,td.parkArea,rt,id,di,si).catch(()=>{}),50);
-    return`<div class="guide-stop${s.done?' guide-stop-done':''}" data-sk="${skKey}">
+    return`<div class="guide-stop${s.done?' guide-stop-done':''}${isBase?' guide-stop-isbase':''}" data-sk="${skKey}">
       ${s.photo?`<img class="guide-stop-photo" src="${s.photo}" onerror="this.style.display='none'" onclick="${editFn}">`:''}
       <div style="flex:1;min-width:0">
         <div class="guide-stop-body" style="padding-bottom:6px">
           <div class="guide-stop-toprow">
             <span class="guide-stop-icon">🥾</span>
             <div class="guide-stop-name-wrap">
-              <span class="guide-stop-name">${s.name}</span>
+              <span class="guide-stop-name">${s.name}${isBase?`<span class="guide-base-badge">🌙 Base</span>`:''}</span>
               ${s.time?`<span class="guide-stop-time">🕐 ${s.time}</span>`:''}
             </div>
             <div class="guide-stop-acts">
@@ -8688,6 +8894,7 @@ function rGuideStop(rt,id,di,si,s,accent){
               <button onclick="${editFn}" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:2px 5px;border-radius:4px;transition:color .12s" onmouseover="this.style.color='var(--green3)'" onmouseout="this.style.color='var(--muted2)'">✏️</button>
             </div>
           </div>
+          <div style="margin-top:3px;margin-bottom:5px">${baseBtnHtml}</div>
           ${s.description?`<div class="guide-stop-desc">${s.description}</div>`:`<div style="font-size:11px;color:var(--muted2);font-style:italic;margin-bottom:4px">Tap ✦ Trail to AI-fill description and gear list</div>`}
         </div>
         ${statsBar}
@@ -8695,18 +8902,19 @@ function rGuideStop(rt,id,di,si,s,accent){
         ${warnHtml}
         ${metaItems.length?`<div class="guide-stop-meta" style="padding:6px 12px 10px">${metaItems.join('')}</div>`:''}
         ${s.milesPrev?`<div class="guide-stop-meta" style="padding:0 12px 8px"><span>🛣️ ${s.milesPrev} mi to trailhead${s.driveSecs?' · '+fDrive(s.driveSecs):''}</span></div>`:''}
+        ${oabHtml}
       </div>
     </div>`;
   }
 
   // Standard (non-trail) stop
-  return`<div class="guide-stop${s.done?' guide-stop-done':''}">
+  return`<div class="guide-stop${s.done?' guide-stop-done':''}${isBase?' guide-stop-isbase':''}">
     ${s.photo?`<img class="guide-stop-photo" src="${s.photo}" onerror="this.style.display='none'" onclick="${editFn}">`:''}
     <div class="guide-stop-body">
       <div class="guide-stop-toprow">
         <span class="guide-stop-icon">${wt.i}</span>
         <div class="guide-stop-name-wrap">
-          <span class="guide-stop-name">${s.name}</span>
+          <span class="guide-stop-name">${s.name}${isBase?`<span class="guide-base-badge">🌙 Base</span>`:''}</span>
           ${s.time?`<span class="guide-stop-time">🕐 ${s.time}</span>`:''}
         </div>
         <div class="guide-stop-acts">
@@ -8714,6 +8922,7 @@ function rGuideStop(rt,id,di,si,s,accent){
           <button onclick="${editFn}" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:2px 5px;border-radius:4px;transition:color .12s" onmouseover="this.style.color='var(--green3)'" onmouseout="this.style.color='var(--muted2)'">✏️</button>
         </div>
       </div>
+      <div style="margin-top:3px;margin-bottom:5px">${baseBtnHtml}</div>
       ${s.description?`<div class="guide-stop-desc">${s.description}</div>`:''}
       ${s.note&&s.note!==s.description?`<div class="guide-stop-note">${s.note}</div>`:''}
       <div class="guide-stop-meta">
@@ -8721,6 +8930,7 @@ function rGuideStop(rt,id,di,si,s,accent){
         ${s.milesPrev?`<span>🛣️ ${s.milesPrev} mi${s.driveSecs?' · '+fDrive(s.driveSecs):''}</span>`:''}
         ${s.mapsUrl?`<a href="${s.mapsUrl}" target="_blank" class="guide-nav-btn">Navigate ↗</a>`:''}
       </div>
+      ${oabHtml}
     </div>
   </div>`;
 }
@@ -8745,18 +8955,29 @@ async function aiGuideDay(rt,id,di){
   const obj=rt==='camp'?(D.camps||[]).find(x=>x.id===id):D.trips.find(x=>x.id===id);
   if(!obj)return;
   const day=obj.itinerary?.[di];if(!day||(day.stops||[]).length===0){toast('No stops on this day');return;}
-  toast('✦ Writing descriptions…');
+  toast('✦ Writing day guide…');
   try{
     const dest=(obj.destinations||obj.stops||[]).join(', ')||obj.location||obj.name;
+    // Fill missing stop descriptions
     for(let si=0;si<day.stops.length;si++){
       const s=day.stops[si];
       if(!s.name||s.description)continue;
       const raw=await callAI(`2-3 sentence travel description for "${s.name}"${s.address?' at '+s.address:''}${dest?' on a trip to '+dest:''}. Warm, informative. Plain text.`,120);
       s.description=raw.trim();
     }
+    // Write day narrative if missing
+    if(!day.narrative){
+      const stopNames=day.stops.map(s=>s.name).filter(Boolean).join(', ');
+      const dayNum=(obj.itinerary||[]).filter(d=>d.date).indexOf(day)+1;
+      const dayMi=day.stops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+      const baseStop=day.stops.find(s=>s.isBase);
+      const ctx=[`Day ${dayNum} of a ${dest} trip`,`Stops: ${stopNames}`,dayMi>0?`About ${Math.round(dayMi)} miles of driving`:'',baseStop?`Home base: ${baseStop.name}`:''].filter(Boolean).join('. ');
+      const raw=await callAI(`You are a personal tour guide. Write exactly 3 vivid, warm sentences briefing a traveler on:\n${ctx}\n\nSpeak directly to them ("you will…", "your day…"). Highlight what makes this day great and give one tip. Plain text only.`,220);
+      day.narrative=raw.trim();
+    }
     if(rt==='camp'){saveCamps();window._campDTab='guide';openCampD(id);}
     else{save('trips',D.trips);switchTripItinTab(id,'guide');}
-    toast('✅ Day descriptions filled');
+    toast('✅ Day guide ready');
   }catch(e){toast('⚠️ AI fill failed');}
 }
 async function aiGuideAllStops(rt,id){
