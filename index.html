@@ -11458,14 +11458,17 @@ function rStageRail(status,id,isAdv){
   if(status==='past')return'';
   const curIdx=_STAGES.findIndex(x=>x.s===status);if(curIdx<0)return'';
   const next=_STAGES[curIdx+1];
+  const prev=curIdx>0?_STAGES[curIdx-1]:null;
   const setFn=isAdv?`advSetStage('${id}','${next?.s}')`:`tripSetStage('${id}','${next?.s}')`;
+  const backFn=prev?(isAdv?`advSetStage('${id}','${prev.s}')`:`tripSetStage('${id}','${prev.s}')`):'';
   const ctaLabel={dream:'Begin Research →',research:'Start Planning →',planning:'Lock It In →',locked:'Begin Trip →',active:'Mark as Complete →'}[status]||'Advance Stage →';
   const railHtml=_STAGES.map((st,i)=>{
     const cls=i<curIdx?'s-done':i===curIdx?'s-active':'';
     return`<div class="stage-step ${cls}"><div class="stage-icon">${st.i}</div><div class="stage-label">${st.l}</div></div>${i<_STAGES.length-1?'<div class="stage-sep">›</div>':''}`;
   }).join('');
   const fastPath=(status==='planning'&&isAdv)?`<button class="stage-cta-secondary" onclick="advSetStage('${id}','locked')">Skip bookings — Lock It In →</button>`:'';
-  return`<div class="stage-rail-wrap"><div class="stage-rail">${railHtml}</div>${next?`<button class="stage-cta-btn" onclick="${setFn}">${ctaLabel}</button>`:''}${fastPath}</div>`;
+  const backBtn=prev?`<button class="stage-cta-secondary" onclick="${backFn}" style="margin-top:5px;font-size:10px;color:var(--muted)">← Back to ${prev.l}</button>`:'';
+  return`<div class="stage-rail-wrap"><div class="stage-rail">${railHtml}</div>${next?`<button class="stage-cta-btn" onclick="${setFn}">${ctaLabel}</button>`:''}${fastPath}${backBtn}</div>`;
 }
 
 function tripSetStage(id,newStatus){
