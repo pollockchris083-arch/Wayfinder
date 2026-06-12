@@ -9869,7 +9869,7 @@ function pipeAutoCol(card){
     const start=t.startDate?new Date(t.startDate):null;
     const end=t.endDate?new Date(t.endDate):null;
     if(t.status==='past'||(end&&end<now))return'completed';
-    if(start&&start<=now&&(!end||end>=now))return'in-progress';
+    if(t.status==='active'||(start&&start<=now&&(!end||end>=now)))return'in-progress';
     if(t.status==='locked')return'booked';
     if(t.status==='research')return'researching';
     if(t.status==='dream')return'dreaming';
@@ -9881,7 +9881,7 @@ function pipeAutoCol(card){
     const start=c.startDate?new Date(c.startDate):null;
     const end=c.endDate?new Date(c.endDate):null;
     if(c.status==='past'||(end&&end<now))return'completed';
-    if(start&&start<=now&&(!end||end>=now))return'in-progress';
+    if(c.status==='active'||(start&&start<=now&&(!end||end>=now)))return'in-progress';
     if(c.status==='locked')return'booked';
     if(c.status==='dream')return'dreaming';
     if(c.status==='research')return'researching';
@@ -10029,9 +10029,27 @@ function pipeMoveCard(cardId,toCol,silent){
 function pipeTimeAgo(ts){
   if(!ts)return'';
   const d=Math.floor((Date.now()-ts)/86400000);
-  if(d===0)return'today';if(d===1)return'yesterday';if(d<7)return d+'d ago';
+  if(d===0)return'added today';if(d===1)return'added yesterday';if(d<7)return d+'d ago';
   if(d<30)return Math.floor(d/7)+'w ago';if(d<365)return Math.floor(d/30)+'mo ago';
   return Math.floor(d/365)+'yr ago';
+}
+function pipeCardTime(card){
+  const d=card.data;
+  if((card.type==='trip'||card.type==='adventure')&&d.startDate){
+    const now=new Date();now.setHours(0,0,0,0);
+    const start=new Date(d.startDate);start.setHours(0,0,0,0);
+    const diff=Math.round((start-now)/86400000);
+    if(diff>1)return`in ${diff} days`;
+    if(diff===1)return'tomorrow';
+    if(diff===0){
+      const end=d.endDate?new Date(d.endDate):null;
+      if(end){end.setHours(0,0,0,0);if(now<=end)return'starts today';}
+      return'starts today';
+    }
+    if(d.endDate){const end=new Date(d.endDate);end.setHours(0,0,0,0);if(now<=end)return'in progress';}
+    return'past';
+  }
+  return pipeTimeAgo(d.addedAt);
 }
 
 function rPipeCard(card){
@@ -10040,7 +10058,7 @@ function rPipeCard(card){
   const label=CARD_LABELS[card.type]||'Item';
   const meta=pipeCardMeta(card);
   const prog=pipeCardProgress(card);
-  const updated=pipeTimeAgo(card.data.addedAt);
+  const updated=pipeCardTime(card);
   let tags='';
   if(card.type==='trip'&&(card.data.destinations||[]).length)
     tags=card.data.destinations.slice(0,3).map(d=>`<span class="pipe-card-tag">${d}</span>`).join('');
@@ -11466,9 +11484,8 @@ function rStageRail(status,id,isAdv){
     const cls=i<curIdx?'s-done':i===curIdx?'s-active':'';
     return`<div class="stage-step ${cls}"><div class="stage-icon">${st.i}</div><div class="stage-label">${st.l}</div></div>${i<_STAGES.length-1?'<div class="stage-sep">›</div>':''}`;
   }).join('');
-  const fastPath=(status==='planning'&&isAdv)?`<button class="stage-cta-secondary" onclick="advSetStage('${id}','locked')">Skip bookings — Lock It In →</button>`:'';
   const backBtn=prev?`<button class="stage-cta-secondary" onclick="${backFn}" style="margin-top:5px;font-size:10px;color:var(--muted)">← Back to ${prev.l}</button>`:'';
-  return`<div class="stage-rail-wrap"><div class="stage-rail">${railHtml}</div>${next?`<button class="stage-cta-btn" onclick="${setFn}">${ctaLabel}</button>`:''}${fastPath}${backBtn}</div>`;
+  return`<div class="stage-rail-wrap"><div class="stage-rail">${railHtml}</div>${next?`<button class="stage-cta-btn" onclick="${setFn}">${ctaLabel}</button>`:''}${backBtn}</div>`;
 }
 
 function tripSetStage(id,newStatus){
