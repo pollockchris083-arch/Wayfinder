@@ -11615,48 +11615,27 @@ function openPrintMenu(id,type){
   bd.style.cssText='position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.35)';
   bd.onclick=()=>{bd.remove();document.getElementById('print-menu-pop')?.remove();};
   const pop=document.createElement('div');pop.id='print-menu-pop';
-  pop.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);box-shadow:0 12px 40px rgba(0,0,0,.22);z-index:9999;padding:18px 18px 14px;min-width:260px;max-width:320px';
+  pop.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);box-shadow:0 12px 40px rgba(0,0,0,.22);z-index:9999;padding:18px 18px 14px;min-width:270px;max-width:330px';
   pop.innerHTML=`
     <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:7px">🖨️ Print / Save as PDF</div>
     <button onclick="printTripFull('${id}','${type}');document.getElementById('print-menu-pop')?.remove();document.getElementById('print-menu-bd')?.remove()" style="width:100%;text-align:left;background:var(--card2);border:1px solid var(--bdr);border-radius:8px;padding:11px 13px;cursor:pointer;margin-bottom:8px;font-family:inherit;transition:border-color .15s" onmouseover="this.style.borderColor='var(--green3)'" onmouseout="this.style.borderColor='var(--bdr)'">
-      <div style="font-size:13px;font-weight:600;color:var(--text)">📄 My Trip PDF</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4">Itinerary, stops, gear & notes — for personal use</div>
+      <div style="font-size:13px;font-weight:600;color:var(--text)">📄 My Trip Dossier</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4">Full itinerary, stops, gear & quick-reference — take this on the road</div>
     </button>
     <button onclick="printTripShare('${id}','${type}');document.getElementById('print-menu-pop')?.remove();document.getElementById('print-menu-bd')?.remove()" style="width:100%;text-align:left;background:var(--card2);border:1px solid var(--bdr);border-radius:8px;padding:11px 13px;cursor:pointer;margin-bottom:12px;font-family:inherit;transition:border-color .15s" onmouseover="this.style.borderColor='var(--amber)'" onmouseout="this.style.borderColor='var(--bdr)'">
-      <div style="font-size:13px;font-weight:600;color:var(--text)">👥 Share Card</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4">One-page overview for family, friends & pet sitters</div>
+      <div style="font-size:13px;font-weight:600;color:var(--text)">👥 Family & Friends Card</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4">AI-written overview for people keeping tabs on you — pet sitters, family, friends</div>
     </button>
     <button onclick="document.getElementById('print-menu-pop')?.remove();document.getElementById('print-menu-bd')?.remove()" style="width:100%;background:none;border:none;font-size:12px;color:var(--muted2);cursor:pointer;padding:3px;font-family:inherit">Cancel</button>`;
   document.body.appendChild(bd);document.body.appendChild(pop);
 }
 
 function _printBase(){
-  return`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;font-size:11pt;color:#2A2218;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    .page{max-width:7in;margin:0 auto;padding:.55in .6in .6in}
-    h1{font-size:19pt;font-weight:800;letter-spacing:-.3px;line-height:1.15;margin-bottom:4px}
-    h2{font-size:10pt;font-weight:700;color:#3E6644;text-transform:uppercase;letter-spacing:.08em;border-bottom:1pt solid #D0C8B8;padding-bottom:5px;margin:22px 0 10px}
-    .meta-row{font-size:9.5pt;color:#6A5A44;margin-bottom:3px}
-    .badge{display:inline-block;font-size:8.5pt;font-weight:600;padding:2px 9px;border-radius:4px;background:rgba(62,102,68,.1);color:#3A5C34;border:1pt solid rgba(62,102,68,.2)}
-    .day-card{margin-bottom:10px;border-left:2.5pt solid #C8901E;padding:6px 0 6px 12px}
-    .day-hdr{font-size:10.5pt;font-weight:700;color:#2A2218;margin-bottom:4px}
-    .stop-line{font-size:10pt;padding:3px 0;color:#2A2218;display:flex;gap:7px;align-items:baseline}
-    .stop-note{font-size:9pt;color:#7A6A50;padding:1px 0 5px 18px;line-height:1.45}
-    .miles-chip{font-size:8.5pt;color:#8A7A62;background:#F4F0E8;border-radius:3px;padding:1px 6px;white-space:nowrap}
-    .gear-row{display:flex;align-items:center;gap:9px;padding:5px 0;border-bottom:.5pt solid #ECE8DE;font-size:10pt}
-    .cb{width:12px;height:12px;border:1.5pt solid #8A7A62;border-radius:2px;flex-shrink:0;display:inline-block}
-    .no-stop{font-size:9.5pt;color:#AFA090;padding:3px 0}
-    .stat-row{display:flex;gap:24px;flex-wrap:wrap;margin:8px 0 4px}
-    .stat{display:flex;flex-direction:column;gap:1px}
-    .stat-val{font-size:14pt;font-weight:800;color:#2A2218}
-    .stat-lbl{font-size:8pt;color:#8A7A62;text-transform:uppercase;letter-spacing:.07em}
-    .notes-box{background:#F8F4EE;border-left:3pt solid #C8901E;border-radius:3px;padding:9px 12px;font-size:10pt;line-height:1.6;color:#3A2E20;margin-top:4px}
-    .footer{margin-top:28px;padding-top:10px;border-top:.5pt solid #D0C8B8;font-size:8pt;color:#AFA090;display:flex;justify-content:space-between;align-items:center}
-    .print-btn{display:block;margin:0 auto 24px;padding:9px 28px;font-size:12pt;font-weight:600;background:#3E6644;color:#fff;border:none;border-radius:7px;cursor:pointer;font-family:inherit}
-    @media print{.print-btn{display:none!important}.page{padding:.35in .4in}}
-  </style></head><body>`;
+  return`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Wayfinder</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;font-size:10.5pt;color:#1E1A14;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;line-height:1.45}.page{max-width:7.2in;margin:0 auto;padding:.5in .65in .65in}.eyebrow{font-size:7.5pt;font-weight:600;color:#8A7A62;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}.doc-title{font-size:22pt;font-weight:800;color:#1E1A14;letter-spacing:-.5px;line-height:1.1;margin-bottom:7px}.meta-line{font-size:10.5pt;color:#6A5A44;margin-bottom:4px}h2{font-size:8pt;font-weight:700;color:#3E6644;text-transform:uppercase;letter-spacing:.09em;padding-bottom:5px;border-bottom:1pt solid #D8D0C0;margin:22px 0 10px}.badge{display:inline-block;font-size:8pt;font-weight:600;padding:2px 9px;border-radius:4px;margin-right:5px;margin-bottom:5px}.badge-grn{background:rgba(62,102,68,.1);color:#2E5C34;border:1pt solid rgba(62,102,68,.22)}.badge-amb{background:rgba(200,144,30,.1);color:#7A5A10;border:1pt solid rgba(200,144,30,.25)}.stats{display:flex;margin:13px 0;border:1pt solid #E0D8C8;border-radius:5px;overflow:hidden}.stat{padding:10px 16px;border-right:1pt solid #E0D8C8;flex:1}.stat:last-child{border-right:none}.stat-val{font-size:14pt;font-weight:800;color:#1E1A14;line-height:1}.stat-lbl{font-size:7.5pt;color:#9A8A72;text-transform:uppercase;letter-spacing:.06em;margin-top:3px}.day-block{margin-bottom:8px;page-break-inside:avoid;border-left:2.5pt solid #C8901E;padding:7px 0 5px 13px}.day-hdr{font-size:10.5pt;font-weight:700;color:#1E1A14;display:flex;align-items:baseline;gap:8px;margin-bottom:6px}.day-count{font-size:9pt;color:#AFA090;font-weight:400}.stop-row{padding:3px 0;display:flex;gap:8px;align-items:baseline}.stop-pin{font-size:9pt;flex-shrink:0}.stop-name{font-size:10.5pt;color:#1E1A14;font-weight:500}.mi-tag{font-size:8pt;color:#8A7A62;background:#EDE8DE;border-radius:3px;padding:1px 6px;white-space:nowrap;flex-shrink:0;margin-left:4px}.stop-note{font-size:9.5pt;color:#5A4834;padding:2px 0 5px 20px;line-height:1.5;font-style:italic}.no-stops{font-size:9.5pt;color:#B0A090;padding:2px 0;font-style:italic}.callout{background:#FAF6F0;border-left:3pt solid #C8901E;padding:11px 14px;font-size:10pt;line-height:1.7;color:#2A2018;white-space:pre-wrap;border-radius:0 4px 4px 0}.gear-lbl{font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:11px 0 5px}.gear-row{display:flex;align-items:center;gap:9px;padding:5px 0;border-bottom:.5pt solid #ECE8DE;page-break-inside:avoid}.cb{width:11px;height:11px;border:1.5pt solid #AFA090;border-radius:2px;flex-shrink:0;display:inline-block}.gear-name{font-size:10pt;color:#1E1A14}.gear-cat{font-size:8.5pt;color:#AFA090;margin-left:auto;white-space:nowrap}.ref-row{display:flex;gap:12px;align-items:flex-end;padding:10px 0;border-bottom:.5pt solid #D8D0C0}.ref-lbl{font-size:9pt;font-weight:600;color:#6A5A44;white-space:nowrap;min-width:165px}.ref-line{flex:1;border-bottom:1pt solid #C8C0B0;height:16px}.sc-banner{background:#3E6644;color:#fff;border-radius:6px;padding:16px 20px;margin-bottom:18px;page-break-inside:avoid}.sc-eyebrow{font-size:7pt;font-weight:700;text-transform:uppercase;letter-spacing:.12em;opacity:.7;margin-bottom:8px}.sc-title{font-size:20pt;font-weight:800;letter-spacing:-.3px;line-height:1.1;margin-bottom:5px}.sc-sub{font-size:10.5pt;opacity:.88}.ai-box{background:#F2F7F3;border:1pt solid #B8D4BC;border-radius:5px;padding:13px 16px;font-size:10.5pt;line-height:1.75;color:#2A3A2C;margin-bottom:18px;font-style:italic;page-break-inside:avoid}.info-block{border:1pt solid #E0D8C8;border-radius:5px;overflow:hidden;margin-bottom:16px}.info-row{display:flex;gap:14px;padding:8px 14px;border-bottom:.5pt solid #E8E2D8;font-size:10pt;align-items:baseline}.info-row:last-child{border-bottom:none}.info-key{font-size:8.5pt;font-weight:700;color:#8A7A62;text-transform:uppercase;letter-spacing:.05em;min-width:88px;flex-shrink:0;padding-top:1px}.info-val{color:#1E1A14;font-weight:500;line-height:1.4}.tl-row{display:flex;gap:14px;padding:6px 0;border-bottom:.5pt solid #ECE8DE;font-size:10pt;align-items:baseline;page-break-inside:avoid}.tl-when{color:#7A6A54;min-width:110px;flex-shrink:0;font-size:9.5pt}.tl-where{font-weight:500;color:#1E1A14}.warn-box{background:#FFF8EC;border:1pt solid #D8B870;border-radius:5px;padding:13px 16px;margin:18px 0 4px;line-height:1.7;font-size:10pt;color:#4A3A18;page-break-inside:avoid}.warn-title{font-weight:700;font-size:10.5pt;color:#7A5A10;margin-bottom:8px}.chk-row{display:flex;gap:9px;padding:4px 0;font-size:10pt;align-items:baseline}.dest-row{display:flex;gap:12px;padding:6px 0;border-bottom:.5pt solid #ECE8DE;align-items:center;font-size:10.5pt}.dest-num{font-weight:700;color:#C8901E;font-size:8.5pt;min-width:22px}.print-btn{display:block;margin:0 auto 22px;padding:10px 32px;font-size:11pt;font-weight:600;background:#3E6644;color:#fff;border:none;border-radius:7px;cursor:pointer;font-family:inherit}.footer{margin-top:24px;padding-top:8px;border-top:.5pt solid #D8D0C0;font-size:7.5pt;color:#B0A090;display:flex;justify-content:space-between}
+@media print{.print-btn{display:none!important}.page{padding:.3in .42in}}
+</style></head><body>`;
 }
 
 function printTripFull(id,type){
@@ -11665,120 +11644,174 @@ function printTripFull(id,type){
   const t=isAdv?(D.camps||[]).find(x=>x.id===id):D.trips.find(x=>x.id===id);
   if(!t)return;
   const nm=D.settings?.name||'';
-  const typeLabel=isAdv?(ADV_TYPES[t.campType]||{label:'Adventure'}).label:({international:'International',road_trip:'Road Trip',camping:'Camping',getaway:'Getaway',event:'Event',hotel:'Hotel Stay',motel:'Motel Stay'}[t.type]||'Trip');
-  const dateStr=t.startDate?(fd(t.startDate)+(t.endDate&&t.endDate!==t.startDate?' – '+fd(t.endDate):'')):'No dates set';
+  const partner=D.settings?.partner||'';
+  const travelers=[nm,partner].filter(Boolean).join(' & ')||'';
+  const advLabels={road_trip:'Road Trip Adventure',camping:'Camping Trip',adventure:'Adventure',rv:'RV Trip',van:'Van Life',trailer:'Trailer Trip',overlanding:'Overland Trip'};
+  const typeLabel=isAdv?(advLabels[t.campType]||'Adventure'):({international:'International Trip',road_trip:'Road Trip',camping:'Camping Trip',getaway:'Getaway',event:'Event',hotel:'Hotel Stay',motel:'Motel Stay',work:'Work Trip'}[t.type]||'Trip');
+  const statusLabel={dream:'Dreaming',research:'Researching',planning:'Planning',locked:'Locked In',active:'In Progress',past:'Completed'}[t.status]||'';
+  const fmtMed=d=>{if(!d)return'';try{return new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}catch{return d}};
+  const fmtLong=d=>{if(!d)return'';try{return new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}catch{return d}};
   const dur=t.startDate&&t.endDate?Math.round((new Date(t.endDate)-new Date(t.startDate))/86400000)+1:0;
-  const loc=isAdv?(t.location?(t.location+(t.state?', '+t.state:'')):''):(t.destinations||[]).slice(0,3).join(', ');
-  const statusLabel=({dream:'Dreaming',research:'Researching',planning:'Planning',locked:'Locked In',active:'Active',past:'Completed'}[t.status]||tsl(t.status));
-  const itin=t.itinerary||[];
-  const stops=isAdv?(t.stops||[]):[];
-  const totalMi=stops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
-  const gearItems=isAdv?(t.gear||[]).filter(g=>!g.packed).concat((t.gear||[]).filter(g=>g.packed)):[];
-  const budget=isAdv?null:(t.budget?`$${Number(t.budget).toLocaleString()}`:null);
+  const dateStr=t.startDate?(fmtLong(t.startDate)+(t.endDate&&t.endDate!==t.startDate?' – '+fmtMed(t.endDate):'')):'No dates set';
+  const loc=isAdv?[t.location,t.state].filter(Boolean).join(', '):(t.destinations||[]).join(', ');
+  const itin=isAdv?[]:(t.itinerary||[]);
+  const advStops=isAdv?(t.stops||[]):[];
+  const totalMi=advStops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  const totalStops=isAdv?advStops.length:itin.reduce((s,d)=>s+(d.stops||[]).length,0);
+  const gearItems=isAdv?(t.gear||[]):[];
+  const budget=t.budget?`$${Number(t.budget).toLocaleString()}`:null;
+  const dests=isAdv?[]:(t.destinations||[]).filter(Boolean);
 
+  // Stats bar
+  const sItems=[dur?{v:dur,l:'Days'}:null,totalStops?{v:totalStops,l:'Stops'}:null,totalMi>0?{v:Math.round(totalMi).toLocaleString(),l:'Miles'}:null,budget?{v:budget,l:'Budget'}:null].filter(Boolean);
+  const statsHtml=sItems.length?`<div class="stats">${sItems.map(s=>`<div class="stat"><div class="stat-val">${s.v}</div><div class="stat-lbl">${s.l}</div></div>`).join('')}</div>`:'';
+
+  // Destinations (multi-stop trips)
+  let destHtml='';
+  if(!isAdv&&dests.length>1){
+    destHtml=`<h2>🌍 Destinations</h2>`+dests.map((d,i)=>`<div class="dest-row"><span class="dest-num">${String(i+1).padStart(2,'0')}</span><span style="font-weight:500;color:#1E1A14">${d}</span></div>`).join('');
+  }
+
+  // Day-by-day itinerary (regular trips)
   let itinHtml='';
   if(itin.length){
     itin.forEach((day,di)=>{
-      const dayLabel=day.date?fd(day.date):`Day ${di+1}`;
-      const daystops=(day.stops||[]);
-      itinHtml+=`<div class="day-card">
-        <div class="day-hdr">${dayLabel}${daystops.length?` <span style="font-size:9pt;font-weight:400;color:#8A7A62">${daystops.length} stop${daystops.length!==1?'s':''}</span>`:''}</div>
-        ${daystops.length?daystops.map(s=>`<div class="stop-line"><span>📍</span><span>${s.name||'Stop'}${s.milesPrev?` <span class="miles-chip">+${s.milesPrev} mi</span>`:''}</span></div>${s.note?`<div class="stop-note">${s.note}</div>`:''}`).join(''):`<div class="no-stop">No stops planned</div>`}
-      </div>`;
+      const ds=day.stops||[];
+      const dayLbl=day.date?fmtMed(day.date):`Day ${di+1}`;
+      itinHtml+=`<div class="day-block"><div class="day-hdr">${dayLbl}<span class="day-count">${ds.length?ds.length+' stop'+(ds.length!==1?'s':''):'travel day'}</span></div>${ds.length?ds.map(s=>`<div class="stop-row"><span class="stop-pin">📍</span><span class="stop-name">${s.name||'Stop'}${s.milesPrev?`<span class="mi-tag">+${s.milesPrev} mi</span>`:''}</span></div>${s.note?`<div class="stop-note">${s.note}</div>`:''}`).join(''):`<div class="no-stops">Travel day — no scheduled stops</div>`}</div>`;
     });
   }
 
+  // Route + stops (adventures — group by arrDate if set)
+  let stopsHtml='';
+  if(advStops.length){
+    const groups=[];let curKey=null;
+    advStops.forEach(s=>{const k=s.arrDate||null;if(k!==curKey){curKey=k;groups.push({dateKey:k,stops:[]});}groups[groups.length-1].stops.push(s);});
+    groups.forEach((grp,gi)=>{
+      const segMi=grp.stops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+      const lbl=grp.dateKey?fmtMed(grp.dateKey):`Segment ${gi+1}`;
+      stopsHtml+=`<div class="day-block"><div class="day-hdr">${lbl}${segMi>0?`<span class="day-count">${Math.round(segMi)} mi</span>`:''}</div>${grp.stops.map(s=>`<div class="stop-row"><span class="stop-pin">📍</span><span class="stop-name">${s.name||'Stop'}${s.milesPrev?`<span class="mi-tag">+${s.milesPrev} mi</span>`:''}</span></div>${s.note?`<div class="stop-note">${s.note}</div>`:''}`).join('')}</div>`;
+    });
+  }
+
+  // Route overview summary (adventures)
+  let routeHtml='';
+  if(isAdv&&advStops.length>1){
+    const names=advStops.map(s=>s.name||'?');
+    routeHtml=`<h2>🗺 Full Route Overview</h2><div style="font-size:10pt;line-height:2;color:#1E1A14">${names.join(' <span style="color:#C8901E;font-weight:700;margin:0 3px">→</span> ')}</div>${totalMi>0?`<div style="font-size:9pt;color:#8A7A62;margin-top:5px">Total route: approximately <strong>${Math.round(totalMi).toLocaleString()} miles</strong></div>`:''}`;
+  }
+
+  // Gear checklist
   let gearHtml='';
   if(gearItems.length){
     const unpacked=gearItems.filter(g=>!g.packed);const packed=gearItems.filter(g=>g.packed);
-    gearHtml=`<h2>🎒 Gear Checklist</h2>`;
-    if(unpacked.length)gearHtml+=`<div style="font-size:9pt;font-weight:600;color:#8A7A62;margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em">To Pack</div>`+unpacked.map(g=>`<div class="gear-row"><span class="cb"></span><span>${g.name||g}</span>${g.cat?`<span style="font-size:9pt;color:#AFA090">${g.cat}</span>`:''}</div>`).join('');
-    if(packed.length)gearHtml+=`<div style="font-size:9pt;font-weight:600;color:#3E6644;margin:10px 0 5px;text-transform:uppercase;letter-spacing:.06em">✓ Packed</div>`+packed.map(g=>`<div class="gear-row" style="opacity:.6"><span style="font-size:10pt">✓</span><span style="text-decoration:line-through">${g.name||g}</span></div>`).join('');
+    gearHtml=`<h2>🎒 Gear &amp; Packing List</h2>`;
+    if(unpacked.length){gearHtml+=`<div class="gear-lbl" style="color:#6A5A44">To Pack — ${unpacked.length} item${unpacked.length!==1?'s':''}</div>`;gearHtml+=unpacked.map(g=>`<div class="gear-row"><span class="cb"></span><span class="gear-name">${g.name||g}</span>${g.cat?`<span class="gear-cat">${g.cat}</span>`:''}</div>`).join('');}
+    if(packed.length){gearHtml+=`<div class="gear-lbl" style="color:#3E6644;margin-top:12px">✓ Packed — ${packed.length} item${packed.length!==1?'s':''}</div>`;gearHtml+=packed.map(g=>`<div class="gear-row" style="opacity:.5"><span style="font-size:10pt;color:#3E6644;flex-shrink:0">✓</span><span class="gear-name" style="text-decoration:line-through">${g.name||g}</span>${g.cat?`<span class="gear-cat">${g.cat}</span>`:''}</div>`).join('');}
   }
 
-  const statsHtml=`<div class="stat-row">
-    ${dur?`<div class="stat"><div class="stat-val">${dur}</div><div class="stat-lbl">Days</div></div>`:''}
-    ${itin.reduce((s,d)=>s+(d.stops||[]).length,0)?`<div class="stat"><div class="stat-val">${itin.reduce((s,d)=>s+(d.stops||[]).length,0)}</div><div class="stat-lbl">Stops</div></div>`:''}
-    ${totalMi>0?`<div class="stat"><div class="stat-val">${Math.round(totalMi)}</div><div class="stat-lbl">Miles</div></div>`:''}
-    ${budget?`<div class="stat"><div class="stat-val">${budget}</div><div class="stat-lbl">Budget</div></div>`:''}
-  </div>`;
+  // Quick-reference fill-in section
+  const refHtml=`<h2>📋 Quick Reference</h2><div style="font-size:9pt;color:#8A7A62;margin-bottom:10px;font-style:italic">Fill in before you leave — keep this page with you</div><div class="ref-row"><span class="ref-lbl">Emergency Contact Name</span><span class="ref-line"></span></div><div class="ref-row"><span class="ref-lbl">Emergency Phone</span><span class="ref-line"></span></div><div class="ref-row"><span class="ref-lbl">Travel / Trip Insurance</span><span class="ref-line"></span></div>${isAdv?`<div class="ref-row"><span class="ref-lbl">Vehicle / License Plate</span><span class="ref-line"></span></div>`:''}<div class="ref-row"><span class="ref-lbl">Accommodation / Hotel</span><span class="ref-line"></span></div><div class="ref-row"><span class="ref-lbl">Confirmation Number</span><span class="ref-line"></span></div>${t.type==='international'?`<div class="ref-row"><span class="ref-lbl">Passport / ID Number</span><span class="ref-line"></span></div><div class="ref-row"><span class="ref-lbl">Return Flight / Transit</span><span class="ref-line"></span></div>`:''}<div class="ref-row"><span class="ref-lbl">Other Notes</span><span class="ref-line"></span></div>`;
 
+  const printDate=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
   const html=_printBase()+`<div class="page">
-    <button class="print-btn" onclick="window.print()">🖨️ Save as PDF / Print</button>
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px">
-      <div>
-        <div style="font-size:9pt;font-weight:600;color:#8A7A62;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px">Wayfinder · Trip Details</div>
-        <h1>${t.name}</h1>
-      </div>
-      <div style="text-align:right;flex-shrink:0;margin-top:4px">
-        <div class="badge">${typeLabel}</div>
-        <div style="font-size:9pt;color:#8A7A62;margin-top:5px">${statusLabel}</div>
-      </div>
-    </div>
-    <div class="meta-row">📅 ${dateStr}</div>
-    ${loc?`<div class="meta-row">📍 ${loc}</div>`:''}
-    ${nm?`<div class="meta-row">👤 ${nm}</div>`:''}
-    ${statsHtml}
-    ${t.notes?`<h2>Notes</h2><div class="notes-box">${t.notes}</div>`:''}
-    ${itin.length?`<h2>📅 Itinerary</h2>${itinHtml}`:''}
-    ${gearHtml}
-    <div class="footer"><span>Wayfinder — ${t.name}</span><span>Printed ${new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span></div>
-  </div></body></html>`;
+<button class="print-btn" onclick="window.print()">🖨️ Save as PDF / Print</button>
+<div class="eyebrow">Wayfinder · Trip Dossier</div>
+<div class="doc-title">${t.name}</div>
+<div style="margin-bottom:8px"><span class="badge badge-grn">${typeLabel}</span>${statusLabel?`<span class="badge badge-amb">${statusLabel}</span>`:''}</div>
+<div class="meta-line">📅 ${dateStr}</div>
+${loc?`<div class="meta-line">📍 ${loc}</div>`:''}
+${travelers?`<div class="meta-line">👤 ${travelers}</div>`:''}
+${statsHtml}
+${t.notes?`<h2>📝 Important Notes</h2><div class="callout">${t.notes}</div>`:''}
+${destHtml}
+${itin.length?`<h2>📅 Day-by-Day Itinerary</h2>${itinHtml}`:''}
+${advStops.length?`<h2>📍 Route &amp; Stops</h2>${stopsHtml}`:''}
+${routeHtml}
+${gearHtml}
+${refHtml}
+<div class="footer"><span>Wayfinder · ${t.name}</span><span>Printed ${printDate}</span></div>
+</div></body></html>`;
 
-  const w=window.open('','_blank');if(!w)return;
+  const w=window.open('','_blank');
+  if(!w){toast('⚠️ Popup blocked — please allow popups for this site');return;}
   w.document.write(html);w.document.close();
   setTimeout(()=>w.print(),600);
 }
 
-function printTripShare(id,type){
+async function printTripShare(id,type){
   D=load();
   const isAdv=type==='adv';
   const t=isAdv?(D.camps||[]).find(x=>x.id===id):D.trips.find(x=>x.id===id);
   if(!t)return;
   const nm=D.settings?.name||'Your traveler';
   const partner=D.settings?.partner||'';
-  const dateStr=t.startDate?(fd(t.startDate)+(t.endDate&&t.endDate!==t.startDate?' – '+fd(t.endDate):'')):'Dates TBD';
+  const travelers=nm+(partner?' & '+partner:'');
+  const typeLabel=isAdv?(ADV_TYPES[t.campType]||{label:'Adventure'}).label:({international:'International',road_trip:'Road Trip',camping:'Camping',getaway:'Getaway',event:'Event',hotel:'Hotel Stay',motel:'Motel Stay'}[t.type]||'Trip');
+  const fmtMed=d=>{if(!d)return'';try{return new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}catch{return d}};
+  const fmtShort=d=>{if(!d)return'';try{return new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}catch{return d}};
   const dur=t.startDate&&t.endDate?Math.round((new Date(t.endDate)-new Date(t.startDate))/86400000)+1:0;
-  const loc=isAdv?(t.location?(t.location+(t.state?', '+t.state:'')):''):(t.destinations||[]).slice(0,3).join(', ');
-  const returnDate=t.endDate?fd(t.endDate):'TBD';
-  const itin=t.itinerary||[];
+  const dateStr=t.startDate?(fmtShort(t.startDate)+(t.endDate&&t.endDate!==t.startDate?' – '+fmtShort(t.endDate):'')):'TBD';
+  const returnDate=t.endDate?fmtMed(t.endDate):'TBD';
+  const returnShort=t.endDate?fmtShort(t.endDate):'TBD';
+  const loc=isAdv?[t.location,t.state].filter(Boolean).join(', '):(t.destinations||[]).slice(0,3).join(', ');
+  const itin=isAdv?[]:(t.itinerary||[]);
+  const advStops=isAdv?(t.stops||[]):[];
+  const keyStops=(isAdv?advStops:itin.flatMap(d=>d.stops||[])).map(s=>s.name).filter(Boolean).slice(0,6);
 
-  let whereHtml='';
-  itin.forEach((day,di)=>{
-    const dayLabel=day.date?fd(day.date):`Day ${di+1}`;
-    const daystops=(day.stops||[]);
-    if(daystops.length){
-      whereHtml+=daystops.map(s=>`<div style="display:flex;gap:10px;padding:5px 0;border-bottom:.5pt solid #ECE8DE;font-size:10pt"><span style="color:#8A7A62;white-space:nowrap;min-width:90px">${dayLabel}</span><span style="font-weight:500;color:#2A2218">${s.name}</span></div>`).join('');
-    }else{
-      whereHtml+=`<div style="display:flex;gap:10px;padding:5px 0;border-bottom:.5pt solid #ECE8DE;font-size:10pt"><span style="color:#8A7A62;white-space:nowrap;min-width:90px">${dayLabel}</span><span style="color:#AFA090">En route / no stops</span></div>`;
-    }
-  });
+  // Open loading window immediately
+  const w=window.open('','_blank');
+  if(!w){toast('⚠️ Popup blocked — allow popups and try again');return;}
+  w.document.write(_printBase()+`<div style="padding:90px 40px;text-align:center;max-width:420px;margin:0 auto"><div style="font-size:26pt;color:#3E6644;margin-bottom:16px">✶</div><div style="font-size:14pt;font-weight:700;color:#1E1A14;margin-bottom:9px">Creating Share Card…</div><div style="font-size:10pt;color:#8A7A62;line-height:1.7">Writing a personalized note<br>for your family &amp; friends via AI</div></div></body></html>`);
+  w.document.close();
 
-  const html=_printBase()+`<div class="page">
-    <button class="print-btn" onclick="window.print()">🖨️ Save as PDF / Print</button>
-    <div style="background:#3E6644;color:#fff;border-radius:6px;padding:14px 18px;margin-bottom:18px">
-      <div style="font-size:8.5pt;font-weight:600;text-transform:uppercase;letter-spacing:.1em;opacity:.8;margin-bottom:5px">Trip Overview Card</div>
-      <div style="font-size:19pt;font-weight:800;letter-spacing:-.3px;line-height:1.15;margin-bottom:4px">${t.name}</div>
-      <div style="font-size:10.5pt;opacity:.9">${nm}${partner?' & '+partner:''} is traveling</div>
-    </div>
-    <h2>📅 When</h2>
-    <div style="font-size:12pt;font-weight:700;color:#2A2218;margin-bottom:3px">${dateStr}</div>
-    ${dur?`<div style="font-size:10pt;color:#6A5A44">${dur} day${dur!==1?'s':''}</div>`:''}
-    <div style="font-size:10pt;color:#6A5A44;margin-top:3px">Expected back: <strong>${returnDate}</strong></div>
-    ${loc?`<h2>📍 Destination</h2><div style="font-size:12pt;font-weight:600;color:#2A2218">${loc}</div>`:''}
-    ${whereHtml?`<h2>🗓 Where I'll Be</h2>${whereHtml}`:''}
-    <h2>👤 Who's Traveling</h2>
-    <div style="font-size:11pt;font-weight:600;color:#2A2218">${nm}${partner?' &amp; '+partner:''}</div>
-    <div style="background:#FFF8EC;border:1pt solid #D0B870;border-radius:5px;padding:11px 14px;margin-top:22px;font-size:9.5pt;color:#5A4A20;line-height:1.6">
-      <strong>Note for family &amp; friends:</strong> If you haven't heard from ${nm} by the day after the return date (${returnDate}), please check in.
-      ${t.notes?`<div style="margin-top:7px;padding-top:7px;border-top:.5pt solid #D0B870"><strong>Trip notes:</strong> ${t.notes}</div>`:''}
-    </div>
-    <div class="footer"><span>Wayfinder — ${t.name} Share Card</span><span>Printed ${new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span></div>
-  </div></body></html>`;
+  // AI narrative generation
+  let aiIntro='',aiSafetyNote='';
+  try{
+    const raw=await callAI(`Write a friendly share card note for my family and friends. Return ONLY a JSON object with no other text.\n\nTraveler: ${travelers}\nTrip name: ${t.name}\nDestination: ${loc||'a road trip'}\nDates: ${dateStr}${dur?' ('+dur+' days)':''}\nTrip type: ${typeLabel}\n${keyStops.length?'Key places: '+keyStops.join(', '):''}\n${t.notes?'Traveler’s notes: '+t.notes:''}\n\nReturn exactly: {"intro":"2-3 warm casual sentences from the traveler to family\\/friends. First person. Like texting a close friend. Where you’re headed, what kind of trip, hint of excitement.","safetyNote":"One warm sentence about being back by ${returnShort} and asking them to reach out if they haven’t heard by then."}`,300);
+    const m=raw.match(/\{[\s\S]*\}/);
+    if(m){const p=JSON.parse(m[0]);aiIntro=p.intro||'';aiSafetyNote=p.safetyNote||'';}
+  }catch(e){
+    aiIntro=`${travelers} will be ${loc?'heading to '+loc+' ':'on a trip '}for ${dur?dur+' days':'a while'} — a ${typeLabel.toLowerCase()} starting ${t.startDate?fmtShort(t.startDate):'soon'}. ${t.notes||''}`.trim();
+    aiSafetyNote=`Planning to be back by ${returnDate} — if you haven’t heard by then, please check in.`;
+  }
+  if(w.closed)return;
 
-  const w=window.open('','_blank');if(!w)return;
-  w.document.write(html);w.document.close();
-  setTimeout(()=>w.print(),600);
+  // Build where-I'll-be timeline
+  let timelineHtml='';
+  if(itin.length){
+    itin.forEach((day,di)=>{
+      const ds=day.stops||[];
+      const wl=day.date?fmtShort(day.date):`Day ${di+1}`;
+      if(ds.length){ds.forEach(s=>{timelineHtml+=`<div class="tl-row"><span class="tl-when">${wl}</span><span class="tl-where">📍 ${s.name||'Stop'}</span></div>`;});}
+      else{timelineHtml+=`<div class="tl-row"><span class="tl-when">${wl}</span><span class="tl-where" style="color:#AFA090;font-style:italic">Travel / transit day</span></div>`;}
+    });
+  }else if(advStops.length){
+    advStops.slice(0,12).forEach(s=>{timelineHtml+=`<div class="tl-row"><span class="tl-when">${s.arrDate?fmtShort(s.arrDate):''}</span><span class="tl-where">📍 ${s.name||'Stop'}</span></div>`;});
+    if(advStops.length>12)timelineHtml+=`<div class="tl-row"><span class="tl-when"></span><span class="tl-where" style="color:#AFA090;font-style:italic">+ ${advStops.length-12} more stops on route</span></div>`;
+  }
+
+  const printDate=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  const fullHtml=_printBase()+`<div class="page">
+<button class="print-btn" onclick="window.print()">🖨️ Save as PDF / Print</button>
+<div class="sc-banner"><div class="sc-eyebrow">Trip Share Card · Wayfinder</div><div class="sc-title">${t.name}</div><div class="sc-sub">${travelers} is ${t.solo?'traveling solo':'traveling'}${loc?' to '+loc:''}</div></div>
+${aiIntro?`<div class="ai-box">“${aiIntro}”</div>`:''}
+<h2>At a Glance</h2>
+<div class="info-block">
+${loc?`<div class="info-row"><span class="info-key">📍 Where</span><span class="info-val">${loc}</span></div>`:''}
+<div class="info-row"><span class="info-key">📅 Dates</span><span class="info-val">${dateStr}${dur?' · '+dur+' day'+(dur!==1?'s':''):''}</span></div>
+<div class="info-row"><span class="info-key">🏠 Back by</span><span class="info-val"><strong>${returnDate}</strong></span></div>
+<div class="info-row"><span class="info-key">👤 Traveler</span><span class="info-val">${travelers}</span></div>
+<div class="info-row"><span class="info-key">🧭 Type</span><span class="info-val">${typeLabel}</span></div>
+</div>
+${timelineHtml?`<h2>Where I’ll Be</h2>${timelineHtml}`:''}
+${t.notes?`<h2>📝 Notes from ${nm}</h2><div class="callout">${t.notes}</div>`:''}
+<div class="warn-box"><div class="warn-title">⚑ For Family &amp; Friends</div>${aiSafetyNote?`<p style="margin-bottom:10px">${aiSafetyNote}</p>`:''}<div class="chk-row"><span class="cb"></span><span>If no contact by the day after <strong>${returnShort}</strong>, please reach out — text or call</span></div><div class="chk-row" style="margin-top:4px"><span class="cb"></span><span>For emergencies, contact: _________________________________</span></div></div>
+<div class="footer"><span>Wayfinder · ${t.name} Share Card</span><span>Printed ${printDate}</span></div>
+</div></body></html>`;
+
+  w.document.open();w.document.write(fullHtml);w.document.close();
+  setTimeout(()=>w.print(),700);
 }
 </script>
 </body>
