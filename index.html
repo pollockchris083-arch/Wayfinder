@@ -575,28 +575,41 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .expense-row:last-child{border-bottom:none}
 .expense-cat{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-radius:4px;background:rgba(74,120,158,.1);color:#4A789E;border:1px solid rgba(74,120,158,.2);white-space:nowrap;flex-shrink:0}
 /* ── MOBILE ── */
+/* ── MOBILE BOTTOM NAV ── */
+#mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:80;background:var(--card);border-top:1px solid var(--bdr)}
+.mbn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;cursor:pointer;color:var(--muted);transition:color .12s,background .12s;padding:9px 4px 7px;font-family:inherit;-webkit-tap-highlight-color:transparent;position:relative;min-height:50px}
+.mbn:active{background:rgba(239,159,39,.05)}
+.mbn.on{color:var(--amber)}
+.mbn.on::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:28px;height:2.5px;background:var(--amber);border-radius:0 0 3px 3px}
+.mbn-ico{font-size:21px;line-height:1;transition:transform .12s}
+.mbn.on .mbn-ico{transform:scale(1.06)}
+.mbn-lbl{font-size:9px;font-weight:700;letter-spacing:.06em;line-height:1;text-transform:uppercase}
+
 #sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:90;-webkit-tap-highlight-color:transparent}
 #sb-menu{display:none;background:none;border:none;cursor:pointer;font-size:20px;color:var(--text);padding:5px 8px;border-radius:6px;line-height:1;flex-shrink:0;transition:background .15s}
 #sb-menu:hover{background:var(--card2)}
 @media (max-width:699px){
-  /* ── Sidebar — slide-in overlay ── */
-  #sb{position:fixed;left:0;top:0;bottom:0;z-index:100;transform:translateX(-190px);transition:transform .22s ease;box-shadow:none}
-  #sb.sb-open{transform:translateX(0);box-shadow:3px 0 28px rgba(0,0,0,.22)}
+  /* ── Bottom nav ── */
+  #mob-nav{display:flex;height:calc(54px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px)}
+
+  /* ── Sidebar — slide-in overlay (fixed translateX bug: was -190px, sidebar is 200px) ── */
+  #sb{position:fixed;left:0;top:0;bottom:0;z-index:100;transform:translateX(-105%);transition:transform .22s ease;box-shadow:none}
+  #sb.sb-open{transform:translateX(0);box-shadow:4px 0 32px rgba(0,0,0,.28)}
   #sb-overlay.sb-open{display:block}
-  #sb-menu{display:inline-flex;align-items:center;justify-content:center;min-width:40px;min-height:40px}
+  #sb-menu{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px}
   #main{width:100vw}
-  .ni{padding:10px 8px;min-height:44px}
+  .ni{padding:9px 8px;min-height:44px}
 
   /* ── Topbar ── */
   #topbar{padding:0 10px;gap:8px;height:50px}
-  .tb-search{flex:0 0 108px;min-width:0;max-width:108px}
-  .tb-btn{padding:6px 9px;font-size:11.5px;white-space:nowrap}
+  .tb-search{flex:1;min-width:0;max-width:150px}
+  .tb-btn{padding:7px 11px;font-size:12px;white-space:nowrap;min-height:38px}
 
-  /* ── Content area ── */
-  #content{padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom,10px));-webkit-overflow-scrolling:touch}
-  .page{padding:12px}
+  /* ── Content area — extra bottom padding for mob-nav ── */
+  #content{padding:12px;padding-bottom:calc(62px + env(safe-area-inset-bottom,0px));-webkit-overflow-scrolling:touch}
+  .page{padding:14px}
 
-  /* ── Dashboard grids — stack / 2-col ── */
+  /* ── Dashboard grids ── */
   .hlt{grid-template-columns:repeat(2,1fr)}
   .g4{grid-template-columns:repeat(2,1fr)!important}
   .g2{grid-template-columns:1fr!important}
@@ -604,81 +617,97 @@ input,textarea,select{font-family:inherit;font-weight:400}
   .ga{grid-template-columns:1fr!important}
   .dash-trips{gap:9px}
 
-  /* ── Two-col form rows stack on mobile ── */
+  /* ── Stat cards on dashboard: readable on small screen ── */
+  .sc{padding:12px 13px}
+  .sn{font-size:24px}
+
+  /* ── Two-col form rows stack ── */
   .fr{grid-template-columns:1fr!important}
 
-  /* ── Trip cards ── */
+  /* ── Trip cards: full-width, bigger tap area ── */
   .tc{min-width:unset;width:100%}
-  /* Trips page: hide rarely-used Import button, chips take full row */
-  #trips-import-btn{display:none!important}
-
-  /* ── Search ── */
-  .tb-search{max-width:108px}
 
   /* ── Modals — bottom sheet ── */
   .mo{align-items:flex-end!important}
   .modal{
     width:100vw!important;max-width:100vw!important;
-    max-height:92dvh!important;
-    border-radius:16px 16px 0 0!important;
-    padding:18px 16px max(20px,env(safe-area-inset-bottom,20px))!important
+    max-height:93dvh!important;
+    border-radius:18px 18px 0 0!important;
+    padding:20px 16px max(24px,env(safe-area-inset-bottom,24px))!important
   }
-  .mcl{top:14px;right:14px}
-  .modal h2{padding-right:30px}
-  .btn-p,.btn-s{min-height:44px;padding:12px 16px}
+  /* Drag handle on bottom-sheet modals */
+  .modal::before{content:'';display:block;width:36px;height:4px;background:var(--bdr2);border-radius:2px;margin:-10px auto 14px;opacity:.6}
+  .mcl{top:16px;right:14px;min-width:36px;min-height:36px}
+  .modal h2{padding-right:36px;font-size:17px}
+  /* Full-width action buttons in modals */
+  .fa{display:flex;flex-direction:column;gap:8px}
+  .fa .btn-p,.fa .btn-s{width:100%;justify-content:center}
+  .btn-p,.btn-s{min-height:48px;padding:13px 18px;font-size:14px}
 
   /* ── Forms — 16px prevents iOS auto-zoom ── */
   .fi,.ft,.fs{font-size:16px!important}
-  .fc{min-height:44px;padding:10px 14px}
+  .fc{min-height:44px;padding:10px 14px;font-size:15px}
+  label,.fl{font-size:13px}
 
-  /* ── Map page — flex layout, map fills available height ── */
+  /* ── Map page ── */
   #content.map-mode{overflow:hidden!important;padding:0!important}
   #content.map-mode #page-map.on{height:100%!important;display:flex!important;flex-direction:column!important;padding:0!important}
   #content.map-mode #map-in{flex:1!important;display:flex!important;flex-direction:column!important;min-height:0!important;overflow:hidden!important}
   #content.map-mode #the-map{flex:1!important;height:auto!important;min-height:200px!important}
   #page-map,#page-map.on{padding:0!important;display:flex!important;flex-direction:column}
   #map-in{flex:1;display:flex;flex-direction:column;min-height:0}
-  /* Fallback height when map-mode not active (e.g. direct URL load) */
-  #the-map{height:calc(100dvh - 50px - 205px)!important;min-height:240px!important;border-radius:0!important;border-left:none!important;border-right:none!important;border-top:none!important}
-  /* Filter bar chips: horizontal scroll */
+  #the-map{height:calc(100dvh - 50px - 54px - 205px)!important;min-height:220px!important;border-radius:0!important;border:none!important}
   #map-fb{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
   #map-fb::-webkit-scrollbar{display:none}
-  /* Controls compact: when+where inline, selects flexible */
   #map-ctrl-row{gap:6px!important}
   #map-ctrl-row>div:first-child{min-width:0!important;width:100%}
   #map-when-where{flex-wrap:nowrap!important;gap:6px!important}
   #map-trip-sel{min-width:0!important;flex:1!important;font-size:14px!important}
   #map-year-sel{min-width:0!important;width:68px!important;flex-shrink:0!important;font-size:14px!important}
-  /* Legend: hidden on mobile (saves space) */
   #map-legend-row{display:none!important}
-  /* Stats row: horizontal scroll */
   #map-stats-row{display:flex!important;overflow-x:auto;scrollbar-width:none;gap:8px;padding-bottom:2px;grid-template-columns:unset!important}
   #map-stats-row::-webkit-scrollbar{display:none}
-  #map-stats-row .sc{min-width:90px;flex:0 0 auto;padding:10px 12px}
+  #map-stats-row .sc{min-width:88px;flex:0 0 auto;padding:10px 11px}
 
-  /* ── The Path — columns scroll horizontally, Move button always visible ── */
-  .pipe-col{width:82vw;min-width:280px}
+  /* ── The Path ── */
+  .pipe-col{width:84vw;min-width:280px}
   .path-detail{width:100vw;max-width:100vw}
   .path-filter-bar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:6px;padding:8px 12px}
   .path-filter-bar::-webkit-scrollbar{display:none}
-  .pipe-filter-btn{min-height:36px;font-size:11px;padding:5px 9px;flex-shrink:0}
-  /* Move button always visible on touch (no hover on mobile) */
+  .pipe-filter-btn{min-height:40px;font-size:12px;padding:6px 11px;flex-shrink:0}
   .pipe-card-actions{opacity:1!important}
-  .pipe-card-btn{min-height:36px;padding:5px 10px;font-size:11px}
-  /* Collapse/expand button: bigger touch target */
-  .pipe-col-toggle{min-width:36px;min-height:36px}
+  .pipe-card-btn{min-height:40px;padding:6px 12px;font-size:12px}
+  .pipe-col-toggle{min-width:40px;min-height:40px}
+  .pipe-card{padding:11px 12px}
 
-  /* ── AI Planner: 2-col grid on mobile ── */
+  /* ── AI Planner ── */
   .pl-wf-grid{grid-template-columns:repeat(2,1fr)!important}
 
   /* ── Places page ── */
   .places-ga{grid-template-columns:1fr!important}
-  #places-fab{display:flex!important}
+  #places-fab{display:flex!important;bottom:calc(54px + env(safe-area-inset-bottom,0px) + 18px)!important}
   #places-hdr .tb-btn{display:none}
   #places-filter-bar{top:0;position:sticky}
 
-  /* ── Filter chip buttons ── */
+  /* ── Atlas tiles: 2-up on mobile ── */
+  .atlas-grid{grid-template-columns:repeat(2,1fr)!important}
+
+  /* ── Filter chips ── */
   .fb{flex-wrap:wrap}
+
+  /* ── Section cards: reduce padding ── */
+  .card{padding:13px}
+  .ss h3{font-size:13px}
+
+  /* ── Stage rail: full-width CTAs ── */
+  .stage-cta-btn{width:100%;justify-content:center}
+  .stage-cta-secondary{width:100%;justify-content:center}
+
+  /* ── Trip/camp list: bigger row tap targets ── */
+  .tr-row,.camp-row{min-height:56px}
+
+  /* ── Scrollbar hidden on filter rows ── */
+  .plans-day-stops::-webkit-scrollbar{display:none}
 }
 @media (min-width:700px) and (max-width:1099px){
   .places-ga{grid-template-columns:repeat(2,1fr)}
@@ -2636,6 +2665,14 @@ const TITLES={home:'Dashboard',map:'World Map',places:'Places',wishlist:'Wishlis
 const ACTS={home:{l:'',f:''},places:{l:'+ Add Place',f:'openPlace'},wishlist:{l:'+ Add to Wishlist',f:'openWish'},planner:{l:'',f:''},trips:{l:'+ New Trip',f:'openNewTrip'},journal:{l:'+ New Memoir',f:'openJournal'},map:{l:'+ Add Place',f:'openPlace'},abroad:{l:'',f:''},settings:{l:'',f:''},path:{l:'',f:''},camp:{l:'+ Add Spot',f:'openCampSpot'},work:{l:'+ New Work Trip',f:'openWork'},docs:{l:'+ Add Document',f:'openDocModal'}};
 let cur='home';
 let tripTypeFilter='all';
+function _mbnSync(p){
+  const map={home:'home',trips:'trips',map:'map',places:'places',wishlist:'places',planner:'places',journal:'menu',abroad:'menu',docs:'menu',path:'menu',settings:'menu',work:'menu',camp:'menu'};
+  const active=map[p]||'menu';
+  document.querySelectorAll('.mbn').forEach(b=>{
+    const mn=b.dataset.mn;
+    b.classList.toggle('on',mn===active);
+  });
+}
 function go(p){
   sbClose();
   if(p!==cur){const s=document.getElementById('srch');if(s)s.value='';pipeCloseDetail();}
@@ -2649,6 +2686,8 @@ function go(p){
   btn.textContent=a?.l||'';btn.style.display=a?.l?'flex':'none';
   cur=p;
   document.getElementById('content').classList.toggle('map-mode',p==='map');
+  document.getElementById('content').scrollTop=0;
+  _mbnSync(p);
   if(p==='home')rHome();if(p==='places')rPlaces();if(p==='wishlist')rWish();
   if(p==='planner')rPlanner();
   if(p==='trips')rTrips();if(p==='journal')rJournal();if(p==='map')rMap();
@@ -2669,6 +2708,8 @@ function goTrips(type){
   document.getElementById('tbt').textContent=typeLabels[type]||'Trips';
   const btn=document.getElementById('tba');
   btn.textContent=btnLabels[type]||'+ New Trip';btn.style.display='flex';
+  document.getElementById('content').scrollTop=0;
+  _mbnSync('trips');
   cur='trips';rTrips();badges();
 }
 function toggleTripsNav(){
@@ -11815,5 +11856,12 @@ ${t.notes?`<h2>📝 Notes from ${nm}</h2><div class="callout">${t.notes}</div>`:
   setTimeout(()=>w.print(),700);
 }
 </script>
+<nav id="mob-nav" aria-label="Bottom navigation">
+  <button class="mbn on" data-mn="home" onclick="go('home')"><span class="mbn-ico">🏠</span><span class="mbn-lbl">Home</span></button>
+  <button class="mbn" data-mn="trips" onclick="goTrips('all')"><span class="mbn-ico">✈️</span><span class="mbn-lbl">Trips</span></button>
+  <button class="mbn" data-mn="map" onclick="go('map')"><span class="mbn-ico">🗺️</span><span class="mbn-lbl">Map</span></button>
+  <button class="mbn" data-mn="places" onclick="go('places')"><span class="mbn-ico">📍</span><span class="mbn-lbl">Places</span></button>
+  <button class="mbn" data-mn="menu" onclick="sbOpen()"><span class="mbn-ico">☰</span><span class="mbn-lbl">Menu</span></button>
+</nav>
 </body>
 </html>
