@@ -2880,20 +2880,56 @@ function rHome(){
 
   ${(()=>{const _q=['The mountains are calling and I must go. — John Muir','To be lost is to be fully present. — Rebecca Solnit','The real home of man is not his house but the road. — Bruce Chatwin','In every walk with nature, one receives far more than he seeks. — John Muir','Travel is not really about leaving our homes, but leaving our habits. — Pico Iyer','Leave the door open for the unknown, the door into the dark. — Rebecca Solnit','Every place you\'ve been is still a part of you. — Wayfinder','Of all the paths you take in life, make sure a few of them are dirt. — John Muir','Getting lost was not a matter of geography so much as identity. — Rebecca Solnit','Home lies in the things you carry with you everywhere. — Pico Iyer','The clearest way into the Universe is through a forest wilderness. — John Muir','Not all those who wander are lost. — J.R.R. Tolkien','Where will you go next? The compass is patient. — Wayfinder','Tell me, what is it you plan to do with your one wild and precious life? — Mary Oliver'];const _d=Math.floor((Date.now()-(new Date(new Date().getFullYear(),0,0)).getTime())/86400000);return`<div style="margin-bottom:13px;padding:11px 14px 11px 16px;background:var(--card);border:1px solid var(--bdr);border-left:3px solid rgba(62,102,68,.3);border-radius:var(--r);display:flex;align-items:center;gap:10px"><span style="opacity:.35;font-size:13px;flex-shrink:0;color:var(--green)">✦</span><p style="font-size:12px;color:var(--muted);font-style:italic;line-height:1.55;margin:0">${_q[_d%_q.length]}</p></div>`})()}
 
-  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px">
-    <div class="sc" style="--accent:var(--amber);cursor:pointer" onclick="go('trips')"><div class="si">🔒</div><div class="sn">${lockedCount||'—'}</div><div class="sl">Locked In</div></div>
-    <div class="sc" style="--accent:#4A789E;cursor:pointer" onclick="go('trips')"><div class="si">✏️</div><div class="sn">${inWorksCount||'—'}</div><div class="sl">In The Works</div></div>
-  </div>
-  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:13px">
-    <div class="sc" style="--accent:var(--earth);cursor:pointer" onclick="go('map')"><div class="si">🌍</div><div class="sn">${allCountries.length}</div><div class="sl">Countries</div></div>
-    <div class="sc" style="--accent:#4A789E;cursor:pointer" onclick="go('map')"><div class="si">🇺🇸</div><div class="sn">${usStates.length}<span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:1px">/50</span></div><div class="sl">US States</div></div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);margin-bottom:10px;background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)">
+    <div style="padding:16px 14px 14px;cursor:pointer;position:relative;border-right:1px solid var(--bdr2);transition:background .15s" onclick="go('trips')" onmouseover="this.style.background='rgba(200,144,30,.05)'" onmouseout="this.style.background=''">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--amber) 0%,rgba(200,144,30,0) 100%)"></div>
+      <div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px">Locked In</div>
+      <div style="font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1;color:var(--text)">${lockedCount||'—'}</div>
+      <div style="position:absolute;bottom:9px;right:11px;font-size:22px;opacity:.07;pointer-events:none;line-height:1">🔒</div>
+    </div>
+    <div style="padding:16px 14px 14px;cursor:pointer;position:relative;border-right:1px solid var(--bdr2);transition:background .15s" onclick="go('trips')" onmouseover="this.style.background='rgba(74,120,158,.05)'" onmouseout="this.style.background=''">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#4A789E 0%,rgba(74,120,158,0) 100%)"></div>
+      <div style="font-size:10px;font-weight:700;color:#4A789E;text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px">In The Works</div>
+      <div style="font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1;color:var(--text)">${inWorksCount||'—'}</div>
+      <div style="position:absolute;bottom:9px;right:11px;font-size:22px;opacity:.07;pointer-events:none;line-height:1">✏️</div>
+    </div>
+    <div style="padding:16px 14px 14px;cursor:pointer;position:relative;border-right:1px solid var(--bdr2);transition:background .15s" onclick="go('map')" onmouseover="this.style.background='rgba(107,136,118,.05)'" onmouseout="this.style.background=''">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#6B8876 0%,rgba(107,136,118,0) 100%)"></div>
+      <div style="font-size:10px;font-weight:700;color:#6B8876;text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px">Countries</div>
+      <div style="font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1;color:var(--text)">${allCountries.length}</div>
+      ${continents.length?`<div style="font-size:9px;color:var(--muted2);margin-top:4px;line-height:1">${continents.length} continent${continents.length!==1?'s':''}</div>`:'<div style="height:13px"></div>'}
+      <div style="position:absolute;bottom:9px;right:11px;font-size:22px;opacity:.07;pointer-events:none;line-height:1">🌍</div>
+    </div>
+    <div style="padding:16px 14px 10px;cursor:pointer;position:relative;transition:background .15s" onclick="go('map')" onmouseover="this.style.background='rgba(74,120,158,.05)'" onmouseout="this.style.background=''">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#4A789E 0%,rgba(74,120,158,0) 100%)"></div>
+      <div style="font-size:10px;font-weight:700;color:#4A789E;text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px">US States</div>
+      <div style="font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1;color:var(--text)">${usStates.length}<span style="font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0;margin-left:2px">/50</span></div>
+      <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(74,120,158,.12)"><div style="height:100%;background:linear-gradient(90deg,#4A789E,#7AAED4);width:${(usStates.length/50*100).toFixed(1)}%"></div></div>
+      <div style="position:absolute;bottom:12px;right:11px;font-size:22px;opacity:.07;pointer-events:none;line-height:1">🗺️</div>
+    </div>
   </div>
 
-  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px">
-    <button onclick="openPlace()" style="display:flex;align-items:center;gap:10px;padding:13px 14px;background:var(--green);color:#fff;border:none;border-radius:var(--r);cursor:pointer;font-family:inherit;text-align:left;width:100%;transition:opacity .15s" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'"><span style="font-size:22px;flex-shrink:0">📍</span><div><div style="font-size:13px;font-weight:700;line-height:1.2">Add Place</div><div style="font-size:10px;opacity:.75;margin-top:2px">Track where you've been</div></div></button>
-    <button onclick="openNewTrip()" style="display:flex;align-items:center;gap:10px;padding:13px 14px;background:var(--amber);color:#fff;border:none;border-radius:var(--r);cursor:pointer;font-family:inherit;text-align:left;width:100%;transition:opacity .15s" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'"><span style="font-size:22px;flex-shrink:0">✈️</span><div><div style="font-size:13px;font-weight:700;line-height:1.2">New Trip</div><div style="font-size:10px;opacity:.75;margin-top:2px">Plan your next adventure</div></div></button>
-    <button onclick="openWish()" style="display:flex;align-items:center;gap:10px;padding:13px 14px;background:var(--earth);color:#fff;border:none;border-radius:var(--r);cursor:pointer;font-family:inherit;text-align:left;width:100%;transition:opacity .15s" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'"><span style="font-size:22px;flex-shrink:0">⭐</span><div><div style="font-size:13px;font-weight:700;line-height:1.2">Wishlist</div><div style="font-size:10px;opacity:.75;margin-top:2px">Dream destinations</div></div></button>
-    <button onclick="openJournal()" style="display:flex;align-items:center;gap:10px;padding:13px 14px;background:var(--slate-acc);color:#fff;border:none;border-radius:var(--r);cursor:pointer;font-family:inherit;text-align:left;width:100%;transition:opacity .15s" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'"><span style="font-size:22px;flex-shrink:0">📓</span><div><div style="font-size:13px;font-weight:700;line-height:1.2">Write Memoir</div><div style="font-size:10px;opacity:.75;margin-top:2px">Capture memories</div></div></button>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">
+    <button onclick="openPlace()" style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:5px;padding:16px 8px 14px;background:var(--card);border:1px solid var(--bdr);border-top:3px solid var(--green);border-radius:var(--r);cursor:pointer;font-family:inherit;width:100%;transition:transform .18s,box-shadow .18s,background .18s;box-shadow:var(--shadow)" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 20px rgba(62,102,68,.18)';this.style.background='rgba(62,102,68,.04)'" onmouseout="this.style.transform='';this.style.boxShadow='var(--shadow)';this.style.background='var(--card)'">
+      <div style="font-size:26px;line-height:1">📍</div>
+      <div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.2;margin-top:3px">Add Place</div>
+      <div style="font-size:9px;color:var(--muted2);line-height:1.3">Track where you've been</div>
+    </button>
+    <button onclick="openNewTrip()" style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:5px;padding:16px 8px 14px;background:var(--card);border:1px solid var(--bdr);border-top:3px solid var(--amber);border-radius:var(--r);cursor:pointer;font-family:inherit;width:100%;transition:transform .18s,box-shadow .18s,background .18s;box-shadow:var(--shadow)" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 20px rgba(200,144,30,.18)';this.style.background='rgba(200,144,30,.04)'" onmouseout="this.style.transform='';this.style.boxShadow='var(--shadow)';this.style.background='var(--card)'">
+      <div style="font-size:26px;line-height:1">✈️</div>
+      <div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.2;margin-top:3px">New Trip</div>
+      <div style="font-size:9px;color:var(--muted2);line-height:1.3">Plan your next adventure</div>
+    </button>
+    <button onclick="openWish()" style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:5px;padding:16px 8px 14px;background:var(--card);border:1px solid var(--bdr);border-top:3px solid var(--earth);border-radius:var(--r);cursor:pointer;font-family:inherit;width:100%;transition:transform .18s,box-shadow .18s,background .18s;box-shadow:var(--shadow)" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 20px rgba(155,116,32,.16)';this.style.background='rgba(155,116,32,.04)'" onmouseout="this.style.transform='';this.style.boxShadow='var(--shadow)';this.style.background='var(--card)'">
+      <div style="font-size:26px;line-height:1">⭐</div>
+      <div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.2;margin-top:3px">Wishlist</div>
+      <div style="font-size:9px;color:var(--muted2);line-height:1.3">Dream destinations</div>
+    </button>
+    <button onclick="openJournal()" style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:5px;padding:16px 8px 14px;background:var(--card);border:1px solid var(--bdr);border-top:3px solid var(--slate-acc);border-radius:var(--r);cursor:pointer;font-family:inherit;width:100%;transition:transform .18s,box-shadow .18s,background .18s;box-shadow:var(--shadow)" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 20px rgba(74,96,120,.16)';this.style.background='rgba(74,96,120,.04)'" onmouseout="this.style.transform='';this.style.boxShadow='var(--shadow)';this.style.background='var(--card)'">
+      <div style="font-size:26px;line-height:1">📓</div>
+      <div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.2;margin-top:3px">Write Memoir</div>
+      <div style="font-size:9px;color:var(--muted2);line-height:1.3">Capture memories</div>
+    </button>
   </div>
 
   ${hasMotion?`<div style="margin-bottom:10px;display:flex;align-items:center;justify-content:space-between"><span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">What's In Motion</span><span style="font-size:11px;color:var(--green3);cursor:pointer;font-weight:500" onclick="go('path')">The Path →</span></div>
