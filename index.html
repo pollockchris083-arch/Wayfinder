@@ -8372,6 +8372,58 @@ async function tmAiFill(){
   finally{if(btn){btn.textContent='✦ AI Fill';btn.disabled=false;}}
 }
 
+const _trailPhotoInFlight=new Set();
+async function _autoFetchTrailPhoto(trailName,parkArea,rt,id,di,si){
+  const key=`${rt}|${id}|${di}|${si}`;
+  if(_trailPhotoInFlight.has(key))return;
+  _trailPhotoInFlight.add(key);
+  try{
+    let photoUrl=null;
+    // Strategy 1: Wikipedia thumbnail
+    const qs=[trailName,trailName.replace(/\s*trail\s*$/i,'').trim(),parkArea].filter((q,i,a)=>q&&a.indexOf(q)===i);
+    for(const q of qs){
+      try{
+        const r=await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(q)}&prop=pageimages&format=json&pithumbsize=700&origin=*`);
+        const d=await r.json();
+        const pg=Object.values(d.query?.pages||{})[0];
+        if(pg?.pageid>0&&pg?.thumbnail?.source){photoUrl=pg.thumbnail.source;break;}
+      }catch(e){}
+    }
+    // Strategy 2: Wikimedia Commons image search
+    if(!photoUrl){
+      try{
+        const q2=[trailName,parkArea].filter(Boolean).join(' ');
+        const r2=await fetch(`https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q2)}&srnamespace=6&srlimit=5&format=json&origin=*`);
+        const d2=await r2.json();
+        const files=(d2.query?.search||[]).filter(f=>/\.(jpg|jpeg|png)$/i.test(f.title));
+        if(files.length){
+          const r3=await fetch(`https://commons.wikimedia.org/w/api.php?action=query&titles=${encodeURIComponent(files[0].title)}&prop=imageinfo&iiprop=url&iiurlwidth=700&format=json&origin=*`);
+          const d3=await r3.json();
+          const pg3=Object.values(d3.query?.pages||{})[0];
+          photoUrl=pg3?.imageinfo?.[0]?.thumburl||null;
+        }
+      }catch(e){}
+    }
+    if(!photoUrl)return;
+    // Persist photo to stop data
+    D=load();
+    const obj2=rt==='camp'?(D.camps||[]).find(x=>x.id===id):D.trips.find(x=>x.id===id);
+    const stop=obj2?.itinerary?.[di]?.stops?.[si];
+    if(!stop||stop.photo)return;
+    stop.photo=photoUrl;
+    if(rt==='camp')saveCamps();else save('trips',D.trips);
+    // Inject photo into the guide card without a full re-render
+    const card=document.querySelector(`.guide-stop[data-sk="${key}"]`);
+    if(card&&!card.querySelector('.guide-stop-photo')){
+      const img=document.createElement('img');
+      img.className='guide-stop-photo';img.src=photoUrl;
+      img.onerror=()=>{img.style.display='none';};
+      img.onclick=()=>{rt==='camp'?openAdvItinStopEdit(id,di,si):openStopEdit(id,di,si);};
+      card.insertBefore(img,card.firstChild);
+    }
+  }finally{_trailPhotoInFlight.delete(key);}
+}
+
 function _addTrailStop(rt,id,di,trailData){
   D=load();
   const obj=rt==='camp'?(D.camps||[]).find(x=>x.id===id):D.trips.find(x=>x.id===id);
@@ -8388,6 +8440,7 @@ function _addTrailStop(rt,id,di,trailData){
   if(!obj.itinerary[targetDi].stops)obj.itinerary[targetDi].stops=[];
   const aiDesc=window._tmAiDescription||'';
   window._tmAiDescription='';
+  const newStopIdx=obj.itinerary[targetDi].stops.length;
   const newStop={
     name:trailData.name,
     type:'hike',
@@ -8406,6 +8459,7 @@ function _addTrailStop(rt,id,di,trailData){
   else{save('trips',D.trips);window._tripItinTab='plans';openTripD(id);}
   closeM('m-trail-search');
   toast('🥾 Trail added to day plan!');
+  _autoFetchTrailPhoto(trailData.name,trailData.parkArea,rt,id,targetDi,newStopIdx).catch(()=>{});
 }
 
 // AI enrich a trail stop that's already in the itinerary
@@ -8552,7 +8606,9 @@ function rGuideStop(rt,id,di,si,s,accent){
       td.website?`<a href="${td.website}" target="_blank" class="guide-nav-btn">🌐 Trail info ↗</a>`:'',
       s.mapsUrl?`<a href="${s.mapsUrl}" target="_blank" class="guide-nav-btn">🗺️ Navigate ↗</a>`:'',
     ].filter(Boolean);
-    return`<div class="guide-stop${s.done?' guide-stop-done':''}">
+    const skKey=`${rt}|${id}|${di}|${si}`;
+    if(!s.photo)setTimeout(()=>_autoFetchTrailPhoto(s.name,td.parkArea,rt,id,di,si).catch(()=>{}),50);
+    return`<div class="guide-stop${s.done?' guide-stop-done':''}" data-sk="${skKey}">
       ${s.photo?`<img class="guide-stop-photo" src="${s.photo}" onerror="this.style.display='none'" onclick="${editFn}">`:''}
       <div style="flex:1;min-width:0">
         <div class="guide-stop-body" style="padding-bottom:6px">
