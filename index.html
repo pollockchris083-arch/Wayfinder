@@ -890,7 +890,7 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
 .tt-desc{font-size:13px;color:var(--muted2);line-height:1.45}
 /* Type badge on trip rows */
 .tr-type{font-size:13px;flex-shrink:0;width:18px;text-align:center}
-/* Saved Spots */
+/* Waypoints */
 .spot-card{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:box-shadow .15s,transform .15s;display:flex;flex-direction:column}
 .spot-card:hover{box-shadow:var(--shadowm);transform:translateY(-2px)}
 .spot-card-thumb{width:100%;height:90px;object-fit:cover;display:block;background:linear-gradient(135deg,var(--card2),var(--bdr))}
@@ -908,6 +908,55 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
 .spot-field-label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;margin-top:10px}
 .spot-season-chip{display:inline-block;font-size:10px;padding:2px 6px;border-radius:3px;background:var(--card2);color:var(--text2);margin:2px 2px 0 0}
 .spot-season-chip.best{background:rgba(74,114,89,.15);color:var(--green3);font-weight:600}
+
+/* ── Trip Guide Tab ── */
+.guide-root{display:flex;flex-direction:column;gap:12px}
+.guide-empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.guide-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:14px 16px;background:var(--card2);border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:4px}
+.guide-hdr-title{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.2px}
+.guide-hdr-meta{font-size:11px;color:var(--muted2);margin-top:3px}
+.guide-day{background:var(--card);border:1px solid var(--bdr);border-left:3px solid var(--guide-accent,#C8901E);border-radius:var(--r);overflow:hidden}
+.guide-day-hdr{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--bdr)}
+.guide-day-num{font-size:11px;font-weight:800;color:var(--guide-accent,#C8901E);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;background:rgba(200,144,30,.1);padding:3px 9px;border-radius:100px;flex-shrink:0}
+.guide-day-info{flex:1;display:flex;gap:9px;align-items:center;flex-wrap:wrap;min-width:0}
+.guide-day-date{font-size:12px;font-weight:600;color:var(--text)}
+.guide-day-stops{font-size:11px;color:var(--muted2)}
+.guide-day-mi{font-size:11px;color:var(--muted2)}
+.guide-day-notes{font-size:12px;color:var(--text2);padding:8px 14px;background:rgba(200,144,30,.04);border-bottom:1px solid var(--bdr);font-style:italic;line-height:1.55}
+.guide-ai-btn{background:rgba(239,159,39,.1);border:1px solid rgba(239,159,39,.3);color:var(--amber);font-size:10px;font-weight:700;border-radius:5px;padding:4px 9px;cursor:pointer;font-family:inherit;letter-spacing:.04em;white-space:nowrap;transition:background .12s;flex-shrink:0}
+.guide-ai-btn:hover{background:rgba(239,159,39,.22)}
+.guide-stops-list{display:flex;flex-direction:column}
+.guide-stop{display:flex;gap:0;border-bottom:1px solid var(--bdr);transition:background .1s}
+.guide-stop:last-child{border-bottom:none}
+.guide-stop:hover{background:rgba(239,159,39,.025)}
+.guide-stop-done{opacity:.55}
+.guide-stop-photo{width:90px;min-width:90px;height:90px;object-fit:cover;cursor:pointer;flex-shrink:0;border-right:1px solid var(--bdr)}
+.guide-stop-body{flex:1;padding:10px 12px;min-width:0}
+.guide-stop-toprow{display:flex;align-items:flex-start;gap:7px;margin-bottom:4px}
+.guide-stop-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+.guide-stop-name-wrap{flex:1;min-width:0}
+.guide-stop-name{font-size:13px;font-weight:600;color:var(--text);display:block}
+.guide-stop-time{font-size:11px;color:var(--amber);font-weight:600;display:block;margin-top:1px}
+.guide-stop-acts{display:flex;gap:2px;flex-shrink:0}
+.guide-ai-stop-btn{background:rgba(239,159,39,.1);border:1px solid rgba(239,159,39,.28);color:var(--amber);font-size:10px;font-weight:700;border-radius:4px;padding:2px 7px;cursor:pointer;font-family:inherit;transition:background .12s}
+.guide-ai-stop-btn:hover{background:rgba(239,159,39,.22)}
+.guide-stop-desc{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:5px}
+.guide-stop-note{font-size:11px;color:var(--muted2);font-style:italic;line-height:1.5;margin-bottom:4px}
+.guide-stop-meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--muted2);margin-top:3px}
+.guide-nav-btn{font-size:11px;font-weight:600;color:var(--green3);text-decoration:none;background:rgba(74,114,89,.09);border:1px solid rgba(74,114,89,.2);border-radius:4px;padding:2px 8px;transition:background .12s}
+.guide-nav-btn:hover{background:rgba(74,114,89,.2)}
+
+/* Spot card upgrade: bigger thumb */
+.spot-card-thumb{width:100%;height:120px;object-fit:cover;display:block;background:linear-gradient(135deg,var(--card2),var(--bdr))}
+.spot-card-thumb-fallback{width:100%;height:120px;display:flex;align-items:center;justify-content:center;font-size:38px;background:linear-gradient(135deg,var(--card2),var(--bdr2))}
+
+/* Guide tab mobile */
+@media(max-width:699px){
+  .guide-stop-photo{width:70px;min-width:70px;height:80px}
+  .guide-day-hdr{flex-wrap:wrap;gap:7px}
+  .guide-hdr{flex-direction:column;gap:10px}
+  .guide-hdr>div:last-child{width:100%}
+}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" crossorigin=""/>
@@ -963,6 +1012,7 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
     <button class="ni" data-p="places"><span class="ico">📍</span>Places<span class="nb" id="b-places">0</span></button>
     <button class="ni" data-p="wishlist"><span class="ico">♡</span>Wishlist<span class="nb" id="b-wish">0</span></button>
     <button class="ni" data-p="planner"><span class="ico">✦</span>AI Planner</button>
+    <button class="ni" data-p="camp" onclick="go('camp')"><span class="ico">📌</span>Waypoints<span class="nb" id="b-camp">0</span></button>
     <div class="sb-sec sb-sec-btn" onclick="toggleTripsNav()">Trips<span id="trips-nav-arr" style="font-size:9px;transition:transform .2s;display:inline-block;opacity:.6">▾</span></div>
     <div id="trips-subnav" class="trips-subnav">
       <button class="ni ni-sub" data-p="trips" data-tf="all" onclick="goTrips('all')"><span class="ico">✈️</span>All Trips<span class="nb" id="b-trips">0</span></button>
@@ -974,7 +1024,6 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
       <button class="ni ni-sub" data-p="trips-event" data-tf="event" onclick="goTrips('event')"><span class="ico">🎪</span>Events</button>
       <button class="ni ni-sub" data-p="trips-solo" data-tf="solo" onclick="goTrips('solo')"><span class="ico">🧍</span>Solo</button>
       <button class="ni ni-sub" data-p="work" onclick="go('work')"><span class="ico">💼</span>Work<span class="nb" id="b-work">0</span></button>
-      <button class="ni ni-sub" data-p="camp" onclick="go('camp')"><span class="ico">🗂️</span>Saved Spots<span class="nb" id="b-camp">0</span></button>
     </div>
     <div class="sb-sec">Journal &amp; Life</div>
     <button class="ni" data-p="journal"><span class="ico">📓</span>Memoirs</button>
@@ -1448,7 +1497,28 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
     <!-- TIME -->
     <div class="fg"><label class="fl">Time <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(optional)</span></label><input class="fi" type="time" id="st-time"/></div>
     <!-- NOTES -->
-    <div class="fg" style="margin-bottom:0"><label class="fl">Notes</label><input class="fi" id="st-note" placeholder="Reservations, tips, access codes…"/></div>
+    <div class="fg"><label class="fl">Notes</label><input class="fi" id="st-note" placeholder="Reservations, tips, access codes…"/></div>
+    <!-- DESCRIPTION (for Guide tab) -->
+    <div class="fg"><label class="fl">Description <span style="font-weight:400;font-size:10px;color:var(--muted2)">(shown in Trip Guide)</span></label>
+      <div style="position:relative">
+        <textarea class="ft" id="st-description" placeholder="What to expect, highlights, why it's worth stopping…" style="min-height:50px;padding-right:70px"></textarea>
+        <button type="button" onclick="aiStopDesc()" style="position:absolute;bottom:7px;right:7px;background:rgba(239,159,39,.13);border:1px solid rgba(239,159,39,.35);color:var(--amber);font-size:10px;font-weight:700;border-radius:5px;padding:3px 8px;cursor:pointer;font-family:inherit;letter-spacing:.03em;line-height:1.3;transition:all .15s" onmouseover="this.style.background='rgba(239,159,39,.25)'" onmouseout="this.style.background='rgba(239,159,39,.13)'">✦ AI Fill</button>
+      </div>
+    </div>
+    <!-- STOP PHOTO -->
+    <div class="fg" style="margin-bottom:0">
+      <label class="fl">Photo</label>
+      <div id="st-photo-preview" style="display:none;margin-bottom:6px;position:relative">
+        <img id="st-photo-img" style="width:100%;max-height:130px;object-fit:cover;border-radius:8px;border:1px solid var(--bdr)"/>
+        <button type="button" onclick="clearStopPhoto()" style="position:absolute;top:5px;right:5px;background:rgba(0,0,0,.55);border:none;color:#fff;font-size:12px;border-radius:50%;width:22px;height:22px;cursor:pointer;line-height:1">×</button>
+      </div>
+      <div style="display:flex;gap:7px;align-items:center">
+        <label style="flex:1;background:var(--card2);border:1.5px dashed var(--bdr2);border-radius:7px;padding:8px 10px;cursor:pointer;font-size:11px;color:var(--muted);text-align:center;transition:border-color .15s;display:flex;align-items:center;justify-content:center;gap:5px" onmouseover="this.style.borderColor='var(--amber)'" onmouseout="this.style.borderColor='var(--bdr2)'">
+          📷 Upload<input type="file" accept="image/*" style="display:none" onchange="handleStopPhoto(this)"/>
+        </label>
+        <input class="fi" id="st-photo-url" type="url" placeholder="or paste image URL…" style="flex:2;font-size:12px" oninput="if(this.value)showStopPhotoPreview(this.value)"/>
+      </div>
+    </div>
     <!-- HIDDEN FIELDS (saveStop compatibility) -->
     <input type="hidden" id="st-maps"/>
     <input type="hidden" id="st-dur"/>
@@ -1646,15 +1716,17 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
 
 <!-- SAVED SPOTS -->
 <div class="mo" id="m-spot">
-  <div class="modal" style="width:540px">
+  <div class="modal" style="width:560px">
     <button class="mcl" onclick="closeM('m-spot')">✕</button>
-    <h2 id="spot-modal-title" style="margin-bottom:16px">Save a Spot</h2>
+    <h2 id="spot-modal-title" style="margin-bottom:4px">Save a Waypoint</h2>
+    <p style="font-size:11px;color:var(--muted2);margin-bottom:16px">Fishing holes, campsites, viewpoints, memories — anywhere worth pinning</p>
     <div class="fg"><label class="fl">Name <span style="color:#c05050">*</span></label><input class="fi" id="sp-name" placeholder="e.g. &quot;The Ledge Pool&quot;, &quot;Granite Flat Camp&quot;"/></div>
     <div class="fr">
       <div class="fg"><label class="fl">Category</label><select class="fs" id="sp-type">
         <option value="campsite">🏕️ Campsite</option>
         <option value="fishing">🎣 Fishing Spot</option>
         <option value="hiking">🥾 Trail / Hike</option>
+        <option value="trailhead">🗺️ Trailhead</option>
         <option value="swimhole">🏊 Swim Hole</option>
         <option value="climbing">🧗 Climbing</option>
         <option value="ski">⛷️ Ski / Snow</option>
@@ -1663,16 +1735,29 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
         <option value="viewpoint">🔭 Viewpoint</option>
         <option value="nature">🌿 Nature / Wildlife</option>
         <option value="overlanding">🛤️ Overlanding</option>
+        <option value="photo">📸 Photo Spot</option>
+        <option value="memory">💛 Memory</option>
+        <option value="food">🍽️ Food / Coffee</option>
+        <option value="fuel">⛽ Gas / Service</option>
+        <option value="work_site">💼 Work Site</option>
+        <option value="cache">📦 Cache / Stash</option>
         <option value="secret">🤫 Secret Spot</option>
-        <option value="other">📍 Other</option>
+        <option value="other">📌 Other</option>
       </select></div>
       <div class="fg"><label class="fl">Area / Region</label><input class="fi" id="sp-area" placeholder="e.g. Sierra Nevada, Escalante"/></div>
     </div>
-    <div class="fr">
-      <div class="fg"><label class="fl">Latitude</label><input class="fi" id="sp-lat" placeholder="37.8651" type="text" inputmode="decimal"/></div>
-      <div class="fg"><label class="fl">Longitude</label><input class="fi" id="sp-lng" placeholder="-119.5383" type="text" inputmode="decimal"/></div>
+    <!-- GPS -->
+    <div class="fg">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+        <label class="fl" style="margin:0">GPS Coordinates</label>
+        <button type="button" onclick="useMyLocation()" style="background:rgba(62,102,68,.12);border:1px solid rgba(62,102,68,.3);color:var(--green3);font-size:11px;font-weight:600;border-radius:7px;padding:4px 11px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;transition:all .15s" onmouseover="this.style.background='rgba(62,102,68,.2)'" onmouseout="this.style.background='rgba(62,102,68,.12)'">📍 Use My Location</button>
+      </div>
+      <div class="fr" style="margin-bottom:0">
+        <div class="fg"><input class="fi" id="sp-lat" placeholder="Latitude  37.8651" type="text" inputmode="decimal"/></div>
+        <div class="fg"><input class="fi" id="sp-lng" placeholder="Longitude  -119.5383" type="text" inputmode="decimal"/></div>
+      </div>
     </div>
-    <div class="fg"><label class="fl">Direct link (Google Maps, AllTrails, Gaia, OnX…)</label><input class="fi" id="sp-link" type="url" placeholder="https://maps.google.com/…"/></div>
+    <div class="fg"><label class="fl">Link (Google Maps, AllTrails, Gaia, OnX…)</label><input class="fi" id="sp-link" type="url" placeholder="https://maps.google.com/…"/></div>
     <div class="fr">
       <div class="fg"><label class="fl">Access</label><select class="fs" id="sp-access">
         <option value="">Unknown</option>
@@ -1710,10 +1795,25 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
         <option value="1">★☆☆☆☆</option>
       </select></div>
     </div>
-    <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="sp-notes" placeholder="Local knowledge, conditions, what to bring, directions…" style="min-height:65px"></textarea></div>
-    <div class="fg"><label class="fl">Photo URL</label><input class="fi" id="sp-thumb" type="url" placeholder="https://…/photo.jpg"/></div>
-    <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;cursor:pointer;color:var(--text2)"><input type="checkbox" id="sp-secret" style="accent-color:#C0634C;width:14px;height:14px"/><span>🤫 Secret spot — keep coordinates private</span></label>
-    <div class="fa"><button class="btn-s" onclick="closeM('m-spot')">Cancel</button><button class="btn-p" id="sp-save" onclick="saveSpot()">Save Spot</button></div>
+    <div class="fg"><label class="fl">Description</label><textarea class="ft" id="sp-description" placeholder="What makes this place special? Conditions, what to expect…" style="min-height:55px"></textarea></div>
+    <div class="fg"><label class="fl">Field Notes</label><textarea class="ft" id="sp-notes" placeholder="Directions, access codes, what to bring, local tips…" style="min-height:50px"></textarea></div>
+    <!-- Photo upload -->
+    <div class="fg" id="sp-photo-section">
+      <label class="fl">Photo</label>
+      <div id="sp-photo-preview" style="display:none;margin-bottom:8px;position:relative">
+        <img id="sp-photo-img" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px;border:1px solid var(--bdr)"/>
+        <button type="button" onclick="clearSpotPhoto()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);border:none;color:#fff;font-size:13px;border-radius:50%;width:24px;height:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">×</button>
+      </div>
+      <div id="sp-photo-input-row" style="display:flex;gap:8px;align-items:center">
+        <label style="flex:1;background:var(--card2);border:1.5px dashed var(--bdr2);border-radius:8px;padding:10px 14px;cursor:pointer;font-size:12px;color:var(--muted);text-align:center;transition:border-color .15s;display:flex;align-items:center;justify-content:center;gap:7px" onmouseover="this.style.borderColor='var(--amber)'" onmouseout="this.style.borderColor='var(--bdr2)'">
+          📷 Upload photo<input type="file" accept="image/*" style="display:none" onchange="handleSpotPhoto(this)"/>
+        </label>
+        <span style="font-size:11px;color:var(--muted2)">or</span>
+        <input class="fi" id="sp-thumb" type="url" placeholder="Paste image URL" style="flex:2" oninput="if(this.value)showSpotPhotoPreview(this.value)"/>
+      </div>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;cursor:pointer;color:var(--text2)"><input type="checkbox" id="sp-secret" style="accent-color:#C0634C;width:14px;height:14px"/><span>🤫 Secret waypoint — hide coordinates from view</span></label>
+    <div class="fa"><button class="btn-s" onclick="closeM('m-spot')">Cancel</button><button class="btn-p" id="sp-save" onclick="saveSpot()">Save Waypoint</button></div>
   </div>
 </div>
 
@@ -2661,8 +2761,8 @@ window.wfAuditLinks=function(){
 // ══════════════════════════════════════════════
 // ROUTING
 // ══════════════════════════════════════════════
-const TITLES={home:'Dashboard',map:'World Map',places:'Places',wishlist:'Wishlist',planner:'AI Planner',trips:'Trips',journal:'Memoirs',abroad:'Living Abroad',settings:'Settings',path:'The Path',camp:'Saved Spots',work:'Work Trips',docs:'Documents'};
-const ACTS={home:{l:'',f:''},places:{l:'+ Add Place',f:'openPlace'},wishlist:{l:'+ Add to Wishlist',f:'openWish'},planner:{l:'',f:''},trips:{l:'+ New Trip',f:'openNewTrip'},journal:{l:'+ New Memoir',f:'openJournal'},map:{l:'+ Add Place',f:'openPlace'},abroad:{l:'',f:''},settings:{l:'',f:''},path:{l:'',f:''},camp:{l:'+ Add Spot',f:'openCampSpot'},work:{l:'+ New Work Trip',f:'openWork'},docs:{l:'+ Add Document',f:'openDocModal'}};
+const TITLES={home:'Dashboard',map:'World Map',places:'Places',wishlist:'Wishlist',planner:'AI Planner',trips:'Trips',journal:'Memoirs',abroad:'Living Abroad',settings:'Settings',path:'The Path',camp:'Waypoints',work:'Work Trips',docs:'Documents'};
+const ACTS={home:{l:'',f:''},places:{l:'+ Add Place',f:'openPlace'},wishlist:{l:'+ Add to Wishlist',f:'openWish'},planner:{l:'',f:''},trips:{l:'+ New Trip',f:'openNewTrip'},journal:{l:'+ New Memoir',f:'openJournal'},map:{l:'+ Add Place',f:'openPlace'},abroad:{l:'',f:''},settings:{l:'',f:''},path:{l:'',f:''},camp:{l:'+ Waypoint',f:'openCampSpot'},work:{l:'+ New Work Trip',f:'openWork'},docs:{l:'+ Add Document',f:'openDocModal'}};
 let cur='home';
 let tripTypeFilter='all';
 function _mbnSync(p){
@@ -4805,12 +4905,13 @@ function openTripD(id){
       </div>
     </div>
     <div class="coll-body coll-open">
-      <div style="display:flex;gap:5px;margin-bottom:12px">
+      <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap">
         <button id="trip-tab-stops" class="fc${itinTab==='stops'?' on':''}" onclick="switchTripItinTab('${t.id}','stops')">📍 Stops${totalStops?' ('+totalStops+')':''}</button>
         <button id="trip-tab-plans" class="fc${itinTab==='plans'?' on':''}" onclick="switchTripItinTab('${t.id}','plans')">📅 Plans</button>
+        <button id="trip-tab-guide" class="fc${itinTab==='guide'?' on':''}" style="${itinTab==='guide'?'':'border-color:rgba(200,144,30,.3);color:var(--amber)'}" onclick="switchTripItinTab('${t.id}','guide')">✦ Guide</button>
       </div>
       <div id="trip-itin-body">
-        ${itinTab==='stops'?rTripStopsTab(t):rTripPlansTab(t)}
+        ${itinTab==='stops'?rTripStopsTab(t):itinTab==='guide'?rGuideTab('trip',t):rTripPlansTab(t)}
       </div>
     </div>
   </div>`
@@ -5323,10 +5424,16 @@ function _openStopModal(isAdv,tid,cid,di,si,existing){
   if(isEdit){const elat=parseFloat(s.lat),elng=parseFloat(s.lng);if(!isNaN(elat)&&!isNaN(elng)&&(elat||elng)){_stopPlaceData={lat:elat,lng:elng};}}
   document.getElementById('st-name').value=s.name||'';
   document.getElementById('st-note').value=s.note||'';
+  document.getElementById('st-description').value=s.description||'';
   document.getElementById('st-time').value=s.time||'';
   document.getElementById('st-dur').value=s.duration||'';
   document.getElementById('st-address').value=s.address||'';
   document.getElementById('st-maps').value=s.mapsUrl||'';
+  window._stopPhotoData=null;
+  const stPhotoUrl=document.getElementById('st-photo-url');
+  if(stPhotoUrl)stPhotoUrl.value='';
+  if(s.photo){showStopPhotoPreview(s.photo);if(stPhotoUrl&&s.photo.startsWith('data:'))window._stopPhotoData=s.photo;else if(stPhotoUrl)stPhotoUrl.value=s.photo;}
+  else{const pv=document.getElementById('st-photo-preview');if(pv)pv.style.display='none';}
   const searchSection=document.getElementById('st-search-section');
   const manualFields=document.getElementById('st-manual-fields');
   const backRow=document.getElementById('st-back-to-search-row');
@@ -5415,6 +5522,8 @@ function saveStop(){
   const stopData={
     name:n,
     note:document.getElementById('st-note').value.trim(),
+    description:document.getElementById('st-description').value.trim(),
+    photo:window._stopPhotoData||document.getElementById('st-photo-url')?.value.trim()||'',
     type,
     time:document.getElementById('st-time').value||'',
     duration:document.getElementById('st-dur').value||'',
@@ -5424,6 +5533,7 @@ function saveStop(){
     lat:_stopPlaceData?.lat!=null?String(_stopPlaceData.lat):'',
     lng:_stopPlaceData?.lng!=null?String(_stopPlaceData.lng):'',
   };
+  window._stopPhotoData=null;
   if(pendStop.isAdv){
     D=load();const c=(D.camps||[]).find(x=>x.id===pendStop.cid);if(!c)return;
     ensureAdvItinerary(c);
@@ -5832,6 +5942,7 @@ function _rPlanStop(rt,id,di,si,s,accentColor){
       ${s.milesPrev?`<div class="stopnote" style="color:var(--text2);font-weight:500">🛣️ ${s.milesPrev} mi${s.driveSecs?' · '+fDrive(s.driveSecs):''}${s.milesEst?' <span style="font-size:10px;opacity:.65">(est.)</span>':''}</div>`:''}
       <div style="margin-top:1px"><div id="sn-view-${id}-${di}-${si}" class="stopnote" style="${s.note?'cursor:pointer':'display:none'}" onclick="expandStopNote('${id}',${di},${si},'${rt}')">${s.note||''}</div><button id="sn-add-${id}-${di}-${si}" class="sn-add-btn" onclick="expandStopNote('${id}',${di},${si},'${rt}')" style="${s.note?'display:none;':''}font-size:10px;color:var(--muted2);background:none;border:none;cursor:pointer;padding:1px 0;font-family:inherit;line-height:1">📝 note</button><textarea id="sn-ta-${id}-${di}-${si}" style="display:none;width:100%;min-height:32px;resize:none;font-size:11px;color:var(--text2);background:var(--card2);border:1px solid var(--bdr);border-radius:5px;padding:5px 7px;font-family:inherit;line-height:1.4;margin-top:3px;box-sizing:border-box" placeholder="Note for this stop…" onblur="saveStopNoteInline(this,'${rt}','${id}',${di},${si})" onkeydown="if(event.key==='Escape')this.blur()">${s.note||''}</textarea></div>
     </div>
+    ${s.photo?`<img src="${s.photo}" style="width:38px;height:38px;object-fit:cover;border-radius:5px;flex-shrink:0;border:1px solid var(--bdr);margin-left:3px;cursor:pointer" onclick="${rt==='camp'?`openAdvItinStopEdit('${id}',${di},${si})`:`openStopEdit('${id}',${di},${si})`}" title="Has photo — click to edit" onerror="this.style.display='none'">`:''}
     <div style="display:flex;gap:2px;flex-shrink:0;align-items:center">
       ${s.mapsUrl?`<a href="${s.mapsUrl}" target="_blank" class="wp-nav" title="Navigate">🗺️</a>`:''}
       <button class="stop-move-btn" onclick="event.stopPropagation();moveStopToDay(event,'${rt}','${id}',${di},${si})" title="Move to another day">↕ Day</button>
@@ -5982,9 +6093,9 @@ function rTripPlansTab(t){
 function switchTripItinTab(tid,tab){
   window._tripItinTab=tab;
   D=load();const t=D.trips.find(x=>x.id===tid);if(!t)return;
-  ['stops','plans'].forEach(v=>{const btn=document.getElementById('trip-tab-'+v);if(btn)btn.classList.toggle('on',v===tab);});
+  ['stops','plans','guide'].forEach(v=>{const btn=document.getElementById('trip-tab-'+v);if(btn){btn.classList.toggle('on',v===tab);if(v==='guide')btn.style.borderColor=tab==='guide'?'':'rgba(200,144,30,.3)';if(v==='guide')btn.style.color=tab==='guide'?'':'var(--amber)';}});
   const body=document.getElementById('trip-itin-body');
-  if(body)body.innerHTML=tab==='stops'?rTripStopsTab(t):rTripPlansTab(t);
+  if(body)body.innerHTML=tab==='stops'?rTripStopsTab(t):tab==='guide'?rGuideTab('trip',t):rTripPlansTab(t);
 }
 function saveDayNotes(tid,di,notes){
   D=load();const t=D.trips.find(x=>x.id===tid);if(!t||!t.itinerary[di])return;
@@ -7114,11 +7225,12 @@ function rAbroad(){
 // ══════════════════════════════════════════════
 // ADVENTURES
 // ══════════════════════════════════════════════
-// ── Saved Spots ──────────────────────────────────────────
+// ── Waypoints ─────────────────────────────────────────────
 const SPOT_TYPES={
   campsite:{icon:'🏕️',label:'Campsite'},
   fishing:{icon:'🎣',label:'Fishing Spot'},
   hiking:{icon:'🥾',label:'Trail / Hike'},
+  trailhead:{icon:'🗺️',label:'Trailhead'},
   swimhole:{icon:'🏊',label:'Swim Hole'},
   climbing:{icon:'🧗',label:'Climbing'},
   ski:{icon:'⛷️',label:'Ski / Snow'},
@@ -7127,15 +7239,21 @@ const SPOT_TYPES={
   viewpoint:{icon:'🔭',label:'Viewpoint'},
   nature:{icon:'🌿',label:'Nature / Wildlife'},
   overlanding:{icon:'🛤️',label:'Overlanding'},
+  photo:{icon:'📸',label:'Photo Spot'},
+  memory:{icon:'💛',label:'Memory'},
+  food:{icon:'🍽️',label:'Food / Coffee'},
+  fuel:{icon:'⛽',label:'Gas / Service'},
+  work_site:{icon:'💼',label:'Work Site'},
+  cache:{icon:'📦',label:'Cache / Stash'},
   secret:{icon:'🤫',label:'Secret Spot'},
-  other:{icon:'📍',label:'Other'},
+  other:{icon:'📌',label:'Other'},
 };
 let _spotEdit=null;
 function openSpotModal(id){
   _spotEdit=id||null;
   const s=id?(D.camps||[]).find(x=>x.id===id):null;
-  document.getElementById('spot-modal-title').textContent=id?'Edit Spot':'Save a Spot';
-  document.getElementById('sp-save').textContent=id?'Update Spot':'Save Spot';
+  document.getElementById('spot-modal-title').textContent=id?'Edit Waypoint':'Save a Waypoint';
+  document.getElementById('sp-save').textContent=id?'Update Waypoint':'Save Waypoint';
   document.getElementById('sp-name').value=s?.name||'';
   document.getElementById('sp-type').value=s?.spotType||'campsite';
   document.getElementById('sp-area').value=s?.area||s?.location||'';
@@ -7144,8 +7262,13 @@ function openSpotModal(id){
   document.getElementById('sp-link').value=s?.spotLink||s?.mapsUrl||'';
   document.getElementById('sp-access').value=s?.access||'';
   document.getElementById('sp-diff').value=s?.difficulty||'';
+  document.getElementById('sp-description').value=s?.description||'';
   document.getElementById('sp-notes').value=s?.notes||'';
-  document.getElementById('sp-thumb').value=s?.thumb||'';
+  window._spotPhotoData=null;
+  document.getElementById('sp-thumb').value='';
+  const spThumb=s?.thumb||'';
+  if(spThumb){showSpotPhotoPreview(spThumb);if(spThumb.startsWith('data:'))window._spotPhotoData=spThumb;else document.getElementById('sp-thumb').value=spThumb;}
+  else{const spv=document.getElementById('sp-photo-preview');if(spv)spv.style.display='none';}
   document.getElementById('sp-visited-date').value=s?.visitedDate||'';
   document.getElementById('sp-rating').value=s?.rating||'';
   document.getElementById('sp-secret').checked=!!(s?.secret);
@@ -7163,6 +7286,8 @@ function saveSpot(){
   const lng=document.getElementById('sp-lng').value.trim();
   const spotLink=document.getElementById('sp-link').value.trim();
   const mapsUrl=lat&&lng?`https://maps.google.com/?q=${lat},${lng}`:spotLink||'';
+  const thumbVal=window._spotPhotoData||document.getElementById('sp-thumb').value.trim();
+  window._spotPhotoData=null;
   const data={
     name,recordType:'spot',
     spotType:document.getElementById('sp-type').value,
@@ -7171,8 +7296,9 @@ function saveSpot(){
     access:document.getElementById('sp-access').value,
     difficulty:document.getElementById('sp-diff').value,
     seasons,
+    description:document.getElementById('sp-description').value.trim(),
     notes:document.getElementById('sp-notes').value.trim(),
-    thumb:document.getElementById('sp-thumb').value.trim(),
+    thumb:thumbVal,
     visitedDate:document.getElementById('sp-visited-date').value,
     rating:document.getElementById('sp-rating').value,
     secret:document.getElementById('sp-secret').checked,
@@ -7231,7 +7357,7 @@ function openSpotD(id){
   const DIFF_LABELS={easy:'🟢 Easy',moderate:'🟡 Moderate',hard:'🟠 Hard',expert:'🔴 Expert'};
   const allMonths=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   document.getElementById('camp-in').innerHTML=`
-    <button class="td-back" onclick="window._campTab='spots';rCamp()">← Saved Spots</button>
+    <button class="td-back" onclick="window._campTab='spots';rCamp()">← Waypoints</button>
     <div style="margin-top:12px">
       ${s.thumb&&!s.secret?`<img src="${s.thumb}" style="width:100%;max-height:220px;object-fit:cover;border-radius:var(--r);margin-bottom:14px" onerror="this.style.display='none'"/>`:''}
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px">
@@ -7252,6 +7378,7 @@ function openSpotD(id){
         </div>
       </div>
       ${s.area?`<div style="font-size:12px;color:var(--muted);margin-bottom:10px">📍 ${s.area}</div>`:''}
+      ${s.description?`<div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px;padding:12px 14px;background:var(--card2);border-radius:8px;border-left:3px solid var(--amber)">${s.description}</div>`:''}
 
       ${(s.lat&&s.lng)||mapsUrl?`
       <div class="card" style="padding:12px;margin-bottom:12px">
@@ -7275,7 +7402,7 @@ function openSpotD(id){
         ${seasons.length?`<div style="margin-top:10px"><div style="font-size:10px;color:var(--muted);margin-bottom:5px">Best Seasons</div><div style="display:flex;gap:6px;flex-wrap:wrap">${[{v:'Spring',e:'🌸'},{v:'Summer',e:'☀️'},{v:'Fall',e:'🍂'},{v:'Winter',e:'❄️'}].map(({v,e})=>`<span style="font-size:11px;padding:3px 9px;border-radius:100px;${seasons.includes(v)?'background:rgba(74,114,89,.18);color:var(--green3);border:1px solid rgba(74,114,89,.3);font-weight:600':'background:var(--card2);color:var(--muted);border:1px solid var(--bdr2)'}">${e} ${v}</span>`).join('')}</div></div>`:''}
       </div>
 
-      ${s.notes?`<div class="card" style="padding:12px;margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">📝 Notes</div><div style="font-size:12px;color:var(--text2);line-height:1.7;white-space:pre-wrap">${s.notes}</div></div>`:''}
+      ${s.notes?`<div class="card" style="padding:12px;margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">📝 Field Notes</div><div style="font-size:12px;color:var(--text2);line-height:1.7;white-space:pre-wrap">${s.notes}</div></div>`:''}
     </div>`;
 }
 const TRIP_TYPES={
@@ -7750,6 +7877,222 @@ function campCard(c){
   </div>`;
 }
 
+// ── Image compression utility ─────────────────────────────
+function compressImage(file,maxPx=800,quality=0.7){
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      const s=Math.min(1,maxPx/Math.max(img.width,img.height));
+      const c=document.createElement('canvas');
+      c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      res(c.toDataURL('image/jpeg',quality));
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('load failed'));};
+    img.src=url;
+  });
+}
+function useMyLocation(){
+  if(!navigator.geolocation){toast('⚠️ Geolocation not supported');return;}
+  const btn=document.querySelector('[onclick="useMyLocation()"]');
+  if(btn){btn.textContent='⏳ Locating…';btn.disabled=true;}
+  navigator.geolocation.getCurrentPosition(pos=>{
+    document.getElementById('sp-lat').value=pos.coords.latitude.toFixed(6);
+    document.getElementById('sp-lng').value=pos.coords.longitude.toFixed(6);
+    if(btn){btn.textContent='✅ Location set';btn.disabled=false;setTimeout(()=>{btn.textContent='📍 Use My Location';},2500);}
+    toast('📍 GPS coordinates set');
+  },err=>{
+    if(btn){btn.textContent='📍 Use My Location';btn.disabled=false;}
+    toast('⚠️ Could not get location — check permissions');
+  },{enableHighAccuracy:true,timeout:10000});
+}
+// Waypoint photo handlers
+let _spotPhotoData=null;
+function handleSpotPhoto(input){
+  const file=input.files[0];if(!file)return;
+  compressImage(file,800,0.72).then(data=>{
+    _spotPhotoData=data;
+    window._spotPhotoData=data;
+    showSpotPhotoPreview(data);
+  }).catch(()=>toast('⚠️ Could not read photo'));
+}
+function showSpotPhotoPreview(src){
+  const pv=document.getElementById('sp-photo-preview');
+  const img=document.getElementById('sp-photo-img');
+  if(pv&&img){img.src=src;pv.style.display='block';}
+}
+function clearSpotPhoto(){
+  window._spotPhotoData=null;
+  const pv=document.getElementById('sp-photo-preview');
+  const thumb=document.getElementById('sp-thumb');
+  if(pv)pv.style.display='none';
+  if(thumb)thumb.value='';
+}
+// Stop photo handlers
+let _stopPhotoData=null;
+function handleStopPhoto(input){
+  const file=input.files[0];if(!file)return;
+  compressImage(file,800,0.72).then(data=>{
+    window._stopPhotoData=data;
+    showStopPhotoPreview(data);
+  }).catch(()=>toast('⚠️ Could not read photo'));
+}
+function showStopPhotoPreview(src){
+  const pv=document.getElementById('st-photo-preview');
+  const img=document.getElementById('st-photo-img');
+  if(pv&&img){img.src=src;pv.style.display='block';}
+}
+function clearStopPhoto(){
+  window._stopPhotoData=null;
+  const pv=document.getElementById('st-photo-preview');
+  const urlInput=document.getElementById('st-photo-url');
+  if(pv)pv.style.display='none';
+  if(urlInput)urlInput.value='';
+}
+// AI fill description for current stop modal
+async function aiStopDesc(){
+  const name=document.getElementById('st-name').value.trim();
+  const addr=document.getElementById('st-address').value.trim();
+  if(!name){toast('⚠️ Add a stop name first');return;}
+  const btn=event.target;btn.textContent='⏳';btn.disabled=true;
+  try{
+    const raw=await callAI(`Write a 2-3 sentence travel description for a stop called "${name}"${addr?' located at '+addr:''}. Focus on what a traveler can expect, what makes it special, and one practical tip. Tone: warm and informative. Return plain text only.`,120);
+    document.getElementById('st-description').value=raw.trim();
+  }catch(e){toast('⚠️ AI fill failed');}
+  btn.textContent='✦ AI Fill';btn.disabled=false;
+}
+
+// ── Trip Guide Tab ──────────────────────────────────────────
+function rGuideTab(rt,obj){
+  const itin=obj.itinerary||[];
+  const scheduled=itin.filter(d=>d.date);
+  const tt=rt==='camp'?ADV_TYPES[obj.campType]?.icon||'🧭':'✈️';
+  const accent=rt==='trip'?(TRIP_TYPES[inferTripType(obj,false)]?.color||'#C8901E'):'#C8901E';
+  if(!scheduled.length&&!itin.length){
+    return`<div class="guide-empty"><div style="font-size:36px;margin-bottom:12px">📖</div><h3 style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px">No itinerary yet</h3><p style="font-size:12px;color:var(--muted2);margin-bottom:16px">Build your day-by-day plans and this Guide will come to life.</p><button class="btn-p" style="font-size:12px" onclick="${rt==='camp'?`window._campDTab='daily';openCampD('${obj.id}')`:`window._tripItinTab='plans';openTripD('${obj.id}')`}">📅 Start Planning</button></div>`;
+  }
+  const totalStops=scheduled.reduce((s,d)=>s+(d.stops||[]).length,0);
+  const hasDriving=scheduled.some(d=>(d.stops||[]).some(s=>s.milesPrev));
+  let html=`<div class="guide-root">
+    <div class="guide-hdr">
+      <div>
+        <div class="guide-hdr-title">${obj.name}</div>
+        <div class="guide-hdr-meta">${scheduled.length} day${scheduled.length!==1?'s':''} · ${totalStops} stop${totalStops!==1?'s':''}${hasDriving?' · driving route':''}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">
+        <button class="pbtn" style="font-size:11px;padding:5px 10px;background:rgba(239,159,39,.1);border-color:rgba(239,159,39,.35);color:var(--amber)" onclick="aiGuideAllStops('${rt}','${obj.id}')">✦ AI Fill All</button>
+        <button class="pbtn" style="font-size:11px;padding:5px 10px" onclick="printTripShare('${obj.id}','${rt}')">🖨️ Print</button>
+      </div>
+    </div>`;
+
+  scheduled.forEach((day,idx)=>{
+    const di=itin.indexOf(day);
+    const dayStops=day.stops||[];
+    const dayMi=dayStops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+    html+=`<div class="guide-day" style="--guide-accent:${accent}">
+      <div class="guide-day-hdr">
+        <div class="guide-day-num">Day ${idx+1}</div>
+        <div class="guide-day-info">
+          <span class="guide-day-date">${fd(day.date)}</span>
+          ${dayStops.length?`<span class="guide-day-stops">${dayStops.length} stop${dayStops.length!==1?'s':''}</span>`:''}
+          ${dayMi?`<span class="guide-day-mi">🛣️ ${Math.round(dayMi)} mi</span>`:''}
+        </div>
+        <button class="guide-ai-btn" onclick="aiGuideDay('${rt}','${obj.id}',${di})" title="AI fill descriptions for all stops today">✦ AI Day</button>
+      </div>
+      ${day.notes?`<div class="guide-day-notes">${day.notes}</div>`:''}
+      ${dayStops.length?`<div class="guide-stops-list">
+        ${dayStops.map((s,si)=>rGuideStop(rt,obj.id,di,si,s,accent)).join('')}
+      </div>`:`<div style="font-size:12px;color:var(--muted2);padding:14px 0;text-align:center;font-style:italic">No stops planned for this day</div>`}
+    </div>`;
+  });
+  html+=`</div>`;
+  return html;
+}
+function rGuideStop(rt,id,di,si,s,accent){
+  const wt=WP_TYPES[s.type||'other']||WP_TYPES.other;
+  const hasDesc=!!(s.description||s.note);
+  const editFn=rt==='camp'?`openAdvItinStopEdit('${id}',${di},${si})`:`openStopEdit('${id}',${di},${si})`;
+  return`<div class="guide-stop${s.done?' guide-stop-done':''}">
+    ${s.photo?`<img class="guide-stop-photo" src="${s.photo}" onerror="this.style.display='none'" onclick="${editFn}">`:''}
+    <div class="guide-stop-body">
+      <div class="guide-stop-toprow">
+        <span class="guide-stop-icon">${wt.i}</span>
+        <div class="guide-stop-name-wrap">
+          <span class="guide-stop-name">${s.name}</span>
+          ${s.time?`<span class="guide-stop-time">🕐 ${s.time}</span>`:''}
+        </div>
+        <div class="guide-stop-acts">
+          <button class="guide-ai-stop-btn" onclick="aiGuideSingleStop('${rt}','${id}',${di},${si})" title="AI fill description">✦</button>
+          <button onclick="${editFn}" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:2px 5px;border-radius:4px;transition:color .12s" onmouseover="this.style.color='var(--green3)'" onmouseout="this.style.color='var(--muted2)'">✏️</button>
+        </div>
+      </div>
+      ${s.description?`<div class="guide-stop-desc">${s.description}</div>`:''}
+      ${s.note&&s.note!==s.description?`<div class="guide-stop-note">${s.note}</div>`:''}
+      <div class="guide-stop-meta">
+        ${s.address?`<span>📍 ${s.address}</span>`:''}
+        ${s.milesPrev?`<span>🛣️ ${s.milesPrev} mi${s.driveSecs?' · '+fDrive(s.driveSecs):''}</span>`:''}
+        ${s.mapsUrl?`<a href="${s.mapsUrl}" target="_blank" class="guide-nav-btn">Navigate ↗</a>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+async function aiGuideSingleStop(rt,id,di,si){
+  D=load();
+  const obj=rt==='camp'?(D.camps||[]).find(x=>x.id===id):D.trips.find(x=>x.id===id);
+  if(!obj)return;
+  const s=obj.itinerary?.[di]?.stops?.[si];if(!s)return;
+  if(!s.name){toast('⚠️ Stop needs a name');return;}
+  toast('✦ Writing description…');
+  try{
+    const dest=(obj.destinations||obj.stops||[]).join(', ')||obj.location||obj.name;
+    const raw=await callAI(`Write a 2-3 sentence travel description for a stop called "${s.name}"${s.address?' at '+s.address:''}${dest?' during a trip to '+dest:''}. Highlight what to expect, atmosphere, or tips. Plain text only.`,130);
+    s.description=raw.trim();
+    if(rt==='camp'){localStorage.setItem('wf_camps',JSON.stringify(D.camps));window._campDTab='guide';openCampD(id);}
+    else{save('trips',D.trips);switchTripItinTab(id,'guide');}
+    toast('✅ Description added');
+  }catch(e){toast('⚠️ AI fill failed');}
+}
+async function aiGuideDay(rt,id,di){
+  D=load();
+  const obj=rt==='camp'?(D.camps||[]).find(x=>x.id===id):D.trips.find(x=>x.id===id);
+  if(!obj)return;
+  const day=obj.itinerary?.[di];if(!day||(day.stops||[]).length===0){toast('No stops on this day');return;}
+  toast('✦ Writing descriptions…');
+  try{
+    const dest=(obj.destinations||obj.stops||[]).join(', ')||obj.location||obj.name;
+    for(let si=0;si<day.stops.length;si++){
+      const s=day.stops[si];
+      if(!s.name||s.description)continue;
+      const raw=await callAI(`2-3 sentence travel description for "${s.name}"${s.address?' at '+s.address:''}${dest?' on a trip to '+dest:''}. Warm, informative. Plain text.`,120);
+      s.description=raw.trim();
+    }
+    if(rt==='camp'){localStorage.setItem('wf_camps',JSON.stringify(D.camps));window._campDTab='guide';openCampD(id);}
+    else{save('trips',D.trips);switchTripItinTab(id,'guide');}
+    toast('✅ Day descriptions filled');
+  }catch(e){toast('⚠️ AI fill failed');}
+}
+async function aiGuideAllStops(rt,id){
+  D=load();
+  const obj=rt==='camp'?(D.camps||[]).find(x=>x.id===id):D.trips.find(x=>x.id===id);
+  if(!obj)return;
+  const allStops=(obj.itinerary||[]).flatMap(d=>d.stops||[]);
+  const missing=allStops.filter(s=>s.name&&!s.description);
+  if(!missing.length){toast('All stops already have descriptions');return;}
+  toast(`✦ Filling ${missing.length} description${missing.length>1?'s':''}…`);
+  const dest=(obj.destinations||obj.stops||[]).join(', ')||obj.location||obj.name;
+  try{
+    for(const s of missing){
+      const raw=await callAI(`2-3 sentence travel description for "${s.name}"${s.address?' at '+s.address:''}${dest?' on a trip to '+dest:''}. Plain text.`,120);
+      s.description=raw.trim();
+    }
+    if(rt==='camp'){localStorage.setItem('wf_camps',JSON.stringify(D.camps));window._campDTab='guide';openCampD(id);}
+    else{save('trips',D.trips);switchTripItinTab(id,'guide');}
+    toast('✅ All descriptions filled');
+  }catch(e){toast('⚠️ AI fill failed — some stops may be incomplete');}
+}
+
 function rCamp(){
   D=load();
   const camps=D.camps||[];
@@ -7757,7 +8100,7 @@ function rCamp(){
   const tabBar='';const typeBar='';
   let body='';
   {
-    // Saved Spots — category filter
+    // Waypoints — category filter
     const sf=window._spotCatFilter||'all';
     const spotCatBar=`<div class="spot-cat-filter">
       <button class="fc${sf==='all'?' on':''}" style="font-size:10px;padding:3px 9px" onclick="window._spotCatFilter='all';rCamp()">All</button>
@@ -7767,7 +8110,7 @@ function rCamp(){
     if(spots.length&&!filteredSpots.length){
       body=spotCatBar+`<div class="empty"><div class="empty-icon">${SPOT_TYPES[sf]?.icon||'📍'}</div><h3>No ${SPOT_TYPES[sf]?.label||''} spots saved</h3><button class="tb-btn" onclick="window._spotCatFilter='all';rCamp()">Show All</button></div>`;
     } else {
-      body=spotCatBar+(filteredSpots.length?`<div class="ga">${filteredSpots.map(spotCard).join('')}</div>`:`<div class="empty"><div class="empty-icon">📍</div><h3>No saved spots yet</h3><p>Build your personal collection — campsites, fishing holes, secret spots, trailheads and more.</p><button class="tb-btn" onclick="openSpotModal()">+ Save a Spot</button></div>`);
+      body=spotCatBar+(filteredSpots.length?`<div class="ga">${filteredSpots.map(spotCard).join('')}</div>`:`<div class="empty"><div class="empty-icon">📌</div><h3>No waypoints saved yet</h3><p>Drop a pin anywhere worth remembering — fishing holes, campsites, viewpoints, memories, work sites, and more.</p><button class="tb-btn" onclick="openSpotModal()">+ Save a Waypoint</button></div>`);
     }
   }
   document.getElementById('camp-in').innerHTML=tabBar+typeBar+body;
@@ -7892,6 +8235,7 @@ function openCampD(id){
   if(tab==='overview') tabBody=rAdvOverviewTab(c);
   else if(tab==='stops') tabBody=rAdvStopsTab(c);
   else if(tab==='daily') tabBody=rAdvDailyTab(c);
+  else if(tab==='guide') tabBody=rGuideTab('camp',c);
   else if(tab==='budget'){tabBody=rAdvBudgetTab(c);if(c.startLocation&&!c.startLat)setTimeout(()=>geocodeAndSaveStart(id),80);}
   else if(tab==='gear') tabBody=rAdvGearTab(c);
   else if(tab==='links') tabBody=rAdvLinksTab(c);
@@ -7936,6 +8280,7 @@ function openCampD(id){
         <button class="fc ${tab==='overview'?'on':''}" onclick="window._campDTab='overview';openCampD('${c.id}')">📋 Overview</button>
         <button class="fc ${tab==='stops'?'on':''}" onclick="window._campDTab='stops';openCampD('${c.id}')">📍 Stops${itinStopCount?' ('+itinStopCount+')':''}</button>
         <button class="fc ${tab==='daily'?'on':''}" onclick="window._campDTab='daily';openCampD('${c.id}')">📅 Plans</button>
+        <button class="fc ${tab==='guide'?'on':''}" style="${tab==='guide'?'':'border-color:rgba(200,144,30,.3);color:var(--amber)'}" onclick="window._campDTab='guide';openCampD('${c.id}')">✦ Guide</button>
         <button class="fc ${tab==='budget'?'on':''}" onclick="window._campDTab='budget';openCampD('${c.id}')">💰 Budget</button>
         <button class="fc ${tab==='gear'?'on':''}" onclick="window._campDTab='gear';openCampD('${c.id}')">🎒 Gear</button>
         <button class="fc ${tab==='links'?'on':''}" onclick="window._campDTab='links';openCampD('${c.id}')">🔗 Links</button>
@@ -10424,7 +10769,7 @@ function onSearch(q){
   const wish=(D.wish||[]).filter(w=>!w.graduated).map(w=>({s:sc([w.name,w.type,w.country]),r:{icon:pi(w.priority)||'♡',name:w.name,sub:w.type||'destination',act:()=>go('wishlist')}})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,5).map(x=>x.r);
   const journal=(D.journal||[]).map(j=>({s:sc([j.title,j.loc,(j.body||'').slice(0,300)]),r:{icon:'📓',name:j.title||'Untitled',sub:(j.loc||'')+(j.date?' · '+j.date.slice(0,4):''),act:()=>{go('journal');}}})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,4).map(x=>x.r);
   const work=(D.work||[]).map(w=>({s:sc([w.name,w.company,...(w.destinations||[])]),r:{icon:'💼',name:w.name,sub:(w.company||'')+(w.startDate?' · '+fd(w.startDate):''),act:()=>go('work')}})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,4).map(x=>x.r);
-  const sections=[{k:'Places',items:places},{k:'Trips',items:trips},{k:'Adventures',items:advs},{k:'Saved Spots',items:spots},{k:'Wishlist',items:wish},{k:'Journal',items:journal},{k:'Work',items:work}].filter(s=>s.items.length);
+  const sections=[{k:'Places',items:places},{k:'Trips',items:trips},{k:'Adventures',items:advs},{k:'Waypoints',items:spots},{k:'Wishlist',items:wish},{k:'Journal',items:journal},{k:'Work',items:work}].filter(s=>s.items.length);
   if(!sections.length){drop.innerHTML=`<div class="sd-empty">No results for "${q.trim()}"</div>`;drop.style.display='block';return;}
   _srchActs=sections.flatMap(s=>s.items.map(it=>it.act));
   let idx=0,html=`<div class="sd-hdr">🔍 Results for <strong>${q.trim()}</strong></div>`;
