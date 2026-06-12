@@ -5162,6 +5162,8 @@ function _openStopModal(isAdv,tid,cid,di,si,existing){
   document.getElementById('stop-modal-title').textContent=isEdit?'Edit Stop':'Add Stop';
   document.getElementById('stop-modal-save').textContent=isEdit?'Save Changes':'Add Stop';
   const s=existing||{};
+  // Preserve existing GPS coords when editing so saveStop() doesn't erase them
+  if(isEdit){const elat=parseFloat(s.lat),elng=parseFloat(s.lng);if(!isNaN(elat)&&!isNaN(elng)&&(elat||elng)){_stopPlaceData={lat:elat,lng:elng};}}
   document.getElementById('st-name').value=s.name||'';
   document.getElementById('st-note').value=s.note||'';
   document.getElementById('st-time').value=s.time||'';
@@ -5737,11 +5739,12 @@ function rTripPlansTab(t){
   const _itinTotalMi=_allItinStops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
   const _itinTotalSecs=_allItinStops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0);
   const _itinHasCoords=_allItinStops.some(s=>s.lat||s.lng);
+  const _itinHasAddresses=_allItinStops.some(s=>(s.address||'').trim());
   const _itinHasEst=_allItinStops.some(s=>s.milesEst);
-  const _routeBanner=_itinTotalMi?`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(200,144,30,.07);border-radius:7px;margin-bottom:10px;border-left:3px solid var(--amber)">
+  const _routeBanner=(_itinTotalMi||(_itinHasAddresses&&_allItinStops.length>1))?`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(200,144,30,.07);border-radius:7px;margin-bottom:10px;border-left:3px solid var(--amber)">
     <span style="font-size:12px">🛣️</span>
-    <div style="flex:1;font-size:11px;color:var(--text2)"><strong>${_itinTotalMi} mi</strong>${_itinTotalSecs?' · <strong>'+fDrive(_itinTotalSecs)+'</strong> drive time':''}${_itinHasEst?' <span style="color:var(--muted2)">(est. from GPS)</span>':''}</div>
-    ${_itinHasCoords?`<button id="itin-recalc-btn" class="pbtn" onclick="recalcItineraryDriving(false,'${t.id}')" style="font-size:10px;padding:3px 8px">🔄 Recalc</button>`:''}
+    <div style="flex:1;font-size:11px;color:var(--text2)">${_itinTotalMi?('<strong>'+_itinTotalMi+' mi</strong>'+(_itinTotalSecs?' · <strong>'+fDrive(_itinTotalSecs)+'</strong> drive time':'')+(_itinHasEst?' <span style="color:var(--muted2)">(est. from GPS)</span>':'')):'Click Recalc to calculate driving distances between stops'}</div>
+    ${(_itinHasCoords||_itinHasAddresses)?`<button id="itin-recalc-btn" class="pbtn" onclick="recalcItineraryDriving(false,'${t.id}')" style="font-size:10px;padding:3px 8px">🔄 Recalc</button>`:''}
   </div>`:'';
   let html=`<div style="--plans-accent:${accent}">${_routeBanner}`;
   scheduled.forEach((day,schIdx)=>{
@@ -8077,18 +8080,21 @@ function rAdvBudgetTab(c){
     ${budget?`<div style="margin-top:10px;background:var(--card2);border-radius:4px;height:8px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct>90?'#c05050':pct>70?'#B8892A':'var(--green3)'};border-radius:4px;transition:width .3s"></div></div>
     <div style="font-size:11px;color:var(--muted2);margin-top:4px">${pct}% spent · $${Math.max(0,budget-totalSpent).toFixed(0)} remaining${includeFuel?' (incl. est. fuel)':''}</div>`:''}
   </div>
-  ${rig.mpg?`
   <div class="card" style="margin-bottom:12px;border-top:3px solid var(--amber)">
     <div class="ch">
-      <div><div class="ct">⛽ Fuel Calculator</div><div class="cs">${rig.mpg} mpg · ${effectiveMiles?effectiveMiles.toFixed(0)+' mi'+(itinTotalDriveSecs?' · '+fDrive(itinTotalDriveSecs):'')+(itinHasEst?' (est.)':''):'set miles below'}</div></div>
-      ${itinHasCoords?`<button id="itin-recalc-btn" class="pbtn" onclick="recalcItineraryDriving(true,'${c.id}')" style="font-size:10px;padding:4px 9px;flex-shrink:0">🔄 Recalc Route</button>`:''}
+      <div><div class="ct">⛽ Fuel Calculator</div><div class="cs">${rig.mpg?rig.mpg+' mpg':'Set MPG below'}${effectiveMiles?' · '+Math.round(effectiveMiles)+' mi'+(itinTotalDriveSecs?' · '+fDrive(itinTotalDriveSecs):'')+(itinHasEst?' (est.)':''):''}</div></div>
+      ${(itinHasCoords||itinStops.some(s=>s.address))?`<button id="itin-recalc-btn" class="pbtn" onclick="recalcItineraryDriving(true,'${c.id}')" style="font-size:10px;padding:4px 9px;flex-shrink:0">🔄 Recalc Route</button>`:''}
     </div>
     ${itinMiles&&campStopMiles?`<div style="font-size:10px;color:var(--muted2);padding:4px 0">Route: ${itinMiles} mi from daily plan · ${campStopMiles} mi from campsite stops</div>`:''}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">MPG</label>
+        <input class="fi" id="fuel-mpg-${c.id}" style="margin-top:3px" type="number" value="${rig.mpg||''}" placeholder="e.g. 20" oninput="updateFuelCalc('${c.id}')" onblur="saveAdvRig('${c.id}','mpg',this.value);window._campDTab='budget';openCampD('${c.id}')"/></div>
       <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Gas Price ($/gal)</label>
         <input class="fi" style="margin-top:3px" type="number" step="0.01" id="fuel-price-${c.id}" value="${c.fuelPrice||''}" placeholder="e.g. 4.25" oninput="updateFuelCalc('${c.id}')"/></div>
-      <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Est. Trip Miles${totalMiles?` <span style="color:${itinHasEst?'var(--gold)':'var(--green3)'}">● ${itinHasEst?'est. from GPS':'auto'}</span>`:''}</label>
-        <input class="fi" style="margin-top:3px" type="number" id="est-miles-${c.id}" value="${totalMiles||c.estTripMiles||''}" placeholder="e.g. 350" ${totalMiles?'readonly style="margin-top:3px;opacity:.65"':''} oninput="updateFuelCalc('${c.id}')"/></div>
+    </div>
+    <div style="margin-top:10px">
+      <label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Est. Trip Miles${totalMiles?` <span style="color:${itinHasEst?'var(--gold)':'var(--green3)'}">● ${itinHasEst?'est. from GPS':'auto'}</span>`:''}</label>
+      <input class="fi" style="margin-top:3px" type="number" id="est-miles-${c.id}" value="${totalMiles||c.estTripMiles||''}" placeholder="e.g. 350" ${totalMiles?'readonly style="margin-top:3px;opacity:.65"':''} oninput="updateFuelCalc('${c.id}')"/>
     </div>
     ${effectiveMiles&&rig.mpg?`
     <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
@@ -8106,9 +8112,9 @@ function rAdvBudgetTab(c){
       </div>
     </div>
     <div style="margin-top:8px;padding:8px 10px;background:rgba(200,144,30,.07);border-radius:6px;border-left:3px solid var(--amber)">
-      <div style="font-size:11px;color:var(--text2);line-height:1.5">⛽ <strong>Before you leave:</strong> Top off the tank. At ${rig.mpg} MPG you'll need ~${(effectiveMiles/parseFloat(rig.mpg)).toFixed(0)} gal total — plan to fill up ${Math.ceil(effectiveMiles/parseFloat(rig.mpg)/18)===1?'once on the road':'every ~${Math.round(parseFloat(rig.mpg)*18)} miles'}.</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.5">⛽ <strong>Before you leave:</strong> Top off the tank. At ${rig.mpg} MPG you'll need ~${(effectiveMiles/parseFloat(rig.mpg)).toFixed(0)} gal total — plan to fill up ${Math.ceil(effectiveMiles/parseFloat(rig.mpg)/18)===1?'once on the road':'every ~'+(Math.round(parseFloat(rig.mpg)*18))+' miles'}.</div>
     </div>`:
-    `<div style="margin-top:8px;font-size:11px;color:var(--muted2);padding:6px 0">Enter trip miles above (or add per-stop distances in Daily tab) to see fuel estimate.</div>`}
+    `<div style="margin-top:8px;font-size:11px;color:var(--muted2);padding:6px 0">${!rig.mpg?'Enter MPG and gas price above, then add stops via Google search (Plans tab) or enter miles to see your fuel estimate.':'Enter gas price and trip miles above to see the fuel estimate.'}</div>`}
     <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr2);display:flex;align-items:center;gap:8px">
       <label style="display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none">
         <input type="checkbox" id="fuel-in-budget-${c.id}" ${c.includeFuelInBudget?'checked':''} style="width:15px;height:15px;cursor:pointer;accent-color:var(--green3)" onchange="toggleFuelInBudget('${c.id}',this.checked)">
@@ -8116,10 +8122,7 @@ function rAdvBudgetTab(c){
       </label>
       ${c.includeFuelInBudget&&fuelEst?`<span style="font-size:11px;color:var(--green3);font-weight:700;margin-left:auto">+$${fuelEst} counted</span>`:`<span style="font-size:11px;color:var(--muted2);margin-left:auto">off — not in budget</span>`}
     </div>
-  </div>`:`
-  <div class="card" style="margin-bottom:12px;border:1px dashed var(--bdr2)">
-    <div style="padding:10px;text-align:center;font-size:12px;color:var(--muted2)">⛽ Add your rig's MPG in <strong>Rig Info</strong> below to enable fuel calculations</div>
-  </div>`}
+  </div>
   <div class="card" style="margin-bottom:12px">
     <div class="ch"><div class="ct">📊 By Category</div></div>
     <div style="margin-top:10px">
@@ -8146,14 +8149,18 @@ function rAdvBudgetTab(c){
 }
 function updateFuelCalc(cid){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
-  const priceEl=document.getElementById('fuel-price-'+cid);const milesEl=document.getElementById('est-miles-'+cid);
+  const priceEl=document.getElementById('fuel-price-'+cid);
+  const milesEl=document.getElementById('est-miles-'+cid);
+  const mpgEl=document.getElementById('fuel-mpg-'+cid);
   const price=parseFloat(priceEl?.value)||0;
-  const mpg=parseFloat((c.rig||{}).mpg)||0;
-  const stopMiles=(c.stops||[]).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  const mpg=parseFloat(mpgEl?.value)||parseFloat((c.rig||{}).mpg)||0;
+  const campStopMiles=(c.stops||[]).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  const itinMiles=(c.itinerary||[]).flatMap(d=>d.stops||[]).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  const calcMiles=campStopMiles||itinMiles;
   const manualMiles=milesEl&&!milesEl.readOnly?parseFloat(milesEl.value)||0:0;
-  const miles=stopMiles||manualMiles;
+  const miles=calcMiles||manualMiles;
   if(price)c.fuelPrice=price;
-  if(manualMiles&&!stopMiles)c.estTripMiles=manualMiles;
+  if(manualMiles&&!calcMiles)c.estTripMiles=manualMiles;
   localStorage.setItem('wf_camps',JSON.stringify(D.camps));
   const estEl=document.getElementById('fuel-est-'+cid);
   if(estEl)estEl.textContent=price&&mpg&&miles?'$'+(miles/mpg*price).toFixed(0):'—';
@@ -8416,11 +8423,12 @@ function rAdvDailyTab(c){
   const _advItinTotalMi=_advItinAllStops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
   const _advItinTotalSecs=_advItinAllStops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0);
   const _advItinHasCoords=_advItinAllStops.some(s=>s.lat||s.lng);
+  const _advItinHasAddresses=_advItinAllStops.some(s=>(s.address||'').trim());
   const _advItinHasEst=_advItinAllStops.some(s=>s.milesEst);
-  const _advRouteBanner=_advItinTotalMi?`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(200,144,30,.07);border-radius:7px;margin-bottom:10px;border-left:3px solid var(--amber)">
+  const _advRouteBanner=(_advItinTotalMi||(_advItinHasAddresses&&_advItinAllStops.length>1))?`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(200,144,30,.07);border-radius:7px;margin-bottom:10px;border-left:3px solid var(--amber)">
     <span style="font-size:12px">🛣️</span>
-    <div style="flex:1;font-size:11px;color:var(--text2)"><strong>${_advItinTotalMi} mi</strong>${_advItinTotalSecs?' · <strong>'+fDrive(_advItinTotalSecs)+'</strong> drive time':''}${_advItinHasEst?' <span style="color:var(--muted2)">(est. from GPS)</span>':''}</div>
-    ${_advItinHasCoords?`<button id="itin-recalc-btn" class="pbtn" onclick="recalcItineraryDriving(true,'${c.id}')" style="font-size:10px;padding:3px 8px">🔄 Recalc</button>`:''}
+    <div style="flex:1;font-size:11px;color:var(--text2)">${_advItinTotalMi?('<strong>'+_advItinTotalMi+' mi</strong>'+(_advItinTotalSecs?' · <strong>'+fDrive(_advItinTotalSecs)+'</strong> drive time':'')+(_advItinHasEst?' <span style="color:var(--muted2)">(est. from GPS)</span>':'')):'Click Recalc to calculate driving distances between stops'}</div>
+    ${(_advItinHasCoords||_advItinHasAddresses)?`<button id="itin-recalc-btn" class="pbtn" onclick="recalcItineraryDriving(true,'${c.id}')" style="font-size:10px;padding:3px 8px">🔄 Recalc</button>`:''}
   </div>`:'';
   let html=`<div style="--plans-accent:${accent}">${_advRouteBanner}`;
   scheduled.forEach((day,schIdx)=>{
@@ -8694,8 +8702,30 @@ async function recalcItineraryDriving(isAdv,id){
   const itin=obj.itinerary||[];
   const flat=[];
   itin.forEach((day,di)=>(day.stops||[]).forEach((_,si)=>flat.push({di,si})));
+  // Geocode stops that have an address but no saved GPS coords
+  if(window.google?.maps?.Geocoder&&flat.length>1){
+    const geocoder=new google.maps.Geocoder();
+    let geocodedAny=false;
+    for(const {di,si} of flat){
+      const st=itin[di].stops[si];
+      if(!parseStopCoords(st)&&(st.address||'').trim()){
+        await new Promise(res=>geocoder.geocode({address:st.address},(r,s)=>{
+          if(s==='OK'&&r?.[0]){
+            itin[di].stops[si].lat=String(r[0].geometry.location.lat());
+            itin[di].stops[si].lng=String(r[0].geometry.location.lng());
+            geocodedAny=true;
+          }
+          res();
+        }));
+      }
+    }
+    if(geocodedAny){
+      if(isAdv)localStorage.setItem('wf_camps',JSON.stringify(D.camps));
+      else save('trips',D.trips);
+    }
+  }
   const pairCount=flat.filter(({di,si},i)=>i>0&&parseStopCoords(itin[flat[i-1].di].stops[flat[i-1].si])&&parseStopCoords(itin[di].stops[si])).length;
-  if(!pairCount){toast('⚠️ No GPS-coord stop pairs — add stops via Google search');return;}
+  if(!pairCount){toast('⚠️ No route-able stop pairs — search for stops via Google Places to get GPS coords');return;}
   const btn=document.getElementById('itin-recalc-btn');
   if(btn){btn.textContent='⏳ Calculating…';btn.disabled=true;}
   let updated=0;
