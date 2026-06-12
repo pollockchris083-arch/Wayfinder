@@ -2642,7 +2642,7 @@ async function manualCloudSync(){
     await loadFromCloud();
     const advCount=(D.camps||[]).filter(c=>c.recordType!=='spot').length;
     const counts=`${D.places.length} places · ${D.trips.length} trips · ${advCount} adventures · ${D.wish.filter(w=>!w.graduated).length} wishlist`;
-    const warnNote=pushFailures.length?` (${pushFailures.length} push error${pushFailures.length>1?'s':''})':'';
+    const warnNote=pushFailures.length?` (${pushFailures.length} push error${pushFailures.length>1?'s':''})`:'';
     if(btn){btn.textContent='✅ Synced';btn.disabled=false;setTimeout(()=>{if(btn)btn.textContent=orig;},3000);}
     if(rslt){rslt.textContent='✅ Synced — '+counts+warnNote;rslt.style.display='block';rslt.style.color=pushFailures.length?'#9a6200':'var(--green3)';}
   }catch(e){
