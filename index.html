@@ -5299,6 +5299,7 @@ function saveStop(){
     closeM('m-stop');
     if(pendStop.si!=null){toast('✅ Stop updated');openCampD(pendStop.cid);}
     else{toast('📍 Stop added');window._campDTab='daily';openCampD(pendStop.cid);}
+    if((D.settings?.mapsApiKey||'').trim())setTimeout(()=>recalcItineraryDriving(true,pendStop.cid,true),200);
   } else {
     D=load();const t=D.trips.find(x=>x.id===pendStop.tid);if(!t)return;
     const daySelect=document.getElementById('st-day');
@@ -5337,6 +5338,7 @@ function saveStop(){
     save('trips',D.trips);closeM('m-stop');
     if(pendStop.si!=null){toast('✅ Stop updated');openTripD(pendStop.tid);}
     else{toast('📍 Stop added');window._tripItinTab='plans';openTripD(pendStop.tid);}
+    if((D.settings?.mapsApiKey||'').trim())setTimeout(()=>recalcItineraryDriving(false,pendStop.tid,true),200);
   }
 }
 // ── Plans: unified drag-and-drop (HTML5 + Touch) ────────────────
@@ -8671,6 +8673,7 @@ function delAdvItinStop(cid,di,si){
   autoHaversineItinerary(c);
   localStorage.setItem('wf_camps',JSON.stringify(D.camps));
   toast('🗑️ Stop removed');openCampD(cid);
+  if((D.settings?.mapsApiKey||'').trim())setTimeout(()=>recalcItineraryDriving(true,cid,true),200);
 }
 function toggleAdvItinDone(cid,di,si,val){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
@@ -8920,17 +8923,18 @@ function autoHaversineStartEnd(obj){
   }
 }
 // Recalculate driving distances via Google Routes API for all consecutive itinerary stop pairs.
-async function recalcItineraryDriving(isAdv,id){
+// silent=true suppresses toasts and redirects (for auto-triggered calls on stop save).
+async function recalcItineraryDriving(isAdv,id,silent=false){
   D=load();
   const obj=isAdv?(D.camps||[]).find(x=>x.id===id):D.trips.find(x=>x.id===id);
   if(!obj)return;
   const mapsKey=(D.settings?.mapsApiKey||'').trim();
-  if(!mapsKey){toast('⚠️ Add Maps API key in Settings first');go('settings');return;}
+  if(!mapsKey){if(!silent){toast('⚠️ Add Maps API key in Settings first');go('settings');}return;}
   const itin=obj.itinerary||[];
   const flat=[];
   itin.forEach((day,di)=>(day.stops||[]).forEach((_,si)=>flat.push({di,si})));
   // Geocode stops that have an address but no saved GPS coords
-  if(window.google?.maps?.Geocoder&&flat.length>1){
+  if(window.google?.maps?.Geocoder&&flat.length>0){
     const geocoder=new google.maps.Geocoder();
     let geocodedAny=false;
     for(const {di,si} of flat){
@@ -8952,9 +8956,9 @@ async function recalcItineraryDriving(isAdv,id){
     }
   }
   const pairCount=flat.filter(({di,si},i)=>i>0&&parseStopCoords(itin[flat[i-1].di].stops[flat[i-1].si])&&parseStopCoords(itin[di].stops[si])).length;
-  if(!pairCount){toast('⚠️ No route-able stop pairs — search for stops via Google Places to get GPS coords');return;}
-  const btn=document.getElementById('itin-recalc-btn');
-  if(btn){btn.textContent='⏳ Calculating…';btn.disabled=true;}
+  const hasHomeLeg=isAdv&&flat.length>0&&((obj.startLat&&parseStopCoords(itin[flat[0].di].stops[flat[0].si]))||(obj.endLat&&parseStopCoords(itin[flat[flat.length-1].di].stops[flat[flat.length-1].si])));
+  if(!pairCount&&!hasHomeLeg){if(!silent)toast('⚠️ No route-able stops — add stops via Google Places to get GPS coords');return;}
+  if(!silent){const btn=document.getElementById('itin-recalc-btn');if(btn){btn.textContent='⏳ Calculating…';btn.disabled=true;}}
   let updated=0;
   for(let i=1;i<flat.length;i++){
     const prev=itin[flat[i-1].di].stops[flat[i-1].si];
@@ -8982,7 +8986,7 @@ async function recalcItineraryDriving(isAdv,id){
   }
   if(isAdv){localStorage.setItem('wf_camps',JSON.stringify(D.camps));openCampD(id);}
   else{save('trips',D.trips);openTripD(id);}
-  toast(updated>0?`✅ ${updated} driving distance${updated!==1?'s':''} updated!`:'⚠️ Calculation failed — check Maps API key');
+  if(!silent)toast(updated>0?`✅ ${updated} driving distance${updated!==1?'s':''} updated!`:'⚠️ Calculation failed — check Maps API key');
 }
 async function getRouteDrivingInfo(lat1,lng1,lat2,lng2,mapsKey){
   const resp=await fetch('https://routes.googleapis.com/directions/v2:computeRoutes',{
