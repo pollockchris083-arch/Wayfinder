@@ -1072,6 +1072,11 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
 .guide-atw-inline-btn{background:none;border:none;font-size:9.5px;font-weight:700;color:#4A789E;cursor:pointer;font-family:inherit;padding:0;white-space:nowrap;transition:opacity .12s;letter-spacing:.02em}
 .guide-atw-inline-btn:hover{opacity:.7}
 .guide-atw-inline-btn:disabled{opacity:.45;cursor:default}
+.guide-night-bar{display:flex;align-items:center;gap:10px;padding:10px 14px 11px;border-top:2px solid rgba(200,144,30,.2);background:rgba(200,144,30,.05);margin-top:2px}
+.guide-night-bar.guide-night-unset{border-top-color:var(--bdr2);background:var(--card2);opacity:.8}
+.guide-night-icon{font-size:20px;flex-shrink:0;line-height:1}
+.guide-night-label{font-size:12px;font-weight:600;color:var(--text)}
+.guide-night-sub{font-size:10.5px;color:var(--muted);margin-top:1px}
 
 /* ── Sheet mobile ── */
 @media(max-width:699px){
@@ -8870,27 +8875,41 @@ function rGuideDaySheet(rt,obj,di,accent){
   const endSecsLeg=parseFloat(obj.endSecs)||0;
   const fromCity=(obj.startLocation||'').split(',')[0].trim()||'Home';
   const isRoundTrip=obj.isRoundTrip!==false;
-  const ATW_THRESH=2700; // 45 min — show "along the way" for legs longer than this
+  const ATW_THRESH=2700; // 45 min threshold for "along the way"
   const firstStopName=dayStops.length>0?(dayStops[0].name||'first stop').split(',')[0]:'first stop';
   const lastStopName=dayStops.length>0?(dayStops[dayStops.length-1].name||'last stop').split(',')[0]:'last stop';
 
-  // Departure section (Day 1 only)
+  // Departure context: Day 1 uses obj.startMiles; Days 2+ use first stop's milesPrev
+  let _depFromLabel='', _depMi=0, _depSecs=0, _depIsEst=false, _depIcon='🏠';
+  if(isFirstDay&&(startMiLeg||startSecsLeg)){
+    _depFromLabel=fromCity; _depMi=startMiLeg; _depSecs=startSecsLeg; _depIsEst=!!(obj.startMilesEst);
+  } else if(!isFirstDay&&dayStops.length>0){
+    const _prevDay=scheduled[schedIdx-1];
+    const _prevStops=_prevDay?.stops||[];
+    const _prevBase=_prevStops.find(s=>s.isBase);
+    const _prevLast=_prevBase||(_prevStops.length?_prevStops[_prevStops.length-1]:null);
+    _depFromLabel=_prevLast?_prevLast.name.split(',')[0]:(fromCity||'Previous stop');
+    _depMi=parseFloat(dayStops[0].milesPrev)||0;
+    _depSecs=parseFloat(dayStops[0].driveSecs)||0;
+    _depIcon=_prevBase?'🌙':'📍';
+  }
+  const _hasDep=!!(_depFromLabel&&(_depMi||_depSecs));
   const _atwDepId=`atw-dep-${obj.id}-${di}`;
-  const _showAtwDep=isFirstDay&&startSecsLeg>ATW_THRESH;
-  const departHtml=isFirstDay&&(startMiLeg||startSecsLeg)?`
+  const _showAtwDep=_hasDep&&_depSecs>ATW_THRESH;
+  const departHtml=_hasDep?`
     <div class="guide-waypoint">
-      <div class="guide-waypoint-icon">🏠</div>
+      <div class="guide-waypoint-icon">${_depIcon}</div>
       <div style="flex:1;min-width:0">
-        <div class="guide-waypoint-label">Departing from <strong>${fromCity}</strong></div>
-        <div class="guide-waypoint-sub">${startMiLeg?Math.round(startMiLeg)+' mi':''}${startMiLeg&&startSecsLeg?' · ':''}${startSecsLeg?fDrive(startSecsLeg)+' to '+firstStopName:''}${obj.startMilesEst?' (est.)':''}</div>
+        <div class="guide-waypoint-label">${isFirstDay?'Departing from':'Driving from'} <strong>${_depFromLabel}</strong></div>
+        <div class="guide-waypoint-sub">${_depMi?Math.round(_depMi)+' mi':''}${_depMi&&_depSecs?' · ':''}${_depSecs?fDrive(_depSecs)+' to '+firstStopName:''}${_depIsEst?' (est.)':''}</div>
       </div>
-      ${_showAtwDep?`<button class="guide-atw-btn" data-from="${fromCity}" data-to="${firstStopName}" onclick="aiAlongTheWay(this,'${_atwDepId}')">✦ Along the way</button>`:''}
+      ${_showAtwDep?`<button class="guide-atw-btn" data-from="${_depFromLabel}" data-to="${firstStopName}" onclick="aiAlongTheWay(this,'${_atwDepId}')">✦ Along the way</button>`:''}
     </div>
     ${_showAtwDep?`<div class="guide-atw-results" id="${_atwDepId}"></div>`:''}
     <div class="guide-drive-row">
       <span class="guide-drive-arrow">↓</span>
       <div class="guide-drive-line"></div>
-      <div class="guide-drive-badge">🚗 ${startMiLeg?Math.round(startMiLeg)+' mi':''}${startMiLeg&&startSecsLeg?' · ':''}${startSecsLeg?fDrive(startSecsLeg):''}</div>
+      <div class="guide-drive-badge">🚗 ${_depMi?Math.round(_depMi)+' mi':''}${_depMi&&_depSecs?' · ':''}${_depSecs?fDrive(_depSecs):''}</div>
       <div class="guide-drive-line"></div>
       <span class="guide-drive-arrow">↓</span>
     </div>`:'';
@@ -8926,7 +8945,7 @@ function rGuideDaySheet(rt,obj,di,accent){
   for(let si=0;si<dayStops.length;si++){
     const s=dayStops[si];
     const oabMi=(baseSi>=0&&si!==baseSi&&cumFromBase[si]>0)?Math.round(cumFromBase[si]*2):null;
-    stopsHtml+=rGuideStop(rt,obj.id,di,si,s,accent,baseSi,oabMi);
+    stopsHtml+=rGuideStop(rt,obj.id,di,si,s,accent,baseSi,oabMi,si===0&&_hasDep);
     if(si<dayStops.length-1){
       const nxt=dayStops[si+1];
       const cMi=parseFloat(nxt?.milesPrev||0);
@@ -8969,19 +8988,34 @@ function rGuideDaySheet(rt,obj,di,accent){
       </div>
     </div>`:'';
 
-  // Out-and-back summary when base is set
-  let oabSummary='';
-  if(baseStop&&dayMi>0){
-    const farthestCum=Object.values(cumFromBase).length?Math.max(...Object.values(cumFromBase)):0;
-    const oabRound=Math.round(farthestCum*2);
-    oabSummary=`<div class="guide-day-summary">
-      <span>🌙 Base: <strong>${baseStop.name}</strong></span>
-      <span style="opacity:.4">·</span>
-      <span>One-way: <strong>${Math.round(dayMi)} mi</strong></span>
-      <span style="opacity:.4">·</span>
-      <span>Est. round-trip: <strong>~${oabRound||Math.round(dayMi*2)} mi</strong></span>
-    </div>`;
-  }
+  // Stop type summary for header
+  const _typeIcons=dayStops.map(s=>(WP_TYPES[s.type||'other']||WP_TYPES.other).i);
+  const _typeUnique=[...new Set(_typeIcons)];
+  // Total day miles including departure leg for Days 2+ (first stop's milesPrev already in dayMi)
+  const _totalDayMi=(!isFirstDay&&_hasDep&&_depMi)?(_depMi+dayMi):dayMi;
+  const _totalDaySecs=(!isFirstDay&&_hasDep&&_depSecs)?(_depSecs+dayDriveSecs):dayDriveSecs;
+
+  // Nightly accommodation bar
+  const _farthestCum=Object.values(cumFromBase).length?Math.max(...Object.values(cumFromBase)):0;
+  const _oabRound=_farthestCum>0?Math.round(_farthestCum*2):0;
+  const nightHtml=baseStop
+    ?`<div class="guide-night-bar">
+        <div class="guide-night-icon">🌙</div>
+        <div style="flex:1;min-width:0">
+          <div class="guide-night-label">Tonight: <strong>${baseStop.name.split(',')[0]}</strong></div>
+          ${_oabRound?`<div class="guide-night-sub">~${_oabRound} mi estimated day round-trip from base</div>`
+          :_totalDayMi?`<div class="guide-night-sub">~${Math.round(_totalDayMi)} mi total driving today</div>`:''}
+        </div>
+        <button class="guide-base-btn on" onclick="setDayBase('${rt}','${obj.id}',${di},${baseSi})" style="margin-left:4px">Change</button>
+      </div>`
+    :dayStops.length>0
+    ?`<div class="guide-night-bar guide-night-unset">
+        <div class="guide-night-icon" style="opacity:.5">🌙</div>
+        <div style="flex:1;min-width:0">
+          <div class="guide-night-label" style="color:var(--muted2)">Where are you sleeping tonight?</div>
+          <div class="guide-night-sub">Tap 🌙 Set Base on a stop to mark your camp</div>
+        </div>
+      </div>`:'';
 
   return`<div class="guide-sheet" style="--guide-accent:${accent}">
     <div class="guide-sheet-hdr">
@@ -8989,8 +9023,8 @@ function rGuideDaySheet(rt,obj,di,accent){
       <div class="guide-sheet-info">
         <div class="guide-sheet-date">${fmtLongDay(day.date)}</div>
         <div class="guide-sheet-meta">
-          ${dayStops.length?`<span class="guide-sheet-meta-item">📍 ${dayStops.length} stop${dayStops.length!==1?'s':''}</span>`:''}
-          ${dayMi?`<span class="guide-sheet-meta-item">🛣 ${Math.round(dayMi)} mi${dayDriveSecs?' · '+fDrive(dayDriveSecs):''}</span>`:''}
+          ${dayStops.length?`<span class="guide-sheet-meta-item">📍 ${dayStops.length} stop${dayStops.length!==1?'s':''} ${_typeUnique.join('')}</span>`:''}
+          ${_totalDayMi?`<span class="guide-sheet-meta-item">🛣 ${Math.round(_totalDayMi)} mi${_totalDaySecs?' · '+fDrive(_totalDaySecs):''}</span>`:''}
           ${totalTrailMi?`<span class="guide-sheet-meta-item">🥾 ${totalTrailMi.toFixed(1)} mi trail</span>`:''}
           ${baseStop?`<span class="guide-sheet-meta-item base">🌙 ${baseStop.name.split(',')[0]}</span>`:''}
         </div>
@@ -9006,8 +9040,8 @@ function rGuideDaySheet(rt,obj,di,accent){
     ${narrativeHtml}
     ${departHtml}
     ${dayStops.length
-      ?`<div class="guide-stops-list">${stopsHtml}</div>${returnHtml}${oabSummary}`
-      :`<div style="font-size:12px;color:var(--muted2);padding:22px 0;text-align:center;font-style:italic">No stops planned for this day</div>${returnHtml}`
+      ?`<div class="guide-stops-list">${stopsHtml}</div>${returnHtml}${nightHtml}`
+      :`<div style="font-size:12px;color:var(--muted2);padding:22px 0;text-align:center;font-style:italic">No stops planned for this day</div>${returnHtml}${nightHtml}`
     }
   </div>`;
 }
@@ -9066,7 +9100,7 @@ async function aiDayNarrative(rt,id,di){
   }catch(e){toast('⚠️ AI narrative failed');}
 }
 
-function rGuideStop(rt,id,di,si,s,accent,baseSi,oabMi){
+function rGuideStop(rt,id,di,si,s,accent,baseSi,oabMi,hideDriveMi=false){
   if(typeof baseSi==='undefined')baseSi=-1;
   const wt=WP_TYPES[s.type||'other']||WP_TYPES.other;
   const editFn=rt==='camp'?`openAdvItinStopEdit('${id}',${di},${si})`:`openStopEdit('${id}',${di},${si})`;
@@ -9125,7 +9159,7 @@ function rGuideStop(rt,id,di,si,s,accent,baseSi,oabMi){
         ${metaChips.length||metaLinks.length?`<div class="guide-stop-meta" style="padding:4px 12px 6px;gap:8px">${[...metaChips,...metaLinks].join('')}</div>`:''}
         ${oabHtml}
         <div class="guide-stop-footer">
-          ${s.milesPrev?`<span class="guide-stop-meta-item">🛣 ${Math.round(parseFloat(s.milesPrev)||0)} mi${s.driveSecs?' · '+fDrive(s.driveSecs):''}</span>`:''}
+          ${(!hideDriveMi&&s.milesPrev)?`<span class="guide-stop-meta-item">🛣 ${Math.round(parseFloat(s.milesPrev)||0)} mi${s.driveSecs?' · '+fDrive(s.driveSecs):''}</span>`:''}
           <span style="flex:1"></span>
           ${baseBtnHtml}
         </div>
@@ -9157,7 +9191,7 @@ function rGuideStop(rt,id,di,si,s,accent,baseSi,oabMi){
       ${oabHtml}
       <div class="guide-stop-footer">
         ${s.address?`<span class="guide-stop-meta-item">📍 ${s.address.split(',').slice(0,2).join(',')}</span>`:''}
-        ${s.milesPrev?`<span class="guide-stop-meta-item">🛣 ${Math.round(parseFloat(s.milesPrev)||0)} mi${s.driveSecs?' · '+fDrive(s.driveSecs):''}</span>`:''}
+        ${(!hideDriveMi&&s.milesPrev)?`<span class="guide-stop-meta-item">🛣 ${Math.round(parseFloat(s.milesPrev)||0)} mi${s.driveSecs?' · '+fDrive(s.driveSecs):''}</span>`:''}
         <span style="flex:1"></span>
         ${baseBtnHtml}
       </div>
@@ -9232,12 +9266,22 @@ async function aiGuideDay(rt,id,di){
     }
     // Write day narrative if missing
     if(!day.narrative){
-      const stopNames=day.stops.map(s=>s.name).filter(Boolean).join(', ');
       const dayNum=(obj.itinerary||[]).filter(d=>d.date).indexOf(day)+1;
       const dayMi=day.stops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
       const baseStop=day.stops.find(s=>s.isBase);
-      const ctx=[`Day ${dayNum} of a ${dest} trip`,`Stops: ${stopNames}`,dayMi>0?`About ${Math.round(dayMi)} miles of driving`:'',baseStop?`Home base: ${baseStop.name}`:''].filter(Boolean).join('. ');
-      const raw=await callAI(`You are a personal tour guide. Write exactly 3 vivid, warm sentences briefing a traveler on:\n${ctx}\n\nSpeak directly to them ("you will…", "your day…"). Highlight what makes this day great and give one tip. Plain text only.`,220);
+      const byType={};
+      day.stops.forEach(s=>{const t=s.type||'other';(byType[t]=byType[t]||[]).push(s.name);});
+      const typeLines=Object.entries(byType).map(([t,names])=>{
+        const lbl=(WP_TYPES[t]||WP_TYPES.other).l;
+        return `${lbl}: ${names.join(', ')}`;
+      });
+      const ctx=[
+        `Day ${dayNum} of a ${dest} trip`,
+        ...typeLines,
+        dayMi>0?`About ${Math.round(dayMi)} miles of driving`:'',
+        baseStop?`Sleeping at: ${baseStop.name}`:'',
+      ].filter(Boolean).join('. ');
+      const raw=await callAI(`You are a personal tour guide. Write exactly 3 vivid, warm sentences briefing a traveler on their day:\n${ctx}\n\nSpeak directly to them ("you'll…", "your day…"). Mention specific stops by name (food, coffee, hikes, sights — whatever is planned). Give one practical tip. Plain text only.`,250);
       day.narrative=_stripMd(raw.trim());
     }
     if(rt==='camp'){saveCamps();window._campDTab='guide';openCampD(id);}
