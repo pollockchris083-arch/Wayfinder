@@ -10,6 +10,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Wayfinder</title>
@@ -3732,7 +3733,7 @@ function loadGMapsAPI(key){
     const cb='_wmcb'+Math.floor(Math.random()*1e9);
     window[cb]=()=>{_gMapsLoaded=true;_gMapsLoading=false;res();delete window[cb];};
     const s=document.createElement('script');
-    s.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(key)+'&libraries=places&callback='+cb;
+    s.src='https://maps.googleapis.com/maps/api/js?loading=async&key='+encodeURIComponent(key)+'&libraries=places&callback='+cb;
     s.onerror=()=>{_gMapsLoading=false;rej(new Error('Google Maps load failed'));};
     document.head.appendChild(s);
   });
@@ -10027,6 +10028,7 @@ async function geocodeAndSaveStart(cid){
   if(!val)return;
   c.startLocation=val;
   if(c.isRoundTrip!==false)c.endLocation=val;
+  const hadStartLat=!!c.startLat;
   if(window.google?.maps?.Geocoder){
     await new Promise(res=>new google.maps.Geocoder().geocode({address:val},(r,s)=>{
       if(s==='OK'&&r?.[0]){
@@ -10040,6 +10042,32 @@ async function geocodeAndSaveStart(cid){
   autoHaversineStartEnd(c);
   saveCamps();
   openCampD(cid);
+  // Auto-compute accurate home-leg driving distances when geocoding yields new coords
+  const mapsKey=(D.settings?.mapsApiKey||'').trim();
+  if(mapsKey&&c.startLat&&(!hadStartLat||!c.startMiles||c.startMilesEst)){
+    _recalcHomeLegsBg(cid,mapsKey);
+  }
+}
+async function _recalcHomeLegsBg(cid,mapsKey){
+  // Silently compute only the start→first-stop and last-stop→end legs via Routes API.
+  // Runs in the background so it doesn't block the UI; updates display when done.
+  await new Promise(r=>setTimeout(r,400)); // let UI settle first
+  D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  const itin=c.itinerary||[];
+  const allStops=itin.flatMap(d=>d.stops||[]);
+  const firstCoord=allStops.reduce((found,s)=>found||parseStopCoords(s),null);
+  const lastCoord=allStops.reduceRight((found,s)=>found||parseStopCoords(s),null);
+  let changed=false;
+  if(c.startLat&&c.startLng&&firstCoord){
+    try{
+      const r=await getRouteDrivingInfo(parseFloat(c.startLat),parseFloat(c.startLng),firstCoord.lat,firstCoord.lng,mapsKey);
+      D=load();const c2=(D.camps||[]).find(x=>x.id===cid);if(!c2)return;
+      c2.startMiles=parseFloat(r.miles.toFixed(1));c2.startSecs=r.secs;c2.startMilesEst=false;
+      if(c2.isRoundTrip!==false){c2.endMiles=c2.startMiles;c2.endSecs=c2.startSecs;c2.endMilesEst=false;}
+      saveCamps();changed=true;
+    }catch(e){console.warn('[home-leg] start:',e.message);}
+  }
+  if(changed){window._campDTab=window._campDTab||'budget';openCampD(cid);}
 }
 async function geocodeAndSaveEnd(cid){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
@@ -11342,8 +11370,8 @@ async function recalcItineraryDriving(isAdv,id,silent=false){
   if(!obj)return;
   const mapsKey=(D.settings?.mapsApiKey||'').trim();
   if(!mapsKey){if(!silent){toast('⚠️ Add Maps API key in Settings first');go('settings');}return;}
-  // Ensure Maps JS API is loaded so DirectionsService is available
-  if(!window.google?.maps?.DirectionsService){try{await loadGMapsAPI(mapsKey);}catch(e){console.warn('[recalc] Maps JS load failed:',e.message);}}
+  // Load Maps JS API for geocoding (Geocoder); routing now uses Routes API v2 fetch directly
+  if(!window.google?.maps?.Geocoder){try{await loadGMapsAPI(mapsKey);}catch(e){console.warn('[recalc] Maps JS load failed:',e.message);}}
   const itin=obj.itinerary||[];
   const flat=[];
   itin.forEach((day,di)=>(day.stops||[]).forEach((_,si)=>flat.push({di,si})));
@@ -11417,7 +11445,26 @@ async function recalcItineraryDriving(isAdv,id,silent=false){
   if(!silent)toast(updated>0?`✅ ${updated} leg${updated!==1?'s':''} updated — distances now correct!`:'⚠️ Calculation failed — check Maps API key');
 }
 async function getRouteDrivingInfo(lat1,lng1,lat2,lng2,mapsKey){
-  // Prefer google.maps.DirectionsService (already loaded with Maps JS API, no extra enablement needed)
+  // Primary: Routes API v2 (modern, not deprecated, works without Maps JS library)
+  try{
+    const resp=await fetch('https://routes.googleapis.com/directions/v2:computeRoutes',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Goog-Api-Key':mapsKey,'X-Goog-FieldMask':'routes.distanceMeters,routes.duration'},
+      body:JSON.stringify({
+        origin:{location:{latLng:{latitude:lat1,longitude:lng1}}},
+        destination:{location:{latLng:{latitude:lat2,longitude:lng2}}},
+        travelMode:'DRIVE',routingPreference:'TRAFFIC_UNAWARE',
+      }),
+    });
+    if(resp.ok){
+      const data=await resp.json();
+      const route=data.routes?.[0];
+      if(route?.distanceMeters){
+        return{miles:route.distanceMeters/1609.34,secs:parseInt(route.duration)||0};
+      }
+    }
+  }catch(e){console.warn('[route] Routes API fetch failed, trying DirectionsService:',e.message);}
+  // Fallback: legacy DirectionsService (deprecated Feb 2026 but still functional)
   if(window.google?.maps?.DirectionsService){
     return new Promise((resolve,reject)=>{
       new google.maps.DirectionsService().route({
@@ -11434,21 +11481,7 @@ async function getRouteDrivingInfo(lat1,lng1,lat2,lng2,mapsKey){
       });
     });
   }
-  // Fallback: Routes API v2 (requires Routes API enabled in Google Cloud Console)
-  const resp=await fetch('https://routes.googleapis.com/directions/v2:computeRoutes',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','X-Goog-Api-Key':mapsKey,'X-Goog-FieldMask':'routes.distanceMeters,routes.duration'},
-    body:JSON.stringify({
-      origin:{location:{latLng:{latitude:lat1,longitude:lng1}}},
-      destination:{location:{latLng:{latitude:lat2,longitude:lng2}}},
-      travelMode:'DRIVE',routingPreference:'TRAFFIC_UNAWARE',
-    }),
-  });
-  if(!resp.ok)throw new Error('Routes API '+resp.status);
-  const data=await resp.json();
-  const route=data.routes?.[0];
-  if(!route)throw new Error('No route found');
-  return{miles:route.distanceMeters/1609.34,secs:parseInt(route.duration)||0};
+  throw new Error('No routing service available');
 }
 function fDrive(secs){
   if(!secs||secs<0)return'';
