@@ -10147,30 +10147,41 @@ async function geocodeAndSaveStart(cid){
   autoHaversineStartEnd(c);
   saveCamps();
   openCampD(cid);
-  // Auto-compute accurate home-leg driving distances when geocoding yields new coords
+  // Auto-compute accurate home-leg driving distances in the background
   const mapsKey=(D.settings?.mapsApiKey||'').trim();
-  if(mapsKey&&c.startLat&&(!hadStartLat||!c.startMiles||c.startMilesEst)){
+  if(mapsKey&&c.startLat&&(!hadStartLat||!c.startMiles||c.startMilesEst||!c.endMiles||c.endMilesEst)){
     _recalcHomeLegsBg(cid,mapsKey);
   }
 }
 async function _recalcHomeLegsBg(cid,mapsKey){
-  // Silently compute only the start→first-stop and last-stop→end legs via Routes API.
-  // Runs in the background so it doesn't block the UI; updates display when done.
-  await new Promise(r=>setTimeout(r,400)); // let UI settle first
+  // Silently compute start→first-stop and last-stop→end legs via routing (background, non-blocking).
+  // Start leg only when Day 1 has stops (otherwise the first real day's stop milesPrev embeds it).
+  // End leg always computed separately — last stop ≠ first stop on a non-linear route.
+  await new Promise(r=>setTimeout(r,400));
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   const itin=c.itinerary||[];
+  const firstRealDi=itin.findIndex(d=>(d.stops||[]).length>0);
   const allStops=itin.flatMap(d=>d.stops||[]);
   const firstCoord=allStops.reduce((found,s)=>found||parseStopCoords(s),null);
   const lastCoord=allStops.reduceRight((found,s)=>found||parseStopCoords(s),null);
   let changed=false;
-  if(c.startLat&&c.startLng&&firstCoord){
+  // Start leg: only if Day 1 has stops (avoids double-counting when Day 1 is empty)
+  if(firstRealDi===0&&c.startLat&&c.startLng&&firstCoord){
     try{
       const r=await getRouteDrivingInfo(parseFloat(c.startLat),parseFloat(c.startLng),firstCoord.lat,firstCoord.lng,mapsKey);
       D=load();const c2=(D.camps||[]).find(x=>x.id===cid);if(!c2)return;
       c2.startMiles=parseFloat(r.miles.toFixed(1));c2.startSecs=r.secs;c2.startMilesEst=false;
-      if(c2.isRoundTrip!==false){c2.endMiles=c2.startMiles;c2.endSecs=c2.startSecs;c2.endMilesEst=false;}
       saveCamps();changed=true;
     }catch(e){console.warn('[home-leg] start:',e.message);}
+  }
+  // End leg: always separate — last stop may be a different location than first stop
+  if(c.endLat&&c.endLng&&lastCoord){
+    try{
+      const r=await getRouteDrivingInfo(lastCoord.lat,lastCoord.lng,parseFloat(c.endLat),parseFloat(c.endLng),mapsKey);
+      D=load();const c2=(D.camps||[]).find(x=>x.id===cid);if(!c2)return;
+      c2.endMiles=parseFloat(r.miles.toFixed(1));c2.endSecs=r.secs;c2.endMilesEst=false;
+      saveCamps();changed=true;
+    }catch(e){console.warn('[home-leg] end:',e.message);}
   }
   if(changed){window._campDTab=window._campDTab||'budget';openCampD(cid);}
 }
@@ -10233,6 +10244,12 @@ function rAdvBudgetTab(c){
   const itinMiles=itinStops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
   const totalMiles=campStopMiles||itinMiles;
   const hasCorruptMiles=parseFloat(c.startMiles)>600||parseFloat(c.endMiles)>600||itinStops.some(s=>parseFloat(s.milesPrev)>600);
+  // Auto-run haversine if home legs are missing but coords are available
+  if((!c.endMiles&&c.endLat&&c.endLng)||(!c.startMiles&&c.startLat&&c.startLng&&itinDays.findIndex(d=>(d.stops||[]).length>0)===0)){
+    autoHaversineStartEnd(c);saveCamps();
+  }
+  // If startLocation is set but not yet geocoded, trigger geocoding silently in background
+  if(c.startLocation&&!c.startLat&&window.google?.maps?.Geocoder){setTimeout(()=>geocodeAndSaveStart(c.id),200);}
   const itinHasEst=itinStops.some(s=>s.milesEst)||c.startMilesEst||c.endMilesEst;
   const itinTotalDriveSecs=(parseInt(c.startSecs)||0)+itinStops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0)+(parseInt(c.endSecs)||0);
   const startMiles=parseFloat(c.startMiles)||0;
@@ -10914,10 +10931,11 @@ function rAdvDailyTab(c){
         </div>
         ${(()=>{
           if(baseStop)return'';
-          // Smart base suggestion: if previous day had a base, surface a one-tap "continue" option
+          // Smart base suggestion: if previous day had a base, surface a one-tap "continue" option.
+          // Suppress on the final day — user is driving home, not returning to a base.
           const prevDay=di>0?itin[di-1]:null;
           const prevBase=prevDay?(prevDay.stops||[]).find(s=>s.isBase):null;
-          if(prevBase){
+          if(prevBase&&schIdx<scheduled.length-1){
             const prevName=prevBase.name.split(',')[0];
             return`<div style="margin-top:7px;padding:9px 12px;background:rgba(200,144,30,.07);border:1.5px solid rgba(200,144,30,.3);border-radius:10px;display:flex;align-items:center;gap:10px">
               <span style="font-size:18px;flex-shrink:0">🌙</span>
@@ -11441,10 +11459,12 @@ function resetTripMiles(cid,isAdv){
 const _SLEEP_TYPES=new Set(['sleep','camp']);
 function _dayBoundaryOrigin(itin,di){
   if(di<1)return null;
-  const prevStops=itin[di-1]?.stops||[];
-  return prevStops.find(s=>s.isBase)
-    ||prevStops.find(s=>_SLEEP_TYPES.has(s.type||''))
-    ||(prevStops.length?prevStops[prevStops.length-1]:null);
+  // Walk backwards through all prior days until one with stops is found (handles empty days)
+  for(let d=di-1;d>=0;d--){
+    const ps=itin[d]?.stops||[];
+    if(ps.length)return ps.find(s=>s.isBase)||ps.find(s=>_SLEEP_TYPES.has(s.type||''))||ps[ps.length-1];
+  }
+  return null;
 }
 
 // Detect day-boundary legs where milesPrev is far larger than haversine estimate —
@@ -11482,18 +11502,24 @@ function _autoFixDayBoundaryLegs(obj){
 function autoHaversineItinerary(obj){
   if(!obj)return;
   const itin=obj.itinerary||[];
+  // Find the first day that has stops — if it's not Day 0, Day 0 is empty
+  const firstRealDi=itin.findIndex(d=>(d.stops||[]).length>0);
+  const homeCoords=(obj.startLat&&obj.startLng)?{lat:parseFloat(obj.startLat),lng:parseFloat(obj.startLng)}:null;
   for(let di=0;di<itin.length;di++){
     const stops=itin[di].stops||[];
     for(let si=0;si<stops.length;si++){
       if(di===0&&si===0)continue; // Day 1 Stop 0: handled by startMiles
-      const prev=si===0?_dayBoundaryOrigin(itin,di):stops[si-1];
+      let prev=si===0?_dayBoundaryOrigin(itin,di):stops[si-1];
+      // Fallback: when the first real day is not Day 1 and prev is null (all prior days empty),
+      // use home departure coords so the first real stop gets a proper leg estimate
+      if(!prev&&si===0&&di===firstRealDi&&firstRealDi>0)prev=homeCoords;
       if(!prev)continue;
-      const pc=parseStopCoords(prev),cc=parseStopCoords(stops[si]);
+      const pc=parseStopCoords(prev)||prev,cc=parseStopCoords(stops[si]);
       if(!pc||!cc)continue;
       if(!stops[si].milesPrev||stops[si].milesEst){
         const d=haversineMiles(pc.lat,pc.lng,cc.lat,cc.lng);
         const est=Math.round(d*1.25);
-        if(est>600){console.warn('[haversine] Implausible leg',est,'mi:',prev.name,'→',stops[si].name);continue;}
+        if(est>600){console.warn('[haversine] Implausible leg',est,'mi:',stops[si].name);continue;}
         stops[si].milesPrev=est.toString();
         stops[si].milesEst=true;
         delete stops[si].driveSecs;
@@ -11507,23 +11533,25 @@ function autoHaversineStartEnd(obj){
   const itin=obj.itinerary||[];
   const flat=[];
   itin.forEach((day,di)=>(day.stops||[]).forEach((_,si)=>flat.push({di,si})));
-  // First stop with coords → start leg
-  if(obj.startLat&&obj.startLng){
-    for(let i=0;i<flat.length;i++){
-      const s=itin[flat[i].di].stops[flat[i].si];
-      const sc=parseStopCoords(s);
-      if(sc){
-        const d=haversineMiles(parseFloat(obj.startLat),parseFloat(obj.startLng),sc.lat,sc.lng);
-        const est=Math.round(d*1.25);
-        if(est>600){console.warn('[haversine] Skipping implausible start leg',est,'mi — check start coords');break;}
-        obj.startMiles=est;
-        obj.startMilesEst=true;
-        delete obj.startSecs;
-        break;
-      }
+  // Find the first real day (may not be Day 0 if Day 1 is empty)
+  const firstRealDi=itin.findIndex(d=>(d.stops||[]).length>0);
+  // Start leg: only compute separately when Day 1 has stops (di===0).
+  // If Day 1 is empty, the home→first-stop leg is embedded in that first real stop's milesPrev
+  // (computed above via homeCoords fallback), so adding startMiles would double-count it.
+  if(obj.startLat&&obj.startLng&&firstRealDi===0){
+    const s=itin[0].stops[0];const sc=parseStopCoords(s);
+    if(sc){
+      const d=haversineMiles(parseFloat(obj.startLat),parseFloat(obj.startLng),sc.lat,sc.lng);
+      const est=Math.round(d*1.25);
+      if(est<=600){obj.startMiles=est;obj.startMilesEst=true;delete obj.startSecs;}
+      else console.warn('[haversine] Skipping implausible start leg',est,'mi');
     }
+  } else if(firstRealDi>0&&obj.startMilesEst){
+    // Day 1 empty → home leg embedded in itin; clear stale estimated startMiles
+    delete obj.startMiles;delete obj.startMilesEst;delete obj.startSecs;
   }
-  // Last stop with coords → end leg
+  // End leg: always compute from last stop → end destination (round trip or custom end)
+  // This MUST be computed separately because last stop ≠ first stop (non-linear route)
   if(obj.endLat&&obj.endLng){
     for(let i=flat.length-1;i>=0;i--){
       const s=itin[flat[i].di].stops[flat[i].si];
@@ -11531,10 +11559,8 @@ function autoHaversineStartEnd(obj){
       if(sc){
         const d=haversineMiles(sc.lat,sc.lng,parseFloat(obj.endLat),parseFloat(obj.endLng));
         const est=Math.round(d*1.25);
-        if(est>600){console.warn('[haversine] Skipping implausible end leg',est,'mi — check end coords');break;}
-        obj.endMiles=est;
-        obj.endMilesEst=true;
-        delete obj.endSecs;
+        if(est>600){console.warn('[haversine] Skipping implausible end leg',est,'mi');break;}
+        obj.endMiles=est;obj.endMilesEst=true;delete obj.endSecs;
         break;
       }
     }
@@ -11591,14 +11617,18 @@ async function recalcItineraryDriving(isAdv,id,silent=false){
   if(!pairCount&&!hasHomeLeg){if(!silent)toast('⚠️ No route-able stops — add stops via Google Places to get GPS coords');return;}
   if(!silent){const btn=document.getElementById('itin-recalc-btn');if(btn){btn.textContent='⏳ Calculating…';btn.disabled=true;}}
   let updated=0;
-  // Calculate each leg using the correct origin (base-camp-aware at day boundaries)
+  const firstRealDi=itin.findIndex(d=>(d.stops||[]).length>0);
+  const homeCoords=isAdv&&obj.startLat&&obj.startLng?{lat:parseFloat(obj.startLat),lng:parseFloat(obj.startLng)}:null;
+  // Calculate each leg using the correct origin (base-camp-aware at day boundaries).
+  // When all prior days are empty, fall back to home departure coords as origin.
   for(let di=0;di<itin.length;di++){
     const stops=itin[di].stops||[];
     for(let si=0;si<stops.length;si++){
       if(di===0&&si===0)continue;
-      const prevStop=si===0?_dayBoundaryOrigin(itin,di):stops[si-1];
+      let prevStop=si===0?_dayBoundaryOrigin(itin,di):stops[si-1];
+      if(!prevStop&&si===0&&di===firstRealDi&&firstRealDi>0)prevStop=homeCoords;
       if(!prevStop)continue;
-      const pc=parseStopCoords(prevStop),cc=parseStopCoords(stops[si]);
+      const pc=parseStopCoords(prevStop)||prevStop,cc=parseStopCoords(stops[si]);
       if(!pc||!cc)continue;
       try{
         const r=await getRouteDrivingInfo(pc.lat,pc.lng,cc.lat,cc.lng,mapsKey);
@@ -11609,11 +11639,16 @@ async function recalcItineraryDriving(isAdv,id,silent=false){
       }catch(e){console.warn('[itin-route]',e.message);}
     }
   }
-  // Compute start → first stop and last stop → end legs
-  if(isAdv&&obj.startLat&&obj.startLng&&firstStop){
+  // Start leg: only when Day 1 has stops (di===0). If Day 1 is empty, the home→first-stop
+  // leg was already routed above via homeCoords fallback — computing startMiles separately
+  // would double-count it.
+  if(isAdv&&obj.startLat&&obj.startLng&&firstStop&&firstRealDi===0){
     const fc=parseStopCoords(firstStop);
     if(fc){try{const r=await getRouteDrivingInfo(parseFloat(obj.startLat),parseFloat(obj.startLng),fc.lat,fc.lng,mapsKey);obj.startMiles=parseFloat(r.miles.toFixed(1));obj.startSecs=r.secs;obj.startMilesEst=false;updated++;}catch(e){console.warn('[start-leg]',e.message);}}
+  } else if(isAdv&&firstRealDi>0&&obj.startMilesEst){
+    delete obj.startMiles;delete obj.startSecs;delete obj.startMilesEst;
   }
+  // End leg: always route separately — last stop may differ from first (non-linear route)
   if(isAdv&&obj.endLat&&obj.endLng&&lastStop){
     const lc=parseStopCoords(lastStop);
     if(lc){try{const r=await getRouteDrivingInfo(lc.lat,lc.lng,parseFloat(obj.endLat),parseFloat(obj.endLng),mapsKey);obj.endMiles=parseFloat(r.miles.toFixed(1));obj.endSecs=r.secs;obj.endMilesEst=false;updated++;}catch(e){console.warn('[end-leg]',e.message);}}
