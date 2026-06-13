@@ -936,111 +936,139 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
 .spot-season-chip.best{background:rgba(74,114,89,.15);color:var(--green3);font-weight:600}
 
 /* ── Trip Guide Tab ── */
-.guide-root{display:flex;flex-direction:column;gap:12px}
+/* ── Guide Root ── */
+.guide-root{display:flex;flex-direction:column;gap:10px}
 .guide-empty{text-align:center;padding:40px 20px;color:var(--muted)}
-.guide-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:14px 16px;background:var(--card2);border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:4px}
-.guide-hdr-title{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.2px}
-.guide-hdr-meta{font-size:11px;color:var(--muted2);margin-top:3px}
-.guide-day{background:var(--card);border:1px solid var(--bdr);border-left:3px solid var(--guide-accent,#C8901E);border-radius:var(--r);overflow:hidden}
-.guide-day-hdr{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--bdr)}
-.guide-day-num{font-size:11px;font-weight:800;color:var(--guide-accent,#C8901E);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;background:rgba(200,144,30,.1);padding:3px 9px;border-radius:100px;flex-shrink:0}
-.guide-day-info{flex:1;display:flex;gap:9px;align-items:center;flex-wrap:wrap;min-width:0}
-.guide-day-date{font-size:12px;font-weight:600;color:var(--text)}
-.guide-day-stops{font-size:11px;color:var(--muted2)}
-.guide-day-mi{font-size:11px;color:var(--muted2)}
-.guide-day-notes{font-size:12px;color:var(--text2);padding:8px 14px;background:rgba(200,144,30,.04);border-bottom:1px solid var(--bdr);font-style:italic;line-height:1.55}
-.guide-ai-btn{background:rgba(239,159,39,.1);border:1px solid rgba(239,159,39,.3);color:var(--amber);font-size:10px;font-weight:700;border-radius:5px;padding:4px 9px;cursor:pointer;font-family:inherit;letter-spacing:.04em;white-space:nowrap;transition:background .12s;flex-shrink:0}
-.guide-ai-btn:hover{background:rgba(239,159,39,.22)}
-.guide-stops-list{display:flex;flex-direction:column}
-.guide-stop{display:flex;gap:0;border-bottom:1px solid var(--bdr);transition:background .1s}
-.guide-stop:last-child{border-bottom:none}
-.guide-stop:hover{background:rgba(239,159,39,.025)}
-.guide-stop-done{opacity:.55}
-.guide-stop-photo{width:90px;min-width:90px;height:90px;object-fit:cover;cursor:pointer;flex-shrink:0;border-right:1px solid var(--bdr)}
-.guide-stop-body{flex:1;padding:10px 12px;min-width:0}
-.guide-stop-toprow{display:flex;align-items:flex-start;gap:7px;margin-bottom:4px}
-.guide-stop-icon{font-size:15px;flex-shrink:0;margin-top:1px}
-.guide-stop-name-wrap{flex:1;min-width:0}
-.guide-stop-name{font-size:13px;font-weight:600;color:var(--text);display:block}
-.guide-stop-time{font-size:11px;color:var(--amber);font-weight:600;display:block;margin-top:1px}
-.guide-stop-acts{display:flex;gap:2px;flex-shrink:0}
-.guide-ai-stop-btn{background:rgba(239,159,39,.1);border:1px solid rgba(239,159,39,.28);color:var(--amber);font-size:10px;font-weight:700;border-radius:4px;padding:2px 7px;cursor:pointer;font-family:inherit;transition:background .12s}
+/* ── Guide Top Bar ── */
+.guide-hdr{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;background:var(--card);border:1px solid var(--bdr);border-top:3px solid var(--guide-accent,#C8901E);border-radius:var(--r);box-shadow:var(--shadow)}
+.guide-hdr-title{font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.3px}
+.guide-hdr-meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:5px}
+.guide-hdr-chip{font-size:10px;font-weight:600;color:var(--muted2);background:var(--card2);border:1px solid var(--bdr2);border-radius:100px;padding:2px 8px;white-space:nowrap}
+/* ── AI Buttons ── */
+.guide-ai-btn{background:rgba(239,159,39,.1);border:1px solid rgba(239,159,39,.3);color:var(--amber);font-size:10px;font-weight:700;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:inherit;letter-spacing:.04em;white-space:nowrap;transition:all .12s;flex-shrink:0}
+.guide-ai-btn:hover{background:rgba(239,159,39,.22);border-color:rgba(239,159,39,.5)}
+.guide-ai-stop-btn{background:rgba(239,159,39,.1);border:1px solid rgba(239,159,39,.28);color:var(--amber);font-size:9.5px;font-weight:700;border-radius:4px;padding:2px 7px;cursor:pointer;font-family:inherit;transition:background .12s;white-space:nowrap}
 .guide-ai-stop-btn:hover{background:rgba(239,159,39,.22)}
-.guide-stop-desc{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:5px}
-.guide-stop-note{font-size:11px;color:var(--muted2);font-style:italic;line-height:1.5;margin-bottom:4px}
-.guide-stop-meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--muted2);margin-top:3px}
-.guide-nav-btn{font-size:11px;font-weight:600;color:var(--green3);text-decoration:none;background:rgba(74,114,89,.09);border:1px solid rgba(74,114,89,.2);border-radius:4px;padding:2px 8px;transition:background .12s}
-.guide-nav-btn:hover{background:rgba(74,114,89,.2)}
+.guide-edit-btn{background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:2px 4px;border-radius:4px;transition:color .12s;font-family:inherit;line-height:1}
+.guide-edit-btn:hover{color:var(--text)}
+/* ── Stop List ── */
+.guide-stops-list{display:flex;flex-direction:column}
+.guide-stop{display:flex;gap:0;border-bottom:1px solid var(--bdr);transition:background .1s;position:relative}
+.guide-stop:last-child{border-bottom:none}
+.guide-stop-done{opacity:.45}
+.guide-stop-isbase{background:rgba(200,144,30,.03)!important}
+/* ── Stop Photo ── */
+.guide-stop-photo{width:96px;min-width:96px;height:100px;object-fit:cover;cursor:pointer;flex-shrink:0;border-right:1px solid var(--bdr)}
+/* ── Stop Body (flex-col so footer stays at bottom) ── */
+.guide-stop-body{flex:1;min-width:0;display:flex;flex-direction:column}
+/* ── Stop Top Row ── */
+.guide-stop-toprow{display:flex;align-items:flex-start;gap:6px;padding:10px 12px 4px;flex-shrink:0}
+.guide-stop-num{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--card2);border:1.5px solid var(--bdr2);font-size:9px;font-weight:800;color:var(--guide-accent,#C8901E);flex-shrink:0;margin-top:1px;letter-spacing:0;line-height:1}
+.guide-stop-icon{font-size:15px;flex-shrink:0;margin-top:0}
+.guide-stop-name-wrap{flex:1;min-width:0}
+.guide-stop-name{font-size:13px;font-weight:700;color:var(--text);display:block;letter-spacing:-.1px;line-height:1.3}
+.guide-stop-time{font-size:10px;color:var(--amber);font-weight:600;display:inline-flex;align-items:center;gap:2px;margin-top:2px}
+.guide-stop-acts{display:flex;gap:3px;flex-shrink:0;align-items:center}
+/* ── Done toggle ── */
+.guide-done-btn{width:26px;height:26px;border-radius:50%;border:2px solid var(--bdr2);background:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted2);font-family:inherit;transition:all .15s;flex-shrink:0;line-height:1}
+.guide-done-btn:hover{border-color:var(--green3);color:var(--green3)}
+.guide-done-btn.on{border-color:var(--green3);background:var(--green3);color:#fff}
+/* ── Navigate button ── */
+.guide-nav-btn{font-size:10px;font-weight:700;color:#fff;background:var(--green3);text-decoration:none;border:none;border-radius:5px;padding:3px 9px;cursor:pointer;font-family:inherit;transition:opacity .12s;display:inline-flex;align-items:center;gap:3px;white-space:nowrap;flex-shrink:0;line-height:1.2}
+.guide-nav-btn:hover{opacity:.85}
+.guide-nav-btn.ghost{color:var(--green3);background:rgba(62,102,68,.09);border:1px solid rgba(62,102,68,.2);font-size:10px;font-weight:600;border-radius:4px;padding:2px 8px;text-decoration:none;display:inline-flex;align-items:center;transition:background .12s}
+.guide-nav-btn.ghost:hover{background:rgba(62,102,68,.18)}
+/* ── Stop Description ── */
+.guide-stop-desc{font-size:12px;color:var(--text2);line-height:1.65;padding:0 12px 6px;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;flex-shrink:0}
+.guide-stop-desc.expanded{-webkit-line-clamp:unset}
+.guide-stop-note{font-size:11px;color:var(--muted2);font-style:italic;line-height:1.5;padding:0 12px 4px;flex-shrink:0}
+.guide-stop-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--muted2)}
+/* ── Stop Footer ── */
+.guide-stop-footer{display:flex;align-items:center;gap:6px;padding:5px 10px 7px;border-top:1px solid var(--bdr2);background:var(--card2);flex-wrap:wrap;margin-top:auto;flex-shrink:0}
+.guide-stop-meta-item{font-size:10.5px;color:var(--muted2);display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+/* ── Base badge / button ── */
+.guide-base-badge{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--guide-accent,#C8901E);background:rgba(200,144,30,.12);border:1px solid rgba(200,144,30,.3);border-radius:100px;padding:1px 6px;vertical-align:middle;margin-left:5px}
+.guide-base-btn{display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:600;color:var(--muted2);background:none;border:1px solid transparent;border-radius:5px;padding:2px 7px;cursor:pointer;font-family:inherit;transition:all .15s;flex-shrink:0;white-space:nowrap}
+.guide-base-btn:hover{border-color:rgba(200,144,30,.4);color:var(--guide-accent,#C8901E);background:rgba(200,144,30,.06)}
+.guide-base-btn.on{color:var(--guide-accent,#C8901E);background:rgba(200,144,30,.1);border-color:rgba(200,144,30,.3)}
 
 /* Spot card upgrade: bigger thumb */
 .spot-card-thumb{width:100%;height:120px;object-fit:cover;display:block;background:linear-gradient(135deg,var(--card2),var(--bdr))}
 .spot-card-thumb-fallback{width:100%;height:120px;display:flex;align-items:center;justify-content:center;font-size:38px;background:linear-gradient(135deg,var(--card2),var(--bdr2))}
 
-/* Guide tab mobile */
+/* ── Guide mobile ── */
 @media(max-width:699px){
-  .guide-stop-photo{width:70px;min-width:70px;height:80px}
-  .guide-day-hdr{flex-wrap:wrap;gap:7px}
-  .guide-hdr{flex-direction:column;gap:10px}
+  .guide-stop-photo{width:72px;min-width:72px;height:84px}
+  .guide-hdr{flex-direction:column;align-items:flex-start;gap:8px}
   .guide-hdr>div:last-child{width:100%}
+  .guide-stop-toprow{padding:9px 10px 3px}
+  .guide-stop-footer{padding:4px 10px 6px}
+  .guide-stop-desc{padding:0 10px 5px}
 }
 
-/* ── Guide Day Tab Navigation ── */
-.guide-day-tabs{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding-bottom:1px}
+/* ── Day Tab Navigation ── */
+.guide-day-tabs{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
 .guide-day-tabs::-webkit-scrollbar{display:none}
-.guide-day-tab{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:0;padding:7px 12px;border:1.5px solid var(--bdr);border-radius:9px;cursor:pointer;background:var(--card);font-family:inherit;transition:all .15s;min-width:58px;line-height:1}
-.guide-day-tab:hover{border-color:var(--muted2)}
-.guide-day-tab.on{border-color:var(--guide-accent,#C8901E);background:rgba(200,144,30,.08)}
-.guide-day-tab-num{font-size:9px;font-weight:800;color:var(--guide-accent,#C8901E);text-transform:uppercase;letter-spacing:.07em}
-.guide-day-tab-date{font-size:10px;color:var(--text2);font-weight:500;margin-top:3px}
+.guide-day-tab{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:0;padding:8px 14px;border:1.5px solid var(--bdr);border-radius:10px;cursor:pointer;background:var(--card);font-family:inherit;transition:all .15s;min-width:64px;line-height:1;position:relative;box-shadow:var(--shadow)}
+.guide-day-tab:hover{border-color:var(--muted2);background:var(--card2)}
+.guide-day-tab.on{border-color:var(--guide-accent,#C8901E);background:rgba(200,144,30,.07);box-shadow:0 2px 8px rgba(200,144,30,.15)}
+.guide-day-tab-num{font-size:8px;font-weight:800;color:var(--guide-accent,#C8901E);text-transform:uppercase;letter-spacing:.1em}
+.guide-day-tab-date{font-size:11px;color:var(--text);font-weight:600;margin-top:3px}
 .guide-day-tab-mi{font-size:9px;color:var(--muted2);margin-top:2px}
-.guide-day-tab-dot{width:5px;height:5px;border-radius:50%;background:var(--guide-accent,#C8901E);margin:3px auto 0;opacity:.4}
-.guide-day-tab.on .guide-day-tab-dot{opacity:1}
+.guide-day-tab-dot{width:5px;height:5px;border-radius:50%;background:var(--bdr2);margin:3px auto 0}
+.guide-day-tab.on .guide-day-tab-dot{background:var(--guide-accent,#C8901E)}
+.guide-day-tab-base{position:absolute;top:-5px;right:-5px;font-size:11px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.15))}
+
 /* ── Day Sheet ── */
-.guide-sheet{border:1.5px solid var(--bdr);border-left:4px solid var(--guide-accent,#C8901E);border-radius:var(--r);overflow:hidden;background:var(--card)}
-.guide-sheet-hdr{padding:14px 16px;background:var(--card2);border-bottom:1px solid var(--bdr);display:flex;align-items:flex-start;gap:12px}
-.guide-sheet-daynum{font-size:28px;font-weight:900;color:var(--guide-accent,#C8901E);line-height:1;letter-spacing:-.5px;flex-shrink:0;margin-top:2px}
+.guide-sheet{border:1px solid var(--bdr);border-left:4px solid var(--guide-accent,#C8901E);border-radius:var(--r);overflow:hidden;background:var(--card);box-shadow:var(--shadow)}
+.guide-sheet-hdr{padding:14px 16px;background:linear-gradient(135deg,rgba(200,144,30,.07) 0%,var(--card2) 60%);border-bottom:1px solid var(--bdr);display:flex;align-items:flex-start;gap:12px}
+.guide-sheet-daynum{display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:13px;background:var(--guide-accent,#C8901E);color:#fff;font-size:21px;font-weight:900;letter-spacing:-.5px;flex-shrink:0;box-shadow:0 3px 8px rgba(200,144,30,.35);margin-top:1px}
 .guide-sheet-info{flex:1;min-width:0}
-.guide-sheet-date{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.25px;line-height:1.2}
-.guide-sheet-meta{font-size:11px;color:var(--muted2);margin-top:5px;display:flex;gap:10px;flex-wrap:wrap}
-.guide-sheet-meta-item{display:flex;align-items:center;gap:3px}
+.guide-sheet-date{font-size:16px;font-weight:800;color:var(--text);letter-spacing:-.35px;line-height:1.2}
+.guide-sheet-meta{margin-top:6px;display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.guide-sheet-meta-item{display:inline-flex;align-items:center;gap:3px;background:var(--card);border:1px solid var(--bdr2);border-radius:100px;padding:2px 9px;font-size:10.5px;color:var(--muted2);white-space:nowrap}
+.guide-sheet-meta-item.base{color:var(--guide-accent,#C8901E);background:rgba(200,144,30,.09);border-color:rgba(200,144,30,.28)}
 .guide-sheet-acts{display:flex;gap:5px;align-items:flex-start;flex-shrink:0;flex-wrap:wrap}
-/* ── AI Day Narrative ── */
+
+/* ── Day Pager ── */
+.guide-day-pager{display:flex;gap:3px;flex-shrink:0}
+.guide-day-pager-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--bdr);border-radius:6px;cursor:pointer;font-size:14px;color:var(--muted2);font-family:inherit;transition:all .15s;line-height:1}
+.guide-day-pager-btn:hover:not([disabled]){background:var(--card2);color:var(--text);border-color:var(--muted2)}
+.guide-day-pager-btn[disabled]{opacity:.28;cursor:default}
+
+/* ── Narrative ── */
 .guide-narrative{padding:12px 16px;background:rgba(200,144,30,.03);border-bottom:1px solid var(--bdr)}
-.guide-narrative-text{font-size:12.5px;color:var(--text2);line-height:1.68;font-style:italic}
+.guide-narrative-text{font-size:12.5px;color:var(--text2);line-height:1.72;font-style:italic;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3}
+.guide-narrative-text.expanded{-webkit-line-clamp:unset;display:block}
 .guide-narrative-empty{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 .guide-narrative-empty-lbl{font-size:11.5px;color:var(--muted2);font-style:italic}
+
 /* ── Drive Connectors ── */
-.guide-drive-row{display:flex;align-items:center;gap:0;padding:0 16px;min-height:28px}
-.guide-drive-line{flex:1;border-top:1.5px dashed var(--bdr);margin:0 7px;opacity:.7}
-.guide-drive-badge{display:flex;align-items:center;gap:5px;background:var(--card2);border:1px solid var(--bdr);border-radius:100px;padding:3px 11px;font-size:10.5px;color:var(--muted2);white-space:nowrap;flex-shrink:0}
-.guide-drive-arrow{color:var(--muted2);font-size:12px;flex-shrink:0;opacity:.5}
-/* ── Base / Sleep Designation ── */
-.guide-base-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--guide-accent,#C8901E);background:rgba(200,144,30,.12);border:1px solid rgba(200,144,30,.3);border-radius:100px;padding:2px 7px;vertical-align:middle;margin-left:5px}
-.guide-base-btn{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;color:var(--muted2);background:var(--card2);border:1px solid var(--bdr);border-radius:6px;padding:3px 9px;cursor:pointer;font-family:inherit;transition:all .15s;flex-shrink:0;white-space:nowrap}
-.guide-base-btn:hover{border-color:var(--muted2);color:var(--text2)}
-.guide-base-btn.on{color:var(--guide-accent,#C8901E);background:rgba(200,144,30,.08);border-color:rgba(200,144,30,.3)}
-/* ── Out-and-Back Tag ── */
-.guide-oab{display:flex;align-items:center;gap:6px;font-size:11px;color:#2a5abe;background:rgba(42,90,190,.055);border:1px solid rgba(42,90,190,.14);border-radius:6px;padding:4px 10px;margin:3px 14px 6px}
-.guide-oab-mi{font-weight:700}
-/* ── Stop with base style ── */
-.guide-stop-isbase{background:rgba(200,144,30,.025)!important}
-/* ── Day pager ── */
-.guide-day-pager{display:flex;gap:4px;flex-shrink:0}
-.guide-day-pager-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:var(--card2);border:1px solid var(--bdr);border-radius:6px;cursor:pointer;font-size:14px;color:var(--muted2);font-family:inherit;transition:all .15s;line-height:1}
-.guide-day-pager-btn:hover:not([disabled]){background:var(--card);color:var(--text);border-color:var(--muted2)}
-.guide-day-pager-btn[disabled]{opacity:.3;cursor:default}
-/* ── Day out-and-back summary bar ── */
-.guide-day-summary{display:flex;align-items:center;gap:8px;padding:8px 16px;background:rgba(42,90,190,.04);border-top:1px solid rgba(42,90,190,.12);font-size:11px;color:#2a5abe;flex-wrap:wrap}
-/* ── Guide sheet mobile ── */
+.guide-drive-row{display:flex;align-items:center;gap:0;padding:0 16px;min-height:24px}
+.guide-drive-line{flex:1;border-top:1.5px dashed rgba(0,0,0,.07);margin:0 8px}
+.guide-drive-badge{display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--bdr);border-radius:100px;padding:3px 12px;font-size:10px;color:var(--muted2);white-space:nowrap;flex-shrink:0}
+.guide-drive-arrow{color:var(--bdr2);font-size:14px;flex-shrink:0}
+
+/* ── OAB Round-trip Tag ── */
+.guide-oab{display:flex;align-items:center;gap:5px;font-size:11px;color:#4A789E;background:rgba(74,120,158,.06);border:1px solid rgba(74,120,158,.18);border-radius:6px;padding:4px 10px;margin:0 12px 6px;flex-shrink:0}
+.guide-oab-mi{font-weight:700;color:#2d5a7e}
+
+/* ── Day Summary (base + OAB totals) ── */
+.guide-day-summary{display:flex;align-items:center;gap:8px;padding:9px 16px;background:rgba(200,144,30,.05);border-top:1px solid rgba(200,144,30,.15);font-size:11px;color:var(--amber);flex-wrap:wrap;font-weight:500}
+/* ── Expand / collapse toggle ── */
+.guide-expand-btn{background:none;border:none;font-size:10px;color:var(--guide-accent,#C8901E);cursor:pointer;padding:0 12px 5px;font-family:inherit;text-align:left;display:block;opacity:.75;transition:opacity .12s}
+.guide-expand-btn:hover{opacity:1}
+
+/* ── Sheet mobile ── */
 @media(max-width:699px){
   .guide-day-tabs{gap:4px}
-  .guide-day-tab{min-width:50px;padding:6px 8px}
+  .guide-day-tab{min-width:54px;padding:7px 9px}
   .guide-sheet-hdr{padding:11px 13px;gap:9px}
-  .guide-sheet-daynum{font-size:22px}
-  .guide-sheet-date{font-size:13px}
+  .guide-sheet-daynum{width:38px;height:38px;font-size:18px;border-radius:10px}
+  .guide-sheet-date{font-size:14px}
   .guide-narrative{padding:10px 13px}
   .guide-drive-row{padding:0 13px}
-  .guide-oab{margin:3px 11px 5px}
+  .guide-oab{margin:0 10px 5px}
 }
 
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -8768,22 +8796,34 @@ function rGuideTab(rt,obj){
     const dayMi=Math.round((day.stops||[]).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0));
     const isActive=di===activeDi;
     const dStr=day.date?new Date(day.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):`Day ${idx+1}`;
+    const hasBase=(day.stops||[]).some(s=>s.isBase);
+    const dayDone=(day.stops||[]).filter(s=>s.done).length;
+    const dayTotal=(day.stops||[]).length;
+    const allDone=dayTotal>0&&dayDone===dayTotal;
     return`<button class="guide-day-tab${isActive?' on':''}" onclick="setGuideDay('${rt}','${obj.id}',${di})">
+      ${hasBase?`<span class="guide-day-tab-base">🌙</span>`:''}
       <span class="guide-day-tab-num">Day ${idx+1}</span>
       <span class="guide-day-tab-date">${dStr}</span>
-      ${dayMi?`<span class="guide-day-tab-mi">🛣 ${Math.round(dayMi)}mi</span>`:`<div class="guide-day-tab-dot"></div>`}
+      ${dayMi?`<span class="guide-day-tab-mi">${Math.round(dayMi)} mi</span>`:allDone?`<span class="guide-day-tab-mi" style="color:var(--green3)">✓ done</span>`:`<div class="guide-day-tab-dot"></div>`}
     </button>`;
   }).join('');
 
+  const doneCount=scheduled.reduce((a,d)=>a+(d.stops||[]).filter(s=>s.done).length,0);
+  const progressPct=totalStops?Math.round(doneCount/totalStops*100):0;
   return`<div class="guide-root" style="--guide-accent:${accent}">
     <div class="guide-hdr">
-      <div>
+      <div style="min-width:0">
         <div class="guide-hdr-title">${obj.name}</div>
-        <div class="guide-hdr-meta">${scheduled.length} day${scheduled.length!==1?'s':''} · ${totalStops} stop${totalStops!==1?'s':''}${hasDriving?' · driving route':''}</div>
+        <div class="guide-hdr-meta">
+          <span class="guide-hdr-chip">📅 ${scheduled.length} day${scheduled.length!==1?'s':''}</span>
+          <span class="guide-hdr-chip">📍 ${totalStops} stop${totalStops!==1?'s':''}</span>
+          ${hasDriving?`<span class="guide-hdr-chip">🛣 Driving</span>`:''}
+          ${doneCount?`<span class="guide-hdr-chip" style="color:var(--green3);border-color:rgba(62,102,68,.3);background:rgba(62,102,68,.07)">${doneCount} done${progressPct?' · '+progressPct+'%':''}</span>`:''}
+        </div>
       </div>
       <div style="display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap;align-items:center">
-        <button class="pbtn" style="font-size:11px;padding:5px 10px;background:rgba(239,159,39,.1);border-color:rgba(239,159,39,.35);color:var(--amber)" onclick="aiGuideAllStops('${rt}','${obj.id}')">✦ Fill All</button>
-        <button class="pbtn" style="font-size:11px;padding:5px 10px" onclick="printTripShare('${obj.id}','${rt}')">🖨️ Print</button>
+        <button class="guide-ai-btn" onclick="aiGuideAllStops('${rt}','${obj.id}')">✦ Fill All</button>
+        <button class="pbtn" style="font-size:10px;padding:5px 10px" onclick="printTripShare('${obj.id}','${rt}')">🖨 Print</button>
       </div>
     </div>
     <div class="guide-day-tabs">${dayTabs}</div>
@@ -8821,9 +8861,15 @@ function rGuideDaySheet(rt,obj,di,accent){
 
   // Narrative
   const narrativeHtml=day.narrative
-    ?`<div class="guide-narrative"><div class="guide-narrative-text">${day.narrative}</div><button style="display:block;margin-top:8px;background:none;border:none;font-size:10px;color:var(--muted2);cursor:pointer;padding:0;font-family:inherit;text-decoration:underline" onclick="aiDayNarrative('${rt}','${obj.id}',${di})">✦ Rewrite</button></div>`
+    ?`<div class="guide-narrative">
+        <div class="guide-narrative-text" id="narr-${di}">${day.narrative}</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:7px">
+          <button class="guide-expand-btn" onclick="(function(b){const t=document.getElementById('narr-${di}');t.classList.toggle('expanded');b.textContent=t.classList.contains('expanded')?'↑ collapse':'read more →'})(this)">read more →</button>
+          <button style="background:none;border:none;font-size:10px;color:var(--muted2);cursor:pointer;padding:0;font-family:inherit;text-decoration:underline;transition:color .12s" onmouseover="this.style.color='var(--amber)'" onmouseout="this.style.color='var(--muted2)'" onclick="aiDayNarrative('${rt}','${obj.id}',${di})">✦ Rewrite</button>
+        </div>
+      </div>`
     :`<div class="guide-narrative"><div class="guide-narrative-empty">
-        <span class="guide-narrative-empty-lbl">Your personal tour guide for the day — AI writes it for you</span>
+        <span class="guide-narrative-empty-lbl">Personal tour guide for the day — AI writes it</span>
         <button class="guide-ai-btn" onclick="aiDayNarrative('${rt}','${obj.id}',${di})">✦ Write Guide</button>
       </div></div>`;
 
@@ -8841,7 +8887,7 @@ function rGuideDaySheet(rt,obj,di,accent){
         <span class="guide-drive-arrow">↓</span>
         <div class="guide-drive-line"></div>
         <div class="guide-drive-badge">
-          ${(cMi||cSecs)?`${cMi?Math.round(cMi)+' mi':''}${cMi&&cSecs?' · ':''}${cSecs?fDrive(cSecs):''} drive`:`<span style="font-style:italic;opacity:.6">next stop</span>`}
+          ${(cMi||cSecs)?`🚗 ${cMi?Math.round(cMi)+' mi':''}${cMi&&cSecs?' · ':''}${cSecs?fDrive(cSecs):''}`:`<span style="font-style:italic;opacity:.6">next stop</span>`}
         </div>
         <div class="guide-drive-line"></div>
         <span class="guide-drive-arrow">↓</span>
@@ -8870,9 +8916,9 @@ function rGuideDaySheet(rt,obj,di,accent){
         <div class="guide-sheet-date">${fmtLongDay(day.date)}</div>
         <div class="guide-sheet-meta">
           ${dayStops.length?`<span class="guide-sheet-meta-item">📍 ${dayStops.length} stop${dayStops.length!==1?'s':''}</span>`:''}
-          ${dayMi?`<span class="guide-sheet-meta-item">🛣️ ${Math.round(dayMi)} mi${dayDriveSecs?' · '+fDrive(dayDriveSecs)+' driving':''}</span>`:''}
+          ${dayMi?`<span class="guide-sheet-meta-item">🛣 ${Math.round(dayMi)} mi${dayDriveSecs?' · '+fDrive(dayDriveSecs):''}</span>`:''}
           ${totalTrailMi?`<span class="guide-sheet-meta-item">🥾 ${totalTrailMi.toFixed(1)} mi trail</span>`:''}
-          ${baseStop?`<span class="guide-sheet-meta-item" style="color:var(--guide-accent,#C8901E)">🌙 ${baseStop.name}</span>`:''}
+          ${baseStop?`<span class="guide-sheet-meta-item base">🌙 ${baseStop.name.split(',')[0]}</span>`:''}
         </div>
       </div>
       <div class="guide-sheet-acts">
@@ -8952,79 +8998,105 @@ function rGuideStop(rt,id,di,si,s,accent,baseSi,oabMi){
   const isTrail=s.type==='hike'&&s.trailData;
   const td=isTrail?s.trailData:null;
   const isBase=!!s.isBase;
-  const baseBtnHtml=`<button class="guide-base-btn${isBase?' on':''}" onclick="setDayBase('${rt}','${id}',${di},${si})" title="${isBase?`Clear base`:`Set as tonight's base`}">🌙 ${isBase?`Tonight's Base ✓`:`Set as Base`}</button>`;
-  const oabHtml=oabMi?`<div class="guide-oab">↩ Round trip from base: <span class="guide-oab-mi">~${oabMi} mi</span></div>`:'';
+  const skKey=`${rt}|${id}|${di}|${si}`;
+  const baseBtnHtml=`<button class="guide-base-btn${isBase?' on':''}" onclick="setDayBase('${rt}','${id}',${di},${si})">${isBase?'🌙 Base ✓':'🌙 Set Base'}</button>`;
+  const oabHtml=oabMi?`<div class="guide-oab">↩ <span class="guide-oab-mi">~${oabMi} mi</span> round trip from base</div>`:'';
+  const doneBtn=`<button class="guide-done-btn${s.done?' on':''}" onclick="toggleGuideDone('${rt}','${id}',${di},${si})" title="${s.done?'Mark undone':'Mark as visited'}">${s.done?'✓':'○'}</button>`;
+  // Collapsible description — clamp to 2 lines unless short
+  const _desc=s.description?_stripMd(s.description):'';
+  const descHtml=_desc?(_desc.length>200
+    ?`<div class="guide-stop-desc" id="gd-${skKey.replace(/\|/g,'-')}">${_desc}</div><button class="guide-expand-btn" onclick="(function(b){const d=b.previousElementSibling;d.classList.toggle('expanded');b.textContent=d.classList.contains('expanded')?'↑ less':'more →'})(this)">more →</button>`
+    :`<div class="guide-stop-desc expanded">${_desc}</div>`):'';
 
   if(isTrail){
     const statsBar=_rTrailStatsBar(td);
     const gearHtml=td.gearList?.length?`<div class="trail-gear-row">${td.gearList.map(g=>`<span class="trail-gear-tag">${g}</span>`).join('')}</div>`:'';
     const warnHtml=td.warnings?`<div class="trail-warn">⚠️ ${td.warnings}</div>`:'';
-    const metaItems=[
-      td.parkArea?`<span>🏞️ ${td.parkArea}</span>`:'',
+    const navBtn=s.mapsUrl?`<a href="${s.mapsUrl}" target="_blank" class="guide-nav-btn">🗺 Go</a>`:'';
+    const metaLinks=[
+      td.website?`<a href="${td.website}" target="_blank" class="guide-nav-btn ghost">🌐 Trail info ↗</a>`:'',
+      s.mapsUrl?`<a href="${s.mapsUrl}" target="_blank" class="guide-nav-btn ghost">🗺 Navigate ↗</a>`:'',
+    ].filter(Boolean);
+    const metaChips=[
+      td.parkArea?`<span>🏞 ${td.parkArea}</span>`:'',
       td.startPoint?`<span>📍 ${td.startPoint}</span>`:'',
       td.bestMonths?`<span>📅 Best: ${td.bestMonths}</span>`:'',
-      td.permitRequired?`<span style="color:#9a6200">🎫 Permit required</span>`:'',
-      td.dogFriendly===true?`<span style="color:var(--green3)">🐕 Dog friendly</span>`:'',
+      td.permitRequired?`<span style="color:#9a6200">🎫 Permit</span>`:'',
+      td.dogFriendly===true?`<span style="color:var(--green3)">🐕 Dogs ok</span>`:'',
       td.dogFriendly===false?`<span style="color:var(--muted2)">🐕 No dogs</span>`:'',
-      td.website?`<a href="${td.website}" target="_blank" class="guide-nav-btn">🌐 Trail info ↗</a>`:'',
-      s.mapsUrl?`<a href="${s.mapsUrl}" target="_blank" class="guide-nav-btn">🗺️ Navigate ↗</a>`:'',
     ].filter(Boolean);
-    const skKey=`${rt}|${id}|${di}|${si}`;
     if(!s.photo)setTimeout(()=>_autoFetchTrailPhoto(s.name,td.parkArea,rt,id,di,si).catch(()=>{}),50);
     return`<div class="guide-stop${s.done?' guide-stop-done':''}${isBase?' guide-stop-isbase':''}" data-sk="${skKey}">
       ${s.photo?`<img class="guide-stop-photo" src="${s.photo}" onerror="this.style.display='none'" onclick="${editFn}">`:''}
-      <div style="flex:1;min-width:0">
-        <div class="guide-stop-body" style="padding-bottom:6px">
-          <div class="guide-stop-toprow">
-            <span class="guide-stop-icon">🥾</span>
-            <div class="guide-stop-name-wrap">
-              <span class="guide-stop-name">${s.name}${isBase?`<span class="guide-base-badge">🌙 Base</span>`:''}</span>
-              ${s.time?`<span class="guide-stop-time">🕐 ${s.time}</span>`:''}
-            </div>
-            <div class="guide-stop-acts">
-              <button class="guide-ai-stop-btn" onclick="aiEnrichTrail('${rt}','${id}',${di},${si})" title="AI enrich trail details" style="background:rgba(62,102,68,.1);border-color:rgba(62,102,68,.3);color:var(--green3)">✦ Trail</button>
-              <button onclick="${editFn}" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:2px 5px;border-radius:4px;transition:color .12s" onmouseover="this.style.color='var(--green3)'" onmouseout="this.style.color='var(--muted2)'">✏️</button>
-            </div>
+      <div class="guide-stop-body">
+        <div class="guide-stop-toprow">
+          <span class="guide-stop-num">${si+1}</span>
+          <span class="guide-stop-icon">🥾</span>
+          <div class="guide-stop-name-wrap">
+            <span class="guide-stop-name">${s.name}${isBase?`<span class="guide-base-badge">🌙 Base</span>`:''}</span>
+            ${s.time?`<span class="guide-stop-time">🕐 ${s.time}</span>`:''}
           </div>
-          <div style="margin-top:3px;margin-bottom:5px">${baseBtnHtml}</div>
-          ${s.description?`<div class="guide-stop-desc">${_stripMd(s.description)}</div>`:`<div style="font-size:11px;color:var(--muted2);font-style:italic;margin-bottom:4px">Tap ✦ Trail to AI-fill description and gear list</div>`}
+          <div class="guide-stop-acts">
+            ${navBtn}
+            <button class="guide-ai-stop-btn" onclick="aiEnrichTrail('${rt}','${id}',${di},${si})" style="background:rgba(62,102,68,.1);border-color:rgba(62,102,68,.3);color:var(--green3)">✦ Trail</button>
+            <button onclick="${editFn}" class="guide-edit-btn" title="Edit">✏️</button>
+            ${doneBtn}
+          </div>
         </div>
+        ${_desc?descHtml:`<div style="font-size:11px;color:var(--muted2);font-style:italic;padding:0 12px 4px">Tap ✦ Trail to AI-fill details and gear list</div>`}
         ${statsBar}
         ${gearHtml}
         ${warnHtml}
-        ${metaItems.length?`<div class="guide-stop-meta" style="padding:6px 12px 10px">${metaItems.join('')}</div>`:''}
-        ${s.milesPrev?`<div class="guide-stop-meta" style="padding:0 12px 8px"><span>🛣️ ${Math.round(parseFloat(s.milesPrev)||0)} mi drive${s.driveSecs?' · '+fDrive(s.driveSecs):''}</span></div>`:''}
+        ${metaChips.length||metaLinks.length?`<div class="guide-stop-meta" style="padding:4px 12px 6px;gap:8px">${[...metaChips,...metaLinks].join('')}</div>`:''}
         ${oabHtml}
+        <div class="guide-stop-footer">
+          ${s.milesPrev?`<span class="guide-stop-meta-item">🛣 ${Math.round(parseFloat(s.milesPrev)||0)} mi${s.driveSecs?' · '+fDrive(s.driveSecs):''}</span>`:''}
+          <span style="flex:1"></span>
+          ${baseBtnHtml}
+        </div>
       </div>
     </div>`;
   }
 
-  // Standard (non-trail) stop
-  return`<div class="guide-stop${s.done?' guide-stop-done':''}${isBase?' guide-stop-isbase':''}">
+  // Standard stop
+  const navBtn=s.mapsUrl?`<a href="${s.mapsUrl}" target="_blank" class="guide-nav-btn">🗺 Go</a>`:'';
+  return`<div class="guide-stop${s.done?' guide-stop-done':''}${isBase?' guide-stop-isbase':''}" data-sk="${skKey}">
     ${s.photo?`<img class="guide-stop-photo" src="${s.photo}" onerror="this.style.display='none'" onclick="${editFn}">`:''}
     <div class="guide-stop-body">
       <div class="guide-stop-toprow">
+        <span class="guide-stop-num">${si+1}</span>
         <span class="guide-stop-icon">${wt.i}</span>
         <div class="guide-stop-name-wrap">
           <span class="guide-stop-name">${s.name}${isBase?`<span class="guide-base-badge">🌙 Base</span>`:''}</span>
           ${s.time?`<span class="guide-stop-time">🕐 ${s.time}</span>`:''}
         </div>
         <div class="guide-stop-acts">
-          <button class="guide-ai-stop-btn" onclick="aiGuideSingleStop('${rt}','${id}',${di},${si})" title="AI fill description">✦</button>
-          <button onclick="${editFn}" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted2);padding:2px 5px;border-radius:4px;transition:color .12s" onmouseover="this.style.color='var(--green3)'" onmouseout="this.style.color='var(--muted2)'">✏️</button>
+          ${navBtn}
+          <button class="guide-ai-stop-btn" onclick="aiGuideSingleStop('${rt}','${id}',${di},${si})">${_desc?'✦':'✦ Fill'}</button>
+          <button onclick="${editFn}" class="guide-edit-btn" title="Edit">✏️</button>
+          ${doneBtn}
         </div>
       </div>
-      <div style="margin-top:3px;margin-bottom:5px">${baseBtnHtml}</div>
-      ${s.description?`<div class="guide-stop-desc">${_stripMd(s.description)}</div>`:''}
+      ${_desc?descHtml:''}
       ${s.note&&s.note!==s.description?`<div class="guide-stop-note">${s.note}</div>`:''}
-      <div class="guide-stop-meta">
-        ${s.address?`<span>📍 ${s.address}</span>`:''}
-        ${s.milesPrev?`<span>🛣️ ${Math.round(parseFloat(s.milesPrev)||0)} mi drive${s.driveSecs?' · '+fDrive(s.driveSecs):''}</span>`:''}
-        ${s.mapsUrl?`<a href="${s.mapsUrl}" target="_blank" class="guide-nav-btn">Navigate ↗</a>`:''}
-      </div>
       ${oabHtml}
+      <div class="guide-stop-footer">
+        ${s.address?`<span class="guide-stop-meta-item">📍 ${s.address.split(',').slice(0,2).join(',')}</span>`:''}
+        ${s.milesPrev?`<span class="guide-stop-meta-item">🛣 ${Math.round(parseFloat(s.milesPrev)||0)} mi${s.driveSecs?' · '+fDrive(s.driveSecs):''}</span>`:''}
+        <span style="flex:1"></span>
+        ${baseBtnHtml}
+      </div>
     </div>
   </div>`;
+}
+function toggleGuideDone(rt,id,di,si){
+  D=load();
+  const obj=rt==='camp'?(D.camps||[]).find(x=>x.id===id):D.trips.find(x=>x.id===id);
+  if(!obj)return;
+  const s=obj.itinerary?.[di]?.stops?.[si];if(!s)return;
+  s.done=!s.done;
+  if(rt==='camp'){saveCamps();window._campDTab='guide';openCampD(id);}
+  else{save('trips',D.trips);switchTripItinTab(id,'guide');}
 }
 async function aiGuideSingleStop(rt,id,di,si){
   D=load();
