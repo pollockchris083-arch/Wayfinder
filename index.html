@@ -1613,6 +1613,8 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
     <div class="fg"><label class="fl">Stop Type</label>
       <div id="wp-type-pills" style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;flex-wrap:nowrap"></div>
     </div>
+    <!-- TYPE-SPECIFIC CONTEXTUAL HINT -->
+    <div id="st-type-hint" style="display:none;margin-top:-4px;margin-bottom:8px"></div>
     <!-- TIME -->
     <div class="fg"><label class="fl">Time <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)">(optional)</span></label><input class="fi" type="time" id="st-time"/></div>
     <!-- NOTES -->
@@ -5799,7 +5801,10 @@ function _openStopModal(isAdv,tid,cid,di,si,existing){
     }
   }
   document.getElementById('st-place').innerHTML='';
+  const _hint=document.getElementById('st-type-hint');if(_hint){_hint.innerHTML='';_hint.style.display='none';}
   _buildWpTypePills(s.type||'other');
+  // Show contextual hint for the pre-selected type (e.g. when opened via type chip)
+  if(s.type){const activePill=document.querySelector('#wp-type-pills .wp-type-btn[data-active="1"]');if(activePill)setTimeout(()=>pickWpType(activePill),30);}
   const dayRow=document.getElementById('st-day-row');
   const daySelect=document.getElementById('st-day');
   if(isAdv){
@@ -5863,6 +5868,11 @@ function saveStop(){
   };
   // Preserve trailData when editing a trail stop
   if(window._stopTrailData)stopData.trailData=window._stopTrailData;
+  // Type-specific extras from contextual hint
+  const bookedEl=document.getElementById('st-booked');if(bookedEl)stopData.booked=bookedEl.checked;
+  const siteEl=document.getElementById('st-site-num');if(siteEl&&siteEl.value.trim())stopData.siteNum=siteEl.value.trim();
+  const reservedEl=document.getElementById('st-reserved');if(reservedEl)stopData.reserved=reservedEl.checked;
+  const actBookedEl=document.getElementById('st-act-booked');if(actBookedEl)stopData.booked=actBookedEl.checked;
   window._stopPhotoData=null;
   if(pendStop.isAdv){
     D=load();const c=(D.camps||[]).find(x=>x.id===pendStop.cid);if(!c)return;
@@ -8330,7 +8340,14 @@ function openTrailSearch(rt,id,di){
   const r=document.getElementById('ts-results');
   if(r)r.innerHTML='';
   const q=document.getElementById('ts-query');if(q)q.value='';
-  const l=document.getElementById('ts-location');if(l)l.value='';
+  const l=document.getElementById('ts-location');
+  if(l){
+    D=load();
+    let loc='';
+    if(rt==='camp'){const obj=(D.camps||[]).find(x=>x.id===id);if(obj)loc=[obj.location,obj.state].filter(Boolean).join(', ');}
+    else if(rt==='trip'){const obj=D.trips.find(x=>x.id===id);if(obj)loc=(obj.destinations||[]).slice(0,2).join(', ');}
+    l.value=loc;
+  }
   _tsTab('search');
   openM('m-trail-search');
 }
@@ -10160,7 +10177,33 @@ function rAdvStopsTab(c){
 // ── Tab: Daily Plans ─────────────────────────────────────
 const WP_TYPES={sleep:{i:'🛏️',l:'Sleep'},camp:{i:'🏕️',l:'Camp'},food:{i:'🍽️',l:'Meal'},coffee:{i:'☕',l:'Coffee'},sight:{i:'🏛️',l:'Sight'},park:{i:'🌳',l:'Park'},hike:{i:'🥾',l:'Hike / Trail'},pet:{i:'🐕',l:'Pets'},fuel:{i:'⛽',l:'Fuel'},rest:{i:'🅿️',l:'Rest Stop'},shop:{i:'🛒',l:'Shop'},photo:{i:'📸',l:'Photo'},drive:{i:'🚗',l:'Drive'},activity:{i:'🎯',l:'Activity'},other:{i:'📍',l:'Other'}};
 function _buildWpTypePills(selectedType){const pills=document.getElementById('wp-type-pills');if(!pills)return;pills.innerHTML=Object.entries(WP_TYPES).map(([k,v])=>`<button type="button" class="wp-type-btn" data-t="${k}" data-active="${(selectedType||'other')===k?'1':''}" onclick="pickWpType(this)">${v.i} ${v.l}</button>`).join('');const active=pills.querySelector('[data-active="1"]');if(active)setTimeout(()=>active.scrollIntoView({inline:'nearest',block:'nearest'}),50);}
-function pickWpType(btn){document.querySelectorAll('#wp-type-pills .wp-type-btn').forEach(b=>b.dataset.active='');btn.dataset.active='1';}
+function pickWpType(btn){
+  document.querySelectorAll('#wp-type-pills .wp-type-btn').forEach(b=>b.dataset.active='');
+  btn.dataset.active='1';
+  const tp=btn.dataset.t;
+  const hint=document.getElementById('st-type-hint');
+  if(!hint)return;
+  if(tp==='hike'){
+    const isAdv=!!pendStop?.isAdv;
+    const rt=isAdv?'camp':'trip';
+    const rid=isAdv?(pendStop?.cid||''):(pendStop?.tid||'');
+    const di=pendStop?.di!=null?pendStop.di:0;
+    hint.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(62,102,68,.09);border:1px solid rgba(62,102,68,.25);border-radius:8px;padding:8px 12px"><span style="font-size:12px;color:var(--green3);font-weight:600">🥾 Get miles, elevation &amp; trail details automatically</span><button type="button" onclick="closeM('m-stop');openTrailSearch('${rt}','${rid}',${di})" style="font-size:11px;font-weight:700;color:var(--green3);background:rgba(62,102,68,.15);border:1px solid rgba(62,102,68,.3);border-radius:6px;padding:5px 10px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;margin-left:8px">AI Trail Search →</button></div>`;
+    hint.style.display='';
+  } else if(tp==='camp'){
+    hint.innerHTML=`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:rgba(74,114,89,.06);border:1px solid rgba(74,114,89,.18);border-radius:8px;padding:8px 12px"><label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;user-select:none;white-space:nowrap"><input type="checkbox" id="st-booked" style="cursor:pointer;accent-color:var(--green3)"/> ✅ Booked / Reserved</label><input class="fi" id="st-site-num" placeholder="Site # or unit" style="flex:1;min-width:90px;font-size:12px;padding:5px 8px"/></div>`;
+    hint.style.display='';
+  } else if(tp==='food'||tp==='coffee'){
+    hint.innerHTML=`<div style="padding:8px 12px;background:rgba(74,114,89,.05);border:1px solid rgba(74,114,89,.15);border-radius:8px"><label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);cursor:pointer;user-select:none"><input type="checkbox" id="st-reserved" style="cursor:pointer;accent-color:var(--green3)"/> Reservation confirmed</label></div>`;
+    hint.style.display='';
+  } else if(tp==='activity'){
+    hint.innerHTML=`<div style="padding:8px 12px;background:rgba(74,114,89,.05);border:1px solid rgba(74,114,89,.15);border-radius:8px"><label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);cursor:pointer;user-select:none"><input type="checkbox" id="st-act-booked" style="cursor:pointer;accent-color:var(--green3)"/> Booked / ticketed</label></div>`;
+    hint.style.display='';
+  } else {
+    hint.innerHTML='';
+    hint.style.display='none';
+  }
+}
 
 function _initStopAutocomplete(){
   const input=document.getElementById('st-place-search');
@@ -10360,7 +10403,7 @@ function rAdvDailyTab(c){
             <button onclick="openAdvDayAIPlan('${c.id}',${di})" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--amber,#C8901E);background:rgba(200,144,30,.09);border:1.5px solid rgba(200,144,30,.3);border-radius:8px;padding:10px 14px;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s;min-height:42px" onmouseover="this.style.background='rgba(200,144,30,.18)'" onmouseout="this.style.background='rgba(200,144,30,.09)'">✨ AI Plan</button>
           </div>
           <div style="display:flex;gap:5px;flex-wrap:wrap">
-            ${[['🏕️','camp','Camp'],['🍽️','food','Meal'],['🥾','hike','Hike'],['🏛️','sight','Sight'],['☕','coffee','Coffee'],['⛽','fuel','Fuel'],['🎯','activity','Activity']].map(([em,tp,lb])=>`<button onclick="openAdvItinStopWithType('${c.id}',${di},'${tp}')" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--text2);background:var(--card2);border:1px solid var(--bdr2);border-radius:6px;padding:4px 9px;cursor:pointer;font-family:inherit;transition:all .12s" onmouseover="this.style.borderColor='${dc}';this.style.color='${dc}'" onmouseout="this.style.borderColor='var(--bdr2)';this.style.color='var(--text2)'">${em} ${lb}</button>`).join('')}
+            ${[['🏕️','camp','Camp'],['🍽️','food','Meal'],['🥾','hike','Hike'],['🏛️','sight','Sight'],['☕','coffee','Coffee'],['⛽','fuel','Fuel'],['🎯','activity','Activity']].map(([em,tp,lb])=>{const fn=tp==='hike'?`openTrailSearch('camp','${c.id}',${di})`:`openAdvItinStopWithType('${c.id}',${di},'${tp}')`;return`<button onclick="${fn}" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--text2);background:var(--card2);border:1px solid var(--bdr2);border-radius:6px;padding:4px 9px;cursor:pointer;font-family:inherit;transition:all .12s" onmouseover="this.style.borderColor='${dc}';this.style.color='${dc}'" onmouseout="this.style.borderColor='var(--bdr2)';this.style.color='var(--text2)'">${em} ${lb}</button>`;}).join('')}
           </div>
         </div>
         ${day.notes
