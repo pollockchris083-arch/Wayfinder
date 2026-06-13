@@ -593,6 +593,11 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .expense-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bdr);font-size:12px}
 .expense-row:last-child{border-bottom:none}
 .expense-cat{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-radius:4px;background:rgba(74,120,158,.1);color:#4A789E;border:1px solid rgba(74,120,158,.2);white-space:nowrap;flex-shrink:0}
+/* ── Adventure/Trip tab bars — horizontal scroll, never wrap ── */
+.adv-tab-bar{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}
+.adv-tab-bar::-webkit-scrollbar{display:none}
+.adv-tab-bar .fc{flex-shrink:0;white-space:nowrap}
+
 /* ── MOBILE ── */
 /* ── MOBILE BOTTOM NAV ── */
 #mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:80;background:var(--card);border-top:1px solid var(--bdr)}
@@ -630,10 +635,14 @@ input,textarea,select{font-family:inherit;font-weight:400}
   #main{width:100vw}
   .ni{padding:9px 8px;min-height:44px}
 
-  /* ── Topbar ── */
-  #topbar{padding:0 10px;gap:8px;height:50px}
-  .tb-search{flex:1;min-width:0;max-width:150px}
-  .tb-btn{padding:7px 11px;font-size:12px;white-space:nowrap;min-height:38px}
+  /* ── Topbar — two-row layout on mobile ── */
+  #topbar{padding:8px 12px 0;gap:8px;height:auto;flex-wrap:wrap;align-items:center}
+  .tb-title{text-align:center;flex:1}
+  /* Search drops to full-width row 2 */
+  .tb-search{order:10;flex:0 0 100%;max-width:100%;margin:7px 0 8px;border-radius:9px}
+  /* Action button: compact circle with "+" — text hidden via font-size:0 */
+  #tba{font-size:0!important;width:40px;min-width:40px;height:40px;min-height:40px;padding:0;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+  #tba::before{content:'+';font-size:22px;font-weight:700;line-height:1;color:#fff}
 
   /* ── Content area — extra bottom padding for mob-nav ── */
   #content{padding:12px;padding-bottom:calc(62px + env(safe-area-inset-bottom,0px));-webkit-overflow-scrolling:touch}
@@ -3493,14 +3502,15 @@ function rHome(){
       <div style="font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1;color:var(--text)">${inWorksCount||'—'}</div>
       <div style="position:absolute;bottom:9px;right:11px;font-size:22px;opacity:.07;pointer-events:none;line-height:1">✏️</div>
     </div>
-    <div style="padding:16px 14px 14px;cursor:pointer;position:relative;border-right:1px solid var(--bdr2);transition:background .15s" onclick="go('map')" onmouseover="this.style.background='rgba(107,136,118,.05)'" onmouseout="this.style.background=''">
+    <div style="padding:16px 14px 14px;cursor:pointer;position:relative;border-right:1px solid var(--bdr2);transition:background .15s" onclick="placeView='atlas';_atlasDestFilter=null;go('places')" onmouseover="this.style.background='rgba(107,136,118,.08)'" onmouseout="this.style.background=''">
       <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#6B8876 0%,rgba(107,136,118,0) 100%)"></div>
       <div style="font-size:10px;font-weight:700;color:#6B8876;text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px">Countries</div>
       <div style="font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1;color:var(--text)">${allCountries.length}</div>
       ${continents.length?`<div style="font-size:9px;color:var(--muted2);margin-top:4px;line-height:1">${continents.length} continent${continents.length!==1?'s':''}</div>`:'<div style="height:13px"></div>'}
       <div style="position:absolute;bottom:9px;right:11px;font-size:22px;opacity:.07;pointer-events:none;line-height:1">🌍</div>
+      <div style="position:absolute;bottom:9px;left:14px;font-size:9px;color:#6B8876;opacity:.6;font-weight:600;letter-spacing:.3px">View Places →</div>
     </div>
-    <div style="padding:16px 14px 10px;cursor:pointer;position:relative;transition:background .15s" onclick="go('map')" onmouseover="this.style.background='rgba(74,120,158,.05)'" onmouseout="this.style.background=''">
+    <div style="padding:16px 14px 10px;cursor:pointer;position:relative;transition:background .15s" onclick="placeView='atlas';_atlasDestFilter=null;go('places');setTimeout(()=>{const e=document.getElementById('atlas-us-sec');if(e)document.getElementById('content').scrollTop=e.offsetTop-60;},200)" onmouseover="this.style.background='rgba(74,120,158,.08)'" onmouseout="this.style.background=''">
       <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#4A789E 0%,rgba(74,120,158,0) 100%)"></div>
       <div style="font-size:10px;font-weight:700;color:#4A789E;text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px">US States</div>
       <div style="font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1;color:var(--text)">${usStates.length}<span style="font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0;margin-left:2px">/50</span></div>
@@ -4963,6 +4973,7 @@ function rPlacesAtlas(){
     html+=`</div>`;
   }
   if(stateEntries.length){
+    html+=`<div id="atlas-us-sec"></div>`;
     html+=secHdr('🇺🇸','United States',`${stateEntries.length} state${stateEntries.length!==1?'s':''} · ${us.length} place${us.length!==1?'s':''}`, '62,102,68');
     html+=`<div class="atlas-grid">`;
     stateEntries.forEach(([s,ps])=>{html+=tile(s,ps,`setAtlasDest('us_state','${s.replace(/'/g,"\\'")}')`,stateEmoji(s),'62,102,68');});
@@ -5371,7 +5382,7 @@ function openTripD(id){
       </div>
     </div>
     <div class="coll-body coll-open">
-      <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap">
+      <div class="adv-tab-bar" style="margin-bottom:12px">
         <button id="trip-tab-stops" class="fc${itinTab==='stops'?' on':''}" onclick="switchTripItinTab('${t.id}','stops')">📍 Stops${totalStops?' ('+totalStops+')':''}</button>
         <button id="trip-tab-plans" class="fc${itinTab==='plans'?' on':''}" onclick="switchTripItinTab('${t.id}','plans')">📅 Plans</button>
         <button id="trip-tab-guide" class="fc${itinTab==='guide'?' on':''}" style="${itinTab==='guide'?'':'border-color:rgba(200,144,30,.3);color:var(--amber)'}" onclick="switchTripItinTab('${t.id}','guide')">✦ Guide</button>
@@ -9770,7 +9781,7 @@ function openCampD(id){
         ${c.status!=='past'?rStageRail(c.status,c.id,true,true):''}
       </div>
     </div>
-    <div class="fb" style="margin-bottom:14px;flex-wrap:wrap;gap:4px;overflow-x:auto">
+    <div class="adv-tab-bar" style="margin-bottom:14px">
       <button class="fc ${tab==='overview'?'on':''}" onclick="window._campDTab='overview';openCampD('${c.id}')">📋 Overview</button>
       <button class="fc ${tab==='stops'?'on':''}" onclick="window._campDTab='stops';openCampD('${c.id}')">📍 Stops${itinStopCount?' ('+itinStopCount+')':''}</button>
       <button class="fc ${tab==='daily'?'on':''}" onclick="window._campDTab='daily';openCampD('${c.id}')">📅 Plans</button>
