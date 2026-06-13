@@ -2763,7 +2763,8 @@ async function manualCloudSync(){
 // preventing PGRST204 "column not found" errors when the DB schema doesn't have that column.
 const _SYNC_FIELDS={
   wish:['id','name','type','priority','season','notes','addedAt','graduated'],
-  // trips/places/journal: no whitelist — push all converted fields (schemas accommodate them)
+  // trips: whitelist keeps only columns that exist in wf_trips (solo/tripType are local-only)
+  trips:['id','name','startDate','endDate','destinations','type','status','budget','notes','itinerary','addedAt'],
 };
 
 async function cloudPush(collection,items){
@@ -2791,7 +2792,7 @@ async function cloudPush(collection,items){
 
 async function _upsertBlob(blobId,data){
   if(!currentUser)return;
-  const row={user_id:currentUser.id,id:blobId,name:'__system__',type:'__system__',notes:JSON.stringify(data),added_at:new Date().toISOString()};
+  const row={user_id:currentUser.id,id:blobId,name:'__system__',type:'__system__',notes:JSON.stringify(data),added_at:Date.now()};
   // Use delete+insert to bypass ON CONFLICT unique-constraint requirement.
   // wf_trips.id is a primary key but PostgREST upsert needs an explicit unique constraint; delete+insert is always safe.
   const{error:delErr}=await SUPA.from('wf_trips').delete().eq('user_id',currentUser.id).eq('id',blobId);
@@ -2803,9 +2804,10 @@ function saveCamps(){localStorage.setItem('wf_camps',JSON.stringify(D.camps));sc
 function _syncWork(){localStorage.setItem('wf_work',JSON.stringify(D.work));scheduledSync('work',D.work);}
 async function cloudPushSettings(cfg){
   if(!currentUser)return;
-  // Strip secrets — apiKey (Anthropic), OAuth credentials, and notes are local-only
-  // mapsApiKey is a public Maps JS API key (restricted by domain) so it syncs across devices
-  const{apiKey,googleClientId,driveFolderId,abroadNotes,...syncable}=cfg;
+  // Strip secrets + local-only prefs that have no wf_settings column
+  const{apiKey,googleClientId,driveFolderId,abroadNotes,
+    mpg,fuelPrice,gasPrice,workIncludeInStats,tripsShowAdventures,tripsShowWork,
+    ...syncable}=cfg;
   const sRow={user_id:currentUser.id,updated_at:new Date().toISOString()};
   Object.entries(syncable).forEach(([k,v])=>{sRow[k.replace(/[A-Z]/g,c=>'_'+c.toLowerCase())]=v;});
   const{error}=await SUPA.from('wf_settings').upsert(sRow,{onConflict:'user_id'});
