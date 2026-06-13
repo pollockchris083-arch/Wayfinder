@@ -368,10 +368,12 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .auth-note{font-size:13px;color:var(--muted2);margin-top:14px;line-height:1.5}
 .ao-spinner{width:36px;height:36px;border:3px solid var(--bdr2);border-top-color:var(--green);border-radius:50%;animation:ao-spin .9s linear infinite}
 /* Budget Tab */
-.fuel-slider{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;background:var(--bdr2);outline:none;cursor:pointer;display:block}
-.fuel-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:var(--amber);cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.22);border:2px solid var(--card);transition:transform .1s}
-.fuel-slider::-webkit-slider-thumb:active{transform:scale(1.2)}
-.fuel-slider::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--amber);cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.22);border:2px solid var(--card)}
+.fuel-slider{-webkit-appearance:none;appearance:none;width:100%;height:10px;border-radius:5px;outline:none;cursor:pointer;display:block}
+.fuel-slider-mpg{background:linear-gradient(to right,#d95050 0%,#C8901E 35%,#4A8060 68%,#3a9060 100%)}
+.fuel-slider-gp{background:linear-gradient(to right,#3a9060 0%,#C8901E 55%,#d95050 100%)}
+.fuel-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:34px;height:34px;border-radius:50%;background:var(--card);cursor:grab;box-shadow:0 2px 12px rgba(0,0,0,.28),0 0 0 3px var(--amber);border:3px solid rgba(255,255,255,.9);transition:transform .12s,box-shadow .12s}
+.fuel-slider::-webkit-slider-thumb:active{cursor:grabbing;transform:scale(1.18);box-shadow:0 4px 22px rgba(0,0,0,.38),0 0 0 4px var(--amber)}
+.fuel-slider::-moz-range-thumb{width:34px;height:34px;border-radius:50%;background:var(--card);cursor:grab;box-shadow:0 2px 12px rgba(0,0,0,.28),0 0 0 3px var(--amber);border:3px solid rgba(255,255,255,.9)}
 .cat-chip{display:inline-flex;align-items:center;gap:4px;padding:5px 11px;background:var(--card);border:1.5px solid var(--bdr2);border-radius:16px;cursor:pointer;font-size:11px;font-family:inherit;color:var(--text2);transition:all .15s;white-space:nowrap;line-height:1.3}
 .cat-chip:hover{border-color:var(--amber);background:rgba(200,144,30,.07);color:var(--text)}
 .cat-chip.sel{border-color:var(--amber);background:rgba(200,144,30,.13);color:var(--text);font-weight:700}
@@ -379,6 +381,9 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .bdg-stat-num{font-size:22px;font-weight:800;color:var(--text);line-height:1}
 .bdg-stat-lbl{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
 @keyframes ao-spin{to{transform:rotate(360deg)}}
+@keyframes toast-slide-in{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.plans-dep-pill{display:inline-flex;align-items:center;gap:5px;cursor:pointer;border-radius:8px;padding:3px 8px;transition:background .13s}
+.plans-dep-pill:hover{background:rgba(200,144,30,.1)}
 
 /* ── MAP PAGE ── */
 .rg-group{margin-bottom:14px}
@@ -9188,6 +9193,74 @@ function setPlanStopAsBase(rt,id,di,si){
   (day.stops||[]).forEach((s,i)=>{s.isBase=!wasBase&&i===si;});
   if(rt==='camp'){saveCamps();window._campDTab='daily';openCampD(id);}
   else{save('trips',D.trips);switchTripItinTab(id,'plans');}
+  // When setting (not clearing), offer to repeat base across upcoming days
+  if(!wasBase){
+    const itin=obj.itinerary||[];
+    const baseName=((day.stops||[])[si]?.name)||'';
+    let emptyNights=0;
+    for(let d=di+1;d<itin.length;d++){
+      if(!itin[d].date)continue;
+      const already=(itin[d].stops||[]).some(s=>s.isBase&&s.name===baseName);
+      if(!already)emptyNights++;else break;
+    }
+    if(emptyNights>0)_showMultiNightOffer(rt,id,di,si,baseName,emptyNights);
+  }
+}
+function _showMultiNightOffer(rt,id,di,si,baseName,maxNights){
+  document.querySelectorAll('.toast-multi').forEach(el=>el.remove());
+  const shortName=baseName.split(',')[0];
+  const max=Math.min(maxNights,4);
+  const btns=Array.from({length:max},(_,n)=>{
+    const nights=n+2;
+    return`<button onclick="_applyMultiNight('${rt}','${id}',${di},${si},${nights});this.closest('.toast-multi').remove()" style="background:rgba(200,144,30,.15);border:1px solid rgba(200,144,30,.4);border-radius:7px;padding:6px 13px;font-size:12px;font-weight:700;color:var(--amber);cursor:pointer;font-family:inherit;transition:background .12s" onmouseover="this.style.background='rgba(200,144,30,.28)'" onmouseout="this.style.background='rgba(200,144,30,.15)'">${nights} nights</button>`;
+  }).join('');
+  const div=document.createElement('div');
+  div.className='toast-multi';
+  div.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--card);border:1.5px solid rgba(200,144,30,.45);border-radius:14px;padding:14px 18px;box-shadow:0 6px 28px rgba(0,0,0,.3);z-index:9999;max-width:360px;width:calc(100% - 40px);text-align:center;animation:toast-slide-in .25s ease';
+  div.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">🌙 Staying at <strong style="color:var(--amber)">${shortName}</strong> for multiple nights?</div><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:0">${btns}<button onclick="this.closest('.toast-multi').remove()" style="background:var(--card2);border:1px solid var(--bdr2);border-radius:7px;padding:6px 13px;font-size:12px;color:var(--muted2);cursor:pointer;font-family:inherit">Just tonight</button></div>`;
+  document.body.appendChild(div);
+  setTimeout(()=>div&&div.parentNode&&div.remove(),9000);
+}
+function _applyMultiNight(rt,id,fromDi,si,totalNights){
+  D=load();
+  const obj=rt==='camp'?(D.camps||[]).find(x=>x.id===id):D.trips.find(x=>x.id===id);
+  if(!obj)return;
+  const fromDay=obj.itinerary?.[fromDi];if(!fromDay)return;
+  const baseStop=(fromDay.stops||[])[si];if(!baseStop)return;
+  for(let n=1;n<totalNights;n++){
+    const toDay=obj.itinerary?.[fromDi+n];if(!toDay)break;
+    (toDay.stops||[]).forEach(s=>s.isBase=false);
+    const existing=(toDay.stops||[]).find(s=>s.name===baseStop.name);
+    if(existing){existing.isBase=true;}
+    else{const{milesPrev,driveSecs,milesEst,...bd}=baseStop;if(!toDay.stops)toDay.stops=[];toDay.stops.push({...bd,isBase:true,done:false,milesPrev:'0'});}
+  }
+  if(rt==='camp'){saveCamps();window._campDTab='daily';openCampD(id);}
+  else{save('trips',D.trips);switchTripItinTab(id,'plans');}
+  toast(`🌙 ${baseStop.name.split(',')[0]} — base set for ${totalNights} nights`);
+}
+function continueBaseToDay(rt,id,fromDi,toDi){
+  D=load();
+  const obj=rt==='camp'?(D.camps||[]).find(x=>x.id===id):D.trips.find(x=>x.id===id);
+  if(!obj)return;
+  const fromDay=obj.itinerary?.[fromDi],toDay=obj.itinerary?.[toDi];
+  if(!fromDay||!toDay)return;
+  const fromBase=(fromDay.stops||[]).find(s=>s.isBase);if(!fromBase)return;
+  (toDay.stops||[]).forEach(s=>s.isBase=false);
+  const existing=(toDay.stops||[]).find(s=>s.name===fromBase.name);
+  if(existing){existing.isBase=true;}
+  else{const{milesPrev,driveSecs,milesEst,...bd}=fromBase;if(!toDay.stops)toDay.stops=[];toDay.stops.push({...bd,isBase:true,done:false,milesPrev:'0'});}
+  if(rt==='camp'){saveCamps();window._campDTab='daily';openCampD(id);}
+  else{save('trips',D.trips);switchTripItinTab(id,'plans');}
+  toast('🌙 Continued at '+fromBase.name.split(',')[0]);
+}
+function togglePlanDepEdit(cid,show){
+  const box=document.getElementById('plans-dep-edit-'+cid);
+  const label=document.getElementById('plans-dep-label-'+cid);
+  if(!box)return;
+  const open=show!=null?show:(box.style.display==='none'||!box.style.display);
+  box.style.display=open?'block':'none';
+  if(label)label.style.display=open?'none':'';
+  if(open){const inp=document.getElementById('plans-dep-inp-'+cid);if(inp){inp.focus();inp.select();}}
 }
 
 async function aiDayNarrative(rt,id,di){
@@ -10023,7 +10096,7 @@ function saveAdvField(cid,field,value){
 }
 async function geocodeAndSaveStart(cid){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
-  const el=document.getElementById('start-loc-'+cid)||document.getElementById('fuel-start-loc-'+cid);
+  const el=document.getElementById('start-loc-'+cid)||document.getElementById('fuel-start-loc-'+cid)||document.getElementById('plans-dep-inp-'+cid);
   const val=(el?el.value.trim():'')||c.startLocation||'';
   if(!val)return;
   c.startLocation=val;
@@ -10231,20 +10304,20 @@ function rAdvBudgetTab(c){
         <label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Vehicle MPG</label>
         <span style="font-size:15px;font-weight:700;color:var(--amber)" id="mpg-val-${c.id}">${mpgVal}</span>
       </div>
-      <input type="range" class="fuel-slider" id="mpg-slider-${c.id}" min="5" max="60" step="1" value="${mpgVal}"
+      <input type="range" class="fuel-slider fuel-slider-mpg" id="mpg-slider-${c.id}" min="5" max="60" step="1" value="${mpgVal}"
         oninput="document.getElementById('mpg-val-${c.id}').textContent=this.value;updateFuelSliders('${c.id}')"
         onchange="saveAdvRig('${c.id}','mpg',this.value)"/>
-      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted2);margin-top:2px"><span>5</span><span>Trucks/RVs 10-18 · Cars/Vans 20-35 · Hybrids 40+</span><span>60</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted2);margin-top:4px"><span>5 🛻</span><span style="text-align:center">Trucks 10-18 · Cars 20-35 · Hybrids 40+</span><span>60 🌿</span></div>
     </div>
     <div style="margin-bottom:14px">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
         <label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Gas Price ($/gal)</label>
         <span style="font-size:15px;font-weight:700;color:var(--amber)" id="gp-val-${c.id}">$${gpVal.toFixed(2)}</span>
       </div>
-      <input type="range" class="fuel-slider" id="gp-slider-${c.id}" min="2.00" max="8.00" step="0.05" value="${gpVal}"
+      <input type="range" class="fuel-slider fuel-slider-gp" id="gp-slider-${c.id}" min="2.00" max="8.00" step="0.05" value="${gpVal}"
         oninput="document.getElementById('gp-val-${c.id}').textContent='$'+parseFloat(this.value).toFixed(2);updateFuelSliders('${c.id}')"
         onchange="saveFuelPrice('${c.id}',this.value)"/>
-      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted2);margin-top:2px"><span>$2.00</span><span></span><span>$8.00</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted2);margin-top:4px"><span>$2.00 💚</span><span></span><span>$8.00 🔴</span></div>
     </div>
     <div style="margin-bottom:12px;display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">
       <div>
@@ -10710,8 +10783,8 @@ function rAdvDailyTab(c){
   const departureCity=c.startLocation||homeCity3;
   const returnCity=isRound3?departureCity:(c.endLocation||'');
   let html=`<div style="--plans-accent:${accent}">${_advRouteBanner}`;
-  // Departure anchor — shows where the trip starts from
-  if(departureCity){
+  // Departure anchor — always shown, tappable to edit city + round trip inline
+  {
     const _fs=scheduled[0];
     const _fst=(_fs?.stops||[])[0];
     const _fsName=_fst?.name?(_fst.name||'').split(',')[0].trim():'';
@@ -10720,13 +10793,27 @@ function rAdvDailyTab(c){
     const _navDest=_fstCoords?`${_fstCoords.lat},${_fstCoords.lng}`:_fsAddr?encodeURIComponent(_fsAddr):_fsName?encodeURIComponent(_fsName):null;
     const _navUrl=_navDest?`https://www.google.com/maps/dir/?api=1&destination=${_navDest}`:null;
     const _startSecs3=parseInt(c.startSecs)||0;
+    const _depLabel=departureCity||'Set departure city…';
+    const _depSet=!!departureCity;
     html+=`<div style="background:rgba(74,120,158,.09);border:1px solid rgba(74,120,158,.2);border-left:4px solid #4A789E;border-radius:10px;padding:11px 13px;margin-bottom:0">
       <div style="display:flex;align-items:flex-start;gap:8px;justify-content:space-between;flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:9px;min-width:0">
+        <div style="display:flex;align-items:center;gap:9px;min-width:0;flex:1">
           <span style="font-size:24px;line-height:1;flex-shrink:0">🏠</span>
-          <div style="min-width:0">
-            <div style="font-size:14px;font-weight:800;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${departureCity}</div>
-            <div style="font-size:10px;font-weight:700;color:#4A789E;text-transform:uppercase;letter-spacing:.6px;margin-top:1px">Departure${_fs?.date?' · '+fd(_fs.date):''}</div>
+          <div style="min-width:0;flex:1">
+            <div id="plans-dep-label-${c.id}" class="plans-dep-pill" onclick="togglePlanDepEdit('${c.id}')" title="Tap to change departure city">
+              <span style="font-size:14px;font-weight:800;color:${_depSet?'var(--text)':'var(--amber)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_depLabel}</span>
+              <span style="font-size:11px;color:var(--muted2);flex-shrink:0">✏️</span>
+            </div>
+            <div id="plans-dep-edit-${c.id}" style="display:none;margin-top:4px">
+              <input id="plans-dep-inp-${c.id}" class="fi" style="font-size:13px;font-weight:700;padding:5px 8px" value="${departureCity}" placeholder="City, State — e.g. Santa Cruz, CA"
+                onkeydown="if(event.key==='Enter')this.blur()"
+                onblur="togglePlanDepEdit('${c.id}',false);window._campDTab='daily';geocodeAndSaveStart('${c.id}')"/>
+              <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted2);margin-top:6px;cursor:pointer;user-select:none">
+                <input type="checkbox" ${isRound3?'checked':''} style="accent-color:var(--green);width:14px;height:14px;flex-shrink:0" onchange="window._campDTab='daily';toggleRoundTrip('${c.id}',this.checked)"/>
+                Round trip — return home after last day
+              </label>
+            </div>
+            <div style="font-size:10px;font-weight:700;color:#4A789E;text-transform:uppercase;letter-spacing:.6px;margin-top:2px">${_depSet?'Departure':'Tap to set'} ${_fs?.date?' · '+fd(_fs.date):''}</div>
           </div>
         </div>
         <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;flex-shrink:0;margin-top:2px">
@@ -10740,7 +10827,7 @@ function rAdvDailyTab(c){
           <div style="font-size:12px;font-weight:700;color:var(--text)">${_advStartMi?Math.round(_advStartMi)+' mi':''}${_startSecs3?(_advStartMi?' · ':'')+fDrive(_startSecs3)+' drive':''}${c.startMilesEst?' <span style="font-size:10px;font-weight:400;color:var(--muted2)">(est.)</span>':''}</div>
           ${_fsName?`<div style="font-size:10px;color:var(--muted2);margin-top:1px">to ${_fsName}</div>`:''}
         </div>
-      </div>`:(_fsName?`<div style="margin-top:7px;font-size:10px;color:var(--muted2)">🔄 Run Recalc to get drive time to ${_fsName}</div>`:'')}
+      </div>`:(_fsName&&_depSet?`<div style="margin-top:7px;font-size:10px;color:var(--muted2)">🔄 Run Recalc to get drive time to ${_fsName}</div>`:'')}
     </div>
     <div style="display:flex;padding:0 0 0 20px;height:${_advStartMi||_startSecs3?'14px':'8px'}">
       <div style="width:2px;height:100%;background:linear-gradient(to bottom,rgba(74,120,158,.4),rgba(0,0,0,.08));border-radius:1px"></div>
@@ -10791,10 +10878,31 @@ function rAdvDailyTab(c){
             ${[['🏕️','camp','Camp'],['🍽️','food','Meal'],['🥾','hike','Hike'],['🏛️','sight','Sight'],['☕','coffee','Coffee'],['⛽','fuel','Fuel'],['🎯','activity','Activity']].map(([em,tp,lb])=>{const fn=tp==='hike'?`openTrailSearch('camp','${c.id}',${di})`:`openAdvItinStopWithType('${c.id}',${di},'${tp}')`;return`<button onclick="${fn}" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--text2);background:var(--card2);border:1px solid var(--bdr2);border-radius:6px;padding:4px 9px;cursor:pointer;font-family:inherit;transition:all .12s" onmouseover="this.style.borderColor='${dc}';this.style.color='${dc}'" onmouseout="this.style.borderColor='var(--bdr2)';this.style.color='var(--text2)'">${em} ${lb}</button>`;}).join('')}
           </div>
         </div>
-        ${!baseStop&&dayStops.length>0?`<div style="margin-top:6px;padding:7px 10px;background:var(--card2);border:1px dashed var(--bdr2);border-radius:7px;display:flex;align-items:center;gap:7px">
-          <span style="font-size:14px;line-height:1;opacity:.5">🌙</span>
-          <span style="font-size:11px;color:var(--muted2)">Where are you sleeping? Tap <strong>🌙</strong> on a stop above to mark tonight's base.</span>
-        </div>`:''}
+        ${(()=>{
+          if(baseStop)return'';
+          // Smart base suggestion: if previous day had a base, surface a one-tap "continue" option
+          const prevDay=di>0?itin[di-1]:null;
+          const prevBase=prevDay?(prevDay.stops||[]).find(s=>s.isBase):null;
+          if(prevBase){
+            const prevName=prevBase.name.split(',')[0];
+            return`<div style="margin-top:7px;padding:9px 12px;background:rgba(200,144,30,.07);border:1.5px solid rgba(200,144,30,.3);border-radius:10px;display:flex;align-items:center;gap:10px">
+              <span style="font-size:18px;flex-shrink:0">🌙</span>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:11px;font-weight:700;color:var(--text)">Returning to ${prevName} tonight?</div>
+                <div style="font-size:10px;color:var(--muted2);margin-top:1px">Same base as last night</div>
+              </div>
+              <button onclick="continueBaseToDay('camp','${c.id}',${di-1},${di})" style="background:var(--amber);color:#fff;border:none;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;transition:filter .13s" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''">Yes ✓</button>
+              <button onclick="openAdvItinStopWithType('${c.id}',${di},'sleep')" style="background:var(--card2);color:var(--text2);border:1px solid var(--bdr2);border-radius:8px;padding:7px 10px;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;transition:border-color .13s" onmouseover="this.style.borderColor='var(--amber)'" onmouseout="this.style.borderColor='var(--bdr2)'">Change</button>
+            </div>`;
+          }
+          if(dayStops.length>0){
+            return`<div style="margin-top:6px;padding:7px 10px;background:var(--card2);border:1px dashed var(--bdr2);border-radius:7px;display:flex;align-items:center;gap:7px">
+              <span style="font-size:14px;line-height:1;opacity:.5">🌙</span>
+              <span style="font-size:11px;color:var(--muted2)">Where are you sleeping? Tap <strong>🌙</strong> on a stop above, or <button onclick="openAdvItinStopWithType('${c.id}',${di},'sleep')" style="background:none;border:none;color:var(--amber);font-weight:700;cursor:pointer;font-family:inherit;font-size:11px;padding:0;text-decoration:underline">add a sleep stop</button>.</span>
+            </div>`;
+          }
+          return'';
+        })()}
         ${day.notes
           ?`<textarea class="ft" style="margin-top:8px;min-height:34px;font-size:12px" placeholder="Notes for this day…" onblur="setAdvItinDayNotes('${c.id}',${di},this.value)">${day.notes}</textarea>`
           :`<div class="day-note-toggle" style="font-size:11px;color:var(--muted2);margin-top:7px;cursor:pointer;opacity:.5;padding:2px 0;transition:opacity .15s" onclick="expandDayNote(this,'${c.id}',${di})" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.5'">📝 Add day notes</div><textarea class="ft" style="display:none;margin-top:6px;min-height:34px;font-size:12px" placeholder="Notes for this day…" onblur="setAdvItinDayNotes('${c.id}',${di},this.value)"></textarea>`
