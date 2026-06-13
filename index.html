@@ -10267,10 +10267,38 @@ function rAdvDailyTab(c){
   let html=`<div style="--plans-accent:${accent}">${_advRouteBanner}`;
   // Departure anchor — shows where the trip starts from
   if(departureCity){
-    html+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(74,120,158,.08);border-radius:8px;margin-bottom:8px;border-left:3px solid var(--blue-acc,#4A789E)">
-      <span style="font-size:20px;line-height:1">🏠</span>
-      <div><div style="font-size:12px;font-weight:700;color:var(--text)">${departureCity}</div>
-      <div style="font-size:10px;color:var(--muted2)">Start of trip${_advStartMi?' · '+Math.round(_advStartMi)+' mi to first stop':''}</div></div>
+    const _fs=scheduled[0];
+    const _fst=(_fs?.stops||[])[0];
+    const _fsName=_fst?.name?(_fst.name||'').split(',')[0].trim():'';
+    const _fstCoords=_fst?parseStopCoords(_fst):null;
+    const _fsAddr=(_fst?.address||'').trim();
+    const _navDest=_fstCoords?`${_fstCoords.lat},${_fstCoords.lng}`:_fsAddr?encodeURIComponent(_fsAddr):_fsName?encodeURIComponent(_fsName):null;
+    const _navUrl=_navDest?`https://www.google.com/maps/dir/?api=1&destination=${_navDest}`:null;
+    const _startSecs3=parseInt(c.startSecs)||0;
+    html+=`<div style="background:rgba(74,120,158,.09);border:1px solid rgba(74,120,158,.2);border-left:4px solid #4A789E;border-radius:10px;padding:11px 13px;margin-bottom:0">
+      <div style="display:flex;align-items:flex-start;gap:8px;justify-content:space-between;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:9px;min-width:0">
+          <span style="font-size:24px;line-height:1;flex-shrink:0">🏠</span>
+          <div style="min-width:0">
+            <div style="font-size:14px;font-weight:800;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${departureCity}</div>
+            <div style="font-size:10px;font-weight:700;color:#4A789E;text-transform:uppercase;letter-spacing:.6px;margin-top:1px">Departure${_fs?.date?' · '+fd(_fs.date):''}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;flex-shrink:0;margin-top:2px">
+          ${_navUrl?`<a href="${_navUrl}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#4A789E;background:rgba(74,120,158,.12);border:1px solid rgba(74,120,158,.3);border-radius:7px;padding:5px 10px;text-decoration:none">🗺️ Directions</a>`:''}
+          ${_fstCoords?`<button onclick="navFromDepToStop(${_fstCoords.lat},${_fstCoords.lng})" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--text2);background:var(--card2);border:1px solid var(--bdr2);border-radius:7px;padding:5px 10px;cursor:pointer;font-family:inherit">📍 My Location</button>`:''}
+        </div>
+      </div>
+      ${(_advStartMi||_startSecs3)?`<div style="margin-top:9px;display:flex;align-items:center;gap:9px;padding:7px 10px;background:rgba(74,120,158,.07);border-radius:8px">
+        <span style="font-size:16px;flex-shrink:0">🚗</span>
+        <div style="min-width:0;flex:1">
+          <div style="font-size:12px;font-weight:700;color:var(--text)">${_advStartMi?Math.round(_advStartMi)+' mi':''}${_startSecs3?(_advStartMi?' · ':'')+fDrive(_startSecs3)+' drive':''}${c.startMilesEst?' <span style="font-size:10px;font-weight:400;color:var(--muted2)">(est.)</span>':''}</div>
+          ${_fsName?`<div style="font-size:10px;color:var(--muted2);margin-top:1px">to ${_fsName}</div>`:''}
+        </div>
+      </div>`:(_fsName?`<div style="margin-top:7px;font-size:10px;color:var(--muted2)">🔄 Run Recalc to get drive time to ${_fsName}</div>`:'')}
+    </div>
+    <div style="display:flex;padding:0 0 0 20px;height:${_advStartMi||_startSecs3?'14px':'8px'}">
+      <div style="width:2px;height:100%;background:linear-gradient(to bottom,rgba(74,120,158,.4),rgba(0,0,0,.08));border-radius:1px"></div>
     </div>`;
   }
   const DAY_COLORS=['#4A789E','#3E6644','#C8901E','#7B5A3E','#5B7A6A','#8B6B9B','#9B7420'];
@@ -10831,6 +10859,15 @@ function advStopGeolocate(){
     _advApplyCoords(lat,lng,`https://maps.google.com/?q=${lat},${lng}`,null);
     toast('📍 Current location applied');
   },()=>toast('⚠️ Could not get location — check browser permissions'));
+}
+function navFromDepToStop(destLat,destLng){
+  const dest=`${destLat},${destLng}`;
+  if(!navigator.geolocation){window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}`,'_blank');return;}
+  toast('📍 Getting your location…');
+  navigator.geolocation.getCurrentPosition(
+    pos=>{window.open(`https://www.google.com/maps/dir/${pos.coords.latitude},${pos.coords.longitude}/${dest}`,'_blank');},
+    ()=>{window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}`,'_blank');toast('📍 Opening Maps from saved start location');}
+  );
 }
 
 function openAdvStopModal(cid,idx){
