@@ -9697,7 +9697,12 @@ function openCampD(id){
   else if(tab==='stops') tabBody=rAdvStopsTab(c);
   else if(tab==='daily') tabBody=rAdvDailyTab(c);
   else if(tab==='guide') tabBody=rGuideTab('camp',c);
-  else if(tab==='budget'){tabBody=rAdvBudgetTab(c);if(c.startLocation&&!c.startLat)setTimeout(()=>geocodeAndSaveStart(id),80);}
+  else if(tab==='budget'){
+    tabBody=rAdvBudgetTab(c);
+    const _bk=(D.settings?.mapsApiKey||'').trim();
+    if(c.startLocation&&!c.startLat)setTimeout(()=>geocodeAndSaveStart(id),80);
+    else if(_bk&&c.startLat&&(!c.endMiles||c.endMilesEst||c.startMilesEst))setTimeout(()=>_recalcHomeLegsBg(id,_bk),300);
+  }
   else if(tab==='gear') tabBody=rAdvGearTab(c);
   else if(tab==='links') tabBody=rAdvLinksTab(c);
   else tabBody=rAdvSummaryTab(c);
@@ -10134,6 +10139,9 @@ async function geocodeAndSaveStart(cid){
   c.startLocation=val;
   if(c.isRoundTrip!==false)c.endLocation=val;
   const hadStartLat=!!c.startLat;
+  const mapsKey=(D.settings?.mapsApiKey||'').trim();
+  // Load Maps JS API if not already loaded — required for Geocoder
+  if(mapsKey&&!window.google?.maps?.Geocoder){try{await loadGMapsAPI(mapsKey);}catch(e){console.warn('[geocode-start] Maps load:',e.message);}}
   if(window.google?.maps?.Geocoder){
     await new Promise(res=>new google.maps.Geocoder().geocode({address:val},(r,s)=>{
       if(s==='OK'&&r?.[0]){
@@ -10147,8 +10155,6 @@ async function geocodeAndSaveStart(cid){
   autoHaversineStartEnd(c);
   saveCamps();
   openCampD(cid);
-  // Auto-compute accurate home-leg driving distances in the background
-  const mapsKey=(D.settings?.mapsApiKey||'').trim();
   if(mapsKey&&c.startLat&&(!hadStartLat||!c.startMiles||c.startMilesEst||!c.endMiles||c.endMilesEst)){
     _recalcHomeLegsBg(cid,mapsKey);
   }
@@ -10158,6 +10164,8 @@ async function _recalcHomeLegsBg(cid,mapsKey){
   // Start leg only when Day 1 has stops (otherwise the first real day's stop milesPrev embeds it).
   // End leg always computed separately — last stop ≠ first stop on a non-linear route.
   await new Promise(r=>setTimeout(r,400));
+  // Load Maps JS API if not yet loaded — needed for DirectionsService fallback when Routes API is 403
+  if(!window.google?.maps?.DirectionsService){try{await loadGMapsAPI(mapsKey);}catch(e){console.warn('[home-leg] Maps load:',e.message);}}
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   const itin=c.itinerary||[];
   const firstRealDi=itin.findIndex(d=>(d.stops||[]).length>0);
@@ -10241,15 +10249,18 @@ function rAdvBudgetTab(c){
   const campStopMiles=stops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
   const itinDays=c.itinerary||[];
   const itinStops=itinDays.flatMap(d=>d.stops||[]);
-  const itinMiles=itinStops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
-  const totalMiles=campStopMiles||itinMiles;
+  const itinMilesRaw=itinStops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+  // Day 1 Stop 0's milesPrev stores the home→first-stop distance — same leg as startMiles.
+  // Subtract it so itinMiles only contains intermediate stop-to-stop legs (no double-counting).
+  const _d1s0Mi=parseFloat((itinDays[0]?.stops||[])[0]?.milesPrev)||0;
+  const itinMiles=itinMilesRaw-(!!(c.startLat||c.startMiles)?_d1s0Mi:0);
+  const totalMiles=itinMiles||campStopMiles;
   const hasCorruptMiles=parseFloat(c.startMiles)>600||parseFloat(c.endMiles)>600||itinStops.some(s=>parseFloat(s.milesPrev)>600);
-  // Auto-run haversine if home legs are missing but coords are available
-  if((!c.endMiles&&c.endLat&&c.endLng)||(!c.startMiles&&c.startLat&&c.startLng&&itinDays.findIndex(d=>(d.stops||[]).length>0)===0)){
-    autoHaversineStartEnd(c);saveCamps();
-  }
-  // If startLocation is set but not yet geocoded, trigger geocoding silently in background
-  if(c.startLocation&&!c.startLat&&window.google?.maps?.Geocoder){setTimeout(()=>geocodeAndSaveStart(c.id),200);}
+  // Auto-run full haversine (itinerary stop pairs + home legs) when distances are absent
+  const _needsHav=itinStops.some(s=>!s.milesPrev)||(!c.endMiles&&c.endLat&&c.endLng)||(!c.startMiles&&c.startLat&&c.startLng);
+  if(_needsHav){autoHaversineItinerary(c);saveCamps();}
+  // If startLocation set but not geocoded, trigger geocoding — geocodeAndSaveStart loads Maps JS itself
+  if(c.startLocation&&!c.startLat){setTimeout(()=>geocodeAndSaveStart(c.id),200);}
   const itinHasEst=itinStops.some(s=>s.milesEst)||c.startMilesEst||c.endMilesEst;
   const itinTotalDriveSecs=(parseInt(c.startSecs)||0)+itinStops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0)+(parseInt(c.endSecs)||0);
   const startMiles=parseFloat(c.startMiles)||0;
