@@ -3737,17 +3737,26 @@ const MAP_COLORS={visited:'#4A7259',want:'#B8892A',planned:'#4A789E',saved:'#8A7
 // ── Google Maps state ───────────────────────────
 let gMap=null,gMapCountryData=null,gMapStateData=null;
 let gMapMarkers=[],gMapHomeMarker=null,gMapRoutePolyline=null;
-let _gMapsLoaded=false,_gMapsLoading=false,_gCountryDataLoaded=false,_gStateDataLoaded=false;
+let _gMapsLoaded=false,_gMapsLoading=false,_gMapsError=false,_gCountryDataLoaded=false,_gStateDataLoaded=false;
 function loadGMapsAPI(key){
   return new Promise((res,rej)=>{
     if(_gMapsLoaded){res();return;}
-    if(_gMapsLoading){const w=()=>{if(_gMapsLoaded)res();else setTimeout(w,60);};w();return;}
-    _gMapsLoading=true;
+    // Surface previous load error immediately so callers don't spin indefinitely
+    if(_gMapsError){rej(new Error('Google Maps previously failed to load'));return;}
+    if(_gMapsLoading){
+      const w=()=>{
+        if(_gMapsLoaded)res();
+        else if(_gMapsError)rej(new Error('Google Maps load failed'));
+        else setTimeout(w,60);
+      };
+      w();return;
+    }
+    _gMapsLoading=true;_gMapsError=false;
     const cb='_wmcb'+Math.floor(Math.random()*1e9);
     window[cb]=()=>{_gMapsLoaded=true;_gMapsLoading=false;res();delete window[cb];};
     const s=document.createElement('script');
     s.src='https://maps.googleapis.com/maps/api/js?loading=async&key='+encodeURIComponent(key)+'&libraries=places&callback='+cb;
-    s.onerror=()=>{_gMapsLoading=false;rej(new Error('Google Maps load failed'));};
+    s.onerror=()=>{_gMapsLoading=false;_gMapsError=true;rej(new Error('Google Maps load failed'));};
     document.head.appendChild(s);
   });
 }
@@ -10253,7 +10262,7 @@ function rAdvBudgetTab(c){
   // Day 1 Stop 0's milesPrev stores the home→first-stop distance — same leg as startMiles.
   // Subtract it so itinMiles only contains intermediate stop-to-stop legs (no double-counting).
   const _d1s0Mi=parseFloat((itinDays[0]?.stops||[])[0]?.milesPrev)||0;
-  const itinMiles=itinMilesRaw-(!!(c.startLat||c.startMiles)?_d1s0Mi:0);
+  const itinMiles=Math.max(0,itinMilesRaw-(!!(c.startLat||c.startMiles)?_d1s0Mi:0));
   const totalMiles=itinMiles||campStopMiles;
   const hasCorruptMiles=parseFloat(c.startMiles)>600||parseFloat(c.endMiles)>600||itinStops.some(s=>parseFloat(s.milesPrev)>600);
   // Auto-run full haversine (itinerary stop pairs + home legs) when distances are absent
@@ -10349,12 +10358,12 @@ function rAdvBudgetTab(c){
       </div>
       ${effectiveMiles?`<div style="font-size:15px;font-weight:700;color:var(--text);margin-top:4px">${Math.round(effectiveMiles)} mi total${itinHasEst?' <span style="font-size:11px;font-weight:400;color:var(--muted2)">(est.)</span>':''} ${itinTotalDriveSecs?'· '+fDrive(itinTotalDriveSecs):''}</div>`:`<div style="font-size:11px;color:var(--muted2);margin-top:4px">Set departure city and run Recalc to get route miles</div>`}
     </div>
-    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:14px">
-      <div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:14px">
+      <div style="flex:1;min-width:160px">
         <label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Driving From</label>
         <input id="fuel-start-loc-${c.id}" class="fi" style="margin-top:3px" value="${c.startLocation||''}" placeholder="${homeCity||'Start city — e.g. Aptos, CA'}" onblur="window._campDTab='budget';geocodeAndSaveStart('${c.id}')"/>
       </div>
-      <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:var(--text2);padding-bottom:2px;white-space:nowrap">
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:var(--text2);padding-bottom:2px;white-space:nowrap;flex-shrink:0">
         <input type="checkbox" ${isRound?'checked':''} style="accent-color:var(--green);width:14px;height:14px" onchange="window._campDTab='budget';toggleRoundTrip('${c.id}',this.checked)"/>
         Round trip
       </label>
@@ -10428,10 +10437,10 @@ function rAdvBudgetTab(c){
           ${CATS.map(cat=>`<button class="cat-chip" onclick="selectExpCat('${c.id}','${cat}')" data-cat="${cat}">${cat}</button>`).join('')}
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-        <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Description</label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+        <div style="flex:2;min-width:130px"><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Description</label>
         <input class="fi" id="exp-desc-${c.id}" style="margin-top:3px" placeholder="e.g. Campsite at Big Sur" type="text"/></div>
-        <div><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Amount ($)</label>
+        <div style="flex:1;min-width:90px"><label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Amount ($)</label>
         <input class="fi" id="exp-amt-${c.id}" style="margin-top:3px" placeholder="0.00" type="number" step="0.01" min="0"/></div>
       </div>
       <div style="margin-bottom:10px">
@@ -11549,7 +11558,7 @@ function autoHaversineStartEnd(obj){
   // Start leg: only compute separately when Day 1 has stops (di===0).
   // If Day 1 is empty, the home→first-stop leg is embedded in that first real stop's milesPrev
   // (computed above via homeCoords fallback), so adding startMiles would double-count it.
-  if(obj.startLat&&obj.startLng&&firstRealDi===0){
+  if(obj.startLat&&obj.startLng&&firstRealDi===0&&(itin[0]?.stops||[]).length>0){
     const s=itin[0].stops[0];const sc=parseStopCoords(s);
     if(sc){
       const d=haversineMiles(parseFloat(obj.startLat),parseFloat(obj.startLng),sc.lat,sc.lng);
