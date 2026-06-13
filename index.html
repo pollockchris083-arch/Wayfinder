@@ -1058,6 +1058,20 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
 /* ── Expand / collapse toggle ── */
 .guide-expand-btn{background:none;border:none;font-size:10px;color:var(--guide-accent,#C8901E);cursor:pointer;padding:0 12px 5px;font-family:inherit;text-align:left;display:block;opacity:.75;transition:opacity .12s}
 .guide-expand-btn:hover{opacity:1}
+/* ── Departure / Return waypoint ── */
+.guide-waypoint{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(74,120,158,.05);border-bottom:1px solid rgba(74,120,158,.12)}
+.guide-waypoint-icon{width:34px;height:34px;border-radius:50%;background:rgba(74,120,158,.1);border:1.5px solid rgba(74,120,158,.25);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;line-height:1}
+.guide-waypoint-label{font-size:12px;font-weight:600;color:var(--text);line-height:1.3}
+.guide-waypoint-sub{font-size:11px;color:var(--muted2);margin-top:2px}
+/* ── Along the way ── */
+.guide-atw-btn{background:none;border:1px solid rgba(74,120,158,.3);border-radius:100px;font-size:10px;font-weight:700;color:#4A789E;cursor:pointer;font-family:inherit;padding:3px 10px;white-space:nowrap;transition:all .12s;flex-shrink:0;margin-left:auto}
+.guide-atw-btn:hover{background:rgba(74,120,158,.08);border-color:rgba(74,120,158,.5)}
+.guide-atw-btn:disabled{opacity:.5;cursor:default}
+.guide-atw-results{border-bottom:1px solid var(--bdr2);overflow:hidden;background:rgba(74,120,158,.03)}
+.guide-atw-sep{color:var(--bdr2);margin:0 3px}
+.guide-atw-inline-btn{background:none;border:none;font-size:9.5px;font-weight:700;color:#4A789E;cursor:pointer;font-family:inherit;padding:0;white-space:nowrap;transition:opacity .12s;letter-spacing:.02em}
+.guide-atw-inline-btn:hover{opacity:.7}
+.guide-atw-inline-btn:disabled{opacity:.45;cursor:default}
 
 /* ── Sheet mobile ── */
 @media(max-width:699px){
@@ -8847,6 +8861,40 @@ function rGuideDaySheet(rt,obj,di,accent){
   const prevDay=scheduled[schedIdx-1];const nextDay=scheduled[schedIdx+1];
   const prevDi=prevDay?itin.indexOf(prevDay):null;const nextDi=nextDay?itin.indexOf(nextDay):null;
 
+  // Departure / return context
+  const isFirstDay=schedIdx===0;
+  const isLastDay=schedIdx===scheduled.length-1;
+  const startMiLeg=parseFloat(obj.startMiles)||0;
+  const startSecsLeg=parseFloat(obj.startSecs)||0;
+  const endMiLeg=parseFloat(obj.endMiles)||0;
+  const endSecsLeg=parseFloat(obj.endSecs)||0;
+  const fromCity=(obj.startLocation||'').split(',')[0].trim()||'Home';
+  const isRoundTrip=obj.isRoundTrip!==false;
+  const ATW_THRESH=2700; // 45 min — show "along the way" for legs longer than this
+  const firstStopName=dayStops.length>0?(dayStops[0].name||'first stop').split(',')[0]:'first stop';
+  const lastStopName=dayStops.length>0?(dayStops[dayStops.length-1].name||'last stop').split(',')[0]:'last stop';
+
+  // Departure section (Day 1 only)
+  const _atwDepId=`atw-dep-${obj.id}-${di}`;
+  const _showAtwDep=isFirstDay&&startSecsLeg>ATW_THRESH;
+  const departHtml=isFirstDay&&(startMiLeg||startSecsLeg)?`
+    <div class="guide-waypoint">
+      <div class="guide-waypoint-icon">🏠</div>
+      <div style="flex:1;min-width:0">
+        <div class="guide-waypoint-label">Departing from <strong>${fromCity}</strong></div>
+        <div class="guide-waypoint-sub">${startMiLeg?Math.round(startMiLeg)+' mi':''}${startMiLeg&&startSecsLeg?' · ':''}${startSecsLeg?fDrive(startSecsLeg)+' to '+firstStopName:''}${obj.startMilesEst?' (est.)':''}</div>
+      </div>
+      ${_showAtwDep?`<button class="guide-atw-btn" data-from="${fromCity}" data-to="${firstStopName}" onclick="aiAlongTheWay(this,'${_atwDepId}')">✦ Along the way</button>`:''}
+    </div>
+    ${_showAtwDep?`<div class="guide-atw-results" id="${_atwDepId}"></div>`:''}
+    <div class="guide-drive-row">
+      <span class="guide-drive-arrow">↓</span>
+      <div class="guide-drive-line"></div>
+      <div class="guide-drive-badge">🚗 ${startMiLeg?Math.round(startMiLeg)+' mi':''}${startMiLeg&&startSecsLeg?' · ':''}${startSecsLeg?fDrive(startSecsLeg):''}</div>
+      <div class="guide-drive-line"></div>
+      <span class="guide-drive-arrow">↓</span>
+    </div>`:'';
+
   // Base stop for out-and-back calcs (only forward from base)
   const baseSi=dayStops.findIndex(s=>s.isBase);
   const baseStop=baseSi>=0?dayStops[baseSi]:null;
@@ -8883,17 +8931,43 @@ function rGuideDaySheet(rt,obj,di,accent){
       const nxt=dayStops[si+1];
       const cMi=parseFloat(nxt?.milesPrev||0);
       const cSecs=parseFloat(nxt?.driveSecs||0);
+      const legFrom=(dayStops[si].name||'').split(',')[0];
+      const legTo=(nxt.name||'').split(',')[0];
+      const atwLegId=`atw-leg-${obj.id}-${di}-${si}`;
+      const showAtwLeg=cSecs>ATW_THRESH;
       stopsHtml+=`<div class="guide-drive-row">
         <span class="guide-drive-arrow">↓</span>
         <div class="guide-drive-line"></div>
         <div class="guide-drive-badge">
-          ${(cMi||cSecs)?`🚗 ${cMi?Math.round(cMi)+' mi':''}${cMi&&cSecs?' · ':''}${cSecs?fDrive(cSecs):''}`:`<span style="font-style:italic;opacity:.6">next stop</span>`}
+          ${(cMi||cSecs)?`🚗 ${cMi?Math.round(cMi)+' mi':''}${cMi&&cSecs?' · ':''}${cSecs?fDrive(cSecs):''}${showAtwLeg?`<span class="guide-atw-sep">·</span><button class="guide-atw-inline-btn" data-from="${legFrom.replace(/"/g,'&quot;')}" data-to="${legTo.replace(/"/g,'&quot;')}" onclick="aiAlongTheWay(this,'${atwLegId}')">✦ Along this drive</button>`:''}`:
+          `<span style="font-style:italic;opacity:.6">next stop</span>`}
         </div>
         <div class="guide-drive-line"></div>
         <span class="guide-drive-arrow">↓</span>
-      </div>`;
+      </div>${showAtwLeg?`<div class="guide-atw-results" id="${atwLegId}"></div>`:''}`;
     }
   }
+
+  // Return home section (last day, round trip)
+  const _atwRetId=`atw-ret-${obj.id}-${di}`;
+  const _showAtwRet=isLastDay&&isRoundTrip&&endSecsLeg>ATW_THRESH;
+  const returnHtml=isLastDay&&isRoundTrip&&(endMiLeg||endSecsLeg)?`
+    <div class="guide-drive-row">
+      <span class="guide-drive-arrow">↓</span>
+      <div class="guide-drive-line"></div>
+      <div class="guide-drive-badge">🚗 ${endMiLeg?Math.round(endMiLeg)+' mi':''}${endMiLeg&&endSecsLeg?' · ':''}${endSecsLeg?fDrive(endSecsLeg):'drive home'}${_showAtwRet?`<span class="guide-atw-sep">·</span><button class="guide-atw-inline-btn" data-from="${lastStopName.replace(/"/g,'&quot;')}" data-to="${fromCity.replace(/"/g,'&quot;')}" onclick="aiAlongTheWay(this,'${_atwRetId}')">✦ Along this drive</button>`:''}
+      </div>
+      <div class="guide-drive-line"></div>
+      <span class="guide-drive-arrow">↓</span>
+    </div>
+    ${_showAtwRet?`<div class="guide-atw-results" id="${_atwRetId}"></div>`:''}
+    <div class="guide-waypoint">
+      <div class="guide-waypoint-icon">🏠</div>
+      <div style="flex:1;min-width:0">
+        <div class="guide-waypoint-label">Return to <strong>${fromCity}</strong></div>
+        <div class="guide-waypoint-sub">${endMiLeg?Math.round(endMiLeg)+' mi':''}${endMiLeg&&endSecsLeg?' · ':''}${endSecsLeg?fDrive(endSecsLeg)+' from '+lastStopName:''}${obj.endMilesEst?' (est.)':''}</div>
+      </div>
+    </div>`:'';
 
   // Out-and-back summary when base is set
   let oabSummary='';
@@ -8930,9 +9004,10 @@ function rGuideDaySheet(rt,obj,di,accent){
       </div>
     </div>
     ${narrativeHtml}
+    ${departHtml}
     ${dayStops.length
-      ?`<div class="guide-stops-list">${stopsHtml}</div>${oabSummary}`
-      :`<div style="font-size:12px;color:var(--muted2);padding:22px 0;text-align:center;font-style:italic">No stops planned for this day</div>`
+      ?`<div class="guide-stops-list">${stopsHtml}</div>${returnHtml}${oabSummary}`
+      :`<div style="font-size:12px;color:var(--muted2);padding:22px 0;text-align:center;font-style:italic">No stops planned for this day</div>${returnHtml}`
     }
   </div>`;
 }
@@ -9097,6 +9172,32 @@ function toggleGuideDone(rt,id,di,si){
   s.done=!s.done;
   if(rt==='camp'){saveCamps();window._campDTab='guide';openCampD(id);}
   else{save('trips',D.trips);switchTripItinTab(id,'guide');}
+}
+async function aiAlongTheWay(btn,containerId){
+  const container=document.getElementById(containerId);
+  if(!container)return;
+  const from=btn.dataset.from||'starting point';
+  const to=btn.dataset.to||'destination';
+  btn.textContent='✦ Searching…';
+  btn.disabled=true;
+  container.innerHTML=`<div style="padding:8px 16px;font-size:11px;color:var(--muted2);font-style:italic">Finding stops along this route…</div>`;
+  try{
+    const raw=await callAI(`A traveler is driving from ${from} to ${to}. Suggest 3 brief, practical stops along this exact route. For each, use this format on a new line:
+• [emoji] [Name or type] — [one practical tip, max 12 words]
+
+Use these categories as appropriate: ⛽ gas, ☕ coffee/food, 🌲 viewpoint/attraction, 🛒 grocery, 🚻 rest stop, 📸 photo spot. If the drive is very short, say so. Plain text only, no extra commentary.`,150);
+    const lines=raw.trim().split('\n').filter(l=>l.trim().length>3&&l.includes('—'));
+    if(!lines.length){container.innerHTML='';btn.textContent='✦ Along this drive';btn.disabled=false;return;}
+    container.innerHTML=`<div style="padding:8px 16px 10px">
+      <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A789E;margin-bottom:7px;opacity:.8">Along this drive: ${from} → ${to}</div>
+      ${lines.map(l=>`<div style="font-size:11.5px;color:var(--text2);line-height:1.55;margin-bottom:4px;padding-left:2px">${l.replace(/^[•·\-]\s*/,'').trim()}</div>`).join('')}
+    </div>`;
+    btn.style.display='none';
+  }catch(e){
+    container.innerHTML='';
+    btn.textContent='✦ Along this drive';
+    btn.disabled=false;
+  }
 }
 async function aiGuideSingleStop(rt,id,di,si){
   D=load();
