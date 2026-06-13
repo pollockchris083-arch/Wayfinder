@@ -9172,6 +9172,29 @@ function delCamp(id){
   badges();
 }
 
+function showCampActMenu(e,cid){
+  e.stopPropagation();
+  document.querySelectorAll('.stop-act-menu').forEach(m=>m.remove());
+  const menu=document.createElement('div');
+  menu.className='stop-act-menu';
+  const rect=e.currentTarget.getBoundingClientRect();
+  menu.style.cssText=`position:fixed;z-index:700;right:${Math.max(4,window.innerWidth-rect.right)}px;top:${Math.min(rect.bottom+5,window.innerHeight-130)}px`;
+  const mkItem=(icon,label,color,fn)=>{
+    const b=document.createElement('button');
+    b.style.cssText=`display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:none;border:none;padding:9px 14px;font-size:13px;font-weight:500;color:${color||'var(--text2)'};cursor:pointer;border-radius:7px;font-family:inherit;white-space:nowrap`;
+    b.innerHTML=`<span>${icon}</span><span>${label}</span>`;
+    b.onmouseover=()=>b.style.background='var(--card2)';
+    b.onmouseout=()=>b.style.background='none';
+    b.onclick=fn;
+    return b;
+  };
+  menu.appendChild(mkItem('🖨️','Print / Save PDF',null,()=>{openPrintMenu(cid,'adv');menu.remove();}));
+  const sep=document.createElement('div');sep.style.cssText='height:1px;background:var(--bdr);margin:4px 6px';menu.appendChild(sep);
+  menu.appendChild(mkItem('🗑️','Delete Adventure','#c05050',()=>{menu.remove();delCamp(cid);}));
+  document.body.appendChild(menu);
+  setTimeout(()=>document.addEventListener('click',function h(){menu.remove();document.removeEventListener('click',h);}),50);
+}
+
 // ── Trip Detail ─────────────────────────────────────────
 function openCampDInTrips(id){
   D=load();
@@ -9222,42 +9245,43 @@ function openCampD(id){
   const _backBtn=_inTrips?`<button class="td-back" onclick="closeCampDInTrips()">← Trips</button>`:`<button class="td-back" onclick="go('trips');rTrips()">← Trips</button>`;
   if(!_campContainer)return;
   _campContainer.innerHTML=`
-    ${_backBtn}
-    <div style="margin-top:10px">
-      ${c.thumb?`<img src="${c.thumb}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r);margin-bottom:12px" onerror="this.style.display='none'"/>`:''}
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px">
-        <div style="flex:1;min-width:0">
-          <h2 style="font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.3px;line-height:1.2;margin-bottom:6px">${c.name}${c.solo?' <span style="font-size:14px;opacity:.75">🧍</span>':''}</h2>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
-            <span class="camp-type-badge">${typeInfo.icon} ${typeInfo.label}</span>
-            <span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;${campStatusStyle(c.status)}">${{dream:'✦ Dreaming',research:'🔍 Researching',planning:'📋 Planning',locked:'🔒 Locked In',active:'🚀 Active',past:'✅ Completed'}[c.status]||tsl(c.status)}</span>
-            ${c.solo?`<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:rgba(74,114,89,.1);color:var(--green3);border:1px solid rgba(74,114,89,.2)">🧍 Solo</span>`:''}
-            ${c.location?`<span style="font-size:11px;color:var(--muted)">📍 ${c.location}${c.state?', '+c.state:''}</span>`:''}
-          </div>
-          <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:12px">
-            ${c.startDate?`<span style="font-size:11px;color:var(--muted2)">📅 ${fd(c.startDate)}${c.endDate&&c.endDate!==c.startDate?' — '+fd(c.endDate):''}${dur?' · '+dur+'d':''}</span>`:''}
-            ${totalMiles>0?`<span style="font-size:11px;color:var(--muted2)">🛣️ ${totalMiles.toFixed(0)} mi${totalDriveSecs?' · '+fDrive(totalDriveSecs)+' total drive':''} · ${stops.length} stop${stops.length!==1?'s':''}</span>`:''}
+    <div style="background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;margin-bottom:14px;box-shadow:var(--shadow)">
+      ${c.thumb?`<img src="${c.thumb}" style="width:100%;max-height:165px;object-fit:cover;display:block" onerror="this.style.display='none'"/>`:''}
+      <div style="height:3px;background:${{dream:'linear-gradient(90deg,#C8901E,#E8B040)',research:'linear-gradient(90deg,#4A789E,#6A98BE)',planning:'linear-gradient(90deg,#4A7259,#6B9575)',locked:'linear-gradient(90deg,#2D5A3E,#4A7259)',active:'linear-gradient(90deg,#3E7252,#5A8A6C)',past:'var(--bdr)'}[c.status]||'var(--bdr)'}"></div>
+      <div style="padding:12px 14px 14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px">
+          ${_backBtn}
+          <div style="display:flex;gap:6px;align-items:center">
+            <button onclick="openCampEdit('${c.id}')" style="display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:8px;border:1px solid var(--bdr2);background:var(--card2);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;min-height:32px">✏️ Edit</button>
+            <button onclick="showCampActMenu(event,'${c.id}')" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid var(--bdr2);background:var(--card2);color:var(--text2);font-size:17px;cursor:pointer;font-family:inherit;line-height:1">⋯</button>
           </div>
         </div>
-        <div style="display:flex;gap:5px;flex-shrink:0">
-          <button class="pbtn" onclick="openPrintMenu('${c.id}','adv')" title="Print / Save PDF">🖨️</button>
-          <button class="pbtn" onclick="openCampEdit('${c.id}')">✏️</button>
-          <button class="pbtn del" onclick="delCamp('${c.id}')">🗑️</button>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:7px">
+          <span class="camp-type-badge">${typeInfo.icon} ${typeInfo.label}</span>
+          <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;${campStatusStyle(c.status)}">${{dream:'✦ Dreaming',research:'🔍 Researching',planning:'📋 Planning',locked:'🔒 Locked In',active:'🚀 Active',past:'✅ Done'}[c.status]||tsl(c.status)}</span>
+          ${dur?`<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;background:rgba(74,114,89,.1);color:var(--green3);border:1px solid rgba(74,114,89,.2)">${dur}d trip</span>`:''}
+          ${c.solo?`<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;background:rgba(74,114,89,.08);color:var(--green3);border:1px solid rgba(74,114,89,.18)">🧍 Solo</span>`:''}
         </div>
+        <div style="font-size:21px;font-weight:800;color:var(--text);letter-spacing:-.4px;line-height:1.2;margin-bottom:8px">${c.name}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:11.5px;color:var(--muted2)">
+          ${c.location?`<span>📍 ${c.location}${c.state?', '+c.state:''}</span>`:''}
+          ${c.startDate?`<span>📅 ${fd(c.startDate)}${c.endDate&&c.endDate!==c.startDate?' — '+fd(c.endDate):''}</span>`:''}
+          ${totalMiles>0?`<span>🛣️ ${totalMiles.toFixed(0)} mi${totalDriveSecs?' · '+fDrive(totalDriveSecs):''} · ${stops.length} stop${stops.length!==1?'s':''}</span>`:''}
+        </div>
+        ${c.status!=='past'?rStageRail(c.status,c.id,true,true):''}
       </div>
-      ${rStageRail(c.status,c.id,true)}
-      <div class="fb" style="margin-bottom:14px;flex-wrap:wrap;gap:4px;overflow-x:auto">
-        <button class="fc ${tab==='overview'?'on':''}" onclick="window._campDTab='overview';openCampD('${c.id}')">📋 Overview</button>
-        <button class="fc ${tab==='stops'?'on':''}" onclick="window._campDTab='stops';openCampD('${c.id}')">📍 Stops${itinStopCount?' ('+itinStopCount+')':''}</button>
-        <button class="fc ${tab==='daily'?'on':''}" onclick="window._campDTab='daily';openCampD('${c.id}')">📅 Plans</button>
-        <button class="fc ${tab==='guide'?'on':''}" style="${tab==='guide'?'':'border-color:rgba(200,144,30,.3);color:var(--amber)'}" onclick="window._campDTab='guide';openCampD('${c.id}')">✦ Guide</button>
-        <button class="fc ${tab==='budget'?'on':''}" onclick="window._campDTab='budget';openCampD('${c.id}')">💰 Budget</button>
-        <button class="fc ${tab==='gear'?'on':''}" onclick="window._campDTab='gear';openCampD('${c.id}')">🎒 Gear</button>
-        <button class="fc ${tab==='links'?'on':''}" onclick="window._campDTab='links';openCampD('${c.id}')">🔗 Links</button>
-        <button class="fc ${tab==='summary'?'on':''}" onclick="window._campDTab='summary';openCampD('${c.id}')">📓 Memoirs</button>
-      </div>
-      ${_campNudge}${tabBody}
-    </div>`;
+    </div>
+    <div class="fb" style="margin-bottom:14px;flex-wrap:wrap;gap:4px;overflow-x:auto">
+      <button class="fc ${tab==='overview'?'on':''}" onclick="window._campDTab='overview';openCampD('${c.id}')">📋 Overview</button>
+      <button class="fc ${tab==='stops'?'on':''}" onclick="window._campDTab='stops';openCampD('${c.id}')">📍 Stops${itinStopCount?' ('+itinStopCount+')':''}</button>
+      <button class="fc ${tab==='daily'?'on':''}" onclick="window._campDTab='daily';openCampD('${c.id}')">📅 Plans</button>
+      <button class="fc ${tab==='guide'?'on':''}" style="${tab==='guide'?'':'border-color:rgba(200,144,30,.3);color:var(--amber)'}" onclick="window._campDTab='guide';openCampD('${c.id}')">✦ Guide</button>
+      <button class="fc ${tab==='budget'?'on':''}" onclick="window._campDTab='budget';openCampD('${c.id}')">💰 Budget</button>
+      <button class="fc ${tab==='gear'?'on':''}" onclick="window._campDTab='gear';openCampD('${c.id}')">🎒 Gear</button>
+      <button class="fc ${tab==='links'?'on':''}" onclick="window._campDTab='links';openCampD('${c.id}')">🔗 Links</button>
+      <button class="fc ${tab==='summary'?'on':''}" onclick="window._campDTab='summary';openCampD('${c.id}')">📓 Memoirs</button>
+    </div>
+    ${_campNudge}${tabBody}`;
 }
 
 // ── Documents ────────────────────────────────────────────
@@ -13236,7 +13260,7 @@ const tsl=s=>({dream:'Dreaming',research:'Researching',planning:'Planning',locke
 
 const _STAGES=[{s:'dream',i:'✦',l:'Dream'},{s:'research',i:'🔍',l:'Research'},{s:'planning',i:'✏️',l:'Planning'},{s:'locked',i:'🔒',l:'Locked In'},{s:'active',i:'🚀',l:'Active'},{s:'past',i:'✅',l:'Done'}];
 
-function rStageRail(status,id,isAdv){
+function rStageRail(status,id,isAdv,compact=false){
   if(status==='past')return'';
   const curIdx=_STAGES.findIndex(x=>x.s===status);if(curIdx<0)return'';
   const next=_STAGES[curIdx+1];
@@ -13244,6 +13268,27 @@ function rStageRail(status,id,isAdv){
   const setFn=isAdv?`advSetStage('${id}','${next?.s}')`:`tripSetStage('${id}','${next?.s}')`;
   const backFn=prev?(isAdv?`advSetStage('${id}','${prev.s}')`:`tripSetStage('${id}','${prev.s}')`):'';
   const ctaLabel={dream:'Begin Research →',research:'Start Planning →',planning:'Lock It In →',locked:'Begin Trip →',active:'Mark as Complete →'}[status]||'Advance Stage →';
+  if(compact){
+    const _sh={dream:'#C8901E',research:'#4A789E',planning:'#6B9575',locked:'#4A7259',active:'#5A8A6C',past:'#888'};
+    const hue=_sh[status]||'#888';
+    const dotTrack=_STAGES.map((st,i)=>{
+      const done=i<curIdx,cur=i===curIdx;
+      const sh=_sh[st.s]||'#888';
+      const dot=done?`<div title="${st.l}" style="width:9px;height:9px;border-radius:50%;background:${sh};flex-shrink:0;opacity:.55"></div>`
+        :cur?`<div title="${st.l}" style="width:11px;height:11px;border-radius:50%;background:${sh};flex-shrink:0;box-shadow:0 0 0 3px ${sh}28"></div>`
+        :`<div title="${st.l}" style="width:9px;height:9px;border-radius:50%;border:1.5px solid var(--bdr2);flex-shrink:0;background:var(--card);opacity:.4"></div>`;
+      const line=i<_STAGES.length-1?`<div style="flex:1;height:1.5px;background:${done?sh+'50':'var(--bdr2)'};margin:0 3px;min-width:8px"></div>`:'';
+      return dot+(i<_STAGES.length-1?line:'');
+    }).join('');
+    return`<div style="margin-top:12px;padding-top:11px;border-top:1px solid var(--bdr)">
+      <div style="display:flex;align-items:center;margin-bottom:9px">${dotTrack}</div>
+      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+        <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:${hue}">${tsl(status)}</span>
+        ${next?`<button onclick="${setFn}" style="padding:5px 13px;border-radius:7px;border:1px solid ${hue}50;background:${hue}14;color:${hue};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">${ctaLabel}</button>`:''}
+        ${prev?`<button onclick="${backFn}" style="padding:4px 9px;border-radius:7px;border:none;background:none;color:var(--muted2);font-size:10px;cursor:pointer;font-family:inherit">← ${prev.l}</button>`:''}
+      </div>
+    </div>`;
+  }
   const railHtml=_STAGES.map((st,i)=>{
     const cls=i<curIdx?'s-done':i===curIdx?'s-active':'';
     return`<div class="stage-step ${cls}"><div class="stage-icon">${st.i}</div><div class="stage-label">${st.l}</div></div>${i<_STAGES.length-1?'<div class="stage-sep">›</div>':''}`;
