@@ -8801,6 +8801,12 @@ function rGuideTab(rt,obj){
   if(!scheduled.length&&!itin.length){
     return`<div class="guide-empty"><div style="font-size:36px;margin-bottom:12px">📖</div><h3 style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px">No itinerary yet</h3><p style="font-size:12px;color:var(--muted2);margin-bottom:16px">Build your day-by-day plans and this Guide will come to life.</p><button class="btn-p" style="font-size:12px" onclick="${rt==='camp'?`window._campDTab='daily';openCampD('${obj.id}')`:`window._tripItinTab='plans';openTripD('${obj.id}')`}">📅 Start Planning</button></div>`;
   }
+  // Auto-fix any day-boundary legs that look like home→stop instead of camp→stop
+  // (silently saves; next render will use corrected values)
+  if(_autoFixDayBoundaryLegs(obj)){
+    if(rt==='camp')saveCamps();else{const D2=load();const t=D2.trips.find(x=>x.id===obj.id);if(t)save('trips',D2.trips);}
+    setTimeout(()=>_schedAutoRecalc(rt==='camp',obj.id),500);
+  }
   // Resolve active day
   const storedDi=_guideDayIdx[obj.id];
   let activeDi=(typeof storedDi==='number'&&itin[storedDi]?.date)?storedDi:itin.indexOf(scheduled[0]);
@@ -8842,6 +8848,7 @@ function rGuideTab(rt,obj){
       </div>
       <div style="display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap;align-items:center">
         <button class="guide-ai-btn" onclick="aiGuideAllStops('${rt}','${obj.id}')">✦ Fill All</button>
+        <button class="pbtn" style="font-size:10px;padding:5px 10px;border-color:rgba(74,120,158,.3);color:#4A789E" onclick="recalcItineraryDriving(${rt==='camp'},'${obj.id}')" title="Recalculate all driving distances via Google Maps">📍 Recalc Miles</button>
         <button class="pbtn" style="font-size:10px;padding:5px 10px" onclick="printTripShare('${obj.id}','${rt}')">🖨 Print</button>
       </div>
     </div>
@@ -8991,9 +8998,16 @@ function rGuideDaySheet(rt,obj,di,accent){
   // Stop type summary for header
   const _typeIcons=dayStops.map(s=>(WP_TYPES[s.type||'other']||WP_TYPES.other).i);
   const _typeUnique=[...new Set(_typeIcons)];
-  // Total day miles including departure leg for Days 2+ (first stop's milesPrev already in dayMi)
-  const _totalDayMi=(!isFirstDay&&_hasDep&&_depMi)?(_depMi+dayMi):dayMi;
-  const _totalDaySecs=(!isFirstDay&&_hasDep&&_depSecs)?(_depSecs+dayDriveSecs):dayDriveSecs;
+  // Day 1: total = startMiLeg (home→first stop, stored on obj) + dayMi (all stop legs)
+  // Days 2+: dayMi already includes dayStops[0].milesPrev which IS the departure leg
+  const _totalDayMi=isFirstDay?(startMiLeg+dayMi):dayMi;
+  const _totalDaySecs=isFirstDay?(startSecsLeg+dayDriveSecs):dayDriveSecs;
+
+  // Fuel estimate (28 MPG default, $4.50/gal)
+  const _mpg=parseFloat(D?.settings?.mpg)||28;
+  const _fuelPrice=parseFloat(D?.settings?.fuelPrice)||4.50;
+  const _fuelGal=_totalDayMi>5?_totalDayMi/_mpg:0;
+  const _fuelCost=_fuelGal?Math.round(_fuelGal*_fuelPrice):0;
 
   // Nightly accommodation bar
   const _farthestCum=Object.values(cumFromBase).length?Math.max(...Object.values(cumFromBase)):0;
@@ -9026,6 +9040,7 @@ function rGuideDaySheet(rt,obj,di,accent){
           ${dayStops.length?`<span class="guide-sheet-meta-item">📍 ${dayStops.length} stop${dayStops.length!==1?'s':''} ${_typeUnique.join('')}</span>`:''}
           ${_totalDayMi?`<span class="guide-sheet-meta-item">🛣 ${Math.round(_totalDayMi)} mi${_totalDaySecs?' · '+fDrive(_totalDaySecs):''}</span>`:''}
           ${totalTrailMi?`<span class="guide-sheet-meta-item">🥾 ${totalTrailMi.toFixed(1)} mi trail</span>`:''}
+          ${_fuelCost?`<span class="guide-sheet-meta-item">⛽ ~${_fuelGal.toFixed(1)} gal · $${_fuelCost}</span>`:''}
           ${baseStop?`<span class="guide-sheet-meta-item base">🌙 ${baseStop.name.split(',')[0]}</span>`:''}
         </div>
       </div>
@@ -11125,25 +11140,64 @@ function resetTripMiles(cid,isAdv){
   toast('✅ Distances reset — tap Recalc for accurate Google Maps routing');
 }
 
+// Return the best origin stop for Day di, Stop 0 (previous day's base or last stop).
+function _dayBoundaryOrigin(itin,di){
+  if(di<1)return null;
+  const prevStops=itin[di-1]?.stops||[];
+  return prevStops.find(s=>s.isBase)||(prevStops.length?prevStops[prevStops.length-1]:null);
+}
+
+// Detect day-boundary legs where milesPrev is far larger than haversine estimate —
+// typically caused by the leg being measured from home instead of the previous night's camp.
+// Auto-corrects with a haversine estimate and marks milesEst=true. Returns true if any fix was made.
+function _autoFixDayBoundaryLegs(obj){
+  const itin=obj.itinerary||[];let fixed=false;
+  for(let di=1;di<itin.length;di++){
+    const curDay=itin[di];if(!(curDay.stops||[]).length)continue;
+    const curStop=curDay.stops[0];
+    const curMi=parseFloat(curStop.milesPrev)||0;
+    if(!curMi||curMi<50)continue; // skip if no data or looks short enough
+    const prevOrigin=_dayBoundaryOrigin(itin,di);
+    if(!prevOrigin)continue;
+    const pc=parseStopCoords(prevOrigin),cc=parseStopCoords(curStop);
+    if(!pc||!cc)continue;
+    const hav=Math.round(haversineMiles(pc.lat,pc.lng,cc.lat,cc.lng)*1.25);
+    if(hav<1||hav>400)continue;
+    // Stored value is > 3× haversine estimate — almost certainly wrong origin
+    if(curMi>hav*3||(curMi>80&&hav<25)){
+      console.log('[autofix] Day',di,'boundary:',curMi,'mi →',hav,'mi (est.) for',curStop.name,'from',prevOrigin.name);
+      curDay.stops[0].milesPrev=hav.toString();
+      curDay.stops[0].milesEst=true;
+      delete curDay.stops[0].driveSecs;
+      fixed=true;
+    }
+  }
+  return fixed;
+}
+
 // Instantly compute haversine estimates for itinerary stop pairs that have coords.
 // Uses a 1.25 road factor. Only overwrites if milesPrev is absent or previously estimated.
+// Day-boundary-aware: Day N+1 Stop 0 is measured from Day N's BASE stop (or last stop),
+// not blindly from the last entry in the flat stop sequence.
 function autoHaversineItinerary(obj){
   if(!obj)return;
   const itin=obj.itinerary||[];
-  const flat=[];
-  itin.forEach((day,di)=>(day.stops||[]).forEach((_,si)=>flat.push({di,si})));
-  for(let i=1;i<flat.length;i++){
-    const prev=itin[flat[i-1].di].stops[flat[i-1].si];
-    const cur=itin[flat[i].di].stops[flat[i].si];
-    const pc=parseStopCoords(prev),cc=parseStopCoords(cur);
-    if(!pc||!cc)continue;
-    if(!cur.milesPrev||cur.milesEst){
-      const d=haversineMiles(pc.lat,pc.lng,cc.lat,cc.lng);
-      const est=Math.round(d*1.25);
-      if(est>600){console.warn('[haversine] Skipping implausible leg',est,'mi between',prev.name,'→',cur.name,'— coords may be wrong');continue;}
-      itin[flat[i].di].stops[flat[i].si].milesPrev=est.toString();
-      itin[flat[i].di].stops[flat[i].si].milesEst=true;
-      delete itin[flat[i].di].stops[flat[i].si].driveSecs;
+  for(let di=0;di<itin.length;di++){
+    const stops=itin[di].stops||[];
+    for(let si=0;si<stops.length;si++){
+      if(di===0&&si===0)continue; // Day 1 Stop 0: handled by startMiles
+      const prev=si===0?_dayBoundaryOrigin(itin,di):stops[si-1];
+      if(!prev)continue;
+      const pc=parseStopCoords(prev),cc=parseStopCoords(stops[si]);
+      if(!pc||!cc)continue;
+      if(!stops[si].milesPrev||stops[si].milesEst){
+        const d=haversineMiles(pc.lat,pc.lng,cc.lat,cc.lng);
+        const est=Math.round(d*1.25);
+        if(est>600){console.warn('[haversine] Implausible leg',est,'mi:',prev.name,'→',stops[si].name);continue;}
+        stops[si].milesPrev=est.toString();
+        stops[si].milesEst=true;
+        delete stops[si].driveSecs;
+      }
     }
   }
   autoHaversineStartEnd(obj);
@@ -11221,38 +11275,52 @@ async function recalcItineraryDriving(isAdv,id,silent=false){
       else save('trips',D.trips);
     }
   }
-  const pairCount=flat.filter(({di,si},i)=>i>0&&parseStopCoords(itin[flat[i-1].di].stops[flat[i-1].si])&&parseStopCoords(itin[di].stops[si])).length;
-  const hasHomeLeg=isAdv&&flat.length>0&&((obj.startLat&&parseStopCoords(itin[flat[0].di].stops[flat[0].si]))||(obj.endLat&&parseStopCoords(itin[flat[flat.length-1].di].stops[flat[flat.length-1].si])));
+  // Count routable pairs using day-boundary-aware origins
+  let pairCount=0;
+  for(let di=0;di<itin.length;di++){
+    const stops=itin[di].stops||[];
+    for(let si=0;si<stops.length;si++){
+      if(di===0&&si===0)continue;
+      const prev=si===0?_dayBoundaryOrigin(itin,di):stops[si-1];
+      if(prev&&parseStopCoords(prev)&&parseStopCoords(stops[si]))pairCount++;
+    }
+  }
+  const firstStop=itin.flatMap(d=>d.stops||[])[0];
+  const lastStop=itin.flatMap(d=>d.stops||[]).slice(-1)[0];
+  const hasHomeLeg=isAdv&&((obj.startLat&&parseStopCoords(firstStop))||(obj.endLat&&parseStopCoords(lastStop)));
   if(!pairCount&&!hasHomeLeg){if(!silent)toast('⚠️ No route-able stops — add stops via Google Places to get GPS coords');return;}
   if(!silent){const btn=document.getElementById('itin-recalc-btn');if(btn){btn.textContent='⏳ Calculating…';btn.disabled=true;}}
   let updated=0;
-  for(let i=1;i<flat.length;i++){
-    const prev=itin[flat[i-1].di].stops[flat[i-1].si];
-    const cur=itin[flat[i].di].stops[flat[i].si];
-    const pc=parseStopCoords(prev),cc=parseStopCoords(cur);
-    if(!pc||!cc)continue;
-    try{
-      const r=await getRouteDrivingInfo(pc.lat,pc.lng,cc.lat,cc.lng,mapsKey);
-      itin[flat[i].di].stops[flat[i].si].milesPrev=r.miles.toFixed(0);
-      itin[flat[i].di].stops[flat[i].si].driveSecs=r.secs;
-      itin[flat[i].di].stops[flat[i].si].milesEst=false;
-      updated++;
-    }catch(e){console.warn('[itin-route]',e.message);}
+  // Calculate each leg using the correct origin (base-camp-aware at day boundaries)
+  for(let di=0;di<itin.length;di++){
+    const stops=itin[di].stops||[];
+    for(let si=0;si<stops.length;si++){
+      if(di===0&&si===0)continue;
+      const prevStop=si===0?_dayBoundaryOrigin(itin,di):stops[si-1];
+      if(!prevStop)continue;
+      const pc=parseStopCoords(prevStop),cc=parseStopCoords(stops[si]);
+      if(!pc||!cc)continue;
+      try{
+        const r=await getRouteDrivingInfo(pc.lat,pc.lng,cc.lat,cc.lng,mapsKey);
+        stops[si].milesPrev=r.miles.toFixed(0);
+        stops[si].driveSecs=r.secs;
+        stops[si].milesEst=false;
+        updated++;
+      }catch(e){console.warn('[itin-route]',e.message);}
+    }
   }
   // Compute start → first stop and last stop → end legs
-  if(isAdv&&obj.startLat&&obj.startLng&&flat.length>0){
-    const firstSt=itin[flat[0].di].stops[flat[0].si];
-    const fc=parseStopCoords(firstSt);
+  if(isAdv&&obj.startLat&&obj.startLng&&firstStop){
+    const fc=parseStopCoords(firstStop);
     if(fc){try{const r=await getRouteDrivingInfo(parseFloat(obj.startLat),parseFloat(obj.startLng),fc.lat,fc.lng,mapsKey);obj.startMiles=parseFloat(r.miles.toFixed(1));obj.startSecs=r.secs;obj.startMilesEst=false;updated++;}catch(e){console.warn('[start-leg]',e.message);}}
   }
-  if(isAdv&&obj.endLat&&obj.endLng&&flat.length>0){
-    const lastSt=itin[flat[flat.length-1].di].stops[flat[flat.length-1].si];
-    const lc=parseStopCoords(lastSt);
+  if(isAdv&&obj.endLat&&obj.endLng&&lastStop){
+    const lc=parseStopCoords(lastStop);
     if(lc){try{const r=await getRouteDrivingInfo(lc.lat,lc.lng,parseFloat(obj.endLat),parseFloat(obj.endLng),mapsKey);obj.endMiles=parseFloat(r.miles.toFixed(1));obj.endSecs=r.secs;obj.endMilesEst=false;updated++;}catch(e){console.warn('[end-leg]',e.message);}}
   }
   if(isAdv){saveCamps();openCampD(id);}
   else{save('trips',D.trips);openTripD(id);}
-  if(!silent)toast(updated>0?`✅ ${updated} driving distance${updated!==1?'s':''} updated!`:'⚠️ Calculation failed — check Maps API key');
+  if(!silent)toast(updated>0?`✅ ${updated} leg${updated!==1?'s':''} updated — distances now correct!`:'⚠️ Calculation failed — check Maps API key');
 }
 async function getRouteDrivingInfo(lat1,lng1,lat2,lng2,mapsKey){
   // Prefer google.maps.DirectionsService (already loaded with Maps JS API, no extra enablement needed)
