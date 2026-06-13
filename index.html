@@ -869,8 +869,7 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
 .plans-day-hdr:active{cursor:grabbing}
 .plans-day-hdr button,.plans-day-hdr label,.plans-day-hdr input{cursor:pointer;user-select:auto}
 .plans-day-title{flex:1;font-size:12px;font-weight:600;color:var(--text);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.plans-day-acts{display:flex;align-items:center;gap:1px;opacity:0;transition:opacity .15s;flex-shrink:0}
-.plans-day-hdr:hover .plans-day-acts,.plans-day-hdr.acts-vis .plans-day-acts{opacity:1}
+.plans-day-acts{display:flex;align-items:center;gap:4px;flex-shrink:0}
 .stop-move-btn{background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted2);padding:2px 5px;border-radius:4px;line-height:1;transition:color .15s,background .15s;font-family:inherit;white-space:nowrap}
 .stop-move-btn:hover{background:var(--card2);color:var(--amber)}
 .stop-day-menu{position:fixed;z-index:600;background:var(--card);border:1px solid var(--bdr2);border-radius:8px;box-shadow:var(--shadowm);padding:6px;min-width:160px;max-width:220px}
@@ -6415,14 +6414,17 @@ function rTripPlansTab(t){
     const wk=(scheduled.length>=8&&schIdx%7===0)?`<div style="display:flex;align-items:center;gap:8px;margin:${schIdx>0?'16px':'-2px'} 0 6px"><div style="flex:1;height:1px;background:var(--bdr)"></div><span style="font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap">Week ${Math.floor(schIdx/7)+1}</span><div style="flex:1;height:1px;background:var(--bdr)"></div></div>`:'';
     html+=`${wk}<div style="margin-bottom:10px" data-drag-day data-record-type="trip" data-record-id="${t.id}" data-day-idx="${di}" draggable="true"
       ondragstart="pdDayStart(event)" ondragover="pdOver(event)" ondragenter="pdDayEnter(event)" ondragleave="pdDayLeave(event)" ondragend="pdDayEnd(event)" ondrop="pdDayDrop(event)">
-      <div class="plans-day-hdr" onmouseenter="this.classList.add('acts-vis')" onmouseleave="this.classList.remove('acts-vis')" ontouchstart="this.classList.add('acts-vis')" ontouchend="setTimeout(()=>this.classList.remove('acts-vis'),2000)">
+      <div class="plans-day-hdr" style="cursor:default">
         <span class="day-drag-handle" title="Drag to reorder day" ontouchstart="ptStart(event,'trip','${t.id}',${di})" ontouchmove="ptMove(event)" ontouchend="ptEnd(event)" ontouchcancel="ptCancel(event)">⠿</span>
         <div class="plans-day-title">Day ${schIdx+1}${day.date?' — '+fd(day.date):''}${dayMiLabel}</div>
         <div class="plans-day-acts">
-          <label class="plans-day-act" title="Edit date" style="cursor:pointer">✏️<input type="date" value="${day.date}" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;font-size:0;color-scheme:dark light" onchange="setDayDate('${t.id}',${di},this.value)"/></label>
-          <button class="plans-day-act" title="Add stop" onclick="event.stopPropagation();openStop('${t.id}',${di})">＋</button>
-          <button class="plans-day-act" title="Find trail" onclick="event.stopPropagation();openTrailSearch('trip','${t.id}',${di})" style="font-size:15px">🥾</button>
-          <button class="plans-day-act del" title="Remove day" onclick="event.stopPropagation();delDay('${t.id}',${di})">×</button>
+          <label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--text2);background:var(--card2);border:1px solid var(--bdr2);border-radius:6px;padding:3px 9px;cursor:pointer;white-space:nowrap;position:relative;min-height:28px;transition:border-color .12s" title="Edit date">
+            📅 ${day.date?fd(day.date).replace(/,\s*\d{4}$/,''):'Set date'}
+            <input type="date" value="${day.date}" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;font-size:0;color-scheme:dark light" onchange="setDayDate('${t.id}',${di},this.value)"/>
+          </label>
+          <button onclick="event.stopPropagation();openStop('${t.id}',${di})" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--text2);background:var(--card2);border:1px solid var(--bdr2);border-radius:6px;padding:3px 9px;cursor:pointer;font-family:inherit;white-space:nowrap;min-height:28px;transition:background .12s" onmouseover="this.style.background='var(--card3)'" onmouseout="this.style.background='var(--card2)'">＋ Stop</button>
+          <button onclick="event.stopPropagation();openTrailSearch('trip','${t.id}',${di})" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--green3);background:rgba(62,102,68,.08);border:1px solid rgba(62,102,68,.25);border-radius:6px;padding:3px 9px;cursor:pointer;font-family:inherit;white-space:nowrap;min-height:28px;transition:background .12s" onmouseover="this.style.background='rgba(62,102,68,.16)'" onmouseout="this.style.background='rgba(62,102,68,.08)'">🥾 Trail</button>
+          <button onclick="event.stopPropagation();delDay('${t.id}',${di})" style="display:inline-flex;align-items:center;justify-content:center;font-size:14px;color:var(--muted2);background:none;border:1px solid var(--bdr2);border-radius:6px;width:28px;height:28px;cursor:pointer;font-family:inherit;transition:all .12s;flex-shrink:0" onmouseover="this.style.color='#c05050';this.style.borderColor='rgba(192,80,80,.4)'" onmouseout="this.style.color='var(--muted2)';this.style.borderColor='var(--bdr2)'" title="Remove day">🗑️</button>
         </div>
       </div>
       <div data-day-drop-zone data-record-type="trip" data-record-id="${t.id}" data-day-idx="${di}"
@@ -10377,18 +10379,19 @@ function rAdvDailyTab(c){
     html+=`<div data-drag-day data-record-type="camp" data-record-id="${c.id}" data-day-idx="${di}" draggable="true"
       ondragstart="pdDayStart(event)" ondragover="pdOver(event)" ondragenter="pdDayEnter(event)" ondragleave="pdDayLeave(event)" ondragend="pdDayEnd(event)" ondrop="pdDayDrop(event)"
       style="--plans-accent:${dc};margin-bottom:14px;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.07);border-top:3px solid ${dc}">
-      <div class="plans-day-hdr" onmouseenter="this.classList.add('acts-vis')" onmouseleave="this.classList.remove('acts-vis')" ontouchstart="this.classList.add('acts-vis')" ontouchend="setTimeout(()=>this.classList.remove('acts-vis'),2000)" style="background:${dc}1a;border-bottom:1px solid ${dc}30;border-radius:0;padding:7px 8px 7px 4px;margin-bottom:0">
+      <div class="plans-day-hdr" style="background:${dc}1a;border-bottom:1px solid ${dc}30;border-radius:0;padding:7px 8px 7px 4px;margin-bottom:0;cursor:default">
         <span class="day-drag-handle" title="Drag to reorder day" ontouchstart="ptStart(event,'camp','${c.id}',${di})" ontouchmove="ptMove(event)" ontouchend="ptEnd(event)" ontouchcancel="ptCancel(event)">⠿</span>
         <div style="display:flex;align-items:center;gap:7px;flex:1;min-width:0">
           <span style="background:${dc};color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0;letter-spacing:.3px">Day ${schIdx+1}</span>
-          ${day.date?`<span style="font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fd(day.date)}</span>`:`<span style="font-size:11px;color:var(--muted2);font-style:italic">No date set</span>`}
           ${dayMi?`<span style="font-size:11px;font-weight:600;color:var(--text2);white-space:nowrap;flex-shrink:0">${Math.round(dayMi)} mi${daySecs?' · '+fDrive(daySecs):''}</span>`:''}
         </div>
         <div class="plans-day-acts">
-          <label class="plans-day-act" title="Edit date" style="cursor:pointer">✏️<input type="date" value="${day.date}" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;font-size:0;color-scheme:dark light" onchange="advSetDayDate('${c.id}',${di},this.value)"/></label>
-          <button class="plans-day-act" title="Add stop" onclick="event.stopPropagation();openAdvItinStop('${c.id}',${di})">＋</button>
-          <button class="plans-day-act" title="Find trail" onclick="event.stopPropagation();openTrailSearch('camp','${c.id}',${di})" style="font-size:15px">🥾</button>
-          <button class="plans-day-act del" title="Remove day" onclick="event.stopPropagation();delAdvItinDay('${c.id}',${di})">×</button>
+          <label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--text2);background:var(--card);border:1px solid var(--bdr2);border-radius:6px;padding:3px 9px;cursor:pointer;white-space:nowrap;position:relative;min-height:28px;transition:border-color .12s" onmouseover="this.style.borderColor='${dc}'" onmouseout="this.style.borderColor='var(--bdr2)'" title="Edit date">
+            📅 ${day.date?fd(day.date).replace(/,\s*\d{4}$/,''):'Set date'}
+            <input type="date" value="${day.date}" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;font-size:0;color-scheme:dark light" onchange="advSetDayDate('${c.id}',${di},this.value)"/>
+          </label>
+          <button onclick="event.stopPropagation();openAdvDayAIPlan('${c.id}',${di})" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;color:#B07000;background:rgba(200,144,30,.1);border:1px solid rgba(200,144,30,.3);border-radius:6px;padding:3px 9px;cursor:pointer;font-family:inherit;white-space:nowrap;min-height:28px;transition:background .12s" onmouseover="this.style.background='rgba(200,144,30,.2)'" onmouseout="this.style.background='rgba(200,144,30,.1)'">✨ AI</button>
+          <button onclick="event.stopPropagation();delAdvItinDay('${c.id}',${di})" style="display:inline-flex;align-items:center;justify-content:center;font-size:14px;color:var(--muted2);background:none;border:1px solid var(--bdr2);border-radius:6px;width:28px;height:28px;cursor:pointer;font-family:inherit;transition:all .12s;flex-shrink:0" onmouseover="this.style.color='#c05050';this.style.borderColor='rgba(192,80,80,.4)'" onmouseout="this.style.color='var(--muted2)';this.style.borderColor='var(--bdr2)'" title="Remove day">🗑️</button>
         </div>
       </div>
       <div data-day-drop-zone data-record-type="camp" data-record-id="${c.id}" data-day-idx="${di}"
@@ -10400,7 +10403,6 @@ function rAdvDailyTab(c){
         <div style="margin-top:0">
           <div style="display:flex;gap:7px;margin-bottom:8px">
             <button onclick="openAdvItinStop('${c.id}',${di})" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:700;color:#fff;background:${dc};border:none;border-radius:8px;padding:10px 14px;cursor:pointer;font-family:inherit;transition:filter .15s;min-height:42px" onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter=''">＋ Add Stop</button>
-            <button onclick="openAdvDayAIPlan('${c.id}',${di})" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--amber,#C8901E);background:rgba(200,144,30,.09);border:1.5px solid rgba(200,144,30,.3);border-radius:8px;padding:10px 14px;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s;min-height:42px" onmouseover="this.style.background='rgba(200,144,30,.18)'" onmouseout="this.style.background='rgba(200,144,30,.09)'">✨ AI Plan</button>
           </div>
           <div style="display:flex;gap:5px;flex-wrap:wrap">
             ${[['🏕️','camp','Camp'],['🍽️','food','Meal'],['🥾','hike','Hike'],['🏛️','sight','Sight'],['☕','coffee','Coffee'],['⛽','fuel','Fuel'],['🎯','activity','Activity']].map(([em,tp,lb])=>{const fn=tp==='hike'?`openTrailSearch('camp','${c.id}',${di})`:`openAdvItinStopWithType('${c.id}',${di},'${tp}')`;return`<button onclick="${fn}" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--text2);background:var(--card2);border:1px solid var(--bdr2);border-radius:6px;padding:4px 9px;cursor:pointer;font-family:inherit;transition:all .12s" onmouseover="this.style.borderColor='${dc}';this.style.color='${dc}'" onmouseout="this.style.borderColor='var(--bdr2)';this.style.color='var(--text2)'">${em} ${lb}</button>`;}).join('')}
@@ -10517,7 +10519,8 @@ function openAdvDayAIPlan(cid,di){
   document.body.appendChild(overlay);
   overlay.addEventListener('click',ev=>{if(ev.target===overlay)overlay.remove();});
 }
-async function runAdvDayAIPlan(cid,di,locationHint){
+if(!window._aiSeenNames)window._aiSeenNames={};
+async function runAdvDayAIPlan(cid,di,locationHint,tryDifferent=false){
   const chips=[...document.querySelectorAll('#aip-exp-chips [data-sel="1"]')].map(b=>b.dataset.exp);
   const notes=(document.getElementById('aip-notes')?.value||'').trim();
   const resultsEl=document.getElementById('aip-results');
@@ -10526,37 +10529,61 @@ async function runAdvDayAIPlan(cid,di,locationHint){
   D=load();const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
   const itin=c.itinerary||[];const day=di>=0?itin[di]:null;
   const dayStops=day?.stops||[];
-  const area=locationHint||(dayStops[0]?.address||dayStops[0]?.name||c.startLocation||'the destination');
+  // Collect all stops across all days to avoid repeating anything already in the trip
+  const allTripStopNames=(itin||[]).flatMap(d=>d.stops||[]).map(s=>s.name).filter(Boolean);
+  const seenKey=`${cid}-${di}`;
+  if(!window._aiSeenNames[seenKey])window._aiSeenNames[seenKey]=new Set();
+  const seenSet=window._aiSeenNames[seenKey];
+  const avoidNames=[...new Set([...allTripStopNames,...(tryDifferent?[...seenSet]:[])])].filter(Boolean);
+  const area=locationHint||(c.location?[c.location,c.state].filter(Boolean).join(', '):dayStops[0]?.address||dayStops[0]?.name||c.startLocation||'the destination');
+  const typeInfo=ADV_TYPES[c.campType]||{label:'outdoor'};
+  const dateCtx=day?.date?`on ${fd(day.date)}, Day ${(itin.filter(d=>d.date).indexOf(day)+1)} of ${itin.filter(d=>d.date).length}`:'';
   goBtn.disabled=true;goBtn.textContent='✨ Finding stops…';
-  resultsEl.innerHTML=`<div style="text-align:center;padding:22px;color:var(--muted2);font-size:13px">🔍 Researching places near ${area}…</div>`;
-  const prompt=`You are a travel expert. Suggest 5 specific, real, must-visit stops for a day trip itinerary.
+  resultsEl.innerHTML=`<div style="text-align:center;padding:22px;color:var(--muted2);font-size:13px">🔍 Researching ${area}${tryDifferent?' — finding fresh options':''}…</div>`;
+  const prompt=`You are an expert local travel guide with deep knowledge of ${area}.
+Suggest 5 specific, real, well-known OR hidden-gem stops for a ${typeInfo.label} trip ${dateCtx}.
 
 Context:
-- Area: ${area}
-- Trip: ${c.name||'adventure'}
-- Already planned: ${dayStops.length?dayStops.map(s=>s.name).join(', '):'nothing yet'}
-- Desired experiences: ${chips.length?chips.join(', '):'mixed / any'}${notes?`\n- Notes: ${notes}`:''}
+- Location: ${area}
+- Trip name: ${c.name||'adventure'}
+- Trip type: ${typeInfo.label}
+- Desired experiences: ${chips.length?chips.join(', '):'varied — include different stop types'}
+- Notes from planner: ${notes||'none'}
+${avoidNames.length?`- DO NOT suggest any of these (already planned or seen): ${avoidNames.slice(0,20).join(', ')}`:''}
 
-Return ONLY a valid JSON array, no markdown fences, no extra text. Each object:
-{"name":"Specific Real Place Name","type":"camp|food|coffee|sight|park|hike|activity|shop|photo|other","address":"address or description","note":"one sentence why worth visiting","mapsUrl":"https://www.google.com/maps/search/?api=1&query=ENCODED+NAME"}
+Rules:
+- Use REAL, specific place names (not generic like "local restaurant" or "scenic viewpoint")
+- Vary the stop types across the 5 suggestions
+- Include exact address or descriptive location
+- One vivid sentence on why it's worth visiting
+- If filtering by experience type, still vary within that category
+
+Return ONLY a valid JSON array (no markdown, no extra text):
+[{"name":"Real Place Name","type":"camp|food|coffee|sight|park|hike|activity|shop|photo|other","address":"full address or descriptive location","note":"one compelling sentence why worth the stop","mapsUrl":"https://www.google.com/maps/search/?api=1&query=URL_ENCODED_NAME_AND_LOCATION"}]
 
 Return exactly 5 objects.`;
   try{
-    const raw=await callAI(prompt,1400);
+    const raw=await callAI(prompt,1600);
     const m=raw.match(/\[[\s\S]*\]/);
     if(!m)throw new Error('No JSON found');
     const sugg=JSON.parse(m[0]);
     if(!Array.isArray(sugg)||!sugg.length)throw new Error('Empty response');
     window._aiDaySuggestions=sugg;
-    resultsEl.innerHTML=`<div style="font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px">AI Suggestions — tap + to add to your day</div>`
+    sugg.forEach(s=>s.name&&seenSet.add(s.name));
+    resultsEl.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.7px">AI Suggestions — tap + to add</div>
+      <button onclick="runAdvDayAIPlan('${cid}',${di},'${(area||'').replace(/'/g,"\\'")}',true)" style="font-size:10px;font-weight:600;color:var(--muted2);background:none;border:1px solid var(--bdr2);border-radius:5px;padding:3px 8px;cursor:pointer;font-family:inherit;transition:all .12s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted2)'">↻ Try Different</button>
+    </div>`
     +sugg.map((s,i)=>{
       const wt=WP_TYPES[s.type||'other']||WP_TYPES.other;
+      const mapsSearch=s.mapsUrl||`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((s.name||'')+' '+(s.address||area||''))}`;
       return`<div style="background:var(--card2);border:1px solid var(--bdr2);border-radius:10px;padding:11px 13px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start">
         <span style="font-size:22px;flex-shrink:0;margin-top:1px">${wt.i}</span>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:700;color:var(--text)">${s.name||''}</div>
           ${s.address?`<div style="font-size:11px;color:var(--muted2);margin-top:2px">📍 ${s.address}</div>`:''}
           ${s.note?`<div style="font-size:12px;color:var(--text2);margin-top:4px;line-height:1.4">${s.note}</div>`:''}
+          <a href="${mapsSearch}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--muted2);margin-top:5px;text-decoration:none" onmouseover="this.style.color='var(--text2)'" onmouseout="this.style.color='var(--muted2)'">🗺️ View on Maps</a>
         </div>
         <button id="aip-add-${i}" onclick="addAISuggestedStop('${cid}',${di},${i},this)" style="flex-shrink:0;display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:var(--green3);background:rgba(62,102,68,.1);border:1.5px solid rgba(62,102,68,.3);border-radius:7px;padding:6px 11px;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .12s" onmouseover="if(!this.disabled)this.style.background='rgba(62,102,68,.2)'" onmouseout="if(!this.disabled)this.style.background='rgba(62,102,68,.1)'">＋ Add</button>
       </div>`;
