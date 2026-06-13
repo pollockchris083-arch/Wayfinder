@@ -9194,21 +9194,32 @@ function setPlanStopAsBase(rt,id,di,si){
   const obj=rt==='camp'?(D.camps||[]).find(x=>x.id===id):D.trips.find(x=>x.id===id);
   if(!obj)return;
   const day=obj.itinerary?.[di];if(!day)return;
-  const wasBase=!!(day.stops||[])[si]?.isBase;
-  (day.stops||[]).forEach((s,i)=>{s.isBase=!wasBase&&i===si;});
+  const stops=day.stops||[];
+  const wasBase=!!stops[si]?.isBase;
+  stops.forEach((s,i)=>{s.isBase=!wasBase&&i===si;});
+  // Base stop must always be last in the array (overnight stay = end of day).
+  // Move it to bottom so routing (milesPrev chain) reads activities → sleep.
+  if(!wasBase&&si<stops.length-1){
+    const [baseStop]=stops.splice(si,1);
+    stops.push(baseStop);
+    // Invalidate routing on the stops whose position shifted; re-estimate haversine.
+    stops.slice(si).forEach(s=>{delete s.driveSecs;s.milesPrev='0';s.milesEst=true;});
+    autoHaversineItinerary(obj);
+  }
   if(rt==='camp'){saveCamps();window._campDTab='daily';openCampD(id);}
   else{save('trips',D.trips);switchTripItinTab(id,'plans');}
   // When setting (not clearing), offer to repeat base across upcoming days
   if(!wasBase){
     const itin=obj.itinerary||[];
-    const baseName=((day.stops||[])[si]?.name)||'';
+    const baseStop=stops.find(s=>s.isBase);
+    const baseName=baseStop?.name||'';
     let emptyNights=0;
     for(let d=di+1;d<itin.length;d++){
       if(!itin[d].date)continue;
       const already=(itin[d].stops||[]).some(s=>s.isBase&&s.name===baseName);
       if(!already)emptyNights++;else break;
     }
-    if(emptyNights>0)_showMultiNightOffer(rt,id,di,si,baseName,emptyNights);
+    if(emptyNights>0)_showMultiNightOffer(rt,id,di,stops.length-1,baseName,emptyNights);
   }
 }
 function _showMultiNightOffer(rt,id,di,si,baseName,maxNights){
@@ -9231,7 +9242,9 @@ function _applyMultiNight(rt,id,fromDi,si,totalNights){
   const obj=rt==='camp'?(D.camps||[]).find(x=>x.id===id):D.trips.find(x=>x.id===id);
   if(!obj)return;
   const fromDay=obj.itinerary?.[fromDi];if(!fromDay)return;
-  const baseStop=(fromDay.stops||[])[si];if(!baseStop)return;
+  // Use isBase=true lookup (index may have shifted after reorder in setPlanStopAsBase)
+  const baseStop=(fromDay.stops||[]).find(s=>s.isBase)||(fromDay.stops||[])[si];
+  if(!baseStop)return;
   for(let n=1;n<totalNights;n++){
     const toDay=obj.itinerary?.[fromDi+n];if(!toDay)break;
     (toDay.stops||[]).forEach(s=>s.isBase=false);
