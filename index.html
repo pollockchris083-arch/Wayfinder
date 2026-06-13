@@ -258,8 +258,8 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .sn-add-btn{opacity:0;transition:opacity .15s}
 .stop-row:hover .sn-add-btn,.stop-row:focus-within .sn-add-btn{opacity:.55}
 .stopnum{width:18px;height:18px;border-radius:50%;background:var(--green);color:#fff;font-size:9px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
-.stopname{font-size:14px;font-weight:600;color:var(--text)}
-.stopnote{font-size:13px;color:var(--muted);margin-top:2px;line-height:1.4}
+.stopname{font-size:13px;font-weight:700;color:var(--text);line-height:1.35}
+.stopnote{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
 .wp-icon{font-size:14px;flex-shrink:0;margin-top:1px;line-height:1}
 .wp-time{font-size:10px;font-weight:600;color:var(--muted2);background:var(--card2);border:1px solid var(--bdr);border-radius:4px;padding:1px 5px;flex-shrink:0;margin-top:2px;white-space:nowrap}
 .wp-nav{font-size:12px;color:var(--green3);text-decoration:none;flex-shrink:0;padding:2px 4px;border-radius:4px;line-height:1;background:rgba(74,114,89,.1);border:1px solid rgba(74,114,89,.25)}
@@ -6423,34 +6423,45 @@ function _rPlanStop(rt,id,di,si,s,accentColor){
   const inlineEdit=rt==='trip'?`ondblclick="plansInlineEditStart(this,'${id}',${di},${si})"`:'' ;
   const safeName=(s.name||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   const isBase=!!s.isBase;
-  // Moon button — marks this stop as tonight's base camp (where to start from next day)
+  const shortAddr=s.address?(s.address.split(',').slice(0,2).join(',').trim()):'';
+  // Moon: icon-only button, amber-filled when base
   const moonBtn=`<button onclick="setPlanStopAsBase('${rt}','${id}',${di},${si})" title="${isBase?'Tonight\'s base — tap to unset':'Set as tonight\'s base'}"
-    style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:${isBase?'700':'500'};
-    color:${isBase?'var(--amber)':'var(--muted2)'};background:${isBase?'rgba(200,144,30,.1)':'none'};
-    border:1px solid ${isBase?'rgba(200,144,30,.4)':'var(--bdr2)'};border-radius:6px;padding:4px 7px;
-    cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s;flex-shrink:0"
-    onmouseover="this.style.color='var(--amber)';this.style.borderColor='rgba(200,144,30,.5)'"
-    onmouseout="this.style.color='${isBase?'var(--amber)':'var(--muted2)'}';this.style.borderColor='${isBase?'rgba(200,144,30,.4)':'var(--bdr2)'}'">🌙${isBase?' Tonight':''}</button>`;
+    style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;font-size:15px;
+    color:${isBase?'var(--amber)':'var(--muted2)'};background:${isBase?'rgba(200,144,30,.13)':'none'};
+    border:1px solid ${isBase?'rgba(200,144,30,.38)':'transparent'};border-radius:8px;
+    cursor:pointer;transition:all .15s;flex-shrink:0"
+    onmouseover="this.style.color='var(--amber)';this.style.background='rgba(200,144,30,.1)';this.style.borderColor='rgba(200,144,30,.38)'"
+    onmouseout="this.style.color='${isBase?'var(--amber)':'var(--muted2)'}';this.style.background='${isBase?'rgba(200,144,30,.13)':'none'}';this.style.borderColor='${isBase?'rgba(200,144,30,.38)':'transparent'}'">🌙</button>`;
   return`<div class="stop-row${s.done?' wp-done':''}${isBase?' stop-row-base':''}" data-drag-stop data-record-type="${rt}" data-record-id="${id}" data-day-idx="${di}" data-stop-idx="${si}" draggable="true"
     ondragstart="pdStopStart(event)" ondragover="pdOver(event)" ondragenter="pdStopEnter(event)" ondragleave="pdStopLeave(event)" ondragend="pdStopEnd(event)" ondrop="pdStopDrop(event)">
     <span class="stop-drag-handle" title="Drag to reorder" ontouchstart="ptStart(event,'${rt}','${id}',${di},${si})" ontouchmove="ptMove(event)" ontouchend="ptEnd(event)" ontouchcancel="ptCancel(event)">⠿</span>
-    <input type="checkbox" ${s.done?'checked':''} style="width:14px;height:14px;flex-shrink:0;margin-top:2px;accent-color:${accentColor};cursor:pointer" onchange="${doneFn}" title="Mark done"/>
-    <div class="wp-icon" title="${wt.l}">${wt.i}</div>
-    ${s.time?`<div class="wp-time">${s.time}${dur?' · '+dur:''}</div>`:''}
+    <input type="checkbox" ${s.done?'checked':''} style="width:14px;height:14px;flex-shrink:0;margin-top:3px;accent-color:${accentColor};cursor:pointer" onchange="${doneFn}" title="Mark done"/>
     <div style="flex:1;min-width:0">
-      <div class="stopname" ${inlineEdit}>${s.name}${isBase?` <span style="font-size:9px;font-weight:700;color:var(--amber);background:rgba(200,144,30,.12);border-radius:3px;padding:1px 4px;vertical-align:middle">🌙 tonight</span>`:''}${lp?` <span style="font-size:9px;color:var(--green3);cursor:pointer" onclick="go('places');setTimeout(()=>openPlaceD('${lp.id}'),10)">↗</span>`:''}</div>
-      ${rt==='trip'?`<input class="stopname-edit" value="${safeName}" onkeydown="if(event.key==='Enter'){plansInlineEditSave(this,'${id}',${di},${si})}else if(event.key==='Escape'){plansInlineEditCancel(this)}" onblur="plansInlineEditSave(this,'${id}',${di},${si})"/>`:''}
-      ${s.type==='hike'&&s.trailData?`<div class="stopnote" style="color:var(--green3);font-weight:500">${[s.trailData.distanceMi?s.trailData.distanceMi+' mi':'',s.trailData.elevGainFt?'↑'+s.trailData.elevGainFt.toLocaleString()+'ft':'',s.trailData.difficulty?(s.trailData.difficulty.charAt(0).toUpperCase()+s.trailData.difficulty.slice(1)):'',s.trailData.estTimeHrs||''].filter(Boolean).join(' · ')}</div>`:''}
-      ${s.address&&s.type!=='hike'?`<div class="stopnote">📍 ${s.address}</div>`:''}
-      ${s.type==='hike'&&s.trailData?.startPoint?`<div class="stopnote">📍 ${s.trailData.startPoint}</div>`:''}
-      ${s.milesPrev?`<div class="stopnote" style="color:var(--text2);font-weight:500">🛣️ ${Math.round(parseFloat(s.milesPrev)||0)} mi${s.driveSecs?' · '+fDrive(s.driveSecs)+' drive':''}${s.milesEst?' <span style="font-size:10px;opacity:.65">(est.)</span>':''}</div>`:''}
-      <div style="margin-top:1px"><div id="sn-view-${id}-${di}-${si}" class="stopnote" style="${s.note?'cursor:pointer':'display:none'}" onclick="expandStopNote('${id}',${di},${si},'${rt}')">${s.note||''}</div><button id="sn-add-${id}-${di}-${si}" class="sn-add-btn" onclick="expandStopNote('${id}',${di},${si},'${rt}')" style="${s.note?'display:none;':''}font-size:10px;color:var(--muted2);background:none;border:none;cursor:pointer;padding:1px 0;font-family:inherit;line-height:1">📝 note</button><textarea id="sn-ta-${id}-${di}-${si}" style="display:none;width:100%;min-height:32px;resize:none;font-size:11px;color:var(--text2);background:var(--card2);border:1px solid var(--bdr);border-radius:5px;padding:5px 7px;font-family:inherit;line-height:1.4;margin-top:3px;box-sizing:border-box" placeholder="Note for this stop…" onblur="saveStopNoteInline(this,'${rt}','${id}',${di},${si})" onkeydown="if(event.key==='Escape')this.blur()">${s.note||''}</textarea></div>
+      <div style="display:flex;align-items:flex-start;gap:5px">
+        <span style="font-size:14px;flex-shrink:0;line-height:1.4;margin-top:0">${wt.i}</span>
+        <div style="flex:1;min-width:0">
+          <div class="stopname" ${inlineEdit}>${s.name}</div>
+          ${rt==='trip'?`<input class="stopname-edit" value="${safeName}" onkeydown="if(event.key==='Enter'){plansInlineEditSave(this,'${id}',${di},${si})}else if(event.key==='Escape'){plansInlineEditCancel(this)}" onblur="plansInlineEditSave(this,'${id}',${di},${si})"/>`:''}
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:6px;margin-top:3px">
+        <div style="flex:1;min-width:0">
+          ${s.type==='hike'&&s.trailData?`<div class="stopnote" style="color:var(--green3);font-weight:600">${[s.trailData.distanceMi?s.trailData.distanceMi+' mi':'',s.trailData.elevGainFt?'↑'+s.trailData.elevGainFt.toLocaleString()+'ft':'',s.trailData.difficulty?(s.trailData.difficulty.charAt(0).toUpperCase()+s.trailData.difficulty.slice(1)):'',s.trailData.estTimeHrs||''].filter(Boolean).join(' · ')}</div>`:''}
+          ${shortAddr&&s.type!=='hike'?`<div class="stopnote">📍 ${shortAddr}</div>`:''}
+          ${s.type==='hike'&&s.trailData?.startPoint?`<div class="stopnote">📍 ${s.trailData.startPoint}</div>`:''}
+          ${s.time?`<div style="display:inline-flex;align-items:center;font-size:10px;font-weight:600;color:var(--muted2);background:var(--card2);border:1px solid var(--bdr);border-radius:4px;padding:1px 5px;margin-top:2px;white-space:nowrap">${s.time}${dur?' · '+dur:''}</div>`:''}
+          ${s.milesPrev?`<div class="stopnote" style="color:var(--text2);font-weight:500;margin-top:2px">🚗 ${Math.round(parseFloat(s.milesPrev)||0)} mi${s.driveSecs?' · '+fDrive(s.driveSecs):''}${s.milesEst?' <span style="font-size:9px;opacity:.6">(est.)</span>':''}</div>`:''}
+          ${isBase?`<div style="font-size:10px;font-weight:700;color:var(--amber);margin-top:3px;letter-spacing:.2px">🌙 Tonight's base</div>`:''}
+          ${lp?`<div class="stopnote" style="margin-top:2px"><a onclick="go('places');setTimeout(()=>openPlaceD('${lp.id}'),10)" style="color:var(--green3);cursor:pointer;text-decoration:none;font-size:10px">↗ In Places</a></div>`:''}
+          <div style="margin-top:2px"><div id="sn-view-${id}-${di}-${si}" class="stopnote" style="${s.note?'cursor:pointer':'display:none'}" onclick="expandStopNote('${id}',${di},${si},'${rt}')">${s.note||''}</div><button id="sn-add-${id}-${di}-${si}" class="sn-add-btn" onclick="expandStopNote('${id}',${di},${si},'${rt}')" style="${s.note?'display:none;':''}font-size:10px;color:var(--muted2);background:none;border:none;cursor:pointer;padding:1px 0;font-family:inherit;line-height:1">📝 note</button><textarea id="sn-ta-${id}-${di}-${si}" style="display:none;width:100%;min-height:32px;resize:none;font-size:11px;color:var(--text2);background:var(--card2);border:1px solid var(--bdr);border-radius:5px;padding:5px 7px;font-family:inherit;line-height:1.4;margin-top:3px;box-sizing:border-box" placeholder="Note for this stop…" onblur="saveStopNoteInline(this,'${rt}','${id}',${di},${si})" onkeydown="if(event.key==='Escape')this.blur()">${s.note||''}</textarea></div>
+        </div>
+        ${s.photo?`<img src="${s.photo}" style="width:38px;height:38px;object-fit:cover;border-radius:8px;flex-shrink:0;border:1.5px solid var(--bdr);cursor:pointer" onclick="${editFn}" title="Tap to edit" onerror="this.style.display='none'">`:''}
+      </div>
     </div>
-    <div style="display:flex;gap:4px;flex-shrink:0;align-items:center">
-      ${s.photo?`<img src="${s.photo}" style="width:36px;height:36px;object-fit:cover;border-radius:6px;flex-shrink:0;border:1px solid var(--bdr);cursor:pointer" onclick="${editFn}" title="Click to edit" onerror="this.style.display='none'">`:''}
+    <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;align-items:center;padding-left:2px;padding-top:1px">
       ${moonBtn}
-      <button onclick="${editFn}" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--text2);background:var(--card2);border:1px solid var(--bdr2);border-radius:6px;padding:4px 9px;cursor:pointer;font-family:inherit;white-space:nowrap;transition:border-color .12s" onmouseover="this.style.borderColor='var(--amber)'" onmouseout="this.style.borderColor='var(--bdr2)'">✏️ Edit</button>
-      <button onclick="event.stopPropagation();showStopActMenu(event,'${rt}','${id}',${di},${si})" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;font-size:18px;color:var(--muted2);background:none;border:1px solid var(--bdr2);border-radius:6px;cursor:pointer;font-family:inherit;transition:all .12s;line-height:1;padding:0;flex-shrink:0" onmouseover="this.style.background='var(--card2)';this.style.color='var(--text2)'" onmouseout="this.style.background='none';this.style.color='var(--muted2)'" title="More options">⋮</button>
+      <button onclick="${editFn}" style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;font-size:14px;color:var(--muted2);background:none;border:1px solid transparent;border-radius:8px;cursor:pointer;transition:all .12s" onmouseover="this.style.background='var(--card2)';this.style.borderColor='var(--bdr2)';this.style.color='var(--text2)'" onmouseout="this.style.background='none';this.style.borderColor='transparent';this.style.color='var(--muted2)'" title="Edit stop">✏️</button>
+      <button onclick="event.stopPropagation();showStopActMenu(event,'${rt}','${id}',${di},${si})" style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;font-size:17px;color:var(--muted2);background:none;border:1px solid transparent;border-radius:8px;cursor:pointer;transition:all .12s;line-height:1;padding:0;flex-shrink:0" onmouseover="this.style.background='var(--card2)';this.style.borderColor='var(--bdr2)';this.style.color='var(--text2)'" onmouseout="this.style.background='none';this.style.borderColor='transparent';this.style.color='var(--muted2)'" title="More options">⋮</button>
     </div>
   </div>`;
 }
