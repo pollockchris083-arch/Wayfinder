@@ -2449,6 +2449,9 @@ window.addEventListener('unhandledrejection',function(e){
   const msg=String(e?.reason?.message||e?.reason||'');
   if(msg.includes('No Listener:')||msg.includes('tabs:outgoing')||msg.includes('message.ready')){e.preventDefault();}
 });
+// Suppress non-actionable Google Maps SDK deprecation spam for DirectionsService
+// (we're aware of the deprecation; Routes API REST is the preferred path when the API key supports it)
+(()=>{const _cw=console.warn;console.warn=function(...a){const s=String(a[0]||'');if(s.includes('DirectionsService is deprecated')||s.includes('google.maps.DirectionsService'))return;_cw.apply(console,a);};})();
 // ══════════════════════════════════════════════
 const K={places:'wf_places',trips:'wf_trips',wish:'wf_wishlist',journal:'wf_journal',settings:'wf_settings'};
 function load(){return{places:JSON.parse(localStorage.getItem(K.places)||'[]'),trips:JSON.parse(localStorage.getItem(K.trips)||'[]'),wish:JSON.parse(localStorage.getItem(K.wish)||'[]'),journal:JSON.parse(localStorage.getItem(K.journal)||'[]'),settings:JSON.parse(localStorage.getItem(K.settings)||'{"name":"Chris","partner":"Partner","homeCity":"","since":"2020"}'),abroad:JSON.parse(localStorage.getItem('wf_abroad')||'{"countries":[],"goals":[]}'),camps:JSON.parse(localStorage.getItem('wf_camps')||'[]'),work:JSON.parse(localStorage.getItem('wf_work')||'[]'),docs:JSON.parse(localStorage.getItem('wf_docs')||'[]')}}
@@ -10783,6 +10786,7 @@ function rAdvDailyTab(c){
   const _advItinStopMi=_advItinAllStops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
   const _advStartMi=parseFloat(c.startMiles)||0;
   const _advEndMi=parseFloat(c.endMiles)||0;
+  const _advEndSecs=parseInt(c.endSecs)||0;
   const _advItinTotalMi=_advItinStopMi?_advStartMi+_advItinStopMi+_advEndMi:0;
   const _advItinTotalSecs=(parseInt(c.startSecs)||0)+_advItinAllStops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0)+(parseInt(c.endSecs)||0);
   const _advItinHasCoords=_advItinAllStops.some(s=>s.lat||s.lng);
@@ -10870,6 +10874,7 @@ function rAdvDailyTab(c){
         <span class="day-drag-handle" title="Drag to reorder day" ontouchstart="ptStart(event,'camp','${c.id}',${di})" ontouchmove="ptMove(event)" ontouchend="ptEnd(event)" ontouchcancel="ptCancel(event)">⠿</span>
         <div style="display:flex;align-items:center;gap:7px;flex:1;min-width:0;overflow:hidden">
           <span style="background:${dc};color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0;letter-spacing:.3px">Day ${schIdx+1}</span>
+          ${schIdx===scheduled.length-1?`<span style="background:rgba(74,120,158,.14);color:#4A789E;border:1px solid rgba(74,120,158,.28);border-radius:12px;padding:2px 8px;font-size:10px;font-weight:700;white-space:nowrap;flex-shrink:0;letter-spacing:.2px">🏁 Final Day</span>`:''}
           ${baseSi>=0&&dayRtMi?`<span style="font-size:11px;font-weight:600;color:var(--amber);white-space:nowrap;flex-shrink:0" title="Round-trip estimate from base camp">~${Math.round(dayRtMi)} mi rt</span>`:dayMi?`<span style="font-size:11px;font-weight:600;color:var(--text2);white-space:nowrap;flex-shrink:0">${Math.round(dayMi)} mi${daySecs?' · '+fDrive(daySecs):''}</span>`:''}
           ${baseStop?`<span style="font-size:10px;font-weight:600;color:var(--amber);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.85" title="Tonight's base camp">🌙 ${baseStop.name.split(',')[0]}</span>`:''}
         </div>
@@ -10928,14 +10933,51 @@ function rAdvDailyTab(c){
       </div>
     </div>`;
   });
-  // Arrival anchor — shows where the trip returns to
-  if(returnCity&&scheduled.length>0){
-    html+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(74,120,158,.08);border-radius:8px;margin-bottom:8px;border-left:3px solid var(--blue-acc,#4A789E)">
-      <span style="font-size:20px;line-height:1">${isRound3?'🏠':'🏁'}</span>
-      <div><div style="font-size:12px;font-weight:700;color:var(--text)">${returnCity}</div>
-      <div style="font-size:10px;color:var(--muted2)">${isRound3?'Return home':'End of trip'}${_advEndMi?' · '+Math.round(_advEndMi)+' mi from last stop':''}</div></div>
+  // Drive Home anchor — full card mirroring the departure anchor
+  if(scheduled.length>0){
+    const _lastStop=_advItinAllStops[_advItinAllStops.length-1];
+    const _lastCoords=_lastStop?parseStopCoords(_lastStop):null;
+    const _homeNavOrg=_lastCoords?`&origin=${_lastCoords.lat},${_lastCoords.lng}`:'';
+    const _homeDest=c.endLat&&c.endLng?`${c.endLat},${c.endLng}`:returnCity?encodeURIComponent(returnCity):null;
+    const _homeNavUrl=_homeDest?`https://www.google.com/maps/dir/?api=1${_homeNavOrg}&destination=${_homeDest}`:null;
+    const _lastDay=scheduled[scheduled.length-1];
+    const _lastDate=_lastDay?.date;
+    // Connector line from last day card down to drive home
+    html+=`<div style="display:flex;padding:0 0 0 20px;height:${_advEndMi||_advEndSecs?'14px':'8px'}">
+      <div style="width:2px;height:100%;background:linear-gradient(to bottom,rgba(0,0,0,.08),rgba(74,120,158,.4));border-radius:1px"></div>
     </div>`;
+    if(returnCity){
+      html+=`<div style="background:rgba(74,120,158,.09);border:1px solid rgba(74,120,158,.2);border-left:4px solid #4A789E;border-radius:10px;padding:11px 13px;margin-bottom:10px">
+        <div style="display:flex;align-items:flex-start;gap:8px;justify-content:space-between;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:9px;min-width:0;flex:1">
+            <span style="font-size:24px;line-height:1;flex-shrink:0">${isRound3?'🏠':'🏁'}</span>
+            <div style="min-width:0;flex:1">
+              <div style="font-size:14px;font-weight:800;color:var(--text)">${returnCity}</div>
+              <div style="font-size:10px;font-weight:700;color:#4A789E;text-transform:uppercase;letter-spacing:.6px;margin-top:2px">${isRound3?'Drive Home':'End of Trip'}${_lastDate?' · After '+fd(_lastDate):''}</div>
+            </div>
+          </div>
+          ${_homeNavUrl?`<a href="${_homeNavUrl}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#4A789E;background:rgba(74,120,158,.12);border:1px solid rgba(74,120,158,.3);border-radius:7px;padding:5px 10px;text-decoration:none;flex-shrink:0;margin-top:2px">🗺️ Directions</a>`:''}
+        </div>
+        ${_advEndMi?`<div style="margin-top:9px;display:flex;align-items:center;gap:9px;padding:7px 10px;background:rgba(74,120,158,.07);border-radius:8px">
+          <span style="font-size:16px;flex-shrink:0">🚗</span>
+          <div style="min-width:0;flex:1">
+            <div style="font-size:12px;font-weight:700;color:var(--text)">${Math.round(_advEndMi)} mi${_advEndSecs?' · '+fDrive(_advEndSecs)+' drive':''}${c.endMilesEst?' <span style="font-size:10px;font-weight:400;color:var(--muted2)">(est.)</span>':''}</div>
+            <div style="font-size:10px;color:var(--muted2);margin-top:1px">from last stop back to ${returnCity.split(',')[0]}</div>
+          </div>
+        </div>`:(_advItinAllStops.length&&(c.endLat||c.endLocation)?`<div style="margin-top:7px;font-size:10px;color:var(--muted2);display:flex;align-items:center;gap:5px"><span>🔄</span> Run Recalc to calculate drive home distance</div>`:'')}
+      </div>`;
+    } else {
+      html+=`<div style="background:rgba(200,144,30,.07);border:1.5px dashed rgba(200,144,30,.35);border-radius:10px;padding:10px 13px;margin-bottom:10px;display:flex;align-items:center;gap:9px">
+        <span style="font-size:20px;line-height:1">🏠</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:700;color:var(--amber)">Set your departure city</div>
+          <div style="font-size:10px;color:var(--muted2);margin-top:2px">Tap the home card above to add your starting city and enable drive-home distance calculation.</div>
+        </div>
+      </div>`;
+    }
   }
+  // + Add Day — placed here so new days slot in before the return home conceptually
+  html+=`<button class="tb-btn" style="width:100%;justify-content:center;margin-top:4px;margin-bottom:12px" onclick="addAdvItinDay('${c.id}')">+ Add Day</button>`;
   const unschedStops=unschedDay?(unschedDay.stops||[]):[];
   const realUnschedDi=unschedDi>=0?unschedDi:-1;
   html+=`<div class="plans-unsched" data-day-drop-zone data-record-type="camp" data-record-id="${c.id}" data-day-idx="-1"
@@ -10944,7 +10986,6 @@ function rAdvDailyTab(c){
     ${unschedStops.length?unschedStops.map((s,si)=>_rPlanStop('camp',c.id,realUnschedDi,si,s,accent)).join(''):`<div style="font-size:11px;color:var(--muted2);padding:2px 0">Drag stops here to park them without a date.</div>`}
     <button class="add-stop" style="margin-top:6px;opacity:.6" onclick="openAdvItinStop('${c.id}',null)">+ Add Unscheduled Stop</button>
   </div>`;
-  html+=`<button class="tb-btn" style="width:100%;justify-content:center;margin-top:8px" onclick="addAdvItinDay('${c.id}')">+ Add Day</button>`;
   html+=`</div>`;
   return html;
 }
@@ -11571,26 +11612,31 @@ async function recalcItineraryDriving(isAdv,id,silent=false){
   if(!silent)toast(updated>0?`✅ ${updated} leg${updated!==1?'s':''} updated — distances now correct!`:'⚠️ Calculation failed — check Maps API key');
 }
 async function getRouteDrivingInfo(lat1,lng1,lat2,lng2,mapsKey){
-  // Primary: Routes API v2 (modern, not deprecated, works without Maps JS library)
-  try{
-    const resp=await fetch('https://routes.googleapis.com/directions/v2:computeRoutes',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','X-Goog-Api-Key':mapsKey,'X-Goog-FieldMask':'routes.distanceMeters,routes.duration'},
-      body:JSON.stringify({
-        origin:{location:{latLng:{latitude:lat1,longitude:lng1}}},
-        destination:{location:{latLng:{latitude:lat2,longitude:lng2}}},
-        travelMode:'DRIVE',routingPreference:'TRAFFIC_UNAWARE',
-      }),
-    });
-    if(resp.ok){
-      const data=await resp.json();
-      const route=data.routes?.[0];
-      if(route?.distanceMeters){
-        return{miles:route.distanceMeters/1609.34,secs:parseInt(route.duration)||0};
+  // Primary: Routes API v2 REST. Skip if we already got a 403 (key doesn't have Routes API enabled) —
+  // this avoids spamming the network tab with repeated 403s after the first failure.
+  if(!window._routesApi403){
+    try{
+      const resp=await fetch('https://routes.googleapis.com/directions/v2:computeRoutes',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-Goog-Api-Key':mapsKey,'X-Goog-FieldMask':'routes.distanceMeters,routes.duration'},
+        body:JSON.stringify({
+          origin:{location:{latLng:{latitude:lat1,longitude:lng1}}},
+          destination:{location:{latLng:{latitude:lat2,longitude:lng2}}},
+          travelMode:'DRIVE',routingPreference:'TRAFFIC_UNAWARE',
+        }),
+      });
+      if(resp.status===403||resp.status===401){
+        window._routesApi403=true; // Remember: this key doesn't have Routes API enabled
+      } else if(resp.ok){
+        const data=await resp.json();
+        const route=data.routes?.[0];
+        if(route?.distanceMeters){
+          return{miles:route.distanceMeters/1609.34,secs:parseInt(route.duration)||0};
+        }
       }
-    }
-  }catch(e){console.warn('[route] Routes API fetch failed, trying DirectionsService:',e.message);}
-  // Fallback: legacy DirectionsService (deprecated Feb 2026 but still functional)
+    }catch(e){console.debug('[route] Routes API fetch failed:',e.message);}
+  }
+  // Fallback: legacy DirectionsService (still functional; deprecation warning suppressed above)
   if(window.google?.maps?.DirectionsService){
     return new Promise((resolve,reject)=>{
       new google.maps.DirectionsService().route({
