@@ -8907,6 +8907,16 @@ function setDayBase(rt,id,di,si){
   if(rt==='camp'){saveCamps();window._campDTab='guide';openCampD(id);}
   else{save('trips',D.trips);switchTripItinTab(id,'guide');}
 }
+function setAdvDayBaseFromPlans(cid,di,si,clear=false){
+  D=load();
+  const c=(D.camps||[]).find(x=>x.id===cid);if(!c)return;
+  const day=c.itinerary?.[di];if(!day)return;
+  const wasBase=!!(day.stops||[])[si]?.isBase;
+  (day.stops||[]).forEach((s,i)=>{s.isBase=clear?false:(!wasBase&&i===si);});
+  saveCamps();
+  window._campDTab='daily';
+  openCampD(cid);
+}
 
 async function aiDayNarrative(rt,id,di){
   D=load();
@@ -9615,14 +9625,20 @@ function rAdvOverviewTab(c){
 
   <!-- ── Route (read-only + collapsible edit) ── -->
   <div style="background:var(--card);border:1px solid var(--bdr);border-top:3px solid #4A789E;border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:var(--shadow)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${crumbParts.length>0||startMi||endMi?'8':'0'}px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${startMi||endMi||stopCount?'8':'0'}px">
       <div style="font-size:10px;font-weight:700;color:#4A789E;text-transform:uppercase;letter-spacing:.7px">Route</div>
       <div style="display:flex;align-items:center;gap:8px">
-        ${(startMi||endMi)?`<span style="font-size:11px;font-weight:600;color:var(--text2)">${Math.round(startMi+endMi)} mi home${c.startSecs||c.endSecs?' · '+fDrive((c.startSecs||0)+(c.endSecs||0)):''}${c.startMilesEst||c.endMilesEst?' (est.)':''}</span>`:''}
+        ${(startMi||endMi)?`<span style="font-size:11px;font-weight:600;color:var(--text2)">${startMi&&endMi?Math.round(startMi)+' mi out · '+Math.round(endMi)+' mi back':Math.round(startMi+endMi)+' mi home legs'}${c.startSecs||c.endSecs?' · '+fDrive((c.startSecs||0)+(c.endSecs||0)):''}${c.startMilesEst||c.endMilesEst?' (est.)':''}</span>`:''}
         <button id="route-edit-btn-${c.id}" onclick="(function(btn){const s=document.getElementById('route-edit-form-${c.id}');const open=s.style.display!=='none';s.style.display=open?'none':'block';btn.textContent=open?'⚙ Edit':'▲ Hide';})(this)" style="font-size:10px;color:var(--muted2);background:none;border:1px solid var(--bdr2);border-radius:100px;padding:2px 9px;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.color='var(--text)';this.style.borderColor='var(--bdr)'" onmouseout="this.style.color='var(--muted2)';this.style.borderColor='var(--bdr2)'">⚙ Edit</button>
       </div>
     </div>
-    ${crumbParts.length>1?`<div style="display:flex;align-items:center;flex-wrap:wrap;gap:3px;padding:9px 11px;background:var(--card2);border-radius:8px">${crumbParts.map((name,i)=>`<span style="font-size:12px;${i===0||i===crumbParts.length-1?'font-weight:600;color:var(--text)':'color:var(--text2)'}">${name}</span>${i<crumbParts.length-1?'<span style="font-size:10px;color:var(--muted);opacity:.4;margin:0 2px">›</span>':''}`).join('')}</div>`:`<div style="font-size:12px;color:var(--muted2);font-style:italic">No route yet — tap ⚙ Edit to set your departure city</div>`}
+    ${(startMi||endMi||stopCount)?`<div style="display:flex;align-items:center;flex-wrap:wrap;gap:3px;padding:9px 11px;background:var(--card2);border-radius:8px;line-height:1.8">
+      <span style="font-size:12px;font-weight:600;color:var(--text)">🏠 ${c.startLocation?c.startLocation.split(',')[0]:homeCity||'Home'}</span>
+      ${startMi?`<span style="font-size:10px;font-weight:700;color:var(--amber);white-space:nowrap;margin:0 2px">→ ${Math.round(startMi)} mi →</span>`:'<span style="font-size:10px;color:var(--muted2);margin:0 2px">→</span>'}
+      ${stopCount?`<span style="font-size:12px;color:var(--text2)">${stopNames.slice(0,2).map(n=>n.split(',')[0]).join(' → ')}${stopNames.length>2?' <span style="font-size:10px;color:var(--muted2)">+${stopNames.length-2} more</span>':''}</span>`:'<span style="font-size:12px;color:var(--muted2);font-style:italic">No stops yet</span>'}
+      ${endMi?`<span style="font-size:10px;font-weight:700;color:var(--amber);white-space:nowrap;margin:0 2px">→ ${Math.round(endMi)} mi →</span>`:(isRound&&stopCount)?'<span style="font-size:10px;color:var(--muted2);margin:0 2px">→</span>':''}
+      ${isRound&&c.startLocation?`<span style="font-size:12px;font-weight:600;color:var(--text)">🏠 ${c.startLocation.split(',')[0]}</span>`:c.endLocation&&!isRound?`<span style="font-size:12px;font-weight:600;color:var(--text)">🏁 ${c.endLocation.split(',')[0]}</span>`:''}
+    </div>`:`<div style="font-size:12px;color:var(--muted2);font-style:italic">No route yet — tap ⚙ Edit to set your departure city</div>`}
     <div id="route-edit-form-${c.id}" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr2)">
       <div>
         <label style="font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Departing From</label>
@@ -10376,14 +10392,20 @@ function rAdvDailyTab(c){
     const dayStops=day.stops||[];
     const dayMi=dayStops.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
     const daySecs=dayStops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0);
+    const baseSi=dayStops.findIndex(s=>s.isBase);
+    const baseStop=baseSi>=0?dayStops[baseSi]:null;
+    const miToBase=baseSi>=0?dayStops.slice(0,baseSi+1).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0):0;
+    const miAfterBase=baseSi>=0?dayStops.slice(baseSi+1).reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0):0;
+    const dayRtMi=baseSi>=0?(miToBase+miAfterBase*2):0;
     html+=`<div data-drag-day data-record-type="camp" data-record-id="${c.id}" data-day-idx="${di}" draggable="true"
       ondragstart="pdDayStart(event)" ondragover="pdOver(event)" ondragenter="pdDayEnter(event)" ondragleave="pdDayLeave(event)" ondragend="pdDayEnd(event)" ondrop="pdDayDrop(event)"
       style="--plans-accent:${dc};margin-bottom:14px;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.07);border-top:3px solid ${dc}">
       <div class="plans-day-hdr" style="background:${dc}1a;border-bottom:1px solid ${dc}30;border-radius:0;padding:7px 8px 7px 4px;margin-bottom:0;cursor:default">
         <span class="day-drag-handle" title="Drag to reorder day" ontouchstart="ptStart(event,'camp','${c.id}',${di})" ontouchmove="ptMove(event)" ontouchend="ptEnd(event)" ontouchcancel="ptCancel(event)">⠿</span>
-        <div style="display:flex;align-items:center;gap:7px;flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:7px;flex:1;min-width:0;overflow:hidden">
           <span style="background:${dc};color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0;letter-spacing:.3px">Day ${schIdx+1}</span>
-          ${dayMi?`<span style="font-size:11px;font-weight:600;color:var(--text2);white-space:nowrap;flex-shrink:0">${Math.round(dayMi)} mi${daySecs?' · '+fDrive(daySecs):''}</span>`:''}
+          ${baseSi>=0&&dayRtMi?`<span style="font-size:11px;font-weight:600;color:var(--amber);white-space:nowrap;flex-shrink:0" title="Round-trip estimate from base camp">~${Math.round(dayRtMi)} mi rt</span>`:dayMi?`<span style="font-size:11px;font-weight:600;color:var(--text2);white-space:nowrap;flex-shrink:0">${Math.round(dayMi)} mi${daySecs?' · '+fDrive(daySecs):''}</span>`:''}
+          ${baseStop?`<span style="font-size:10px;font-weight:600;color:var(--amber);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.85" title="Tonight's base camp">🌙 ${baseStop.name.split(',')[0]}</span>`:''}
         </div>
         <div class="plans-day-acts">
           <label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--text2);background:var(--card);border:1px solid var(--bdr2);border-radius:6px;padding:3px 9px;cursor:pointer;white-space:nowrap;position:relative;min-height:28px;transition:border-color .12s" onmouseover="this.style.borderColor='${dc}'" onmouseout="this.style.borderColor='var(--bdr2)'" title="Edit date">
@@ -10406,6 +10428,21 @@ function rAdvDailyTab(c){
           </div>
           <div style="display:flex;gap:5px;flex-wrap:wrap">
             ${[['🏕️','camp','Camp'],['🍽️','food','Meal'],['🥾','hike','Hike'],['🏛️','sight','Sight'],['☕','coffee','Coffee'],['⛽','fuel','Fuel'],['🎯','activity','Activity']].map(([em,tp,lb])=>{const fn=tp==='hike'?`openTrailSearch('camp','${c.id}',${di})`:`openAdvItinStopWithType('${c.id}',${di},'${tp}')`;return`<button onclick="${fn}" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--text2);background:var(--card2);border:1px solid var(--bdr2);border-radius:6px;padding:4px 9px;cursor:pointer;font-family:inherit;transition:all .12s" onmouseover="this.style.borderColor='${dc}';this.style.color='${dc}'" onmouseout="this.style.borderColor='var(--bdr2)';this.style.color='var(--text2)'">${em} ${lb}</button>`;}).join('')}
+          </div>
+        </div>
+        <div style="margin-top:8px;padding:8px 10px;background:${baseStop?'rgba(200,144,30,.06)':'var(--card2)'};border:1px solid ${baseStop?'rgba(200,144,30,.25)':'var(--bdr2)'};border-radius:8px;transition:background .2s">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-size:11px;font-weight:700;color:${baseStop?'var(--amber)':'var(--muted2)'};white-space:nowrap;letter-spacing:.2px">🌙 Night at:</span>
+            ${baseStop
+              ?`<div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">
+                  <span style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${baseStop.name.split(',')[0]}</span>
+                  ${dayRtMi>0?`<span style="font-size:10px;color:var(--muted2);white-space:nowrap;flex-shrink:0">~${Math.round(dayRtMi)} mi round trip</span>`:''}
+                  <button onclick="setAdvDayBaseFromPlans('${c.id}',${di},${baseSi},true)" style="margin-left:auto;font-size:10px;color:var(--muted2);background:none;border:none;cursor:pointer;font-family:inherit;padding:0 2px;flex-shrink:0;transition:color .12s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'" title="Clear base camp">✕ clear</button>
+                </div>`
+              :dayStops.length>0
+              ?`<div style="display:flex;gap:4px;flex-wrap:wrap;flex:1">${dayStops.map((s,si)=>`<button onclick="setAdvDayBaseFromPlans('${c.id}',${di},${si})" style="font-size:11px;font-weight:500;color:var(--text2);background:var(--card);border:1px solid var(--bdr2);border-radius:5px;padding:3px 8px;cursor:pointer;font-family:inherit;transition:all .12s" onmouseover="this.style.borderColor='var(--amber)';this.style.color='var(--amber)'" onmouseout="this.style.borderColor='var(--bdr2)';this.style.color='var(--text2)'">${s.name.split(',')[0]}</button>`).join('')}</div>`
+              :`<span style="font-size:11px;color:var(--muted2);font-style:italic">Add stops, then tap to set where you're sleeping</span>`
+            }
           </div>
         </div>
         ${day.notes
