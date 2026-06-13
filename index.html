@@ -253,6 +253,7 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .stop-row:last-child{border-bottom:none;padding-bottom:9px}
 .stop-row.wp-done .stopname{text-decoration:line-through;opacity:.45}
 .stop-row:hover{background:rgba(239,159,39,.04);box-shadow:inset 3px 0 0 rgba(239,159,39,.55)}
+.stop-row-base{background:rgba(200,144,30,.04);box-shadow:inset 3px 0 0 rgba(200,144,30,.55)!important}
 .sn-add-btn{opacity:0;transition:opacity .15s}
 .stop-row:hover .sn-add-btn,.stop-row:focus-within .sn-add-btn{opacity:.55}
 .stopnum{width:18px;height:18px;border-radius:50%;background:var(--green);color:#fff;font-size:9px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
@@ -6015,6 +6016,11 @@ function saveStop(){
     } else {
       stopData.done=false;c.itinerary[newDi].stops.push(stopData);
     }
+    if(_SLEEP_TYPES.has(type)){
+      const _da=c.itinerary[newDi].stops||[];
+      _da.forEach(s=>s.isBase=false);
+      const _pl=_da.find(s=>s===stopData);if(_pl)_pl.isBase=true;
+    }
     autoHaversineItinerary(c);
     saveCamps();
     closeM('m-stop');
@@ -6045,6 +6051,11 @@ function saveStop(){
       }
     } else {
       stopData.done=false;t.itinerary[newDi].stops.push(stopData);
+    }
+    if(_SLEEP_TYPES.has(type)){
+      const _da=t.itinerary[newDi].stops||[];
+      _da.forEach(s=>s.isBase=false);
+      const _pl=_da.find(s=>s===stopData);if(_pl)_pl.isBase=true;
     }
     if(stopData.placeId){
       const pl=D.places.find(x=>x.id===stopData.placeId);
@@ -6392,18 +6403,26 @@ function _rPlanStop(rt,id,di,si,s,accentColor){
   const wt=WP_TYPES[s.type||'other']||WP_TYPES.other;
   const dur=s.duration?parseInt(s.duration)>=60?Math.round(parseInt(s.duration)/60)+'h':(s.duration+'min'):'';
   const editFn=rt==='camp'?`openAdvItinStopEdit('${id}',${di},${si})`:`openStopEdit('${id}',${di},${si})`;
-  const delFn=rt==='camp'?`delAdvItinStop('${id}',${di},${si})`:`delStop('${id}',${di},${si})`;
   const doneFn=rt==='camp'?`toggleAdvItinDone('${id}',${di},${si},this.checked)`:`toggleStopDone('${id}',${di},${si},this.checked)`;
   const inlineEdit=rt==='trip'?`ondblclick="plansInlineEditStart(this,'${id}',${di},${si})"`:'' ;
   const safeName=(s.name||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  return`<div class="stop-row${s.done?' wp-done':''}" data-drag-stop data-record-type="${rt}" data-record-id="${id}" data-day-idx="${di}" data-stop-idx="${si}" draggable="true"
+  const isBase=!!s.isBase;
+  // Moon button — marks this stop as tonight's base camp (where to start from next day)
+  const moonBtn=`<button onclick="setPlanStopAsBase('${rt}','${id}',${di},${si})" title="${isBase?'Tonight\'s base — tap to unset':'Set as tonight\'s base'}"
+    style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:${isBase?'700':'500'};
+    color:${isBase?'var(--amber)':'var(--muted2)'};background:${isBase?'rgba(200,144,30,.1)':'none'};
+    border:1px solid ${isBase?'rgba(200,144,30,.4)':'var(--bdr2)'};border-radius:6px;padding:4px 7px;
+    cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s;flex-shrink:0"
+    onmouseover="this.style.color='var(--amber)';this.style.borderColor='rgba(200,144,30,.5)'"
+    onmouseout="this.style.color='${isBase?'var(--amber)':'var(--muted2)'}';this.style.borderColor='${isBase?'rgba(200,144,30,.4)':'var(--bdr2)'}'">🌙${isBase?' Tonight':''}</button>`;
+  return`<div class="stop-row${s.done?' wp-done':''}${isBase?' stop-row-base':''}" data-drag-stop data-record-type="${rt}" data-record-id="${id}" data-day-idx="${di}" data-stop-idx="${si}" draggable="true"
     ondragstart="pdStopStart(event)" ondragover="pdOver(event)" ondragenter="pdStopEnter(event)" ondragleave="pdStopLeave(event)" ondragend="pdStopEnd(event)" ondrop="pdStopDrop(event)">
     <span class="stop-drag-handle" title="Drag to reorder" ontouchstart="ptStart(event,'${rt}','${id}',${di},${si})" ontouchmove="ptMove(event)" ontouchend="ptEnd(event)" ontouchcancel="ptCancel(event)">⠿</span>
     <input type="checkbox" ${s.done?'checked':''} style="width:14px;height:14px;flex-shrink:0;margin-top:2px;accent-color:${accentColor};cursor:pointer" onchange="${doneFn}" title="Mark done"/>
     <div class="wp-icon" title="${wt.l}">${wt.i}</div>
     ${s.time?`<div class="wp-time">${s.time}${dur?' · '+dur:''}</div>`:''}
     <div style="flex:1;min-width:0">
-      <div class="stopname" ${inlineEdit}>${s.name}${lp?` <span style="font-size:9px;color:var(--green3);cursor:pointer" onclick="go('places');setTimeout(()=>openPlaceD('${lp.id}'),10)">↗</span>`:''}</div>
+      <div class="stopname" ${inlineEdit}>${s.name}${isBase?` <span style="font-size:9px;font-weight:700;color:var(--amber);background:rgba(200,144,30,.12);border-radius:3px;padding:1px 4px;vertical-align:middle">🌙 tonight</span>`:''}${lp?` <span style="font-size:9px;color:var(--green3);cursor:pointer" onclick="go('places');setTimeout(()=>openPlaceD('${lp.id}'),10)">↗</span>`:''}</div>
       ${rt==='trip'?`<input class="stopname-edit" value="${safeName}" onkeydown="if(event.key==='Enter'){plansInlineEditSave(this,'${id}',${di},${si})}else if(event.key==='Escape'){plansInlineEditCancel(this)}" onblur="plansInlineEditSave(this,'${id}',${di},${si})"/>`:''}
       ${s.type==='hike'&&s.trailData?`<div class="stopnote" style="color:var(--green3);font-weight:500">${[s.trailData.distanceMi?s.trailData.distanceMi+' mi':'',s.trailData.elevGainFt?'↑'+s.trailData.elevGainFt.toLocaleString()+'ft':'',s.trailData.difficulty?(s.trailData.difficulty.charAt(0).toUpperCase()+s.trailData.difficulty.slice(1)):'',s.trailData.estTimeHrs||''].filter(Boolean).join(' · ')}</div>`:''}
       ${s.address&&s.type!=='hike'?`<div class="stopnote">📍 ${s.address}</div>`:''}
@@ -6413,6 +6432,7 @@ function _rPlanStop(rt,id,di,si,s,accentColor){
     </div>
     <div style="display:flex;gap:4px;flex-shrink:0;align-items:center">
       ${s.photo?`<img src="${s.photo}" style="width:36px;height:36px;object-fit:cover;border-radius:6px;flex-shrink:0;border:1px solid var(--bdr);cursor:pointer" onclick="${editFn}" title="Click to edit" onerror="this.style.display='none'">`:''}
+      ${moonBtn}
       <button onclick="${editFn}" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--text2);background:var(--card2);border:1px solid var(--bdr2);border-radius:6px;padding:4px 9px;cursor:pointer;font-family:inherit;white-space:nowrap;transition:border-color .12s" onmouseover="this.style.borderColor='var(--amber)'" onmouseout="this.style.borderColor='var(--bdr2)'">✏️ Edit</button>
       <button onclick="event.stopPropagation();showStopActMenu(event,'${rt}','${id}',${di},${si})" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;font-size:18px;color:var(--muted2);background:none;border:1px solid var(--bdr2);border-radius:6px;cursor:pointer;font-family:inherit;transition:all .12s;line-height:1;padding:0;flex-shrink:0" onmouseover="this.style.background='var(--card2)';this.style.color='var(--text2)'" onmouseout="this.style.background='none';this.style.color='var(--muted2)'" title="More options">⋮</button>
     </div>
@@ -9154,6 +9174,18 @@ function setAdvDayBaseFromPlans(cid,di,si,clear=false){
   window._campDTab='daily';
   openCampD(cid);
 }
+// Universal "set tonight's base" from Plans tab — works for both camps and trips.
+// Toggles: tap once to set, tap again to clear. Exclusive per day (clears others).
+function setPlanStopAsBase(rt,id,di,si){
+  D=load();
+  const obj=rt==='camp'?(D.camps||[]).find(x=>x.id===id):D.trips.find(x=>x.id===id);
+  if(!obj)return;
+  const day=obj.itinerary?.[di];if(!day)return;
+  const wasBase=!!(day.stops||[])[si]?.isBase;
+  (day.stops||[]).forEach((s,i)=>{s.isBase=!wasBase&&i===si;});
+  if(rt==='camp'){saveCamps();window._campDTab='daily';openCampD(id);}
+  else{save('trips',D.trips);switchTripItinTab(id,'plans');}
+}
 
 async function aiDayNarrative(rt,id,di){
   D=load();
@@ -10729,21 +10761,10 @@ function rAdvDailyTab(c){
             ${[['🏕️','camp','Camp'],['🍽️','food','Meal'],['🥾','hike','Hike'],['🏛️','sight','Sight'],['☕','coffee','Coffee'],['⛽','fuel','Fuel'],['🎯','activity','Activity']].map(([em,tp,lb])=>{const fn=tp==='hike'?`openTrailSearch('camp','${c.id}',${di})`:`openAdvItinStopWithType('${c.id}',${di},'${tp}')`;return`<button onclick="${fn}" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--text2);background:var(--card2);border:1px solid var(--bdr2);border-radius:6px;padding:4px 9px;cursor:pointer;font-family:inherit;transition:all .12s" onmouseover="this.style.borderColor='${dc}';this.style.color='${dc}'" onmouseout="this.style.borderColor='var(--bdr2)';this.style.color='var(--text2)'">${em} ${lb}</button>`;}).join('')}
           </div>
         </div>
-        <div style="margin-top:8px;padding:8px 10px;background:${baseStop?'rgba(200,144,30,.06)':'var(--card2)'};border:1px solid ${baseStop?'rgba(200,144,30,.25)':'var(--bdr2)'};border-radius:8px;transition:background .2s">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <span style="font-size:11px;font-weight:700;color:${baseStop?'var(--amber)':'var(--muted2)'};white-space:nowrap;letter-spacing:.2px">🌙 Night at:</span>
-            ${baseStop
-              ?`<div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">
-                  <span style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${baseStop.name.split(',')[0]}</span>
-                  ${dayRtMi>0?`<span style="font-size:10px;color:var(--muted2);white-space:nowrap;flex-shrink:0">~${Math.round(dayRtMi)} mi round trip</span>`:''}
-                  <button onclick="setAdvDayBaseFromPlans('${c.id}',${di},${baseSi},true)" style="margin-left:auto;font-size:10px;color:var(--muted2);background:none;border:none;cursor:pointer;font-family:inherit;padding:0 2px;flex-shrink:0;transition:color .12s" onmouseover="this.style.color='#c05050'" onmouseout="this.style.color='var(--muted2)'" title="Clear base camp">✕ clear</button>
-                </div>`
-              :dayStops.length>0
-              ?`<div style="display:flex;gap:4px;flex-wrap:wrap;flex:1">${dayStops.map((s,si)=>`<button onclick="setAdvDayBaseFromPlans('${c.id}',${di},${si})" style="font-size:11px;font-weight:500;color:var(--text2);background:var(--card);border:1px solid var(--bdr2);border-radius:5px;padding:3px 8px;cursor:pointer;font-family:inherit;transition:all .12s" onmouseover="this.style.borderColor='var(--amber)';this.style.color='var(--amber)'" onmouseout="this.style.borderColor='var(--bdr2)';this.style.color='var(--text2)'">${s.name.split(',')[0]}</button>`).join('')}</div>`
-              :`<span style="font-size:11px;color:var(--muted2);font-style:italic">Add stops, then tap to set where you're sleeping</span>`
-            }
-          </div>
-        </div>
+        ${!baseStop&&dayStops.length>0?`<div style="margin-top:6px;padding:7px 10px;background:var(--card2);border:1px dashed var(--bdr2);border-radius:7px;display:flex;align-items:center;gap:7px">
+          <span style="font-size:14px;line-height:1;opacity:.5">🌙</span>
+          <span style="font-size:11px;color:var(--muted2)">Where are you sleeping? Tap <strong>🌙</strong> on a stop above to mark tonight's base.</span>
+        </div>`:''}
         ${day.notes
           ?`<textarea class="ft" style="margin-top:8px;min-height:34px;font-size:12px" placeholder="Notes for this day…" onblur="setAdvItinDayNotes('${c.id}',${di},this.value)">${day.notes}</textarea>`
           :`<div class="day-note-toggle" style="font-size:11px;color:var(--muted2);margin-top:7px;cursor:pointer;opacity:.5;padding:2px 0;transition:opacity .15s" onclick="expandDayNote(this,'${c.id}',${di})" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.5'">📝 Add day notes</div><textarea class="ft" style="display:none;margin-top:6px;min-height:34px;font-size:12px" placeholder="Notes for this day…" onblur="setAdvItinDayNotes('${c.id}',${di},this.value)"></textarea>`
@@ -11207,11 +11228,15 @@ function resetTripMiles(cid,isAdv){
   toast('✅ Distances reset — tap Recalc for accurate Google Maps routing');
 }
 
-// Return the best origin stop for Day di, Stop 0 (previous day's base or last stop).
+// Return the best origin stop for Day di, Stop 0 (previous day's overnight base).
+// Priority: explicit isBase flag → sleep/camp type stop → last stop of the day.
+const _SLEEP_TYPES=new Set(['sleep','camp']);
 function _dayBoundaryOrigin(itin,di){
   if(di<1)return null;
   const prevStops=itin[di-1]?.stops||[];
-  return prevStops.find(s=>s.isBase)||(prevStops.length?prevStops[prevStops.length-1]:null);
+  return prevStops.find(s=>s.isBase)
+    ||prevStops.find(s=>_SLEEP_TYPES.has(s.type||''))
+    ||(prevStops.length?prevStops[prevStops.length-1]:null);
 }
 
 // Detect day-boundary legs where milesPrev is far larger than haversine estimate —
