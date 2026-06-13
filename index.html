@@ -2444,6 +2444,11 @@ const CAT_RX=[
 ];
 // ══════════════════════════════════════════════
 // DATA
+// Suppress unhandled-rejection noise from browser extensions (e.g. tab-manager vendor.js)
+window.addEventListener('unhandledrejection',function(e){
+  const msg=String(e?.reason?.message||e?.reason||'');
+  if(msg.includes('No Listener:')||msg.includes('tabs:outgoing')||msg.includes('message.ready')){e.preventDefault();}
+});
 // ══════════════════════════════════════════════
 const K={places:'wf_places',trips:'wf_trips',wish:'wf_wishlist',journal:'wf_journal',settings:'wf_settings'};
 function load(){return{places:JSON.parse(localStorage.getItem(K.places)||'[]'),trips:JSON.parse(localStorage.getItem(K.trips)||'[]'),wish:JSON.parse(localStorage.getItem(K.wish)||'[]'),journal:JSON.parse(localStorage.getItem(K.journal)||'[]'),settings:JSON.parse(localStorage.getItem(K.settings)||'{"name":"Chris","partner":"Partner","homeCity":"","since":"2020"}'),abroad:JSON.parse(localStorage.getItem('wf_abroad')||'{"countries":[],"goals":[]}'),camps:JSON.parse(localStorage.getItem('wf_camps')||'[]'),work:JSON.parse(localStorage.getItem('wf_work')||'[]'),docs:JSON.parse(localStorage.getItem('wf_docs')||'[]')}}
