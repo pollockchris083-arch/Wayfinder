@@ -593,10 +593,8 @@ input,textarea,select{font-family:inherit;font-weight:400}
 .expense-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bdr);font-size:12px}
 .expense-row:last-child{border-bottom:none}
 .expense-cat{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-radius:4px;background:rgba(74,120,158,.1);color:#4A789E;border:1px solid rgba(74,120,158,.2);white-space:nowrap;flex-shrink:0}
-/* ── Adventure/Trip tab bars — horizontal scroll, never wrap ── */
-.adv-tab-bar{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}
-.adv-tab-bar::-webkit-scrollbar{display:none}
-.adv-tab-bar .fc{flex-shrink:0;white-space:nowrap}
+/* ── Adventure/Trip tab bars — compact grid on mobile, flex row on desktop ── */
+.adv-tab-bar{display:flex;gap:4px;flex-wrap:wrap}
 
 /* ── MOBILE ── */
 /* ── MOBILE BOTTOM NAV ── */
@@ -750,6 +748,10 @@ input,textarea,select{font-family:inherit;font-weight:400}
 
   /* ── Scrollbar hidden on filter rows ── */
   .plans-day-stops::-webkit-scrollbar{display:none}
+
+  /* ── Adventure/trip tab bar: 4-column compact grid — all tabs visible ── */
+  .adv-tab-bar{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:5px!important}
+  .adv-tab-bar .fc{min-height:38px!important;padding:5px 4px!important;font-size:11px!important;justify-content:center;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
 @media (min-width:700px) and (max-width:1099px){
   .places-ga{grid-template-columns:repeat(2,1fr)}
