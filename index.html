@@ -10288,9 +10288,16 @@ function rAdvBudgetTab(c){
   // If startLocation set but not geocoded, trigger geocoding — geocodeAndSaveStart loads Maps JS itself
   if(c.startLocation&&!c.startLat){setTimeout(()=>geocodeAndSaveStart(c.id),200);}
   const itinHasEst=itinStops.some(s=>s.milesEst)||c.startMilesEst||c.endMilesEst;
-  const itinTotalDriveSecs=(parseInt(c.startSecs)||0)+itinStops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0)+(parseInt(c.endSecs)||0);
   const startMiles=parseFloat(c.startMiles)||0;
   const endMiles=parseFloat(c.endMiles)||0;
+  // Estimate home-leg drive times at 55 mph when miles are known but GPS hasn't routed them yet
+  const _startSecsGps=parseInt(c.startSecs)||0;
+  const _endSecsGps=parseInt(c.endSecs)||0;
+  const _startSecsEff=_startSecsGps||(startMiles?Math.round(startMiles/55*3600):0);
+  const _endSecsEff=_endSecsGps||(endMiles?Math.round(endMiles/55*3600):0);
+  const itinStopSecs=itinStops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0);
+  const itinTotalDriveSecs=_startSecsEff+itinStopSecs+_endSecsEff;
+  const driveTimeHasEst=itinHasEst||(!_startSecsGps&&startMiles>0)||(!_endSecsGps&&endMiles>0);
   const routeMiles=startMiles+totalMiles+endMiles;
   const effectiveMiles=routeMiles||(parseFloat(c.estTripMiles)||0);
   const defaultMpg=parseFloat(rig.mpg)||0;
@@ -10329,7 +10336,7 @@ function rAdvBudgetTab(c){
   return`
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
     ${effectiveMiles?`<div class="bdg-stat" style="background:var(--card);border:1.5px solid var(--bdr2);border-radius:10px;padding:10px 8px"><div class="bdg-stat-num">${Math.round(effectiveMiles)}</div><div class="bdg-stat-lbl">miles${itinHasEst?' est.':''}</div></div>`:''}
-    ${itinTotalDriveSecs?`<div class="bdg-stat" style="background:var(--card);border:1.5px solid var(--bdr2);border-radius:10px;padding:10px 8px"><div class="bdg-stat-num">${fDrive(itinTotalDriveSecs)}</div><div class="bdg-stat-lbl">drive time</div></div>`:''}
+    ${itinTotalDriveSecs?`<div class="bdg-stat" style="background:var(--card);border:1.5px solid var(--bdr2);border-radius:10px;padding:10px 8px"><div class="bdg-stat-num">${fDrive(itinTotalDriveSecs)}</div><div class="bdg-stat-lbl">total drive${driveTimeHasEst?' (est.)':''}</div></div>`:''}
     ${stopCount?`<div class="bdg-stat" style="background:var(--card);border:1.5px solid var(--bdr2);border-radius:10px;padding:10px 8px"><div class="bdg-stat-num">${stopCount}</div><div class="bdg-stat-lbl">stops</div></div>`:''}
     ${dayCount?`<div class="bdg-stat" style="background:var(--card);border:1.5px solid var(--bdr2);border-radius:10px;padding:10px 8px"><div class="bdg-stat-num">${dayCount}</div><div class="bdg-stat-lbl">days</div></div>`:''}
   </div>
@@ -10373,7 +10380,7 @@ function rAdvBudgetTab(c){
         ${endMiles?`<span style="font-size:10px;color:var(--amber);white-space:nowrap">→ ${Math.round(endMiles)} mi →</span>`:'<span style="color:var(--muted2)">→</span>'}
         ${isRound&&c.startLocation?`<span>🏠 <strong>${c.startLocation.split(',')[0]}</strong></span>`:c.endLocation&&!isRound?`<span>🏁 <strong>${c.endLocation.split(',')[0]}</strong></span>`:''}
       </div>
-      ${effectiveMiles?`<div style="font-size:15px;font-weight:700;color:var(--text);margin-top:4px">${Math.round(effectiveMiles)} mi total${itinHasEst?' <span style="font-size:11px;font-weight:400;color:var(--muted2)">(est.)</span>':''} ${itinTotalDriveSecs?'· '+fDrive(itinTotalDriveSecs):''}</div>`:`<div style="font-size:11px;color:var(--muted2);margin-top:4px">Set departure city and run Recalc to get route miles</div>`}
+      ${effectiveMiles?`<div style="font-size:15px;font-weight:700;color:var(--text);margin-top:4px">${Math.round(effectiveMiles)} mi total${itinHasEst?' <span style="font-size:11px;font-weight:400;color:var(--muted2)">(est.)</span>':''} ${itinTotalDriveSecs?'· '+fDrive(itinTotalDriveSecs)+(driveTimeHasEst?' <span style="font-size:11px;font-weight:400;color:var(--muted2)">(est.)</span>':''):''}</div>`:`<div style="font-size:11px;color:var(--muted2);margin-top:4px">Set departure city and run Recalc to get route miles</div>`}
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:14px">
       <div style="flex:1;min-width:160px">
@@ -10853,17 +10860,26 @@ function rAdvDailyTab(c){
   const _advEndMi=parseFloat(c.endMiles)||0;
   const _advEndSecs=parseInt(c.endSecs)||0;
   const _advItinTotalMi=_advItinStopMi?_advStartMi+_advItinStopMi+_advEndMi:0;
-  const _advItinTotalSecs=(parseInt(c.startSecs)||0)+_advItinAllStops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0)+(parseInt(c.endSecs)||0);
+  // Estimate home-leg drive times at 55 mph when miles are known but GPS hasn't routed them yet
+  const _advStartSecsGps=parseInt(c.startSecs)||0;
+  const _advEndSecsGps=parseInt(c.endSecs)||0;
+  const _advStartSecsEff=_advStartSecsGps||(_advStartMi?Math.round(_advStartMi/55*3600):0);
+  const _advEndSecsEff=_advEndSecsGps||(_advEndMi?Math.round(_advEndMi/55*3600):0);
+  const _advItinStopSecs=_advItinAllStops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0);
+  const _advItinTotalSecs=_advStartSecsEff+_advItinStopSecs+_advEndSecsEff;
   const _advItinHasCoords=_advItinAllStops.some(s=>s.lat||s.lng);
   const _advItinHasAddresses=_advItinAllStops.some(s=>(s.address||'').trim());
   const _advItinHasEst=_advItinAllStops.some(s=>s.milesEst)||c.startMilesEst||c.endMilesEst;
+  const _advDriveTimeHasEst=_advItinHasEst||(!_advStartSecsGps&&_advStartMi>0)||(!_advEndSecsGps&&_advEndMi>0);
+  // Build breadcrumb: Home → Xmi → Stop names → Xmi → Home (mirrors the Budget tab format)
+  const _advBreadcrumbStops=(()=>{const ns=_advItinAllStops.filter(s=>(s.name||'').trim());if(!ns.length)return'';const first=(ns[0].name||'').split(',')[0];return ns.length>1?first+' + '+(ns.length-1)+' more':first;})();
   const _advRouteBanner=(_advItinTotalMi||(_advItinHasAddresses&&_advItinAllStops.length>1))?`<div style="padding:8px 10px;background:rgba(200,144,30,.07);border-radius:7px;margin-bottom:10px;border-left:3px solid var(--amber)">
     <div style="display:flex;align-items:center;gap:8px">
       <span style="font-size:12px">🛣️</span>
-      <div style="flex:1;font-size:11px;color:var(--text2)">${_advItinTotalMi?('<strong>'+Math.round(_advItinTotalMi)+' mi total</strong>'+(_advItinTotalSecs?' · <strong>'+fDrive(_advItinTotalSecs)+'</strong> total drive':'')+(  _advItinHasEst?' <span style="color:var(--muted2)">(est.)</span>':'')):'Click Recalc to calculate driving distances'}</div>
+      <div style="flex:1;font-size:11px;color:var(--text2)">${_advItinTotalMi?('<strong>'+Math.round(_advItinTotalMi)+' mi total</strong>'+(_advItinHasEst?' <span style="color:var(--muted2)">(est.)</span>':'')+(_advItinTotalSecs?' · <strong>'+fDrive(_advItinTotalSecs)+'</strong> total drive'+(_advDriveTimeHasEst?' <span style="color:var(--muted2)">(est.)</span>':''):'')):'Click Recalc to calculate driving distances'}</div>
       ${(_advItinHasCoords||_advItinHasAddresses||c.startLat)?`<button id="itin-recalc-btn" class="pbtn" onclick="recalcItineraryDriving(true,'${c.id}')" style="font-size:10px;padding:3px 8px">🔄 Recalc</button>`:''}
     </div>
-    ${(c.startLocation||c.endLocation)?`<div style="font-size:10px;color:var(--muted2);margin-top:4px;display:flex;flex-wrap:wrap;align-items:center;gap:3px">${c.startLocation?'🏠 <strong>'+c.startLocation+'</strong>':''} ${_advStartMi?'→ '+Math.round(_advStartMi)+' mi →':''} ${_advItinStopMi?Math.round(_advItinStopMi)+' mi stops →':''} ${c.isRoundTrip!==false&&c.startLocation?'🏠 <strong>'+c.startLocation+'</strong>':c.endLocation?'🏁 <strong>'+c.endLocation+'</strong>':''}</div>`:''}
+    ${(c.startLocation||c.endLocation)?`<div style="font-size:10px;color:var(--muted2);margin-top:4px;display:flex;flex-wrap:wrap;align-items:center;gap:3px">${c.startLocation?'🏠 <strong>'+c.startLocation.split(',')[0]+'</strong>':''} ${_advStartMi?'<span style="color:var(--amber)">→ '+Math.round(_advStartMi)+' mi →</span>':''} ${_advBreadcrumbStops?'<span>'+_advBreadcrumbStops+'</span>':''} ${_advEndMi?'<span style="color:var(--amber)">→ '+Math.round(_advEndMi)+' mi →</span>':''} ${c.isRoundTrip!==false&&c.startLocation?'🏠 <strong>'+c.startLocation.split(',')[0]+'</strong>':c.endLocation?'🏁 <strong>'+c.endLocation.split(',')[0]+'</strong>':''}</div>`:''}
   </div>`:'';
   const D3=load();const homeCity3=(D3.settings?.homeCity||'').trim();
   const isRound3=c.isRoundTrip!==false;
