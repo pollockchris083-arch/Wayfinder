@@ -1208,8 +1208,11 @@ body.stop-dragging-active .plans-unsched.stop-drag-over-day::after{content:'↓ 
       </div>
     </div>
     <div id="sync-bar" style="display:none;align-items:center;justify-content:space-between;padding:2px 4px 0">
-      <span id="sync-status" style="font-size:11px;color:var(--muted2);cursor:pointer;display:flex;align-items:center;gap:4px" onclick="manualCloudSync()" title="Tap to sync from cloud">● Synced</span>
-      <button onclick="signOut()" style="background:none;border:none;font-size:11px;color:var(--muted2);cursor:pointer;font-family:inherit;padding:2px 0;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted2)'">Sign out</button>
+      <span id="sync-status" style="font-size:11px;color:var(--muted2);cursor:pointer;display:flex;align-items:center;gap:4px" onclick="manualCloudSync()" title="Tap to sync now">● Synced</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button id="sync-now-btn" onclick="manualCloudSync()" style="background:none;border:none;font-size:10px;color:var(--muted2);cursor:pointer;font-family:inherit;padding:2px 4px;border-radius:4px;transition:all .15s;display:none" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background='none'" title="Sync now">↺ Sync</button>
+        <button onclick="signOut()" style="background:none;border:none;font-size:11px;color:var(--muted2);cursor:pointer;font-family:inherit;padding:2px 0;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted2)'">Sign out</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2490,6 +2493,7 @@ async function signOut(){
   // Reload to guarantee a clean in-memory state on all browsers including mobile Safari
   window.location.reload();
 }
+let _syncStatusFallbackTimer=null;
 function setSyncStatus(msg,color){
   const el=document.getElementById('sync-status');if(!el)return;
   const MAP={'☁️ Synced':{t:'Synced',c:'#4A8060'},'⏳ Syncing…':{t:'Syncing…',c:'var(--amber)'},'⚠️ Offline':{t:'Offline',c:'#c05050'},'⬆️ Uploading…':{t:'Uploading…',c:'var(--amber)'},'⬆️ Saving…':{t:'Saving…',c:'var(--amber)'},'✏️ Unsaved':{t:'Unsaved',c:'var(--muted2)'},'⚠️ Migration sync failed':{t:'Sync error',c:'#c05050'},'⚠️ Sync failed':{t:'Sync error',c:'#c05050'}};
@@ -2497,6 +2501,14 @@ function setSyncStatus(msg,color){
   const dotColor=m?m.c:(color==='var(--green3)'?'#4A8060':color==='var(--gold2)'?'var(--amber)':color||'var(--muted2)');
   const label=m?m.t:msg.replace(/^[^\x00-\x7F]+\s*/,'');
   el.innerHTML=`<span style="font-size:8px;color:${dotColor};line-height:1">●</span> ${label}`;
+  // Show ↺ Sync button when there's a problem or unsaved changes
+  const syncNowBtn=document.getElementById('sync-now-btn');
+  if(syncNowBtn){const showBtn=msg.includes('failed')||msg.includes('Offline')||msg.includes('Unsaved')||msg.includes('error');syncNowBtn.style.display=showBtn?'block':'none';}
+  // Fallback: if stuck in "Saving…" or "Syncing…" for >20s, show error
+  clearTimeout(_syncStatusFallbackTimer);
+  if(msg.includes('Saving')||msg.includes('Syncing')||msg.includes('Uploading')){
+    _syncStatusFallbackTimer=setTimeout(()=>{setSyncStatus('⚠️ Sync timed out');},20000);
+  }
 }
 function setAoDetail(msg){const el=document.getElementById('ao-load-detail');if(el)el.textContent=msg;}
 function showLoadingOverlay(){
@@ -2557,29 +2569,33 @@ async function _blockingSync(uid){
     ]);
     const _timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Cloud load timed out')),20000));
     const[p,t,w,j,s]=await Promise.race([_fetch,_timeout]);
-    if(s.data){const local=JSON.parse(localStorage.getItem(K.settings)||'{}');const cloud=stripRow(s.data);const merged={...cloud,apiKey:local.apiKey,googleClientId:local.googleClientId,driveFolderId:local.driveFolderId,mapsApiKey:local.mapsApiKey||cloud.mapsApiKey||'',abroadNotes:local.abroadNotes};localStorage.setItem(K.settings,JSON.stringify(merged));}
-    if(p.data?.length)localStorage.setItem(K.places,JSON.stringify(p.data.map(stripRow)));
-    if(t.data?.length){
+    if(s.data&&!s.error){const local=JSON.parse(localStorage.getItem(K.settings)||'{}');const cloud=stripRow(s.data);const merged={...cloud,apiKey:local.apiKey,googleClientId:local.googleClientId,driveFolderId:local.driveFolderId,mapsApiKey:local.mapsApiKey||cloud.mapsApiKey||'',abroadNotes:local.abroadNotes};localStorage.setItem(K.settings,JSON.stringify(merged));}
+    if(p.data?.length&&!p.error)localStorage.setItem(K.places,JSON.stringify(p.data.map(stripRow)));
+    if(t.data?.length&&!t.error){
       const allT=t.data.map(stripRow);
       const campsBlob=allT.find(x=>x.id==='__camps_v1__');
       const workBlob=allT.find(x=>x.id==='__work_v1__');
-      if(campsBlob?.notes){try{localStorage.setItem('wf_camps',campsBlob.notes);}catch(e){}}
-      if(workBlob?.notes){try{localStorage.setItem('wf_work',workBlob.notes);}catch(e){}}
-      if(!campsBlob){const lc=JSON.parse(localStorage.getItem('wf_camps')||'[]');if(lc.length)_upsertBlob('__camps_v1__',lc).catch(()=>{});}
-      if(!workBlob){const lw=JSON.parse(localStorage.getItem('wf_work')||'[]');if(lw.length)_upsertBlob('__work_v1__',lw).catch(()=>{});}
+      if(campsBlob?.notes)_mergeBlobData(campsBlob.notes,'wf_camps','__camps_v1__');
+      else{const lc=JSON.parse(localStorage.getItem('wf_camps')||'[]');if(lc.length)_upsertBlob('__camps_v1__',lc).catch(()=>{});}
+      if(workBlob?.notes)_mergeBlobData(workBlob.notes,'wf_work','__work_v1__');
+      else{const lw=JSON.parse(localStorage.getItem('wf_work')||'[]');if(lw.length)_upsertBlob('__work_v1__',lw).catch(()=>{});}
       const _cloudTIds=new Set(allT.filter(x=>x.type!=='__system__').map(x=>x.id));
       const _localOnlyT=JSON.parse(localStorage.getItem(K.trips)||'[]').filter(lt=>!_cloudTIds.has(lt.id));
       if(_localOnlyT.length){allT.push(..._localOnlyT);cloudPush('trips',allT.filter(x=>x.type!=='__system__')).catch(()=>{});}
       localStorage.setItem(K.trips,JSON.stringify(allT.filter(x=>x.type!=='__system__')));
     }
-    const _cloudWIds=new Set((w.data||[]).map(x=>x.id));
-    const _localOnlyW=JSON.parse(localStorage.getItem(K.wish)||'[]').filter(lw=>!_cloudWIds.has(lw.id));
-    if(_localOnlyW.length){const _mw=[...(w.data||[]).map(stripRow),..._localOnlyW];localStorage.setItem(K.wish,JSON.stringify(_mw));cloudPush('wish',_mw).catch(()=>{});}
-    else if(w.data?.length){localStorage.setItem(K.wish,JSON.stringify(w.data.map(stripRow)));}
-    const _cloudJIds=new Set((j.data||[]).map(x=>x.id));
-    const _localOnlyJ=JSON.parse(localStorage.getItem(K.journal)||'[]').filter(lj=>!_cloudJIds.has(lj.id));
-    if(_localOnlyJ.length){const _mj=[...(j.data||[]).map(stripRow),..._localOnlyJ];localStorage.setItem(K.journal,JSON.stringify(_mj));cloudPush('journal',_mj).catch(()=>{});}
-    else if(j.data?.length){localStorage.setItem(K.journal,JSON.stringify(j.data.map(stripRow)));}
+    if(!w.error){
+      const _cloudWIds=new Set((w.data||[]).map(x=>x.id));
+      const _localOnlyW=JSON.parse(localStorage.getItem(K.wish)||'[]').filter(lw=>!_cloudWIds.has(lw.id));
+      if(_localOnlyW.length){const _mw=[...(w.data||[]).map(stripRow),..._localOnlyW];localStorage.setItem(K.wish,JSON.stringify(_mw));cloudPush('wish',_mw).catch(()=>{});}
+      else if(w.data?.length){localStorage.setItem(K.wish,JSON.stringify(w.data.map(stripRow)));}
+    }
+    if(!j.error){
+      const _cloudJIds=new Set((j.data||[]).map(x=>x.id));
+      const _localOnlyJ=JSON.parse(localStorage.getItem(K.journal)||'[]').filter(lj=>!_cloudJIds.has(lj.id));
+      if(_localOnlyJ.length){const _mj=[...(j.data||[]).map(stripRow),..._localOnlyJ];localStorage.setItem(K.journal,JSON.stringify(_mj));cloudPush('journal',_mj).catch(()=>{});}
+      else if(j.data?.length){localStorage.setItem(K.journal,JSON.stringify(j.data.map(stripRow)));}
+    }
     D=load();
     setSyncStatus('☁️ Synced','var(--green3)');
     await migrateCloudData();
@@ -2588,13 +2604,30 @@ async function _blockingSync(uid){
     loadSettings();rHome();badges();
     if(cur==='map'&&!gMap&&(D.settings.mapsApiKey||'').trim())rMap();
     hideAuthOverlay();
+    _startPeriodicSync();
   }catch(e){
     console.warn('Cloud load error:',e);
     setSyncStatus('⚠️ Offline','#c05050');
     setAoDetail('Could not reach cloud — using local data');
     loadSettings();rHome();badges();
     hideAuthOverlay();
+    // Retry blocking sync after 30s (e.g. brief network blip on load)
+    setTimeout(()=>{if(currentUser)_bgSync(currentUser.id).catch(()=>{});},30000);
   }
+}
+// Merge cloud blob (camps/work) with local, preserving local-only records.
+// Returns merged array; pushes to cloud if local-only items were found.
+function _mergeBlobData(cloudJson,localKey,blobId){
+  try{
+    const cloudArr=JSON.parse(cloudJson||'[]');
+    const localArr=JSON.parse(localStorage.getItem(localKey)||'[]');
+    const cloudIds=new Set(cloudArr.map(x=>x.id));
+    const localOnly=localArr.filter(x=>!cloudIds.has(x.id));
+    const merged=[...cloudArr,...localOnly];
+    localStorage.setItem(localKey,JSON.stringify(merged));
+    if(localOnly.length){_upsertBlob(blobId,merged).catch(e=>console.warn('[sync] blob merge-push failed:',e.message));}
+    return merged;
+  }catch(e){console.warn('[sync] blob merge error:',e.message);}
 }
 async function _bgSync(uid){
   setSyncStatus('⏳ Syncing…','var(--gold2)');
@@ -2605,9 +2638,11 @@ async function _bgSync(uid){
       SUPA.from('wf_settings').select('*').eq('user_id',uid).maybeSingle(),
       SUPA.from('wf_trips').select('*').eq('user_id',uid),
     ]);
+    if(s.error)console.warn('[sync] settings fetch error:',s.error.message);
+    if(t.error)console.warn('[sync] trips fetch error:',t.error.message);
     console.log(`[sync] settings+trips: ${Date.now()-t0}ms (trips:${t.data?.length||0})`);
     // First sign-in on new device: cloud has no trips but local does → upload
-    if(!(t.data?.length)&&(D.trips.length||D.places.length)){
+    if(!t.error&&!(t.data?.length)&&(D.trips.length||D.places.length)){
       setSyncStatus('⬆️ Uploading…','var(--gold2)');
       await Promise.all([
         cloudPush('places',D.places),cloudPush('trips',D.trips),
@@ -2618,17 +2653,19 @@ async function _bgSync(uid){
       ]);
       setSyncStatus('☁️ Synced','var(--green3)');
       toast('☁️ Data synced to your account!');
+      _startPeriodicSync();
       return;
     }
-    if(s.data){const local=JSON.parse(localStorage.getItem(K.settings)||'{}');const cloud=stripRow(s.data);const merged={...cloud,apiKey:local.apiKey,googleClientId:local.googleClientId,driveFolderId:local.driveFolderId,mapsApiKey:local.mapsApiKey||cloud.mapsApiKey||'',abroadNotes:local.abroadNotes};localStorage.setItem(K.settings,JSON.stringify(merged));}
-    if(t.data?.length){
+    if(s.data&&!s.error){const local=JSON.parse(localStorage.getItem(K.settings)||'{}');const cloud=stripRow(s.data);const merged={...cloud,apiKey:local.apiKey,googleClientId:local.googleClientId,driveFolderId:local.driveFolderId,mapsApiKey:local.mapsApiKey||cloud.mapsApiKey||'',abroadNotes:local.abroadNotes};localStorage.setItem(K.settings,JSON.stringify(merged));}
+    if(t.data?.length&&!t.error){
       const allT=t.data.map(stripRow);
       const campsBlob=allT.find(x=>x.id==='__camps_v1__');
       const workBlob=allT.find(x=>x.id==='__work_v1__');
-      if(campsBlob?.notes){try{localStorage.setItem('wf_camps',campsBlob.notes);}catch(e){}}
-      if(workBlob?.notes){try{localStorage.setItem('wf_work',workBlob.notes);}catch(e){}}
-      if(!campsBlob){const lc=JSON.parse(localStorage.getItem('wf_camps')||'[]');if(lc.length)_upsertBlob('__camps_v1__',lc).catch(()=>{});}
-      if(!workBlob){const lw=JSON.parse(localStorage.getItem('wf_work')||'[]');if(lw.length)_upsertBlob('__work_v1__',lw).catch(()=>{});}
+      // Merge blobs: cloud + local-only items (don't blindly overwrite local)
+      if(campsBlob?.notes)_mergeBlobData(campsBlob.notes,'wf_camps','__camps_v1__');
+      else{const lc=JSON.parse(localStorage.getItem('wf_camps')||'[]');if(lc.length)_upsertBlob('__camps_v1__',lc).catch(()=>{});}
+      if(workBlob?.notes)_mergeBlobData(workBlob.notes,'wf_work','__work_v1__');
+      else{const lw=JSON.parse(localStorage.getItem('wf_work')||'[]');if(lw.length)_upsertBlob('__work_v1__',lw).catch(()=>{});}
       const _cloudTIds=new Set(allT.filter(x=>x.type!=='__system__').map(x=>x.id));
       const _localOnlyT=JSON.parse(localStorage.getItem(K.trips)||'[]').filter(lt=>!_cloudTIds.has(lt.id));
       if(_localOnlyT.length){allT.push(..._localOnlyT);cloudPush('trips',allT.filter(x=>x.type!=='__system__')).catch(()=>{});}
@@ -2642,21 +2679,28 @@ async function _bgSync(uid){
       SUPA.from('wf_wish').select('*').eq('user_id',uid),
       SUPA.from('wf_journal').select('*').eq('user_id',uid),
     ]);
+    if(w.error)console.warn('[sync] wish fetch error:',w.error.message);
+    if(j.error)console.warn('[sync] journal fetch error:',j.error.message);
     console.log(`[sync] wish+journal: ${Date.now()-t0}ms (wish:${w.data?.length||0} journal:${j.data?.length||0})`);
-    const _cloudWIds=new Set((w.data||[]).map(x=>x.id));
-    const _localOnlyW=JSON.parse(localStorage.getItem(K.wish)||'[]').filter(lw=>!_cloudWIds.has(lw.id));
-    if(_localOnlyW.length){const _mw=[...(w.data||[]).map(stripRow),..._localOnlyW];localStorage.setItem(K.wish,JSON.stringify(_mw));cloudPush('wish',_mw).catch(()=>{});}
-    else if(w.data?.length){localStorage.setItem(K.wish,JSON.stringify(w.data.map(stripRow)));}
-    const _cloudJIds=new Set((j.data||[]).map(x=>x.id));
-    const _localOnlyJ=JSON.parse(localStorage.getItem(K.journal)||'[]').filter(lj=>!_cloudJIds.has(lj.id));
-    if(_localOnlyJ.length){const _mj=[...(j.data||[]).map(stripRow),..._localOnlyJ];localStorage.setItem(K.journal,JSON.stringify(_mj));cloudPush('journal',_mj).catch(()=>{});}
-    else if(j.data?.length){localStorage.setItem(K.journal,JSON.stringify(j.data.map(stripRow)));}
+    if(!w.error){
+      const _cloudWIds=new Set((w.data||[]).map(x=>x.id));
+      const _localOnlyW=JSON.parse(localStorage.getItem(K.wish)||'[]').filter(lw=>!_cloudWIds.has(lw.id));
+      if(_localOnlyW.length){const _mw=[...(w.data||[]).map(stripRow),..._localOnlyW];localStorage.setItem(K.wish,JSON.stringify(_mw));cloudPush('wish',_mw).catch(()=>{});}
+      else if(w.data?.length){localStorage.setItem(K.wish,JSON.stringify(w.data.map(stripRow)));}
+    }
+    if(!j.error){
+      const _cloudJIds=new Set((j.data||[]).map(x=>x.id));
+      const _localOnlyJ=JSON.parse(localStorage.getItem(K.journal)||'[]').filter(lj=>!_cloudJIds.has(lj.id));
+      if(_localOnlyJ.length){const _mj=[...(j.data||[]).map(stripRow),..._localOnlyJ];localStorage.setItem(K.journal,JSON.stringify(_mj));cloudPush('journal',_mj).catch(()=>{});}
+      else if(j.data?.length){localStorage.setItem(K.journal,JSON.stringify(j.data.map(stripRow)));}
+    }
     D=load();
     // Phase 3: places (heaviest — all records)
     t0=Date.now();
     const p=await SUPA.from('wf_places').select('*').eq('user_id',uid);
+    if(p.error)console.warn('[sync] places fetch error:',p.error.message);
     console.log(`[sync] places: ${Date.now()-t0}ms (${p.data?.length||0} records)`);
-    if(p.data?.length){
+    if(p.data?.length&&!p.error){
       const _cloudPIds=new Set(p.data.map(x=>x.id));
       const _localOnlyP=JSON.parse(localStorage.getItem(K.places)||'[]').filter(lp=>!_cloudPIds.has(lp.id));
       const _mergedP=p.data.map(stripRow);
@@ -2669,6 +2713,7 @@ async function _bgSync(uid){
     pipeAutoAdvance();
     badges();rHome();
     setSyncStatus('☁️ Synced','var(--green3)');
+    _startPeriodicSync();
   }catch(e){
     console.warn('[sync] background sync failed:',e);
     setSyncStatus('⚠️ Offline','#c05050');
@@ -2943,9 +2988,26 @@ async function migrateCloudData(){
   }
   localStorage.setItem('wf_cloud_v5','1'); // suppresses audit logs on future runs, not the fixes
 }
+let _periodicSyncTimer=null;
+function _startPeriodicSync(){
+  // Pull from cloud every 90 seconds so changes from other devices appear automatically
+  clearInterval(_periodicSyncTimer);
+  if(!currentUser)return;
+  _periodicSyncTimer=setInterval(async()=>{
+    if(!currentUser)return;
+    const el=document.getElementById('sync-status');
+    const curLabel=el?.textContent||'';
+    // Don't pull if we're mid-save
+    if(curLabel.includes('Saving')||curLabel.includes('Uploading'))return;
+    try{
+      await _bgSync(currentUser.id);
+    }catch(e){console.warn('[periodic sync] failed:',e.message);}
+  },90000);
+}
 function scheduledSync(k,items){
   if(!currentUser)return;
   clearTimeout(_syncTimers[k]);
+  clearTimeout(_syncTimers[k+'_retry']);
   setSyncStatus('✏️ Unsaved');
   _syncTimers[k]=setTimeout(async()=>{
     setSyncStatus('⬆️ Saving…');
@@ -2955,7 +3017,12 @@ function scheduledSync(k,items){
       else if(k==='work')await _upsertBlob('__work_v1__',items);
       else await cloudPush(k,items);
       setSyncStatus('☁️ Synced');
-    }catch(e){console.warn('Sync failed:',e);setSyncStatus('⚠️ Sync failed');}
+    }catch(e){
+      console.warn('[sync] failed for',k,'— retrying in 30s:',e.message);
+      setSyncStatus('⚠️ Sync failed');
+      // Auto-retry once after 30 seconds
+      _syncTimers[k+'_retry']=setTimeout(()=>scheduledSync(k,items),30000);
+    }
   },2000);
 }
 
