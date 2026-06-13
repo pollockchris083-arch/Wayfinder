@@ -6284,7 +6284,7 @@ function _rPlanStop(rt,id,di,si,s,accentColor){
       ${s.type==='hike'&&s.trailData?`<div class="stopnote" style="color:var(--green3);font-weight:500">${[s.trailData.distanceMi?s.trailData.distanceMi+' mi':'',s.trailData.elevGainFt?'↑'+s.trailData.elevGainFt.toLocaleString()+'ft':'',s.trailData.difficulty?(s.trailData.difficulty.charAt(0).toUpperCase()+s.trailData.difficulty.slice(1)):'',s.trailData.estTimeHrs||''].filter(Boolean).join(' · ')}</div>`:''}
       ${s.address&&s.type!=='hike'?`<div class="stopnote">📍 ${s.address}</div>`:''}
       ${s.type==='hike'&&s.trailData?.startPoint?`<div class="stopnote">📍 ${s.trailData.startPoint}</div>`:''}
-      ${s.milesPrev?`<div class="stopnote" style="color:var(--text2);font-weight:500">🛣️ ${s.milesPrev} mi${s.driveSecs?' · '+fDrive(s.driveSecs):''}${s.milesEst?' <span style="font-size:10px;opacity:.65">(est.)</span>':''}</div>`:''}
+      ${s.milesPrev?`<div class="stopnote" style="color:var(--text2);font-weight:500">🛣️ ${Math.round(parseFloat(s.milesPrev)||0)} mi${s.driveSecs?' · '+fDrive(s.driveSecs)+' drive':''}${s.milesEst?' <span style="font-size:10px;opacity:.65">(est.)</span>':''}</div>`:''}
       <div style="margin-top:1px"><div id="sn-view-${id}-${di}-${si}" class="stopnote" style="${s.note?'cursor:pointer':'display:none'}" onclick="expandStopNote('${id}',${di},${si},'${rt}')">${s.note||''}</div><button id="sn-add-${id}-${di}-${si}" class="sn-add-btn" onclick="expandStopNote('${id}',${di},${si},'${rt}')" style="${s.note?'display:none;':''}font-size:10px;color:var(--muted2);background:none;border:none;cursor:pointer;padding:1px 0;font-family:inherit;line-height:1">📝 note</button><textarea id="sn-ta-${id}-${di}-${si}" style="display:none;width:100%;min-height:32px;resize:none;font-size:11px;color:var(--text2);background:var(--card2);border:1px solid var(--bdr);border-radius:5px;padding:5px 7px;font-family:inherit;line-height:1.4;margin-top:3px;box-sizing:border-box" placeholder="Note for this stop…" onblur="saveStopNoteInline(this,'${rt}','${id}',${di},${si})" onkeydown="if(event.key==='Escape')this.blur()">${s.note||''}</textarea></div>
     </div>
     ${s.photo?`<img src="${s.photo}" style="width:38px;height:38px;object-fit:cover;border-radius:5px;flex-shrink:0;border:1px solid var(--bdr);margin-left:3px;cursor:pointer" onclick="${rt==='camp'?`openAdvItinStopEdit('${id}',${di},${si})`:`openStopEdit('${id}',${di},${si})`}" title="Has photo — click to edit" onerror="this.style.display='none'">`:''}
@@ -6393,7 +6393,7 @@ function rTripPlansTab(t){
   const _itinHasEst=_allItinStops.some(s=>s.milesEst);
   const _routeBanner=(_itinTotalMi||(_itinHasAddresses&&_allItinStops.length>1))?`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(200,144,30,.07);border-radius:7px;margin-bottom:10px;border-left:3px solid var(--amber)">
     <span style="font-size:12px">🛣️</span>
-    <div style="flex:1;font-size:11px;color:var(--text2)">${_itinTotalMi?('<strong>'+_itinTotalMi+' mi</strong>'+(_itinTotalSecs?' · <strong>'+fDrive(_itinTotalSecs)+'</strong> drive time':'')+(_itinHasEst?' <span style="color:var(--muted2)">(est. from GPS)</span>':'')):'Click Recalc to calculate driving distances between stops'}</div>
+    <div style="flex:1;font-size:11px;color:var(--text2)">${_itinTotalMi?('<strong>'+Math.round(_itinTotalMi)+' mi</strong>'+(_itinTotalSecs?' · <strong>'+fDrive(_itinTotalSecs)+'</strong> total drive time':'')+(_itinHasEst?' <span style="color:var(--muted2)">(est.)</span>':'')):'Click Recalc to calculate driving distances between stops'}</div>
     ${(_itinHasCoords||_itinHasAddresses)?`<button id="itin-recalc-btn" class="pbtn" onclick="recalcItineraryDriving(false,'${t.id}')" style="font-size:10px;padding:3px 8px">🔄 Recalc</button>`:''}
   </div>`:'';
   let html=`<div style="--plans-accent:${accent}">${_routeBanner}`;
@@ -8029,7 +8029,7 @@ function rTripFuelSection(t){
   const _routeSection=_tItinMi||_tHasCoords?`<div style="padding:10px 0 6px;border-bottom:1px solid var(--bdr2)">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
       <div style="font-size:12px;color:var(--text2)">
-        ${_tItinMi?`🛣️ <strong>${_tItinMi} mi planned</strong>${_tItinSecs?' · '+fDrive(_tItinSecs):''}${_tHasEst?' (est.)':''}`:
+        ${_tItinMi?`🛣️ <strong>${Math.round(_tItinMi)} mi planned</strong>${_tItinSecs?' · '+fDrive(_tItinSecs)+' total drive':''}${_tHasEst?' (est.)':''}`:
         '🛣️ Add stops via Google search to auto-calculate route miles'}
       </div>
       ${_tHasCoords?`<button id="itin-recalc-btn" class="pbtn" onclick="recalcItineraryDriving(false,'${t.id}')" style="font-size:10px;padding:3px 8px">🔄 Recalc</button>`:''}
@@ -8753,7 +8753,7 @@ function rGuideTab(rt,obj){
     return`<button class="guide-day-tab${isActive?' on':''}" onclick="setGuideDay('${rt}','${obj.id}',${di})">
       <span class="guide-day-tab-num">Day ${idx+1}</span>
       <span class="guide-day-tab-date">${dStr}</span>
-      ${dayMi?`<span class="guide-day-tab-mi">🛣 ${dayMi}mi</span>`:`<div class="guide-day-tab-dot"></div>`}
+      ${dayMi?`<span class="guide-day-tab-mi">🛣 ${Math.round(dayMi)}mi</span>`:`<div class="guide-day-tab-dot"></div>`}
     </button>`;
   }).join('');
 
@@ -8823,7 +8823,7 @@ function rGuideDaySheet(rt,obj,di,accent){
         <span class="guide-drive-arrow">↓</span>
         <div class="guide-drive-line"></div>
         <div class="guide-drive-badge">
-          ${cMi?`🛣️ ${cMi} mi`:''}${cMi&&cSecs?' · ':''}${cSecs?fDrive(cSecs):''}${!cMi&&!cSecs?`<span style="font-style:italic;opacity:.6">next stop</span>`:'<span style="font-size:9px;opacity:.7;margin-left:2px">drive</span>'}
+          ${(cMi||cSecs)?`${cMi?Math.round(cMi)+' mi':''}${cMi&&cSecs?' · ':''}${cSecs?fDrive(cSecs):''} drive`:`<span style="font-style:italic;opacity:.6">next stop</span>`}
         </div>
         <div class="guide-drive-line"></div>
         <span class="guide-drive-arrow">↓</span>
@@ -8852,8 +8852,7 @@ function rGuideDaySheet(rt,obj,di,accent){
         <div class="guide-sheet-date">${fmtLongDay(day.date)}</div>
         <div class="guide-sheet-meta">
           ${dayStops.length?`<span class="guide-sheet-meta-item">📍 ${dayStops.length} stop${dayStops.length!==1?'s':''}</span>`:''}
-          ${dayMi?`<span class="guide-sheet-meta-item">🛣️ ${Math.round(dayMi)} mi</span>`:''}
-          ${dayDriveSecs?`<span class="guide-sheet-meta-item">⏱️ ${fDrive(dayDriveSecs)}</span>`:''}
+          ${dayMi?`<span class="guide-sheet-meta-item">🛣️ ${Math.round(dayMi)} mi${dayDriveSecs?' · '+fDrive(dayDriveSecs)+' driving':''}</span>`:''}
           ${totalTrailMi?`<span class="guide-sheet-meta-item">🥾 ${totalTrailMi.toFixed(1)} mi trail</span>`:''}
           ${baseStop?`<span class="guide-sheet-meta-item" style="color:var(--guide-accent,#C8901E)">🌙 ${baseStop.name}</span>`:''}
         </div>
@@ -8966,7 +8965,7 @@ function rGuideStop(rt,id,di,si,s,accent,baseSi,oabMi){
         ${gearHtml}
         ${warnHtml}
         ${metaItems.length?`<div class="guide-stop-meta" style="padding:6px 12px 10px">${metaItems.join('')}</div>`:''}
-        ${s.milesPrev?`<div class="guide-stop-meta" style="padding:0 12px 8px"><span>🛣️ ${s.milesPrev} mi to trailhead${s.driveSecs?' · '+fDrive(s.driveSecs):''}</span></div>`:''}
+        ${s.milesPrev?`<div class="guide-stop-meta" style="padding:0 12px 8px"><span>🛣️ ${Math.round(parseFloat(s.milesPrev)||0)} mi drive${s.driveSecs?' · '+fDrive(s.driveSecs):''}</span></div>`:''}
         ${oabHtml}
       </div>
     </div>`;
@@ -8992,7 +8991,7 @@ function rGuideStop(rt,id,di,si,s,accent,baseSi,oabMi){
       ${s.note&&s.note!==s.description?`<div class="guide-stop-note">${s.note}</div>`:''}
       <div class="guide-stop-meta">
         ${s.address?`<span>📍 ${s.address}</span>`:''}
-        ${s.milesPrev?`<span>🛣️ ${s.milesPrev} mi${s.driveSecs?' · '+fDrive(s.driveSecs):''}</span>`:''}
+        ${s.milesPrev?`<span>🛣️ ${Math.round(parseFloat(s.milesPrev)||0)} mi drive${s.driveSecs?' · '+fDrive(s.driveSecs):''}</span>`:''}
         ${s.mapsUrl?`<a href="${s.mapsUrl}" target="_blank" class="guide-nav-btn">Navigate ↗</a>`:''}
       </div>
       ${oabHtml}
@@ -10086,7 +10085,7 @@ function rAdvStopsTab(c){
     html+=`<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--bdr)">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div style="font-size:12px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">🏕️ Campsite Bookings</div>
-        ${totalMiles>0?`<div style="font-size:11px;color:var(--muted)">🛣️ ${totalMiles.toFixed(0)} mi${totalDriveSecs?' · '+fDrive(totalDriveSecs):''}</div>`:''}
+        ${totalMiles>0?`<div style="font-size:11px;color:var(--muted)">🛣️ ${Math.round(totalMiles)} mi${totalDriveSecs?' · '+fDrive(totalDriveSecs)+' total drive':''}</div>`:''}
         ${hasAnyCoords?`<button id="adv-recalc-btn" class="pbtn" onclick="recalcAdvTripDriving('${c.id}')" style="font-size:10px;padding:3px 8px">🔄 Recalc</button>`:''}
       </div>`;
     const HI={'Electric 20A':'🔌','Electric 30A':'🔌','Electric 50A':'⚡','Water':'💧','Sewer':'🚿','WiFi':'📶','Pull-through':'↔️','Back-in':'↩️','Pet Friendly':'🐕'};
@@ -10109,7 +10108,7 @@ function rAdvStopsTab(c){
           </div>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
-          ${stop.milesPrev?`<span style="font-size:11px;color:var(--muted2)">🛣️ ${stop.milesPrev} mi${stop.driveSecs?' · '+fDrive(stop.driveSecs):''}</span>`:''}
+          ${stop.milesPrev?`<span style="font-size:11px;color:var(--muted2)">🛣️ ${Math.round(parseFloat(stop.milesPrev)||0)} mi${stop.driveSecs?' · '+fDrive(stop.driveSecs)+' drive':''}</span>`:''}
           ${stop.siteNumber?`<span style="font-size:11px;color:var(--muted2)">🏕️ Site ${stop.siteNumber}</span>`:''}
           ${stop.costPerNight?`<span style="font-size:11px;color:var(--muted2)">💰 $${stop.costPerNight}/night${costTotal}</span>`:''}
           ${stop.maxRigLength?`<span style="font-size:11px;color:var(--muted2)">📏 Max ${stop.maxRigLength}ft</span>`:''}
@@ -10256,7 +10255,7 @@ function rAdvDailyTab(c){
   const _advRouteBanner=(_advItinTotalMi||(_advItinHasAddresses&&_advItinAllStops.length>1))?`<div style="padding:8px 10px;background:rgba(200,144,30,.07);border-radius:7px;margin-bottom:10px;border-left:3px solid var(--amber)">
     <div style="display:flex;align-items:center;gap:8px">
       <span style="font-size:12px">🛣️</span>
-      <div style="flex:1;font-size:11px;color:var(--text2)">${_advItinTotalMi?('<strong>'+_advItinTotalMi+' mi</strong>'+(_advItinTotalSecs?' · <strong>'+fDrive(_advItinTotalSecs)+'</strong>':'')+(_advItinHasEst?' <span style="color:var(--muted2)">(est.)</span>':'')):'Click Recalc to calculate driving distances'}</div>
+      <div style="flex:1;font-size:11px;color:var(--text2)">${_advItinTotalMi?('<strong>'+Math.round(_advItinTotalMi)+' mi total</strong>'+(_advItinTotalSecs?' · <strong>'+fDrive(_advItinTotalSecs)+'</strong> total drive':'')+(  _advItinHasEst?' <span style="color:var(--muted2)">(est.)</span>':'')):'Click Recalc to calculate driving distances'}</div>
       ${(_advItinHasCoords||_advItinHasAddresses||c.startLat)?`<button id="itin-recalc-btn" class="pbtn" onclick="recalcItineraryDriving(true,'${c.id}')" style="font-size:10px;padding:3px 8px">🔄 Recalc</button>`:''}
     </div>
     ${(c.startLocation||c.endLocation)?`<div style="font-size:10px;color:var(--muted2);margin-top:4px;display:flex;flex-wrap:wrap;align-items:center;gap:3px">${c.startLocation?'🏠 <strong>'+c.startLocation+'</strong>':''} ${_advStartMi?'→ '+Math.round(_advStartMi)+' mi →':''} ${_advItinStopMi?Math.round(_advItinStopMi)+' mi stops →':''} ${c.isRoundTrip!==false&&c.startLocation?'🏠 <strong>'+c.startLocation+'</strong>':c.endLocation?'🏁 <strong>'+c.endLocation+'</strong>':''}</div>`:''}
@@ -10777,11 +10776,12 @@ async function getRouteDrivingInfo(lat1,lng1,lat2,lng2,mapsKey){
   return{miles:route.distanceMeters/1609.34,secs:parseInt(route.duration)||0};
 }
 function fDrive(secs){
-  if(!secs)return'';
+  if(!secs||secs<0)return'';
   const h=Math.floor(secs/3600);
-  let m=Math.round((secs%3600)/60/5)*5;
-  if(m>=60){return`${h+1}h`;}
-  return h?(m?`${h}h ${m}min`:`${h}h`):`${m}min`;
+  const m=Math.round((secs%3600)/60);
+  if(m>=60)return`${h+1}h`;
+  if(h)return m?`${h}h ${m}min`:`${h}h`;
+  return m?`${m}min`:'<1 min';
 }
 async function recalcAdvTripDriving(cid){
   D=load();
@@ -13221,7 +13221,10 @@ function printTripFull(id,type){
     itin.forEach((day,di)=>{
       const ds=day.stops||[];
       const dayLbl=day.date?fmtMed(day.date):`Day ${di+1}`;
-      itinHtml+=`<div class="day-block"><div class="day-hdr">${dayLbl}<span class="day-count">${ds.length?ds.length+' stop'+(ds.length!==1?'s':''):'travel day'}</span></div>${ds.length?ds.map(s=>`<div class="stop-row"><span class="stop-pin">📍</span><span class="stop-name">${s.name||'Stop'}${s.milesPrev?`<span class="mi-tag">+${s.milesPrev} mi</span>`:''}</span></div>${s.note?`<div class="stop-note">${s.note}</div>`:''}`).join(''):`<div class="no-stops">Travel day — no scheduled stops</div>`}</div>`;
+      const dayMiPrint=ds.reduce((s,st)=>s+(parseFloat(st.milesPrev)||0),0);
+      const daySecsPrint=ds.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0);
+      const dayDriveLabel=dayMiPrint?` · ${Math.round(dayMiPrint)} mi${daySecsPrint?' · '+fDrive(daySecsPrint):''}`:' ';
+      itinHtml+=`<div class="day-block"><div class="day-hdr">${dayLbl}<span class="day-count">${ds.length?ds.length+' stop'+(ds.length!==1?'s':''):'travel day'}${dayDriveLabel}</span></div>${ds.length?ds.map(s=>`<div class="stop-row"><span class="stop-pin">📍</span><span class="stop-name">${s.name||'Stop'}${s.milesPrev?`<span class="mi-tag">${Math.round(parseFloat(s.milesPrev)||0)} mi${s.driveSecs?' · '+fDrive(s.driveSecs):''}</span>`:''}</span></div>${s.note?`<div class="stop-note">${s.note}</div>`:''}`).join(''):`<div class="no-stops">Travel day — no scheduled stops</div>`}</div>`;
     });
   }
 
