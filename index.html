@@ -9694,6 +9694,18 @@ function openCampD(id){
   const c=(D.camps||[]).find(x=>x.id===id);if(!c)return;
   if(ensureAdvItinerary(c))saveCamps();
   window._campDid=id;
+  // Auto-populate startLocation from settings homeCity on first open so geocoding can fire.
+  // The Route section already displays homeCity as a fallback — this makes it persistent and enables
+  // distance computation. User can always override via the Route ⚙ Edit form.
+  if(!c.startLocation){
+    const _hc=(D.settings?.homeCity||'').trim();
+    if(_hc){
+      c.startLocation=_hc;
+      if(c.isRoundTrip!==false)c.endLocation=_hc;
+      saveCamps();
+      setTimeout(()=>geocodeAndSaveStart(id),300);
+    }
+  }
   const tab=window._campDTab||'overview';
   const typeInfo=ADV_TYPES[c.campType]||{icon:'🏕️',label:'Tent Camping'};
   const dur=c.startDate&&c.endDate?Math.round((new Date(c.endDate)-new Date(c.startDate))/86400000)+1:0;
@@ -9702,14 +9714,19 @@ function openCampD(id){
   const totalDriveSecs=stops.reduce((s,st)=>s+(parseInt(st.driveSecs)||0),0);
   const itinStopCount=(c.itinerary||[]).reduce((s,d)=>s+(d.stops||[]).length,0);
   let tabBody='';
-  if(tab==='overview') tabBody=rAdvOverviewTab(c);
+  if(tab==='overview'){
+    tabBody=rAdvOverviewTab(c);
+    const _ok=(D.settings?.mapsApiKey||'').trim();
+    if(c.startLocation&&(!c.startLat||!c.endLat))setTimeout(()=>geocodeAndSaveStart(id),200);
+    else if(_ok&&c.startLat&&(!c.endMiles||c.endMilesEst||c.startMilesEst))setTimeout(()=>_recalcHomeLegsBg(id,_ok),400);
+  }
   else if(tab==='stops') tabBody=rAdvStopsTab(c);
   else if(tab==='daily') tabBody=rAdvDailyTab(c);
   else if(tab==='guide') tabBody=rGuideTab('camp',c);
   else if(tab==='budget'){
     tabBody=rAdvBudgetTab(c);
     const _bk=(D.settings?.mapsApiKey||'').trim();
-    if(c.startLocation&&!c.startLat)setTimeout(()=>geocodeAndSaveStart(id),80);
+    if(c.startLocation&&(!c.startLat||!c.endLat))setTimeout(()=>geocodeAndSaveStart(id),80);
     else if(_bk&&c.startLat&&(!c.endMiles||c.endMilesEst||c.startMilesEst))setTimeout(()=>_recalcHomeLegsBg(id,_bk),300);
   }
   else if(tab==='gear') tabBody=rAdvGearTab(c);
